@@ -345,6 +345,7 @@ def sync_state_from_race(snapshot, interpreted_events=None):
             "apex": row.get("kart") if row.get("kart") is not None else "—",
             "laps": lap_number,
             "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else "—",
+            "penalty": row.get("penalty") or "",
             "last": last,
             "best": best,
             "gap": row.get("gap") or "—",
@@ -357,6 +358,16 @@ def sync_state_from_race(snapshot, interpreted_events=None):
     live_drivers.sort(key=lambda d: (d["pos"] == 999, d["pos"]))
     if live_drivers:
         STATE["drivers"] = live_drivers
+
+        # Sprint : alimente automatiquement le panneau PÉNALITÉS depuis la grille Apex.
+        # Les valeurs vides, zéro ou équivalentes à « aucune » sont ignorées.
+        no_penalty_values = {"", "-", "—", "0", "0 s", "0 sec", "aucune", "aucune pénalité", "none", "no"}
+        apex_penalties = []
+        for driver in live_drivers:
+            raw_penalty = str(driver.get("penalty") or "").strip()
+            if raw_penalty.lower() not in no_penalty_values:
+                apex_penalties.append({"driver": driver.get("driver") or "—", "penalty": raw_penalty})
+        STATE["penalties"] = apex_penalties
         # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.
         # Mode LOCK : après un clic, on conserve impérativement le même pilote,
         # même si une trame Apex intermédiaire ne contient pas sa ligne.

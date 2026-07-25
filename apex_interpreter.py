@@ -22,6 +22,12 @@ FIELD_BY_APEX_TYPE = {
     "pst": "pit_stops",
     "stp": "pit_stops",
     "nbp": "pit_stops",
+    # Pénalités : les codes varient selon les configurations Apex.
+    "pen": "penalty",
+    "pnl": "penalty",
+    "pny": "penalty",
+    "pty": "penalty",
+    "san": "penalty",
 }
 
 
@@ -72,7 +78,7 @@ class ApexInterpreter:
             "row": row, "position": None, "name": None, "kart": None,
             "last_lap": None, "best_lap": None, "gap": None,
             "interval": None, "laps": None, "timer": None,
-            "pit_stops": None, "status": "unknown", "last_lap_kind": None,
+            "pit_stops": None, "penalty": None, "status": "unknown", "last_lap_kind": None,
             "updated_at": None,
         })
 
@@ -98,6 +104,8 @@ class ApexInterpreter:
             label = (self.labels.get(col) or "").strip().lower()
             if any(token in label for token in ("stand", "pit", "arrêt", "arret")):
                 field = "pit_stops"
+            elif any(token in label for token in ("pénalité", "penalite", "penalty", "sanction")):
+                field = "penalty"
 
         if field in {"position", "kart", "laps", "pit_stops"}:
             parsed = self._as_int(value)
@@ -108,6 +116,9 @@ class ApexInterpreter:
                     self._emit(update.row, "lap_count", "Nouveau tour", f"Tour {parsed}", str(parsed))
         elif field == "name":
             row["name"] = value.strip() or None
+        elif field == "penalty":
+            cleaned = value.strip()
+            row["penalty"] = cleaned or None
         elif field == "last_lap":
             if lap_seconds(value) is not None:
                 row["last_lap"] = value

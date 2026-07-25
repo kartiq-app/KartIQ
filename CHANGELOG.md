@@ -1,3 +1,9 @@
+# KartIQ v4.3.1
+
+- Desktop uniquement : noms rapprochés de la position en Qualification et Sprint, sans modifier les autres colonnes ni le mobile.
+- Sprint : affichage automatique des pénalités Apex dans le panneau de droite (équipe/pilote + sanction).
+- Aucun autre changement fonctionnel ou visuel.
+
 # KartIQ v4.3.0 — Desktop polish
 
 - Qualification et Sprint desktop : colonne POS resserrée et noms rapprochés de la position.

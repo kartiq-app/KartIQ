@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="KartIQ">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V4.3.0 — Desktop polish</title>
+<title>KartIQ V4.3.1 — Desktop polish</title>
 <style>
 :root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -829,7 +829,7 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 @media(display-mode:standalone){body.kartiq-fullscreen .fullscreen-float-controls{display:flex}}
 @media(max-width:680px){.fullscreen-float-controls button{width:40px;height:40px;font-size:21px}.fullscreen-float-controls{top:calc(6px + env(safe-area-inset-top));left:calc(6px + env(safe-area-inset-left));right:calc(6px + env(safe-area-inset-right))}}
 
-/* KartIQ V4.3.0 — optimisation desktop et colonne STANDS */
+/* KartIQ V4.3.1 — optimisation desktop et colonne STANDS */
 .home-version{position:absolute;right:22px;bottom:16px;color:var(--muted);font-family:var(--font-time);font-size:12px;letter-spacing:.05em;opacity:.8}
 .race-home-content{position:relative}
 @media(min-width:681px){
@@ -858,10 +858,32 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 }
 @media(max-width:680px){.home-version{right:10px;bottom:8px;font-size:10px}}
 
+
+/* KartIQ V4.3.1 — uniquement les deux corrections demandées. */
+@media (min-width:1001px){
+  /* Qualification + Sprint desktop : rapprocher le nom de la position
+     sans toucher aux autres colonnes ni au rendu mobile. */
+  body:not(.preview-embedded).current-qualification #qualifTable th:nth-child(1),
+  body:not(.preview-embedded).current-qualification #qualifTable td:nth-child(1),
+  body:not(.preview-embedded).current-sprint #sprintTable th:nth-child(1),
+  body:not(.preview-embedded).current-sprint #sprintTable td:nth-child(1){
+    width:46px!important;
+    padding-left:8px!important;
+    padding-right:0!important;
+    text-align:left!important;
+  }
+  body:not(.preview-embedded).current-qualification #qualifTable th:nth-child(2),
+  body:not(.preview-embedded).current-qualification #qualifTable td:nth-child(2),
+  body:not(.preview-embedded).current-sprint #sprintTable th:nth-child(2),
+  body:not(.preview-embedded).current-sprint #sprintTable td:nth-child(2){
+    padding-left:4px!important;
+  }
+}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.3.0 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.3.1 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -908,7 +930,7 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.3.0</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.3.1</div>
     </div>
   </div>
 </section>
