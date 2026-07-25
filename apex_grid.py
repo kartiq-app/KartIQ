@@ -58,10 +58,13 @@ class _GridHTMLParser(HTMLParser):
         text = " ".join("".join(item["text"]).split())
         element_id = item["id"]
         col_match = COL_ID_RE.match(element_id)
-        if col_match and item["type"]:
+        if col_match:
             col = int(col_match.group(1))
-            self.schema[col] = item["type"]
+            # Toujours conserver le libellé de colonne, même lorsque data-type
+            # est vide. Apex utilise précisément ce cas pour « Péna. ».
             self.labels[col] = text
+            if item["type"]:
+                self.schema[col] = item["type"]
         cell_match = CELL_ID_RE.match(element_id)
         if cell_match:
             row, col = int(cell_match.group(1)), int(cell_match.group(2))

@@ -1,3 +1,11 @@
+## V4.3.3 — Pénalités Apex fiabilisées
+
+- Correction du parseur de grille Apex : les libellés de colonnes sont désormais conservés même lorsque `data-type` est vide.
+- Reconnaissance de la colonne officielle `Péna.` (colonne `c12` sur la grille observée).
+- Affichage dans le panneau Sprint du nom de l’équipe/pilote et de la valeur exacte transmise par Apex, par exemple `PACIFIC E-RACING — 1 Tr`.
+- Les mises à jour WebSocket ultérieures de la cellule de pénalité restent prises en compte.
+- Conservation du défilement desktop Qualification/Sprint et de toutes les fonctionnalités validées.
+
 ## V4.3.2 — Pénalités Apex et défilement desktop
 
 - Sprint : lecture directe de la colonne Apex « Péna. » et affichage du nom de l'équipe/pilote avec la valeur exacte de la pénalité dans le panneau de droite.
