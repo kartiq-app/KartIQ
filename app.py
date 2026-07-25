@@ -344,6 +344,7 @@ def sync_state_from_race(snapshot, interpreted_events=None):
             "driver": driver_name,
             "apex": row.get("kart") if row.get("kart") is not None else "—",
             "laps": lap_number,
+            "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else "—",
             "last": last,
             "best": best,
             "gap": row.get("gap") or "—",
@@ -860,7 +861,7 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print("\nKartIQ V4.2.2 Beta — boîte noire Apex")
+    print("\nKartIQ V4.3.0 — Desktop polish")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")

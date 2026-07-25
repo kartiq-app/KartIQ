@@ -1,3 +1,11 @@
+# KartIQ v4.3.0 — Desktop polish
+
+- Qualification et Sprint desktop : colonne POS resserrée et noms rapprochés de la position.
+- Endurance : ajout de la colonne STANDS avec le nombre d'arrêts effectués.
+- Détection robuste de la colonne d'arrêts à partir du type ou du libellé Apex.
+- Numéro de version visible sur la page d'accueil et dans l'en-tête.
+- Aucun changement de la logique AUTO/LOCK ni du calcul des deltas validé en v4.2.11.
+
 # KartIQ V4.2.11
 
 ## Calcul du delta selon le mode

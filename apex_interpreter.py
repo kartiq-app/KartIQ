@@ -17,6 +17,11 @@ FIELD_BY_APEX_TYPE = {
     "int": "interval",
     "blp": "best_lap",
     "tlp": "laps",
+    # Types fréquemment employés par les configurations Apex pour le nombre d'arrêts.
+    "pit": "pit_stops",
+    "pst": "pit_stops",
+    "stp": "pit_stops",
+    "nbp": "pit_stops",
 }
 
 
@@ -87,8 +92,14 @@ class ApexInterpreter:
 
         apex_type = self.schema.get(col) if col is not None else None
         field = FIELD_BY_APEX_TYPE.get(apex_type or "")
+        # Certaines pistes utilisent un type Apex personnalisé pour cette colonne.
+        # Le libellé de grille permet alors d'identifier STANDS / PITS / ARRÊTS.
+        if field is None and col is not None:
+            label = (self.labels.get(col) or "").strip().lower()
+            if any(token in label for token in ("stand", "pit", "arrêt", "arret")):
+                field = "pit_stops"
 
-        if field in {"position", "kart", "laps"}:
+        if field in {"position", "kart", "laps", "pit_stops"}:
             parsed = self._as_int(value)
             old = row.get(field)
             if parsed is not None:
