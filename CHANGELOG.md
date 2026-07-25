@@ -1,3 +1,12 @@
+# KartIQ V4.3.5 — Pénalités stables Sprint et Endurance
+
+- Retour au moteur de pénalités de la V4.3.3 : lecture directe de la colonne Apex « Péna. » sans historique.
+- Suppression des doublons pilote/équipe introduits par l’historique de la V4.3.4.
+- Conservation du panneau PÉNALITÉS en Sprint.
+- Ajout du panneau PÉNALITÉS sous le Top 8 en Endurance.
+- Ajout de la colonne PÉNA. dans le classement général Endurance.
+- Le Top 8 affiche aussi la position de l’équipe au classement général.
+
 ## V4.3.4 — Pénalités Sprint et Endurance
 
 - Ajout du bloc PÉNALITÉS sous le Top 8 en mode Endurance.
