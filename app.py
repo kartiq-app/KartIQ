@@ -40,7 +40,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "4.2.11-beta-real-live",
+    "version": "4.3.2",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",
@@ -872,7 +872,7 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print("\nKartIQ V4.3.0 — Desktop polish")
+    print("\nKartIQ V4.3.2 — Pénalités et défilement desktop")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")

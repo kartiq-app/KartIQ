@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections import deque
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -28,6 +29,7 @@ FIELD_BY_APEX_TYPE = {
     "pny": "penalty",
     "pty": "penalty",
     "san": "penalty",
+    "pna": "penalty",
 }
 
 
@@ -101,10 +103,15 @@ class ApexInterpreter:
         # Certaines pistes utilisent un type Apex personnalisé pour cette colonne.
         # Le libellé de grille permet alors d'identifier STANDS / PITS / ARRÊTS.
         if field is None and col is not None:
-            label = (self.labels.get(col) or "").strip().lower()
-            if any(token in label for token in ("stand", "pit", "arrêt", "arret")):
+            raw_label = (self.labels.get(col) or "").strip().lower()
+            # Apex abrège souvent la colonne des pénalités en « Péna. ».
+            # On retire les accents et la ponctuation pour reconnaître aussi
+            # « Pena », « Pénalité », « Penalty » et « Sanction ».
+            label = unicodedata.normalize("NFKD", raw_label).encode("ascii", "ignore").decode("ascii")
+            label = re.sub(r"[^a-z0-9]+", " ", label).strip()
+            if any(token in label for token in ("stand", "pit", "arret")):
                 field = "pit_stops"
-            elif any(token in label for token in ("pénalité", "penalite", "penalty", "sanction")):
+            elif any(token in label for token in ("pena", "penalite", "penalty", "sanction")):
                 field = "penalty"
 
         if field in {"position", "kart", "laps", "pit_stops"}:

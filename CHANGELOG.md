@@ -1,3 +1,10 @@
+## V4.3.2 — Pénalités Apex et défilement desktop
+
+- Sprint : lecture directe de la colonne Apex « Péna. » et affichage du nom de l'équipe/pilote avec la valeur exacte de la pénalité dans le panneau de droite.
+- Qualification desktop : classement général défilable verticalement.
+- Sprint desktop : classement général défilable verticalement.
+- Aucun changement de largeur des colonnes ni de l'affichage mobile.
+
 # KartIQ v4.3.1
 
 - Desktop uniquement : noms rapprochés de la position en Qualification et Sprint, sans modifier les autres colonnes ni le mobile.
