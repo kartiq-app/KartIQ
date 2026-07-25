@@ -96,3 +96,10 @@ KartIQ V4.0.9
 - Live timing : `https://www.apex-timing.com/live-timing/brignoles-karting-loisir/`
 - WebSocket : `wss://live-data.apex-timing.com:8603/`
 - Statut initial : à valider pendant un live actif.
+
+
+## V4.2.7 — Mobile plein écran
+- Interface adaptée aux iPhone en portrait et paysage.
+- Bouton ⛶ de plein écran dans l’en-tête.
+- Installation PWA depuis l’écran d’accueil iOS.
+- Gestion des zones sûres autour de l’encoche et de la barre d’accueil.

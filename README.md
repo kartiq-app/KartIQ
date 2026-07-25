@@ -1,3 +1,1 @@
-KartIQ V4.0.9 Beta Real Live
-
-Chronomètre synchronisé directement sur les trames Apex dyn1|countdown|<millisecondes>.
+KartIQ V4.2.7 — version Web Render, mobile responsive et installable sur iPhone en plein écran.
