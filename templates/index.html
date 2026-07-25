@@ -819,10 +819,21 @@ body.kartiq-fullscreen{overflow:hidden}body.kartiq-fullscreen header{position:fi
  header{height:calc(46px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top)}.home-btn,.fullscreen-btn{width:34px;height:34px}.brand{font-size:18px}.screen.active{min-height:calc(100dvh - 46px - env(safe-area-inset-top))}body.kartiq-fullscreen .screen.active{padding-top:calc(46px + env(safe-area-inset-top))}.qual-wrap,.sprint-wrap,.endurance-grid{padding:4px}.qual-strip,.sprint-strip{min-height:72px}.qual-cell,.sprint-cell{height:72px}.hero-position{font-size:39px}.qual-delta{font-size:38px}.current-qualification .status-values strong{font-size:14px!important}.panel-title{padding:5px 7px}.sprint-table-wrap{max-height:calc(100dvh - 190px)}
 }
 @media(display-mode:standalone){.fullscreen-btn{display:none}body{min-height:100dvh}header{padding-top:env(safe-area-inset-top)}}
+
+/* KartIQ V4.2.8 — commandes persistantes en plein écran mobile */
+.fullscreen-float-controls{position:fixed;z-index:1000;left:calc(8px + env(safe-area-inset-left));right:calc(8px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top));display:none;justify-content:space-between;align-items:center;pointer-events:none}
+.fullscreen-float-controls button{pointer-events:auto;width:44px;height:44px;border-radius:12px;border:1px solid #4a5668;background:rgba(12,17,26,.92);color:#fff;font-size:23px;font-weight:950;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.fullscreen-float-controls button:active{transform:scale(.96)}
+body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
+@media(display-mode:standalone){body.kartiq-fullscreen .fullscreen-float-controls{display:flex}}
+@media(max-width:680px){.fullscreen-float-controls button{width:40px;height:40px;font-size:21px}.fullscreen-float-controls{top:calc(6px + env(safe-area-inset-top));left:calc(6px + env(safe-area-inset-left));right:calc(6px + env(safe-area-inset-right))}}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.2.7 MOBILE LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.2.8 MOBILE LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+
+<div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
 <section id="home" class="screen home active">
   <div class="race-home-shell">
@@ -1111,18 +1122,30 @@ document.getElementById('iphonePreview').addEventListener('click',e=>{if(e.targe
 
 function isStandaloneKartIQ(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
 function closeInstallHelp(){document.getElementById('installHelp')?.classList.remove('show')}
+function syncFullscreenControls(active){
+ document.body.classList.toggle('kartiq-fullscreen',!!active);
+ document.getElementById('fullscreenBtn')?.classList.toggle('active',!!active);
+ document.getElementById('fullscreenFloatControls')?.setAttribute('aria-hidden',active?'false':'true');
+}
+async function exitKartIQFullscreen(){
+ try{
+  if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen();
+  else if(document.webkitFullscreenElement&&document.webkitExitFullscreen)document.webkitExitFullscreen();
+ }catch(e){console.warn('Sortie plein écran indisponible',e)}
+ syncFullscreenControls(false);
+}
 async function toggleKartIQFullscreen(){
  const btn=document.getElementById('fullscreenBtn');
  try{
-  if(document.fullscreenElement){await document.exitFullscreen();document.body.classList.remove('kartiq-fullscreen');btn?.classList.remove('active');return}
+  if(document.fullscreenElement||document.webkitFullscreenElement){await exitKartIQFullscreen();return}
   const el=document.documentElement;
   const request=el.requestFullscreen||el.webkitRequestFullscreen;
-  if(request){await request.call(el);document.body.classList.add('kartiq-fullscreen');btn?.classList.add('active');return}
+  if(request){await request.call(el);syncFullscreenControls(true);return}
  }catch(e){console.warn('Plein écran indisponible',e)}
- if(isStandaloneKartIQ()){document.body.classList.toggle('kartiq-fullscreen');btn?.classList.toggle('active');return}
+ if(isStandaloneKartIQ()){syncFullscreenControls(!document.body.classList.contains('kartiq-fullscreen'));return}
  document.getElementById('installHelp')?.classList.add('show');
 }
-document.addEventListener('fullscreenchange',()=>{const active=!!document.fullscreenElement;document.body.classList.toggle('kartiq-fullscreen',active);document.getElementById('fullscreenBtn')?.classList.toggle('active',active)});
+document.addEventListener('fullscreenchange',()=>syncFullscreenControls(!!document.fullscreenElement));document.addEventListener('webkitfullscreenchange',()=>syncFullscreenControls(!!document.webkitFullscreenElement));
 document.getElementById('installHelp')?.addEventListener('click',e=>{if(e.target.id==='installHelp')closeInstallHelp()});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/static/sw.js').catch(err=>console.warn('Service worker',err)))}
 

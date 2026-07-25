@@ -1,3 +1,10 @@
+# KartIQ V4.2.8 — Contrôles plein écran mobile
+
+- Le bouton ☰ reste accessible en plein écran.
+- Ajout d’un bouton ✕ flottant pour quitter immédiatement le plein écran.
+- Positionnement adapté à l’encoche et à la Dynamic Island grâce aux marges de sécurité iPhone.
+- Compatibilité avec les événements Fullscreen standards et WebKit.
+
 # KartIQ V4.2.5 Beta — Popup Qualification
 
 - Lorsqu’un pilote suivi signe le meilleur temps absolu : affichage P1, « 🥇 MEILLEUR TEMPS ! » et avance verte sur le deuxième pilote.
