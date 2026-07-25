@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KartIQ V4.2.3 — Temps restant Endurance</title>
+<style>
+:root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
+header{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--line);background:#0d1119ef;position:sticky;top:0;z-index:10}.header-left{display:flex;align-items:center;gap:12px}.brand{font-size:28px;font-weight:950}.brand i{font-style:normal;color:var(--yellow)}.home-btn{border:1px solid var(--line);background:#151b26;color:#fff;width:42px;height:42px;border-radius:10px;font-size:20px;cursor:pointer;font-weight:900}.home-btn:hover{border-color:var(--yellow);color:var(--yellow)}.meta{display:flex;align-items:center;gap:13px;color:var(--muted);font-size:13px}.live{color:var(--green);font-weight:900}.mode-tabs{display:flex;gap:8px}.mode-btn{border:1px solid var(--line);background:#151b26;color:#c7ced9;padding:9px 14px;border-radius:9px;font-weight:850;cursor:pointer}.mode-btn.active{background:var(--yellow);color:#111;border-color:var(--yellow)}
+.screen{display:none}.screen.active{display:block}.home{padding:50px 20px}.home-card{max-width:900px;margin:auto;padding:28px;background:linear-gradient(180deg,var(--panel),#0c121b);border:1px solid var(--line);border-radius:18px}.home-card h1{font-size:48px;margin:0 0 6px}.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}.field label{display:block;color:var(--muted);font-weight:800;font-size:12px;margin-bottom:8px}.field select{width:100%;padding:14px;background:#0c111a;color:white;border:1px solid var(--line);border-radius:10px}.mode-cards{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.mode-card{padding:20px;border:1px solid var(--line);background:#131a26;border-radius:13px;cursor:pointer}.mode-card:hover{border-color:var(--yellow)}
+.panel{background:linear-gradient(180deg,var(--panel),#0e141e);border:1px solid var(--line);border-radius:14px;overflow:hidden}.panel-title{padding:14px 16px;border-bottom:1px solid var(--line);font-size:12px;font-weight:950;letter-spacing:.08em}.qual-wrap{padding:16px}.qual-top{margin-bottom:14px}.qual-strip{min-height:132px;display:grid;grid-template-columns:1fr 2.25fr 1fr;align-items:center;text-align:center;padding:8px 24px}.qual-cell{min-width:0}.qual-cell+.qual-cell{border-left:1px solid var(--line)}.hero-card{min-height:175px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px}.label{font-size:11px;color:var(--muted);font-weight:850;letter-spacing:.09em}.hero-position{font-size:68px;font-weight:1000;line-height:1}.hero-name{font-size:18px;font-weight:900;margin-top:10px}.qual-delta{font-size:92px;font-weight:1000;line-height:1;margin-top:8px;color:var(--yellow);letter-spacing:-.05em}.hero-best{font-size:28px;font-weight:950;margin-top:8px}.hero-lap{font-size:23px;font-weight:900;color:var(--purple);margin-top:8px}
+table{width:100%;border-collapse:collapse}th{padding:11px 10px;color:var(--muted);font-size:10px;text-align:left}td{padding:13px 10px;border-top:1px solid #222b3a;font-size:14px}.clickable{cursor:pointer}.clickable:hover{background:#1b2331}.followed{background:linear-gradient(90deg,#5b4e172a,#2d291743);box-shadow:inset 4px 0 var(--yellow)}.pos{font-size:19px;font-weight:950}.name{font-weight:850}.green{color:var(--green)}.purple{color:var(--purple)}.red{color:var(--red)}.yellow{color:var(--yellow)}
+.grid{display:grid;grid-template-columns:minmax(690px,1fr) 360px;gap:16px;padding:16px}.sidebar{display:flex;flex-direction:column;gap:16px}.card{padding:18px}.big{font-size:31px;font-weight:950;margin-top:7px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.stat{padding:12px;background:#0c111a;border:1px solid #242d3b;border-radius:10px}.stat b{display:block;font-size:20px;margin-top:5px}.penalty-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #242d3b}.empty{padding:12px 0;color:var(--muted)}
+.endurance-grid{display:grid;grid-template-columns:minmax(560px,.9fr) minmax(700px,1.35fr);gap:16px;padding:16px}.right-stack{display:flex;flex-direction:column;gap:16px}.pace-row{display:grid;grid-template-columns:42px 1fr auto;align-items:center;padding:9px 0;border-bottom:1px solid #242d3b}.pace-rank{font-size:22px;font-weight:950}.quick-table{min-width:780px}.delta-good{color:var(--green);font-weight:950}.delta-bad{color:var(--red);font-weight:950}
+.overlay{position:fixed;inset:0;background:#04060bd9;display:none;align-items:center;justify-content:center;z-index:100}.overlay.show{display:flex}.crossing-box{width:min(900px,92vw);min-height:520px;background:linear-gradient(180deg,#101722,#080c13);border:2px solid var(--yellow);border-radius:24px;display:flex;flex-direction:column;gap:22px;align-items:center;justify-content:center;text-align:center;padding:42px}.crossing-pos,.crossing-last{font-size:84px;font-weight:1000}.crossing-best{display:none;font-size:36px;font-weight:1000;color:var(--yellow);text-transform:uppercase}.crossing-best.show{display:block}.crossing-comparison{font-size:42px;font-weight:1000}.crossing-delta{font-size:58px;font-weight:1000;letter-spacing:-.04em}.crossing-delta.delta-first{color:var(--green)}.crossing-delta.delta-behind{color:#ff4d4f}.crossing-reference{font-size:34px;font-weight:900;color:#fff;text-transform:uppercase}.crossing-sub{font-size:14px;color:var(--muted);font-weight:900;letter-spacing:.1em}.generic-box{width:min(760px,90vw);padding:50px;text-align:center;background:#111722;border:2px solid var(--yellow);border-radius:22px}.generic-box h1{font-size:54px;margin:20px 0}.generic-box .line2{font-size:28px;color:var(--yellow)}
+.testbar{margin:0 16px 16px;border:1px dashed #414b60;border-radius:12px;padding:12px;background:#0d121a}.testbar summary{cursor:pointer;color:var(--muted);font-weight:850}.test-grid{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;margin-top:12px}.test-grid input,.test-grid select,.test-grid button{padding:9px;background:#151b26;color:white;border:1px solid var(--line);border-radius:8px}.test-grid button{cursor:pointer;background:#242d3b}
+
+.sprint-wrap{padding:16px}.sprint-top{margin-bottom:14px}.sprint-strip{min-height:132px;display:grid;grid-template-columns:1fr 2.25fr 1fr;align-items:center;text-align:center;padding:8px 24px}.sprint-cell{min-width:0}.sprint-cell+.sprint-cell{border-left:1px solid var(--line)}.sprint-fast-driver{font-size:25px;font-weight:950;margin-top:8px}.sprint-fast-lap{font-size:23px;font-weight:900;color:var(--green);margin-top:8px}.sprint-subinfo{margin-top:6px;font-size:23px;font-weight:900;color:var(--muted);letter-spacing:.03em;line-height:1}.sprint-subinfo strong{color:var(--text)}.sprint-lower{display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:14px}.mobile-hide{display:table-cell}
+@media(max-width:1000px){.grid,.endurance-grid{grid-template-columns:1fr}.mode-cards{grid-template-columns:1fr}.home-grid{grid-template-columns:1fr}.crossing-box{grid-template-columns:1fr;min-height:auto}.crossing-delta{font-size:78px}.test-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){body{min-height:100dvh;overflow-x:hidden}header{height:54px;padding:0 8px;gap:6px}.brand{font-size:20px}.brand span{display:none}.home-btn{width:36px;height:36px}.mode-tabs{display:none}.meta{gap:6px;font-size:10px}.meta #clock{display:none}.home{padding:14px 8px}.home-card{padding:16px}.home-card h1{font-size:34px}.qual-wrap,.sprint-wrap{padding:7px}.qual-top,.sprint-top{margin-bottom:7px}.qual-strip,.sprint-strip{min-height:84px;grid-template-columns:.72fr 1.45fr 1.05fr;padding:3px 5px}.qual-cell+.qual-cell,.sprint-cell+.sprint-cell{border-left:1px solid var(--line);border-top:0;padding-top:0}.hero-position{font-size:43px}.hero-name{font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.qual-delta{font-size:45px;margin-top:0}.sprint-subinfo{margin-top:3px;font-size:15px;line-height:1;white-space:nowrap}.hero-best,.sprint-fast-driver{font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px}.hero-lap,.sprint-fast-lap{font-size:15px;margin-top:4px}.panel-title{padding:7px 8px;font-size:9px}th{padding:5px 4px;font-size:8px}td{padding:6px 4px;font-size:10px}.pos{font-size:13px}.mobile-hide{display:none!important}.sprint-lower{grid-template-columns:1fr;gap:7px}.penalty-panel{max-height:78px;overflow:auto}.penalty-row{padding:4px 0;font-size:10px}.empty{padding:5px 0;font-size:10px}.sprint-table-wrap{max-height:calc(100dvh - 260px);overflow:hidden}.sprint-table-wrap table{table-layout:fixed}.sprint-table-wrap th:nth-child(1),.sprint-table-wrap td:nth-child(1){width:9%}.sprint-table-wrap th:nth-child(2),.sprint-table-wrap td:nth-child(2){width:31%}.sprint-table-wrap th:nth-child(3),.sprint-table-wrap td:nth-child(3){width:11%}.sprint-table-wrap th:nth-child(4),.sprint-table-wrap td:nth-child(4){width:20%}.sprint-table-wrap th:nth-child(7),.sprint-table-wrap td:nth-child(7){width:20%}.sprint-table-wrap td.name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+.preview-btn{border:1px solid var(--line);background:#151b26;color:#fff;height:42px;padding:0 12px;border-radius:10px;font-size:13px;cursor:pointer;font-weight:900;white-space:nowrap}.preview-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+.device-preview{position:fixed;inset:0;z-index:250;background:#03050ad9;display:none;align-items:center;justify-content:center;padding:18px;overflow:auto}.device-preview.show{display:flex}.device-preview-stage{display:flex;flex-direction:column;align-items:center;gap:10px}.device-preview-toolbar{width:395px;display:flex;justify-content:space-between;align-items:center;gap:12px;color:#fff;font-size:13px;font-weight:900}.device-preview-title{white-space:nowrap}.device-preview-actions{display:flex;align-items:center;gap:7px}.orientation-btn,.device-preview-close{border:1px solid var(--line);background:#151b26;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-weight:900}.orientation-btn.active{background:var(--yellow);border-color:var(--yellow);color:#111}.device-frame{width:395px;height:687px;padding:10px;background:#05070b;border:2px solid #3a4352;border-radius:28px;box-shadow:0 24px 80px #000;transition:width .2s ease,height .2s ease}.device-frame iframe{display:block;width:375px;height:667px;border:0;border-radius:18px;background:#07090e;transition:width .2s ease,height .2s ease}.device-preview-stage.landscape .device-preview-toolbar{width:687px}.device-preview-stage.landscape .device-frame{width:687px;height:395px}.device-preview-stage.landscape .device-frame iframe{width:667px;height:375px}.preview-only-hide{display:initial}
+.inline-home-btn{display:none;position:absolute;left:8px;top:8px;width:30px;height:30px;border:1px solid var(--line);background:#151b26;color:#fff;border-radius:8px;font-size:17px;font-weight:900;cursor:pointer;z-index:2}.inline-home-btn:hover{border-color:var(--yellow);color:var(--yellow)}.position-cell{position:relative}
+body.preview-embedded.current-qualification header,body.preview-embedded.current-sprint header{display:none}
+body.preview-embedded.current-qualification .inline-home-btn,
+body.preview-embedded.current-sprint .inline-home-btn,
+body.preview-embedded.current-endurance .inline-home-btn{display:block}
+body.preview-embedded.current-qualification .qual-wrap,body.preview-embedded.current-sprint .sprint-wrap{padding-top:7px}
+body.preview-embedded.current-sprint .testbar{display:none!important}
+body.preview-embedded.current-sprint{height:100dvh;overflow:hidden}
+body.preview-embedded.current-sprint #sprint{height:100dvh;overflow:hidden}
+body.preview-embedded.current-sprint .sprint-wrap{height:100%;display:flex;flex-direction:column}
+body.preview-embedded.current-sprint .sprint-lower{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:7px}
+body.preview-embedded.current-sprint .sprint-table-wrap{max-height:none;height:100%;overflow:hidden;min-width:0}
+body.preview-embedded.current-sprint .penalty-panel{height:100%;overflow:hidden;min-width:0;padding:8px}
+body.preview-embedded.current-sprint .penalty-panel .label{font-size:8px;white-space:nowrap}
+body.preview-embedded.current-sprint #penalties{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:6px;row-gap:0}
+body.preview-embedded.current-sprint .penalty-row{min-width:0;gap:3px;padding:4px 0;font-size:8px}
+body.preview-embedded.current-sprint .penalty-row b:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.preview-embedded.current-sprint .penalty-row span{white-space:nowrap}
+body.preview-embedded.current-sprint .empty{grid-column:1/-1;font-size:9px}
+
+@media(max-width:740px){.preview-btn{height:36px;padding:0 8px;font-size:0}.preview-btn::before{content:'📱';font-size:17px}.device-preview{padding:8px}.device-preview-stage{transform:scale(.88)}.device-preview-stage.landscape{transform:scale(.82)} }
+
+/* V1.7 — classements complets et défilement tactile */
+.qual-table-wrap,.sprint-table-wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+.qual-table-wrap{max-height:calc(100dvh - 235px)}
+.sprint-table-wrap{max-height:calc(100dvh - 235px)}
+#qualifTable td,#sprintTable td{font-size:28px;line-height:1;height:46px;padding-top:2px;padding-bottom:2px;vertical-align:middle}
+#qualifTable .pos,#sprintTable .pos{font-size:38px}
+#qualifTable th,#sprintTable th{position:sticky;top:0;z-index:2;background:#111722}
+.penalty-panel{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+#penalties{display:block!important}
+#penalties .penalty-row{display:flex;grid-template-columns:none;font-size:24px;line-height:1.05;padding:13px 0;gap:10px}
+#penalties .penalty-row b:first-child{white-space:normal;overflow:visible;text-overflow:clip}
+@media(max-width:680px){
+ .qual-table-wrap{max-height:calc(100dvh - 105px);overflow-y:auto}
+ .sprint-table-wrap{max-height:none!important;height:100%;overflow-y:auto!important}
+ #qualifTable td,#sprintTable td{font-size:20px;line-height:1;height:24px;padding:1px 3px}
+ #qualifTable .pos,#sprintTable .pos{font-size:26px}
+ #qualifTable th,#sprintTable th{font-size:16px;padding:3px;line-height:1;height:22px}
+ .sprint-table-wrap th:nth-child(1),.sprint-table-wrap td:nth-child(1){width:12%}
+ .sprint-table-wrap th:nth-child(2),.sprint-table-wrap td:nth-child(2){width:38%}
+ .sprint-table-wrap th:nth-child(3),.sprint-table-wrap td:nth-child(3){width:25%}
+ .sprint-table-wrap th:nth-child(6),.sprint-table-wrap td:nth-child(6){width:25%}
+ #penalties .penalty-row{font-size:40px;line-height:1;padding:12px 2px;display:flex;flex-direction:column;align-items:flex-start}
+ #penalties .penalty-row span{font-size:40px}
+ .penalty-panel{max-height:none!important;height:100%;overflow-y:auto!important}
+ .penalty-panel .label{position:sticky;top:0;z-index:2;background:#111722;padding:4px 0}
+}
+body.preview-embedded.current-sprint .sprint-table-wrap,body.preview-embedded.current-sprint .penalty-panel{overflow-y:auto!important}
+body.preview-embedded.current-sprint #penalties{display:block!important}
+body.preview-embedded.current-sprint #penalties .penalty-row{font-size:40px!important;padding:12px 2px!important;display:flex!important;flex-direction:column!important}
+body.preview-embedded.current-sprint #penalties .penalty-row span{font-size:40px!important}
+
+/* V2.0 — Broadcast Edition */
+:root{--bg:#050505;--panel:#0b0b0d;--panel2:#121216;--line:#2a2a2f;--text:#f7f7f8;--muted:#8f8f98;--yellow:#ffd230;--green:#31e981;--red:#ff334f;--purple:#b66cff;--accent:#e10600}
+body.current-qualification{--accent:#e10600}
+body.current-sprint{--accent:#168bff}
+body.current-endurance{--accent:#ff8a00}
+body{background:#050505;font-family:"Arial Narrow","Roboto Condensed","Helvetica Neue Condensed",Arial,sans-serif;letter-spacing:.01em}
+header{background:#09090bcc;border-bottom:2px solid #1f1f24;backdrop-filter:blur(10px)}
+.brand{font-style:italic;letter-spacing:-.05em}.brand i{color:var(--accent)}
+.panel{background:linear-gradient(180deg,#0c0c0f,#070708);border:0;border-radius:0;box-shadow:inset 0 1px #26262b}
+.qual-wrap,.sprint-wrap{padding:10px}.qual-top,.sprint-top{margin-bottom:8px}
+.qual-strip,.sprint-strip{min-height:126px;padding:0;grid-template-columns:1fr 2.2fr 1fr;border-top:3px solid var(--accent)}
+.qual-cell,.sprint-cell{height:126px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative}
+.qual-cell+.qual-cell,.sprint-cell+.sprint-cell{border-left:1px solid #29292e}
+.position-cell{box-shadow:inset 6px 0 var(--accent);background:#111114}
+.hero-position{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif;font-size:76px;font-weight:1000;font-style:italic;letter-spacing:-.07em}
+.hero-name,.name{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif;text-transform:uppercase;letter-spacing:.025em}
+.qual-delta{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:84px;font-variant-numeric:tabular-nums;font-style:italic}
+.sprint-fast-lap,.hero-lap,td:nth-last-child(-n+3){font-variant-numeric:tabular-nums}
+.inline-home-btn{border-radius:0!important;background:#1a1a1e!important;border:0!important;border-right:1px solid #333!important;border-bottom:1px solid #333!important;color:#fff!important}
+.session-status{align-items:stretch;padding:12px 20px;gap:10px}.session-status>div{display:grid;grid-template-columns:1fr auto;align-items:end;border-bottom:1px solid #34343a;padding-bottom:7px}.session-status>div:last-child{border-bottom:0}.status-label{color:var(--muted);font-size:12px;font-weight:900;letter-spacing:.11em}.session-status strong{font-family:"SFMono-Regular",Consolas,monospace;font-size:27px;font-variant-numeric:tabular-nums}
+.sprint-lower{grid-template-columns:minmax(0,3fr) minmax(210px,1fr);gap:8px}
+table{table-layout:fixed}th{background:#101014!important;color:#aaaab3!important;letter-spacing:.12em;border-bottom:2px solid #29292e}td{border-top:1px solid #222227}.clickable:hover{background:#18181c}.followed{background:#17171b!important;box-shadow:inset 6px 0 var(--accent)!important}.followed td{font-weight:950}.pos{font-style:italic;letter-spacing:-.04em}
+#qualifTable td,#sprintTable td{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif;font-size:28px;height:46px;padding:2px 10px}#qualifTable .pos,#sprintTable .pos{font-size:38px}
+#qualifTable td:nth-child(n+3),#sprintTable td:nth-child(n+3){font-family:"SFMono-Regular",Consolas,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.penalty-panel{padding:0}.penalty-panel>.label{position:sticky;top:0;z-index:3;background:#151518;padding:12px 14px;border-bottom:2px solid var(--red);font-size:14px}.penalty-row{min-height:46px;padding:2px 14px!important;border-bottom:1px solid #25252a;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;flex-direction:row!important;font-size:28px!important;text-transform:uppercase}.penalty-row span{font-size:28px!important;font-family:"SFMono-Regular",Consolas,monospace}.penalty-row b:first-child{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.green{color:var(--green)!important}.purple{color:var(--purple)!important}.yellow{color:var(--yellow)!important}.red{color:var(--red)!important}
+@keyframes timingFlashGreen{0%{background:#31e98166}100%{background:transparent}}@keyframes timingFlashPurple{0%{background:#b66cff77}100%{background:transparent}}
+.flash-green{animation:timingFlashGreen .65s ease-out}.flash-purple{animation:timingFlashPurple .75s ease-out}
+@media(max-width:680px){
+ body{background:#000}.qual-wrap,.sprint-wrap{padding:0}.qual-top,.sprint-top{margin:0}.qual-strip,.sprint-strip{min-height:91px}.qual-cell,.sprint-cell{height:91px}.hero-position{font-size:47px}.hero-name{font-size:12px}.qual-delta{font-size:43px}.session-status{padding:6px 8px;gap:4px}.status-label{font-size:8px}.session-status strong{font-size:17px}.sprint-lower{gap:2px;grid-template-columns:minmax(0,2fr) minmax(145px,1fr)}
+ #qualifTable td,#sprintTable td{font-size:20px;height:24px;padding:1px 4px}#qualifTable .pos,#sprintTable .pos{font-size:26px}
+ .penalty-panel>.label{font-size:10px;padding:4px 5px}.penalty-row{min-height:24px!important;height:24px!important;padding:1px 5px!important;font-size:20px!important;line-height:1!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important}.penalty-row span{font-size:20px!important}.penalty-row b:first-child{font-size:20px!important}
+}
+body.preview-embedded header{display:none!important}body.preview-embedded.current-qualification .qual-wrap,body.preview-embedded.current-sprint .sprint-wrap{height:100dvh;display:flex;flex-direction:column}body.preview-embedded.current-qualification .qual-table-wrap,body.preview-embedded.current-sprint .sprint-lower{flex:1;min-height:0}body.preview-embedded.current-sprint .sprint-table-wrap,body.preview-embedded.current-sprint .penalty-panel{height:100%;max-height:none!important}
+
+/* KartIQ V2.1 — typographies officielles fournies par l'utilisateur */
+@font-face{font-family:"F1 Regular";src:url("/static/fonts/f1-regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:"F1 Torque";src:url("/static/fonts/f1-torque.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
+:root{--font-time:"F1 Regular",Arial,sans-serif;--font-driver:"F1 Torque","Arial Narrow",Arial,sans-serif}
+/* Tous les temps, écarts et chiffres de classement */
+.pos,#qualifTable td:nth-child(n+3),#sprintTable td:nth-child(n+3),#enduranceTable td:nth-child(1),#enduranceTable td:nth-child(n+5),.hero-lap,.sprint-fast-lap,.remaining-time,.remaining-laps,.penalty-row span,.crossing-last,.pace-row>b,.quick-table td:nth-child(2),.quick-table td:nth-child(6),.quick-table td:nth-child(7){font-family:var(--font-time)!important;font-variant-numeric:tabular-nums}
+/* Noms, bloc P5 + pilote, et delta central */
+.name,.hero-position,.hero-name,.qual-delta,.crossing-delta,.penalty-row b:first-child,.pace-row span:nth-child(2)>b{font-family:var(--font-driver)!important}
+.qual-delta{font-weight:700!important;letter-spacing:-.025em!important;margin:0!important}
+.position-cell{font-family:var(--font-driver)}
+.status-values{display:flex!important;flex-direction:column;align-items:center!important;justify-content:center!important;gap:2px!important;padding:4px 8px!important}
+.status-values strong{display:block;border:0!important;padding:0!important;line-height:.95;white-space:nowrap}
+.remaining-time{font-size:54px!important;font-weight:400!important;letter-spacing:-.035em}
+.remaining-laps{font-size:81px!important;font-weight:400!important;letter-spacing:-.04em}
+.penalty-row{grid-template-columns:minmax(0,1fr) auto!important}
+.penalty-row b:first-child{font-weight:700!important}
+.penalty-row span{font-weight:400!important}
+@media(max-width:680px){.remaining-time{font-size:34px!important}.remaining-laps{font-size:51px!important}.qual-delta{font-size:46px!important}.status-values{padding:2px 4px!important;gap:0!important}}
+
+
+/* KartIQ V2.2 — ajustements qualification, sprint et noms pilotes */
+.driver-first{font-family:var(--font-time)!important;font-weight:400!important}
+.driver-last{font-family:var(--font-driver)!important;font-weight:700!important}
+.driver-name{display:inline-flex;align-items:baseline;gap:.22em;min-width:0;white-space:nowrap}
+.name .driver-name{width:100%;overflow:hidden;text-overflow:ellipsis}
+/* Classements : position -20 % et pilote rapproché */
+#qualifTable .pos,#sprintTable .pos{font-size:30.4px!important;width:58px!important;padding-right:2px!important;text-align:right}
+#qualifTable td:nth-child(2),#sprintTable td:nth-child(2){padding-left:5px!important}
+#qualifTable th:nth-child(1),#sprintTable th:nth-child(1){width:58px!important;padding-right:2px!important}
+#qualifTable th:nth-child(2),#sprintTable th:nth-child(2){padding-left:5px!important}
+/* Qualification : temps et tours identiques, parfaitement centrés */
+.current-qualification .status-values{display:grid!important;grid-template-rows:1fr 1fr!important;align-items:stretch!important;justify-items:stretch!important;gap:0!important;padding:0!important}
+.current-qualification .status-values strong{font-size:54px!important;width:100%;height:100%;display:flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;text-align:center}
+.current-qualification .status-values strong+strong{border-top:1px solid #29292e!important}
+/* Sprint : meilleur pilote du dernier tour */
+.fastest-last-block{gap:8px;padding:8px 12px;text-align:center}
+.fastest-last-name{font-size:25px;line-height:1.05;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.fastest-last-time{font-family:var(--font-time)!important;font-size:30px;line-height:1;color:var(--green);font-variant-numeric:tabular-nums}
+/* Pénalités : même taille que le classement et nom complet typographié */
+#penalties .penalty-row,#penalties .penalty-row b:first-child,#penalties .penalty-row span{font-size:28px!important}
+#penalties .penalty-row b:first-child{font-family:inherit!important;font-weight:400!important}
+@media(max-width:680px){
+ #qualifTable .pos,#sprintTable .pos{font-size:20.8px!important;width:34px!important;padding-right:1px!important}
+ #qualifTable th:nth-child(1),#sprintTable th:nth-child(1){width:34px!important}
+ #qualifTable td:nth-child(2),#sprintTable td:nth-child(2){padding-left:3px!important}
+ .current-qualification .status-values strong{font-size:30px!important}
+ .fastest-last-block{gap:4px;padding:3px 5px}
+ .fastest-last-name{font-size:13px}
+ .fastest-last-time{font-size:17px}
+ #penalties .penalty-row,#penalties .penalty-row b:first-child,#penalties .penalty-row span{font-size:20px!important}
+}
+body.preview-embedded{scroll-behavior:auto!important}
+body.preview-embedded.current-qualification,body.preview-embedded.current-qualification #qualification{overflow-x:hidden!important;scroll-snap-type:none!important}
+
+
+/* KartIQ V2.3 — alignement classements, tailles et leader P1 */
+/* Qualification + Sprint : position et pilote complètement à gauche, avec un espace lisible. */
+#qualifTable .pos,#sprintTable .pos{
+  width:44px!important;
+  padding-left:8px!important;
+  padding-right:0!important;
+  text-align:left!important;
+  font-size:25.84px!important;
+}
+#qualifTable td:nth-child(2),#sprintTable td:nth-child(2){
+  padding-left:8px!important;
+  font-size:23.8px!important;
+}
+#qualifTable th:nth-child(1),#sprintTable th:nth-child(1){
+  width:44px!important;
+  padding-left:8px!important;
+  padding-right:0!important;
+  text-align:left!important;
+}
+#qualifTable th:nth-child(2),#sprintTable th:nth-child(2){padding-left:8px!important}
+/* Le numéro 1 est placé dans un carré rouge : le fond est derrière la position, jamais à côté. */
+.pos.leader-pos,.pace-rank.leader-pos{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:1.35em!important;
+  min-width:1.35em!important;
+  height:1.35em!important;
+  padding:0!important;
+  margin-left:8px!important;
+  background:#e10600!important;
+  color:#fff!important;
+  border-radius:3px!important;
+  line-height:1!important;
+  text-align:center!important;
+}
+/* Dans les tableaux, le carré reste contenu dans la cellule de position. */
+td.pos.leader-pos{display:table-cell!important;width:44px!important;min-width:44px!important;height:auto!important;margin:0!important;background:#e10600!important;text-align:center!important;padding:0!important;border-radius:3px!important;background-clip:content-box!important}
+#enduranceTable td.pos.leader-pos{width:auto!important;min-width:0!important;padding:0 8px!important;background-clip:content-box!important}
+/* Qualification : temps restant et tours restants divisés par deux. */
+.current-qualification .status-values strong{font-size:27px!important}
+/* Sprint : pénalités toujours affichées sous la forme nom du pilote + pénalité. */
+#penalties .penalty-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important}
+#penalties .penalty-row b:first-child{display:block!important;min-width:0!important}
+@media(max-width:680px){
+  #qualifTable .pos,#sprintTable .pos{width:31px!important;font-size:17.68px!important;padding-left:4px!important}
+  #qualifTable td:nth-child(2),#sprintTable td:nth-child(2){padding-left:6px!important;font-size:17px!important}
+  #qualifTable th:nth-child(1),#sprintTable th:nth-child(1){width:31px!important;padding-left:4px!important}
+  #qualifTable th:nth-child(2),#sprintTable th:nth-child(2){padding-left:6px!important}
+  .current-qualification .status-values strong{font-size:15px!important}
+  td.pos.leader-pos{width:31px!important;min-width:31px!important;padding:0!important}
+}
+
+
+/* KartIQ V2.4 */
+.gap-with{margin-top:8px;font-family:var(--font-time);font-size:15px;line-height:1.15;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
+.gap-with .gap-label,.gap-with .driver-first{font-family:var(--font-time)!important;font-weight:400!important}
+.gap-with .driver-last{font-family:var(--font-driver)!important;font-weight:700!important}
+/* P1 sans fond particulier dans tous les modes */
+.pos.leader-pos,.pace-rank.leader-pos,td.pos.leader-pos{background:transparent!important;color:inherit!important;border-radius:0!important;width:auto!important;min-width:0!important;padding:inherit!important}
+/* Chronos Qualification réduits de 10 % */
+#qualifTable td:nth-child(n+3){font-size:25.2px!important}
+/* Le classement Qualification reprend exactement le calage Sprint */
+#qualifTable td:first-child,#sprintTable td:first-child{width:72px;text-align:left;padding-left:12px!important}
+#qualifTable td:nth-child(2),#sprintTable td:nth-child(2){text-align:left;padding-left:8px!important}
+/* Desktop : vraie mise en page large, plus dense et plus agréable */
+@media(min-width:1001px){
+ .qual-wrap,.sprint-wrap{padding:14px 18px;max-width:1800px;margin:0 auto}
+ .qual-strip,.sprint-strip{min-height:108px;grid-template-columns:minmax(230px,.85fr) minmax(360px,1.35fr) minmax(260px,.9fr);padding:8px 18px}
+ .hero-position{font-size:50px}.hero-name{font-size:16px;margin-top:5px}.qual-delta{font-size:66px!important}.gap-with{font-size:14px;margin-top:5px}
+ .remaining-time{font-size:27px!important}.remaining-laps{font-size:40px!important}
+ #qualifTable td,#sprintTable td{font-size:19px!important;height:40px;padding:4px 10px}#qualifTable .pos,#sprintTable .pos{font-size:25px!important}
+ #qualifTable td:nth-child(n+3){font-size:17.1px!important}
+ .sprint-lower{grid-template-columns:minmax(760px,3fr) minmax(300px,1fr);gap:12px}
+ .penalty-row,.penalty-row span{font-size:19px!important;min-height:40px}
+}
+/* iPhone SE intégré : supprimer l'outil de test et caler le premier écran */
+body.preview-embedded.current-qualification .testbar,body.preview-embedded.current-sprint .testbar{display:none!important}
+body.preview-embedded.current-qualification,body.preview-embedded.current-sprint{height:100dvh;overflow:hidden!important}
+body.preview-embedded.current-qualification #qualification,body.preview-embedded.current-sprint #sprint{height:100dvh;overflow:hidden!important}
+body.preview-embedded.current-qualification .qual-wrap{height:100%;display:flex;flex-direction:column;padding-top:0!important}
+body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0;overflow:hidden}
+@media(max-width:680px){
+ .gap-with{font-size:9px;margin-top:2px;padding:0 2px}
+ #qualifTable td:nth-child(n+3){font-size:18px!important}
+ #qualifTable td:first-child,#sprintTable td:first-child{width:34px;padding-left:4px!important}
+ #qualifTable td:nth-child(2),#sprintTable td:nth-child(2){padding-left:4px!important}
+ body.preview-embedded.current-sprint .penalty-row b:first-child{display:inline!important;visibility:visible!important;opacity:1!important;color:#fff!important;max-width:100%;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+}
+
+
+/* KartIQ V2.4.1 — correctifs desktop et iPhone SE */
+/* Desktop/tablette : Qualification et Sprint utilisent une vraie mise en page large,
+   jamais les dimensions de l’iPhone SE hors aperçu intégré. */
+@media (min-width:681px){
+  body:not(.preview-embedded).current-qualification,
+  body:not(.preview-embedded).current-sprint{overflow:auto!important;height:auto!important}
+  body:not(.preview-embedded).current-qualification #qualification,
+  body:not(.preview-embedded).current-sprint #sprint{height:auto!important;overflow:visible!important}
+  body:not(.preview-embedded) .qual-wrap,
+  body:not(.preview-embedded) .sprint-wrap{width:100%;max-width:none;margin:0;padding:16px 20px}
+  body:not(.preview-embedded) .qual-strip,
+  body:not(.preview-embedded) .sprint-strip{min-height:112px;grid-template-columns:minmax(240px,.9fr) minmax(420px,1.5fr) minmax(280px,1fr)}
+  body:not(.preview-embedded) .qual-table-wrap,
+  body:not(.preview-embedded) .sprint-table-wrap{max-height:none!important;overflow:visible!important}
+  body:not(.preview-embedded) #qualifTable td,
+  body:not(.preview-embedded) #sprintTable td{font-size:19px!important;height:40px!important;padding:4px 10px!important}
+  body:not(.preview-embedded) #qualifTable .pos,
+  body:not(.preview-embedded) #sprintTable .pos{font-size:25px!important;width:54px!important;padding-left:10px!important}
+  body:not(.preview-embedded) #qualifTable td:nth-child(2),
+  body:not(.preview-embedded) #sprintTable td:nth-child(2){font-size:19px!important;padding-left:8px!important}
+  body:not(.preview-embedded) #qualifTable td:nth-child(n+3){font-size:17px!important}
+}
+
+/* Qualification iPhone SE : position + prénom/nom identiques au Sprint. */
+@media (max-width:680px){
+  body.preview-embedded.current-qualification #qualifTable,
+  body.preview-embedded.current-sprint #sprintTable{table-layout:fixed;width:100%}
+  body.preview-embedded.current-qualification #qualifTable th:first-child,
+  body.preview-embedded.current-qualification #qualifTable td:first-child,
+  body.preview-embedded.current-sprint #sprintTable th:first-child,
+  body.preview-embedded.current-sprint #sprintTable td:first-child{width:34px!important;text-align:left!important;padding-left:4px!important;padding-right:0!important;font-size:17px!important}
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(2),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2),
+  body.preview-embedded.current-sprint #sprintTable th:nth-child(2),
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(2){width:31%!important;text-align:left!important;padding-left:4px!important;font-size:17px!important}
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2) .driver-name,
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(2) .driver-name{display:flex!important;width:100%;gap:.18em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* Sprint iPhone SE : garder le nom du pilote visible dans la colonne Pénalités. */
+  body.preview-embedded.current-sprint .sprint-lower{grid-template-columns:minmax(0,2.15fr) minmax(118px,.85fr)!important;gap:5px!important}
+  body.preview-embedded.current-sprint .penalty-panel{min-width:118px!important;padding:0!important;overflow-y:auto!important}
+  body.preview-embedded.current-sprint .penalty-panel>.label{font-size:8px!important;padding:4px!important}
+  body.preview-embedded.current-sprint #penalties{display:block!important;width:100%!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:3px!important;min-height:28px!important;height:auto!important;padding:3px 4px!important;font-size:10px!important;line-height:1!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row b:first-child{display:block!important;visibility:visible!important;opacity:1!important;min-width:0!important;max-width:none!important;color:#fff!important;font-size:9px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row span,
+  body.preview-embedded.current-sprint #penalties .penalty-row span b{font-size:10px!important;white-space:nowrap!important}
+}
+
+
+/* KartIQ V2.4.2 — Qualification iPhone SE paysage */
+/* Le bloc POS + PILOTE reprend strictement le calage du Sprint :
+   position étroite à gauche, puis prénom/nom immédiatement à côté. */
+@media (max-width:680px) and (orientation:landscape){
+  body.preview-embedded.current-qualification #qualifTable{table-layout:fixed!important;width:100%!important}
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(1),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(1){
+    width:8%!important;max-width:8%!important;text-align:left!important;
+    padding-left:4px!important;padding-right:0!important
+  }
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(2),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2){
+    width:34%!important;max-width:34%!important;text-align:left!important;
+    padding-left:2px!important;padding-right:3px!important
+  }
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(3),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(3){width:19%!important}
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(4),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(4){width:19%!important}
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(5),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(5){width:20%!important}
+  body.preview-embedded.current-qualification #qualifTable td.name .driver-name{
+    display:inline-flex!important;justify-content:flex-start!important;align-items:baseline!important;
+    width:auto!important;max-width:100%!important;gap:.18em!important;
+    white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+  }
+  body.preview-embedded.current-qualification #qualifTable td.name{
+    white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+  }
+}
+
+
+/* KartIQ V2.5 — correctif définitif Qualification iPhone SE paysage
+   La règle table-layout doit viser la TABLE, et non le tbody #qualifTable.
+   Les deux premières colonnes reprennent exactement les proportions du Sprint. */
+@media (max-width:680px) and (orientation:landscape){
+  body.preview-embedded.current-qualification .qual-table-wrap table{
+    table-layout:fixed!important;
+    width:100%!important;
+  }
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(1),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(1){
+    width:9%!important;
+    max-width:9%!important;
+    text-align:left!important;
+    padding-left:4px!important;
+    padding-right:0!important;
+  }
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(2),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2){
+    width:31%!important;
+    max-width:31%!important;
+    text-align:left!important;
+    padding-left:4px!important;
+    padding-right:3px!important;
+  }
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(3),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(3){width:20%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(4),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(4){width:20%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(5),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(5){width:20%!important}
+  body.preview-embedded.current-qualification #qualifTable td.name,
+  body.preview-embedded.current-qualification #qualifTable td.name .driver-name{
+    text-align:left!important;
+    justify-content:flex-start!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+}
+
+
+/* KartIQ V2.6 — iPhone SE portrait/paysage */
+/* Qualification portrait : typographies compactes pour tenir sur 375 px. */
+@media (max-width:430px) and (orientation:portrait){
+  body.preview-embedded.current-qualification .qual-strip{
+    grid-template-columns:.75fr 1.35fr .9fr!important;
+    min-height:82px!important;
+    padding:2px 3px!important;
+  }
+  body.preview-embedded.current-qualification .qual-cell{height:82px!important}
+  body.preview-embedded.current-qualification .hero-position{font-size:37px!important}
+  body.preview-embedded.current-qualification .hero-name{font-size:9px!important;margin-top:2px!important}
+  body.preview-embedded.current-qualification .qual-delta{font-size:34px!important}
+  body.preview-embedded.current-qualification .gap-with{font-size:8px!important;margin-top:3px!important;padding:0 2px!important}
+  body.preview-embedded.current-qualification .status-values strong{font-size:12px!important}
+  body.preview-embedded.current-qualification .qual-table-wrap table{table-layout:fixed!important;width:100%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th,
+  body.preview-embedded.current-qualification #qualifTable td{font-size:10px!important;padding:2px 2px!important;height:22px!important;line-height:1!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th{font-size:8px!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(1),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(1){width:8%!important;font-size:11px!important;padding-left:3px!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(2),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2){width:32%!important;font-size:10px!important;padding-left:2px!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(3),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(3){width:20%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(4),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(4){width:20%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(5),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(5){width:20%!important}
+  body.preview-embedded.current-qualification #qualifTable td.name,
+  body.preview-embedded.current-qualification #qualifTable td.name .driver-name{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;gap:.12em!important}
+}
+
+/* Sprint portrait : pénalités sous le classement général. */
+@media (max-width:430px) and (orientation:portrait){
+  body.preview-embedded.current-sprint{height:100dvh!important;overflow-y:auto!important}
+  body.preview-embedded.current-sprint #sprint{height:auto!important;min-height:100dvh!important;overflow:visible!important}
+  body.preview-embedded.current-sprint .sprint-wrap{height:auto!important;min-height:100dvh!important;display:block!important}
+  body.preview-embedded.current-sprint .sprint-lower{display:flex!important;flex-direction:column!important;gap:6px!important}
+  body.preview-embedded.current-sprint .sprint-table-wrap{height:auto!important;max-height:none!important;overflow:visible!important}
+  body.preview-embedded.current-sprint .penalty-panel{height:auto!important;max-height:none!important;min-width:0!important;overflow:visible!important;padding:6px!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row{min-height:26px!important;padding:3px 4px!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row b:first-child,
+  body.preview-embedded.current-sprint #penalties .penalty-row span,
+  body.preview-embedded.current-sprint #penalties .penalty-row span b{font-size:15px!important}
+}
+
+/* Sprint paysage : pénalités à la même taille que les noms du classement. */
+@media (max-width:680px) and (orientation:landscape){
+  body.preview-embedded.current-sprint #penalties .penalty-row{min-height:30px!important;padding:3px 4px!important;gap:4px!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row b:first-child,
+  body.preview-embedded.current-sprint #penalties .penalty-row span,
+  body.preview-embedded.current-sprint #penalties .penalty-row span b{font-size:17px!important;line-height:1!important}
+}
+
+
+
+/* KartIQ V2.7 — correctifs iPhone SE et accueil compact */
+/* Qualification paysage : le classement reste entièrement défilable au-delà de P10. */
+@media (max-width:680px) and (orientation:landscape){
+  body.preview-embedded.current-qualification,
+  body.preview-embedded.current-qualification #qualification{height:100dvh!important;overflow:hidden!important}
+  body.preview-embedded.current-qualification .qual-wrap{height:100dvh!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+  body.preview-embedded.current-qualification .qual-top{flex:0 0 auto!important}
+  body.preview-embedded.current-qualification .qual-table-wrap{
+    flex:1 1 auto!important;min-height:0!important;height:auto!important;max-height:none!important;
+    overflow-x:hidden!important;overflow-y:scroll!important;-webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;touch-action:pan-y!important;
+  }
+  body.preview-embedded.current-qualification .qual-table-wrap table{height:auto!important}
+}
+
+/* Sprint portrait : temps du classement général réduits de 30 %, noms inchangés. */
+@media (max-width:430px) and (orientation:portrait){
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(3),
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(4),
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(5),
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(6){font-size:14px!important}
+}
+
+/* Pénalité toujours affichée en rouge dans le bloc Sprint. */
+.current-sprint #penalties .penalty-row span,
+.current-sprint #penalties .penalty-row span b{color:var(--red)!important}
+
+/* Home iPhone SE : les trois modes sont visibles dès le premier écran. */
+@media (max-width:680px){
+  .home{padding:8px 7px!important}
+  .home-card{padding:10px!important}
+  .home-card h1{font-size:27px!important;margin:0 0 3px!important}
+  .home-card>p{display:none!important}
+  .home-grid{gap:7px!important;margin-top:7px!important}
+  .field label{font-size:9px!important;margin-bottom:3px!important}
+  .field select{padding:8px!important;font-size:11px!important}
+  .mode-cards{grid-template-columns:1fr!important;gap:6px!important}
+  .mode-card{padding:10px 12px!important;min-height:42px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important}
+  .mode-card h3{font-size:16px!important;margin:0!important}
+  .mode-card p{display:none!important}
+}
+@media (max-width:680px) and (orientation:landscape){
+  .home{padding:5px 7px!important}
+  .home-card{padding:7px 10px!important}
+  .home-card h1{font-size:22px!important}
+  .home-grid{grid-template-columns:1fr 1fr!important;gap:5px 8px!important;margin-top:4px!important}
+  .field select{padding:5px 7px!important;font-size:10px!important}
+  .mode-cards{grid-column:1/-1!important;grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
+  .mode-card{padding:7px 5px!important;min-height:36px!important}
+  .mode-card h3{font-size:14px!important}
+}
+
+
+/* KartIQ V2.9 — home racing affinée */
+body.current-home{overflow:hidden!important;background:#050608!important}
+body.current-home header{display:none!important}
+body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!important}
+.race-home-shell{position:relative;width:100%;height:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:
+  radial-gradient(circle at 50% 18%,rgba(45,49,58,.42),transparent 36%),
+  linear-gradient(145deg,#111318 0%,#050608 58%,#090a0d 100%)}
+.race-home-shell:before{content:"";position:absolute;inset:0;opacity:.22;background-image:
+  linear-gradient(135deg,rgba(255,255,255,.025) 25%,transparent 25%),
+  linear-gradient(225deg,rgba(255,255,255,.025) 25%,transparent 25%),
+  linear-gradient(45deg,rgba(255,255,255,.025) 25%,transparent 25%),
+  linear-gradient(315deg,rgba(255,255,255,.025) 25%,#090b10 25%);background-position:18px 0,18px 0,0 0,0 0;background-size:36px 36px;background-repeat:repeat}
+.race-home-shell:after{content:"";position:absolute;left:-15%;right:-15%;bottom:-7%;height:24%;transform:rotate(-7deg);background:linear-gradient(180deg,transparent,rgba(225,6,0,.12) 55%,rgba(225,6,0,.42));filter:blur(18px)}
+.race-home-glow{position:absolute;left:-20vw;bottom:-3%;width:140vw;height:3px;background:linear-gradient(90deg,rgba(225,6,0,.3) 0%,#e10600 8%,#ff2a20 50%,#e10600 92%,rgba(225,6,0,.3) 100%);transform:rotate(-15deg);transform-origin:center;box-shadow:0 0 8px #e10600,0 0 22px #e10600,0 0 50px rgba(225,6,0,.9);pointer-events:none}
+.race-home-content{position:relative;z-index:2;width:min(860px,92vw);display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 34px 24px}
+.kartiq-logo{font-family:var(--font-driver);font-style:italic;font-weight:700;font-size:clamp(58px,9vw,112px);line-height:.82;letter-spacing:-.08em;text-shadow:0 10px 30px #000}
+.kartiq-kart{color:#fff}.kartiq-iq{color:#e10600}
+.kartiq-tagline{margin-top:18px;padding:0 24px 10px;border-bottom:1px solid rgba(225,6,0,.82);font-family:var(--font-time);font-size:13px;letter-spacing:.34em;color:#f3f3f3;box-shadow:0 10px 14px -13px #e10600}
+.home-circuit{margin-top:24px;width:min(430px,100%);display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px;padding:8px 10px 8px 14px;border:1px solid #2d3138;border-radius:10px;background:rgba(8,10,14,.84);box-shadow:0 12px 35px rgba(0,0,0,.32)}
+.home-circuit label{font-size:10px;letter-spacing:.2em;color:#858b96;font-weight:900}
+.home-circuit select{min-width:0;width:100%;border:0;background:#15181e;color:#fff;padding:9px 34px 9px 12px;border-radius:7px;font-size:13px;font-weight:800;outline:none}
+.race-mode-cards{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.race-mode-card{position:relative;min-height:176px;border:1px solid #343941;border-radius:14px;background:linear-gradient(145deg,rgba(29,32,38,.98),rgba(8,10,14,.98));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;cursor:pointer;overflow:hidden;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.race-mode-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(225,6,0,.12),transparent 36%);opacity:0;transition:opacity .18s ease}
+.race-mode-card:hover,.race-mode-card:focus-visible{transform:translateY(-3px);border-color:#e10600;box-shadow:0 0 0 1px rgba(225,6,0,.22),0 18px 42px rgba(0,0,0,.38),inset 3px 0 #e10600;outline:none}
+.race-mode-card:hover:before,.race-mode-card:focus-visible:before{opacity:1}
+.race-icon{position:relative;z-index:1;width:58px;height:58px;color:#e10600;filter:drop-shadow(0 0 10px rgba(225,6,0,.28))}
+.race-icon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+.race-mode-label{position:relative;z-index:1;font-family:var(--font-driver);font-size:20px;text-transform:uppercase}
+.race-chevron{position:relative;z-index:1;color:#e10600;font-size:34px;line-height:.6}
+.powered-by{margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.powered-by span{font-size:9px;letter-spacing:.2em;color:#a3a8b0}
+.powered-by img{display:block;width:142px;height:auto;object-fit:contain}
+@media(max-width:680px){
+ .race-home-content{width:100%;height:100%;justify-content:center;padding:16px 14px 12px}
+ .kartiq-logo{font-size:60px}
+ .kartiq-tagline{margin-top:11px;padding:0 12px 7px;font-size:8px;letter-spacing:.27em}
+ .home-circuit{margin-top:13px;width:100%;max-width:345px;padding:5px 6px 5px 10px;gap:8px}
+ .home-circuit label{font-size:8px}.home-circuit select{padding:7px 28px 7px 9px;font-size:11px}
+ .race-mode-cards{grid-template-columns:1fr;gap:8px;margin-top:11px;max-width:345px}
+ .race-mode-card{min-height:70px;display:grid;grid-template-columns:46px 1fr 24px;gap:10px;padding:8px 14px;text-align:left;border-radius:11px}
+ .race-icon{width:40px;height:40px}.race-mode-label{font-size:17px}.race-chevron{font-size:30px;text-align:right}
+ .powered-by{margin-top:12px;gap:5px}.powered-by span{font-size:7px}.powered-by img{width:105px}
+}
+@media(max-width:680px) and (orientation:landscape){
+ .race-home-content{padding:8px 16px 7px;justify-content:center}
+ .kartiq-logo{font-size:48px}
+ .kartiq-tagline{margin-top:6px;padding-bottom:4px;font-size:7px}
+ .home-circuit{margin-top:7px;max-width:430px;padding:4px 6px 4px 9px}
+ .home-circuit select{padding-top:5px;padding-bottom:5px}
+ .race-mode-cards{grid-template-columns:repeat(3,1fr);max-width:650px;gap:8px;margin-top:8px}
+ .race-mode-card{min-height:116px;display:flex;flex-direction:column;gap:6px;padding:7px;text-align:center;border-radius:10px}
+ .race-icon{width:38px;height:38px}.race-mode-label{font-size:13px}.race-chevron{font-size:25px}
+ .powered-by{margin-top:7px;gap:2px}.powered-by img{width:82px}.powered-by span{font-size:6px}
+}
+
+
+/* KartIQ V2.11.1 — sélection manuelle du circuit et vues desktop 100vh */
+.screen-enter{animation:kartiqScreenIn .2s ease-out}
+@keyframes kartiqScreenIn{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.home-circuit{
+  display:block!important;
+  width:min(520px,100%)!important;
+  margin-top:24px!important;
+  padding:0!important;
+  border:1px solid #343941!important;
+  border-radius:12px!important;
+  background:linear-gradient(145deg,rgba(29,32,38,.98),rgba(8,10,14,.98))!important;
+  box-shadow:0 12px 35px rgba(0,0,0,.32)!important;
+  overflow:hidden;
+}
+.home-circuit select{
+  display:block!important;
+  width:100%!important;
+  min-height:54px!important;
+  margin:0!important;
+  padding:0 44px!important;
+  border:0!important;
+  border-radius:0!important;
+  background-color:transparent!important;
+  color:#fff!important;
+  text-align:center!important;
+  text-align-last:center!important;
+  font-family:var(--font-time)!important;
+  font-size:14px!important;
+  font-weight:400!important;
+  letter-spacing:.04em!important;
+  outline:none!important;
+  cursor:pointer;
+}
+.home-circuit:focus-within,.home-circuit:hover{border-color:#e10600!important;box-shadow:0 0 0 1px rgba(225,6,0,.18),0 14px 38px rgba(0,0,0,.38)!important}
+.home-circuit.needs-selection{animation:circuitPrompt .36s ease}
+@keyframes circuitPrompt{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.race-mode-cards{margin-top:28px!important}
+.race-mode-card.mode-locked{opacity:.44;filter:saturate(.35);cursor:not-allowed}
+.race-mode-card.mode-locked:hover{transform:none;border-color:#343941;box-shadow:none}
+
+/* Une vraie interface desktop compacte, sans modifier la composition paysage. */
+@media (min-width:1001px){
+ body:not(.preview-embedded).current-qualification,
+ body:not(.preview-embedded).current-sprint,
+ body:not(.preview-embedded).current-endurance{height:100vh!important;min-height:100vh!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-qualification header,
+ body:not(.preview-embedded).current-sprint header,
+ body:not(.preview-embedded).current-endurance header{height:56px!important;padding:0 18px!important}
+ body:not(.preview-embedded).current-qualification .brand,
+ body:not(.preview-embedded).current-sprint .brand,
+ body:not(.preview-embedded).current-endurance .brand{font-size:22px!important}
+ body:not(.preview-embedded).current-qualification .home-btn,
+ body:not(.preview-embedded).current-sprint .home-btn,
+ body:not(.preview-embedded).current-endurance .home-btn,
+ body:not(.preview-embedded).current-qualification .preview-btn,
+ body:not(.preview-embedded).current-sprint .preview-btn,
+ body:not(.preview-embedded).current-endurance .preview-btn{height:36px!important;min-height:36px!important}
+ body:not(.preview-embedded).current-qualification .screen.active,
+ body:not(.preview-embedded).current-sprint .screen.active,
+ body:not(.preview-embedded).current-endurance .screen.active{height:calc(100vh - 56px)!important;overflow:hidden!important}
+
+ body:not(.preview-embedded).current-qualification .qual-wrap,
+ body:not(.preview-embedded).current-sprint .sprint-wrap{height:100%!important;max-width:1800px!important;margin:0 auto!important;padding:10px 16px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-qualification .qual-top,
+ body:not(.preview-embedded).current-sprint .sprint-top{flex:0 0 auto!important;margin-bottom:9px!important}
+ body:not(.preview-embedded).current-qualification .qual-strip,
+ body:not(.preview-embedded).current-sprint .sprint-strip{min-height:88px!important;height:88px!important;padding:5px 16px!important;grid-template-columns:minmax(200px,.85fr) minmax(330px,1.35fr) minmax(230px,.9fr)!important}
+ body:not(.preview-embedded).current-qualification .qual-cell,
+ body:not(.preview-embedded).current-sprint .sprint-cell{height:78px!important}
+ body:not(.preview-embedded) .hero-position{font-size:42px!important}
+ body:not(.preview-embedded) .hero-name{font-size:14px!important;margin-top:3px!important}
+ body:not(.preview-embedded) .qual-delta{font-size:54px!important}
+ body:not(.preview-embedded) .gap-with{font-size:12px!important;margin-top:3px!important}
+ body:not(.preview-embedded).current-qualification .status-values strong{font-size:23px!important}
+ body:not(.preview-embedded).current-sprint .fastest-last-name{font-size:18px!important}
+ body:not(.preview-embedded).current-sprint .fastest-last-time{font-size:23px!important}
+
+ body:not(.preview-embedded).current-qualification .qual-table-wrap{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-qualification .qual-table-wrap table,
+ body:not(.preview-embedded).current-sprint .sprint-table-wrap table{height:100%!important;table-layout:fixed!important}
+ body:not(.preview-embedded).current-qualification #qualifTable td,
+ body:not(.preview-embedded).current-sprint #sprintTable td{height:calc((100vh - 205px)/15)!important;min-height:27px!important;max-height:42px!important;padding:2px 9px!important;font-size:17px!important;line-height:1!important}
+ body:not(.preview-embedded).current-qualification #qualifTable .pos,
+ body:not(.preview-embedded).current-sprint #sprintTable .pos{font-size:22px!important}
+ body:not(.preview-embedded).current-qualification #qualifTable td:nth-child(n+3),
+ body:not(.preview-embedded).current-sprint #sprintTable td:nth-child(n+3){font-size:15px!important}
+ body:not(.preview-embedded).current-qualification th,
+ body:not(.preview-embedded).current-sprint th{height:28px!important;padding:4px 9px!important;font-size:9px!important}
+
+ body:not(.preview-embedded).current-sprint .sprint-lower{flex:1 1 auto!important;min-height:0!important;grid-template-columns:minmax(0,3fr) minmax(250px,1fr)!important;gap:9px!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-sprint .sprint-table-wrap,
+ body:not(.preview-embedded).current-sprint .penalty-panel{height:100%!important;min-height:0!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-sprint .penalty-panel>.label{padding:8px 10px!important;font-size:11px!important}
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row{min-height:0!important;height:calc((100% - 30px)/4)!important;padding:3px 10px!important}
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row,
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row b:first-child,
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row span,
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row span b{font-size:17px!important}
+
+ body:not(.preview-embedded).current-endurance .endurance-grid{height:100%!important;padding:10px 16px!important;gap:10px!important;grid-template-columns:minmax(520px,.95fr) minmax(620px,1.25fr)!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-endurance .endurance-grid>.panel,
+ body:not(.preview-embedded).current-endurance .right-stack{height:100%!important;min-height:0!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-endurance .right-stack{gap:10px!important}
+ body:not(.preview-embedded).current-endurance .right-stack>.panel:first-child{flex:0 0 45%!important}
+ body:not(.preview-embedded).current-endurance .right-stack>.panel:last-child{flex:1 1 auto!important;min-height:0!important}
+ body:not(.preview-embedded).current-endurance .panel-title{padding:8px 11px!important;font-size:10px!important}
+ body:not(.preview-embedded).current-endurance #enduranceTable td{height:calc((100vh - 120px)/15)!important;min-height:25px!important;max-height:40px!important;padding:2px 7px!important;font-size:14px!important;line-height:1!important}
+ body:not(.preview-embedded).current-endurance #enduranceTable th{padding:4px 7px!important;font-size:8px!important}
+ body:not(.preview-embedded).current-endurance .card{padding:10px!important}
+ body:not(.preview-embedded).current-endurance .pace-row{padding:4px 0!important;font-size:12px!important}
+ body:not(.preview-embedded).current-endurance .pace-rank{font-size:17px!important}
+ body:not(.preview-embedded).current-endurance .quick-table td{padding:4px 6px!important;font-size:12px!important}
+ body:not(.preview-embedded).current-qualification~.testbar,
+ body:not(.preview-embedded).current-sprint~.testbar,
+ body:not(.preview-embedded).current-endurance~.testbar{display:none!important}
+ .testbar{display:none!important}
+}
+
+@media(max-width:680px){
+ .home-circuit{margin-top:13px!important;max-width:345px!important}
+ .home-circuit select{min-height:42px!important;padding:0 34px!important;font-size:11px!important}
+ .race-mode-cards{margin-top:16px!important}
+}
+@media(max-width:680px) and (orientation:landscape){
+ .home-circuit{margin-top:7px!important;max-width:430px!important}
+ .home-circuit select{min-height:34px!important;font-size:10px!important}
+ .race-mode-cards{margin-top:10px!important}
+}
+
+/* KartIQ V2.11.3 — correctifs iPhone */
+.endurance-main-panel{position:relative}
+.endurance-titlebar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.endurance-remaining-box{display:inline-flex;align-items:baseline;gap:8px;white-space:nowrap;color:var(--muted);letter-spacing:.08em}
+.endurance-remaining-label{font-size:9px;font-weight:900}
+.endurance-remaining-value{font-family:var(--font-time)!important;font-size:22px;font-weight:400;color:#fff;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.endurance-remaining-value.time-critical{color:var(--red)!important;text-shadow:0 0 14px rgba(255,68,68,.35)}
+.quick-table-wrap{width:100%;overflow:auto}
+
+@media(max-width:680px) and (orientation:portrait){
+  body.current-endurance .endurance-home-btn{display:block!important;top:5px!important;left:5px!important;width:28px!important;height:28px!important;font-size:15px!important}
+  body.current-endurance .endurance-main-panel>.panel-title{padding-left:39px!important}
+  body.current-endurance .quick-change-panel{width:100%!important;max-width:100%!important;min-width:0!important}
+  body.current-endurance .quick-table-wrap{width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+  body.current-endurance .quick-table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+  body.current-endurance .quick-table th,
+  body.current-endurance .quick-table td{padding:3px 1px!important;font-size:7px!important;line-height:1.05!important;text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important}
+  body.current-endurance .quick-table th:nth-child(1),body.current-endurance .quick-table td:nth-child(1){width:9%!important}
+  body.current-endurance .quick-table th:nth-child(2),body.current-endurance .quick-table td:nth-child(2){width:15%!important}
+  body.current-endurance .quick-table th:nth-child(3),body.current-endurance .quick-table td:nth-child(3){width:10%!important}
+  body.current-endurance .quick-table th:nth-child(4),body.current-endurance .quick-table td:nth-child(4){width:25%!important}
+  body.current-endurance .quick-table th:nth-child(5),body.current-endurance .quick-table td:nth-child(5){width:10%!important}
+  body.current-endurance .quick-table th:nth-child(6),body.current-endurance .quick-table td:nth-child(6){width:15%!important}
+  body.current-endurance .quick-table th:nth-child(7),body.current-endurance .quick-table td:nth-child(7){width:16%!important}
+}
+
+
+/* V2.11.4 — alerte d’entrée aux stands d’une équipe du Top 8 */
+.top8-alert-box{width:min(680px,92vw);padding:42px 34px;text-align:center;background:linear-gradient(180deg,#121923,#090d14);border:2px solid var(--yellow);border-radius:22px;box-shadow:0 24px 80px #000b}
+.top8-alert-title{font-size:20px;font-weight:1000;letter-spacing:.12em;color:var(--yellow);padding-bottom:18px;border-bottom:1px solid #424b5d}
+.top8-alert-team{font-size:46px;font-weight:1000;margin:30px 0 14px;text-transform:uppercase}
+.top8-alert-message{font-size:25px;color:#dce2ec;margin-bottom:30px}
+.top8-alert-position-label{font-size:13px;color:var(--muted);font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.top8-alert-position{font-family:var(--font-time)!important;font-size:42px;font-weight:1000;margin:8px 0 30px;color:white}
+.top8-alert-close{min-width:180px;padding:13px 24px;border:1px solid var(--yellow);border-radius:10px;background:var(--yellow);color:#090c12;font-weight:1000;font-size:15px;cursor:pointer}
+@media(max-width:600px){.top8-alert-box{padding:30px 20px}.top8-alert-team{font-size:30px}.top8-alert-message{font-size:19px}.top8-alert-position{font-size:34px}}
+
+/* V3.1 — panneau de diagnostic Apex discret */
+.live-diagnostics{padding:14px 16px!important}
+.live-diagnostics-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.live-stat{background:#0d121b;border:1px solid var(--line);border-radius:9px;padding:9px 10px;min-width:0}
+.live-stat-label{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.live-stat-value{display:block;margin-top:4px;font-family:var(--font-time)!important;font-size:17px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live-frame-preview{grid-column:1/-1}.live-frame-preview .live-stat-value{font-family:monospace!important;font-size:10px;color:#b9c3d1}
+.live-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#758096;margin-right:6px}.live-status-dot.connected{background:var(--green);box-shadow:0 0 10px color-mix(in srgb,var(--green) 70%,transparent)}
+@media(max-width:600px){.live-diagnostics-grid{grid-template-columns:1fr 1fr}.live-frame-preview{display:none}}
+
+/* KartIQ V4.0.2 — informations de session sous le delta Sprint */
+.sprint-delta-cell{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sprint-session-info{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:5px;font-family:var(--font-time)!important;font-size:23px;line-height:1;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sprint-session-separator{color:var(--muted);font-size:.8em}
+.sprint-delta-cell .gap-with{margin-top:7px}
+@media(max-width:680px){.sprint-session-info{gap:6px;margin-top:2px;font-size:12px}.sprint-delta-cell .gap-with{margin-top:3px}}
+
+/* V4.0.3 — animations live qualification */
+#qualifTable tr,#sprintTable tr,#enduranceTable tr{transition:transform .48s cubic-bezier(.22,.8,.2,1)}
+#qualifTable tr.lap-flash,#enduranceTable tr.lap-flash{animation:kartiqLapFlash 1s ease-out}
+@keyframes kartiqLapFlash{0%,100%{background:transparent}18%,58%{background:rgba(255,230,0,.30);box-shadow:inset 4px 0 0 var(--yellow),inset -4px 0 0 var(--yellow)}}
+.remaining-time.time-critical{color:var(--red)!important;text-shadow:0 0 14px rgba(255,68,68,.35)}
+@media(prefers-reduced-motion:reduce){
+  #qualifTable tr,#sprintTable tr,#enduranceTable tr{transition:none}
+  .lap-flash{animation:none!important}
+}
+
+/* KartIQ V4.1.4 — Sprint desktop : pilote au-dessus du temps et delta P1 vert */
+body:not(.preview-embedded).current-sprint .fastest-last-block{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  overflow:hidden!important;
+}
+body:not(.preview-embedded).current-sprint .fastest-last-block>.label{display:none!important}
+body:not(.preview-embedded).current-sprint .fastest-last-name{
+  position:static!important;
+  order:1!important;
+  display:block!important;
+  width:100%!important;
+  margin:0!important;
+  line-height:1.1!important;
+  flex:0 0 auto!important;
+}
+body:not(.preview-embedded).current-sprint .fastest-last-time{
+  position:static!important;
+  order:2!important;
+  display:block!important;
+  margin:0!important;
+  line-height:1!important;
+  flex:0 0 auto!important;
+}
+#sDeltaValue.sprint-leader-delta{color:var(--green)!important}
+
+
+/* V4.2.1 — statut stands visible uniquement dans le classement Endurance. */
+#enduranceTable td.endurance-position-cell{white-space:nowrap!important;min-width:86px!important}
+.endurance-position-wrap{display:inline-flex;align-items:center;gap:7px;min-height:24px}
+.endurance-position-number{display:inline-flex;align-items:center;justify-content:center;min-width:24px;font-weight:950}
+.endurance-position-number.leader-pos{width:1.35em!important;min-width:1.35em!important;height:1.35em!important;padding:0!important;margin:0!important;background:#e10600!important;color:#fff!important;border-radius:3px!important;line-height:1!important}
+.pit-status-badge{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:22px;padding:0 7px;border-radius:4px;color:#fff;font-family:var(--font-main)!important;font-size:11px;font-weight:950;letter-spacing:.08em;line-height:1;box-shadow:0 0 10px rgba(0,0,0,.28)}
+.pit-status-badge.pit-in{background:#e10600;animation:pitBadgePulse 1.05s ease-in-out infinite}
+.pit-status-badge.pit-out{background:#16a34a}
+@keyframes pitBadgePulse{0%,100%{opacity:1}50%{opacity:.66}}
+
+/* KartIQ V4.2.1 — indicateurs IN / OUT en Endurance */
+.endurance-main-panel{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+.endurance-table-wrap{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-gutter:stable}
+.endurance-table-wrap table{width:100%;table-layout:fixed}
+.endurance-table-wrap thead th{position:sticky;top:0;z-index:4;background:#111722}
+#enduranceTable tr{will-change:transform}
+@media(min-width:1001px){
+ body:not(.preview-embedded).current-endurance .endurance-table-wrap{height:calc(100vh - 108px)!important;max-height:calc(100vh - 108px)!important}
+ body:not(.preview-embedded).current-endurance #enduranceTable td{height:calc((100vh - 132px)/20)!important;min-height:22px!important;max-height:34px!important;padding:1px 6px!important;font-size:12px!important;line-height:1!important}
+ body:not(.preview-embedded).current-endurance #enduranceTable td.name{font-size:12px!important}
+ body:not(.preview-embedded).current-endurance .endurance-table-wrap th{height:24px!important;padding:3px 6px!important;font-size:8px!important}
+}
+
+/* V4.2.2 — boîte noire Apex */
+.dev-recorder{margin-top:10px;padding:12px;border:1px solid #2a3445;border-radius:10px;background:#0d121a;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:center}
+.dev-recorder label{display:flex;gap:8px;align-items:center;font-weight:800;font-size:12px}
+.dev-recorder input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.dev-recorder .recording-on{color:#ff5b5b}
+.dev-recorder .recording-off{color:#8e98a8}
+@media(max-width:700px){.dev-recorder{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.2.5 BETA LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+
+<section id="home" class="screen home active">
+  <div class="race-home-shell">
+    <div class="race-home-glow"></div>
+    <div class="race-home-content">
+      <div class="kartiq-logo" aria-label="KartIQ">
+        <span class="kartiq-kart">KART</span><span class="kartiq-iq">IQ</span>
+      </div>
+      <div class="kartiq-tagline">PROFESSIONAL LIVE TIMING</div>
+
+      <div class="home-circuit" id="homeCircuit">
+        <select id="circuitSelect" aria-label="Sélectionnez votre circuit" onchange="changeCircuit()">
+          <option value="" selected disabled>Sélectionnez votre circuit</option>
+        </select>
+      </div>
+
+      <div class="race-mode-cards">
+        <button class="race-mode-card" data-home-mode="qualification" onclick="showMode('qualification')" aria-label="Ouvrir le mode Qualification">
+          <span class="race-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><circle cx="32" cy="35" r="20"/><path d="M25 7h14M32 7v8M46 18l5-5M32 35l10-8"/><circle cx="32" cy="35" r="2"/></svg>
+          </span>
+          <span class="race-mode-label">Qualification</span>
+          <span class="race-chevron">›</span>
+        </button>
+        <button class="race-mode-card" data-home-mode="sprint" onclick="showMode('sprint')" aria-label="Ouvrir le mode Sprint">
+          <span class="race-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><path d="M15 56V9"/><path d="M17 12c10-7 19 7 31 0v24c-12 7-21-7-31 0z"/><path d="M17 12l31 24M48 12L17 36"/></svg>
+          </span>
+          <span class="race-mode-label">Sprint</span>
+          <span class="race-chevron">›</span>
+        </button>
+        <button class="race-mode-card" data-home-mode="endurance" onclick="showMode('endurance')" aria-label="Ouvrir le mode Endurance">
+          <span class="race-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><path d="M20 7h24M20 57h24"/><path d="M23 9c0 12 3 17 9 23-6 6-9 11-9 23M41 9c0 12-3 17-9 23 6 6 9 11 9 23"/><path d="M25 18h14M25 46h14"/></svg>
+          </span>
+          <span class="race-mode-label">Endurance</span>
+          <span class="race-chevron">›</span>
+        </button>
+      </div>
+
+      <div class="powered-by">
+        <span>POWERED BY</span>
+        <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><div class="qual-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">Écart avec —</div></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
+
+<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><div class="sprint-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell"><div class="qual-delta" id="sDeltaValue">—</div><div class="sprint-session-info"><span id="sRemaining">—</span><span class="sprint-session-separator">•</span><span id="sLapsRemaining">—</span></div><div class="gap-with" id="sGapWith">Écart avec —</div></div><div class="sprint-cell fastest-last-block"><div class="label">&nbsp;</div><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><section class="panel card penalty-panel"><div class="label red">PÉNALITÉS</div><div id="penalties"></div></section></div></div></section>
+
+<section id="endurance" class="screen"><div class="endurance-grid"><section class="panel endurance-main-panel"><button class="inline-home-btn endurance-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="panel-title endurance-titlebar"><span>CLASSEMENT GÉNÉRAL</span><span class="endurance-remaining-box"><span class="endurance-remaining-label">TEMPS RESTANT</span><strong class="endurance-remaining-value" id="eRemaining">—</strong></span></div><div class="endurance-table-wrap"><table><thead><tr><th>POS</th><th>ÉQUIPE / PILOTE</th><th>KART</th><th>TOURS</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="enduranceTable"></tbody></table></div></section><div class="right-stack"><section class="panel card"><div class="label">TOP 8 — RYTHME ACTUEL (MOYENNE 5 TOURS)</div><div id="paceTop8"></div></section><section class="panel live-diagnostics"><div class="label"><span id="liveStatusDot" class="live-status-dot"></span>LIVE APEX</div><div class="live-diagnostics-grid"><div class="live-stat"><span class="live-stat-label">Statut</span><span id="liveDiagStatus" class="live-stat-value">—</span></div><div class="live-stat"><span class="live-stat-label">Messages</span><span id="liveDiagMessages" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Mises à jour lues</span><span id="liveDiagParsed" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Dernière donnée</span><span id="liveDiagLast" class="live-stat-value">—</span></div><div class="live-stat live-frame-preview"><span class="live-stat-label">Dernière trame</span><span id="liveDiagPreview" class="live-stat-value">En attente…</span></div></div></section><section class="panel quick-change-panel"><div class="panel-title">QUICK CHANGE — FIFO STRICT</div><div class="quick-table-wrap"><table class="quick-table"><thead><tr><th>QUEUE</th><th>PIT</th><th>RANK</th><th>PREVIOUS TEAM</th><th>KART</th><th>AVG</th><th>Δ KART</th></tr></thead><tbody id="quickTable"></tbody></table></div></section></div></div></section>
+
+<details class="testbar"><summary>Outils de test et développeur</summary><div class="test-grid"><select id="driverSelect"></select><button onclick="followSelected()">Suivre ce pilote</button><input id="lapValue" value="1:22.184"><button onclick="testCrossing()">Simuler passage ligne</button><input id="penaltyValue" value="+5 s"><button onclick="addPenalty()">Ajouter pénalité</button><input id="movePos" type="number" min="1" max="11" value="1"><button onclick="moveDriver()">Changer position</button><input id="qcTeam" value="NOUVELLE ÉQUIPE"><input id="qcRank" value="4/32"><input id="qcKart" value="99"><input id="qcAvg" value="1:06.500"><button onclick="addQuickChange()">Ajouter Quick Change</button><button onclick="popQuickChange()">Distribuer kart #1</button><button onclick="testTop8PitEntry()">Simuler alerte entrée Top 8</button></div><div class="dev-recorder"><label><input id="developerModeToggle" type="checkbox" onchange="updateDeveloperSettings()"> Mode développeur</label><label id="trafficRecordingLabel" class="recording-off"><input id="trafficRecordingToggle" type="checkbox" onchange="updateDeveloperSettings()"> Enregistrer le trafic Apex</label><button onclick="exportApexLogs()">📦 Exporter les logs</button></div></details>
+
+<div class="device-preview" id="iphonePreview" role="dialog" aria-modal="true" aria-label="Aperçu iPhone SE"><div class="device-preview-stage" id="iphoneStage"><div class="device-preview-toolbar"><span class="device-preview-title" id="iphonePreviewTitle">iPhone SE — 375 × 667 px</span><div class="device-preview-actions"><button id="portraitBtn" class="orientation-btn active" onclick="setIphoneOrientation('portrait')">Portrait</button><button id="landscapeBtn" class="orientation-btn" onclick="setIphoneOrientation('landscape')">Paysage</button><button class="device-preview-close" onclick="toggleIphonePreview(false)">✕ Fermer</button></div></div><div class="device-frame"><iframe id="iphoneFrame" title="Aperçu KartIQ sur iPhone SE"></iframe></div></div></div>
+<div class="overlay" id="crossingOverlay"><div class="crossing-box"><div class="crossing-sub">POSITION</div><div class="crossing-pos" id="crossPos">—</div><div class="crossing-best" id="crossBest">🥇 MEILLEUR TEMPS !</div><div class="crossing-comparison"><span class="crossing-delta" id="crossDelta">—</span> <span>vs</span> <span class="crossing-reference" id="crossReference">—</span></div></div></div>
+<div class="overlay" id="genericOverlay" onclick="clearAlert()"><div class="generic-box"><div class="label" id="alertTitle">ALERTE</div><h1 id="alertLine1">—</h1><div class="line2" id="alertLine2">—</div></div></div>
+<div class="overlay" id="top8PitOverlay"><div class="top8-alert-box"><div class="top8-alert-title">🚨 ALERTE</div><div class="top8-alert-team" id="top8AlertTeam">—</div><div class="top8-alert-message">vient d'entrer aux stands</div><div class="top8-alert-position-label">Position</div><div class="top8-alert-position" id="top8AlertPosition">P— / Top 8</div><button class="top8-alert-close" onclick="clearTop8Alert()">FERMER</button></div></div>
+<script>
+let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
+let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
+const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
+let iphoneOrientation='portrait';
+function resetPreviewViewport(){const frame=document.getElementById('iphoneFrame');try{const w=frame.contentWindow;const d=frame.contentDocument;if(w){w.scrollTo(0,0);requestAnimationFrame(()=>w.scrollTo(0,0))}if(d){d.documentElement.scrollLeft=0;d.documentElement.scrollTop=0;d.body.scrollLeft=0;d.body.scrollTop=0;const active=d.querySelector('.screen.active');if(active)active.scrollTo(0,0)}}catch(e){}}
+function setIphoneOrientation(orientation){iphoneOrientation=orientation==='landscape'?'landscape':'portrait';const stage=document.getElementById('iphoneStage');const landscape=iphoneOrientation==='landscape';stage.classList.toggle('landscape',landscape);document.getElementById('iphonePreviewTitle').textContent=landscape?'iPhone SE — 667 × 375 px':'iPhone SE — 375 × 667 px';document.getElementById('portraitBtn').classList.toggle('active',!landscape);document.getElementById('landscapeBtn').classList.toggle('active',landscape);setTimeout(resetPreviewViewport,60);setTimeout(resetPreviewViewport,250)}
+function toggleIphonePreview(force){const panel=document.getElementById('iphonePreview');const open=typeof force==='boolean'?force:!panel.classList.contains('show');if(open){const frame=document.getElementById('iphoneFrame');if(!frame.src)frame.src=location.pathname+'?preview=1';setIphoneOrientation(iphoneOrientation);panel.classList.add('show');document.body.style.overflow='hidden'}else{panel.classList.remove('show');document.body.style.overflow=''}}
+if(isEmbeddedPreview){document.documentElement.classList.add('preview-embedded');document.addEventListener('DOMContentLoaded',()=>{document.body.classList.add('preview-embedded');const b=document.getElementById('previewBtn');if(b)b.style.display='none'})}
+
+async function api(url,body={}){await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await load()}
+function syncRemainingFromApex(milliseconds,{direct=false}={}){
+ const ms=Number(milliseconds);
+ if(!Number.isFinite(ms)||ms<0)return false;
+ remainingCountdownMs=Math.max(0,ms);
+ remainingCountdownPerfAt=performance.now();
+ remainingCountdownUsesHours=ms>=3600000;
+ if(direct)remainingCountdownDirectSyncAt=Date.now();
+ updateRemainingDisplay();
+ return true;
+}
+function ingestApexCountdown(frame){
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|countdown\|(\d+)/g)];
+ if(!matches.length)return false;
+ return syncRemainingFromApex(Number(matches[matches.length-1][1]),{direct:true});
+}
+function syncRemainingFromState(nextState){
+ const endAt=Number(nextState?.time_remaining_end_at_ms);
+ let candidate=null;
+ if(Number.isFinite(endAt)){
+   candidate=Math.max(0,endAt-Date.now());
+ }else{
+   const ms=Number(nextState?.time_remaining_ms);
+   const serverAt=Number(nextState?.time_remaining_updated_at_ms);
+   if(Number.isFinite(ms)&&ms>=0&&Number.isFinite(serverAt))candidate=Math.max(0,ms-Math.max(0,Date.now()-serverAt));
+ }
+ if(candidate===null)return;
+ const current=liveRemainingMilliseconds();
+ // La trame WebSocket reçue directement dans ce navigateur est la source
+ // prioritaire. L'état serveur sert au chargement initial ou en secours.
+ const directIsFresh=remainingCountdownDirectSyncAt>0&&(Date.now()-remainingCountdownDirectSyncAt)<35000;
+ if(current===null||(!directIsFresh&&Math.abs(current-candidate)>500))syncRemainingFromApex(candidate);
+}
+function liveRemainingMilliseconds(){
+ if(!Number.isFinite(remainingCountdownMs)||!remainingCountdownPerfAt)return null;
+ return Math.max(0,remainingCountdownMs-(performance.now()-remainingCountdownPerfAt));
+}
+function formatRemainingMilliseconds(ms){
+ if(!Number.isFinite(ms))return '—';
+ // Apex conserve la seconde en cours jusqu'à son terme : on arrondit donc
+ // vers le haut plutôt que d'afficher la seconde suivante trop tôt.
+ const total=Math.max(0,Math.ceil(ms/1000));
+ const hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60),seconds=total%60;
+ if(remainingCountdownUsesHours||hours>0)return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+ return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+}
+function updateRemainingDisplay(){
+ const ms=liveRemainingMilliseconds();
+ const display=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);
+ const seconds=ms===null?null:ms/1000;
+ const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
+ const sp=document.getElementById('sRemaining');if(sp)sp.textContent=display;
+ const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
+}
+async function load(){const nextState=await fetch('/api/state').then(r=>r.json());syncRemainingFromState(nextState);state=nextState;render();ensureApexBrowserConnection()}
+let apexBrowserSocket=null;
+let apexBrowserCircuitId=null;
+let apexBrowserConnecting=false;
+async function sendApexStatus(status,connection,error=null){try{await fetch('/api/apex/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,connection,error})})}catch(e){}}
+function closeApexBrowserSocket(){if(apexBrowserSocket){apexBrowserSocket.onclose=null;try{apexBrowserSocket.close()}catch(e){}apexBrowserSocket=null}apexBrowserConnecting=false}
+function ensureApexBrowserConnection(){if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
+function connectApexBrowser(force=false){
+ const circuit=(state?.circuits||[]).find(c=>c.id===state.circuit_id);
+ if(!circuit?.websocket_url)return;
+ if(!force&&apexBrowserSocket&&apexBrowserCircuitId===circuit.id&&[0,1].includes(apexBrowserSocket.readyState))return;
+ closeApexBrowserSocket();apexBrowserCircuitId=circuit.id;apexBrowserConnecting=true;sendApexStatus('connecting','CONNEXION APEX…');
+ try{apexBrowserSocket=new WebSocket(circuit.websocket_url)}catch(err){apexBrowserConnecting=false;sendApexStatus('error','ERREUR LIVE',err.message);return}
+ apexBrowserSocket.addEventListener('open',()=>{apexBrowserConnecting=false;sendApexStatus('connected','LIVE • CONNECTÉ');if(circuit.session_request){apexBrowserSocket.send(circuit.session_request);fetch('/api/developer/outbound',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:circuit.session_request})}).catch(()=>{})}});
+ apexBrowserSocket.addEventListener('message',async e=>{const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);ingestApexCountdown(frame);try{const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});if(!r.ok){const d=await r.json();throw new Error(d.error||'Décodage Apex impossible')}}catch(err){sendApexStatus('error','ERREUR DÉCODAGE',err.message)}});
+ apexBrowserSocket.addEventListener('error',()=>sendApexStatus('error','ERREUR LIVE','Connexion WebSocket Apex impossible'));
+ apexBrowserSocket.addEventListener('close',e=>{apexBrowserSocket=null;apexBrowserConnecting=false;sendApexStatus('closed','LIVE DÉCONNECTÉ',`Code ${e.code}`);setTimeout(()=>{if(state?.circuit_id===apexBrowserCircuitId)connectApexBrowser(false)},5000)});
+}
+function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance');document.body.classList.add('current-'+mode)}
+function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}
+function showMode(mode){
+ if(mode!=='home'&&!state?.circuit_id){
+  const picker=document.getElementById('homeCircuit');
+  picker?.classList.remove('needs-selection');
+  void picker?.offsetWidth;
+  picker?.classList.add('needs-selection');
+  document.getElementById('circuitSelect')?.focus();
+  return;
+ }
+ currentMode=mode;setModeClass(mode);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));const screen=document.getElementById(mode);screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home')api('/api/mode',{mode})
+}
+const rowLapSignatures=new Map();
+const endurancePitStatuses=new Map();
+const enduranceOutUntil=new Map();
+function endurancePitBadge(driver){
+ const key=String(driver.apex_row??driver.driver??driver.pos);
+ const current=driver.status||'unknown';
+ const previous=endurancePitStatuses.get(key);
+ const now=Date.now();
+ if(current==='pit'){
+  enduranceOutUntil.delete(key);
+  endurancePitStatuses.set(key,current);
+  return '<span class="pit-status-badge pit-in">IN</span>';
+ }
+ if(current==='track'&&previous==='pit')enduranceOutUntil.set(key,now+3000);
+ endurancePitStatuses.set(key,current);
+ const until=enduranceOutUntil.get(key)||0;
+ if(current==='track'&&until>now)return '<span class="pit-status-badge pit-out">OUT</span>';
+ if(until&&until<=now)enduranceOutUntil.delete(key);
+ return '';
+}
+function rows(target,cols){
+ const el=document.getElementById(target);const previousRects=new Map([...el.querySelectorAll('tr[data-driver]')].map(tr=>[tr.dataset.driver,tr.getBoundingClientRect()]));
+ const fragment=document.createDocumentFragment();
+ state.drivers.forEach(d=>{const tr=document.createElement('tr');const key=d.driver||String(d.pos);const signature=String(d.laps)+'|'+String(d.last);const signatureKey=target+'|'+key;const previousSignature=rowLapSignatures.get(signatureKey);tr.dataset.driver=key;tr.className='clickable'+(d.driver===state.followed_driver?' followed':'')+((target==='qualifTable'||target==='enduranceTable')&&previousSignature&&previousSignature!==signature?' lap-flash':'');tr.onclick=()=>followDriver(d.driver);tr.innerHTML=cols(d);fragment.appendChild(tr);rowLapSignatures.set(signatureKey,signature)});
+ el.replaceChildren(fragment);
+ requestAnimationFrame(()=>{[...el.querySelectorAll('tr[data-driver]')].forEach(tr=>{const oldRect=previousRects.get(tr.dataset.driver);if(!oldRect)return;const newRect=tr.getBoundingClientRect();const dy=oldRect.top-newRect.top;if(Math.abs(dy)>1){tr.style.transition='none';tr.style.transform=`translateY(${dy}px)`;requestAnimationFrame(()=>{tr.style.transition='transform .48s cubic-bezier(.22,.8,.2,1)';tr.style.transform='translateY(0)'})}})});
+}
+function absoluteSessionBestSeconds(){
+ const valid=(state.drivers||[]).map(d=>parseLapTime(d.best)).filter(Number.isFinite);
+ return valid.length?Math.min(...valid):Number.POSITIVE_INFINITY;
+}
+function lapTimeClass(driver, value, kind='last'){
+ const valueSeconds=parseLapTime(value);
+ // Le meilleur absolu est recalculé directement depuis les lignes affichées.
+ // Cela évite les différences de format Apex entre RKO, Dunois et les autres pistes.
+ const sessionSeconds=absoluteSessionBestSeconds();
+ if(kind==='best'&&Number.isFinite(valueSeconds)&&Number.isFinite(sessionSeconds)&&Math.abs(valueSeconds-sessionSeconds)<0.0005)return 'purple';
+ if(kind==='best')return 'green';
+ const driverBestSeconds=parseLapTime(driver?.best);
+ if(Number.isFinite(valueSeconds)&&Number.isFinite(driverBestSeconds)&&Math.abs(valueSeconds-driverBestSeconds)<0.0005)return 'green';
+ return 'yellow';
+}
+function formatDriverName(fullName){
+ const raw=(fullName||'—').trim();
+ if(raw==='—')return '—';
+ const parts=raw.split(/\s+/);
+ if(parts.length===1)return `<span class="driver-last">${parts[0]}</span>`;
+ const first=parts.shift();
+ const last=parts.join(' ');
+ return `<span class="driver-name"><span class="driver-first">${first}</span><span class="driver-last">${last}</span></span>`;
+}
+function setDriverName(el,fullName){el.innerHTML=formatDriverName(fullName)}
+function formatDriverSurname(fullName){const raw=(fullName||'—').trim();if(raw==='—')return '—';const parts=raw.split(/\s+/);return `<span class="driver-last">${parts.length>1?parts.slice(1).join(' '):parts[0]}</span>`;}
+function positionClass(pos,extra=''){return `pos${extra?' '+extra:''}`}
+function parseLapTime(value){const m=String(value||'').match(/^(?:(\d+):)?(\d+)(?:[.,](\d+))?$/);if(!m)return Number.POSITIVE_INFINITY;return (Number(m[1]||0)*60)+Number(m[2]||0)+Number('0.'+(m[3]||0))}
+function gapWithMarkup(label,driver){return `<span class="gap-label">${label}</span> ${formatDriverName(driver||'—')}`}
+function qualificationRanking(){return [...(state.drivers||[])].filter(d=>Number.isFinite(parseLapTime(d.best))).sort((a,b)=>parseLapTime(a.best)-parseLapTime(b.best))}
+function qualificationLeader(){return qualificationRanking()[0]}
+function qualificationReferenceFor(driver){
+ const ranking=qualificationRanking();
+ if(!driver||!ranking.length)return null;
+ const selectedIndex=ranking.findIndex(d=>d.driver===driver.driver);
+ // Pour le leader, la référence devient le P2 afin d'afficher son avance réelle.
+ if(selectedIndex===0)return ranking[1]||null;
+ return ranking[0]||null;
+}
+function qualificationDeltaFor(driver){
+ const reference=qualificationReferenceFor(driver);
+ const followedBest=parseLapTime(driver?.best);
+ const referenceBest=parseLapTime(reference?.best);
+ if(!Number.isFinite(followedBest)||!Number.isFinite(referenceBest))return '--';
+ const delta=followedBest-referenceBest;
+ if(Math.abs(delta)<0.0005)return '0.000';
+ return `${delta<0?'-':'+'}${Math.abs(delta).toFixed(3)}`;
+}
+function qualificationDeltaIsLeader(driver){
+ const leader=qualificationLeader();
+ return Boolean(driver?.driver&&leader?.driver&&driver.driver===leader.driver);
+}
+async function followDriver(driverName){const selected=(state.drivers||[]).find(d=>d.driver===driverName);if(!selected)return;state.followed_driver=driverName;state.followed=selected;state.qualif_delta=qualificationDeltaFor(selected);render();await api('/api/follow',{driver:driverName})}
+function driverAhead(followed){if(!followed||!followed.pos||Number(followed.pos)<=1)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(followed.pos)-1)||null}
+async function updateDeveloperSettings(){
+ const developer_mode=!!document.getElementById('developerModeToggle')?.checked;
+ const traffic_recording=developer_mode&&!!document.getElementById('trafficRecordingToggle')?.checked;
+ await api('/api/developer/settings',{developer_mode,traffic_recording});
+}
+function exportApexLogs(){window.location.href='/api/developer/export-logs'}
+function renderDeveloperRecorder(){
+ const dev=document.getElementById('developerModeToggle'),rec=document.getElementById('trafficRecordingToggle'),label=document.getElementById('trafficRecordingLabel');
+ if(!dev||!rec)return;
+ dev.checked=!!state.developer_mode;rec.checked=!!state.traffic_recording;rec.disabled=!dev.checked;
+ if(label){label.classList.toggle('recording-on',!!state.traffic_recording);label.classList.toggle('recording-off',!state.traffic_recording)}
+}
+function render(){
+ renderDeveloperRecorder();
+ const circuit=state.circuits.find(c=>c.id===state.circuit_id);circuitName.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
+ const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelect.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}circuitSelect.value=state.circuit_id||'';
+ const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
+ rows('qualifTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatDriverName(d.driver)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td>`);
+ rows('sprintTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatDriverName(d.driver)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="mobile-hide ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="mobile-hide">${d.gap}</td><td>${d.interval}</td>`);
+ rows('enduranceTable',d=>`<td class="pos endurance-position-cell"><span class="endurance-position-wrap"><span class="endurance-position-number${Number(d.pos)===1?' leader-pos':''}">${d.pos}</span>${endurancePitBadge(d)}</span></td><td class="name">${formatDriverName(d.driver)}</td><td>${d.apex}</td><td>${d.laps}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td>`);
+ const f=state.followed||{};qPos.textContent=f.pos?'P'+f.pos:'—';setDriverName(qName,f.driver||'—');qDelta.textContent=qualificationDeltaFor(f);qDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f));updateRemainingDisplay();qLapsRemaining.textContent=state.apex_laps_remaining||'—';const qReference=qualificationReferenceFor(f);qGapWith.innerHTML=gapWithMarkup('Écart avec',qReference?.driver||'—');
+ setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';sDeltaValue.textContent=state.sprint_delta.display;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&state.sprint_delta.display!=='—');sRemaining.textContent=liveRemainingMilliseconds()===null?(state.time_remaining||'—'):formatRemainingMilliseconds(liveRemainingMilliseconds());sLapsRemaining.textContent=state.apex_laps_remaining||'—';const ahead=driverAhead(f);sGapWith.innerHTML=gapWithMarkup('Écart avec',ahead?.driver||(Number(f.pos)===1?'Leader':'—'));const fastest=state.fastest_last_lap||{};sFastestName.textContent='🔥 '+(fastest.driver||'—');sFastestTime.textContent=fastest.lap||'—';
+ penalties.innerHTML=state.penalties.length?state.penalties.map(p=>`<div class="penalty-row"><b>${formatDriverSurname(p.driver)}</b><span class="red"><b>${p.penalty}</b></span></div>`).join(''):'<div class="empty">Aucune pénalité</div>';
+ paceTop8.innerHTML=state.pace_top8.map(d=>`<div class="pace-row"><span class="pace-rank">${d.pace_rank}</span><span><b>${formatDriverName(d.driver)}</b><br><span class="label">Kart ${d.apex}</span></span><b title="Moyenne calculée sur ${d.pace5_laps||0} tour(s)">${d.pace5}</b></div>`).join('');
+ quickTable.innerHTML=state.quick_change.map(q=>{const cls=q.kart_delta.startsWith('-')?'delta-good':q.kart_delta.startsWith('+')?'delta-bad':'';return `<tr><td class="pos">${q.queue}</td><td>${q.pit_time}</td><td><b>${q.pace_rank}</b></td><td>${q.previous_team}</td><td>${q.kart}</td><td>${q.avg5}</td><td class="${cls}">${q.kart_delta}</td></tr>`}).join('');
+ driverSelect.innerHTML=state.drivers.map(d=>`<option ${d.driver===state.followed_driver?'selected':''}>${d.driver}</option>`).join('');
+ if(state.qualif_crossing&&state.qualif_crossing.event_id!==lastCrossEvent){lastCrossEvent=state.qualif_crossing.event_id;const isBest=Boolean(state.qualif_crossing.is_session_best);crossPos.textContent='P'+state.qualif_crossing.position;crossBest.classList.toggle('show',isBest);crossDelta.textContent=state.qualif_crossing.delta;crossDelta.classList.toggle('delta-first',isBest);crossDelta.classList.toggle('delta-behind',!isBest);crossReference.textContent=state.qualif_crossing.reference_driver||'—';crossingOverlay.classList.add('show');clearTimeout(crossTimer);crossTimer=setTimeout(async()=>{crossingOverlay.classList.remove('show');await api('/api/clear-crossing')},6000)}
+ if(currentMode!=='endurance')top8PitOverlay.classList.remove('show');if(state.generic_alert&&state.generic_alert.event_id!==lastGenericEvent){lastGenericEvent=state.generic_alert.event_id;if(state.generic_alert.kind==='top8_pit_entry'&&currentMode==='endurance'){top8AlertTeam.textContent=state.generic_alert.team||'—';top8AlertPosition.textContent='P'+(state.generic_alert.position||'—')+' / Top 8';top8PitOverlay.classList.add('show')}else if(state.generic_alert.kind!=='top8_pit_entry'){alertTitle.textContent=state.generic_alert.title;alertLine1.textContent=state.generic_alert.line1;alertLine2.textContent=state.generic_alert.line2;genericOverlay.classList.add('show')}}
+}
+function reconnectLive(){connectApexBrowser(true)}
+async function changeCircuit(){
+ if(!circuitSelect.value)return;
+ const nextCircuitId=circuitSelect.value;
+ document.getElementById('homeCircuit')?.classList.remove('needs-selection');
+ // Coupe d'abord l'ancienne piste afin qu'aucune trame tardive ne puisse être envoyée.
+ closeApexBrowserSocket();
+ apexBrowserCircuitId=null;
+ rowLapSignatures.clear();
+ endurancePitStatuses.clear();enduranceOutUntil.clear();
+ lastCrossEvent=null;lastGenericEvent=null;
+ crossingOverlay.classList.remove('show');genericOverlay.classList.remove('show');top8PitOverlay.classList.remove('show');
+ remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownDirectSyncAt=0;
+ state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
+ render();
+ await api('/api/circuit',{circuit_id:nextCircuitId});
+}function followSelected(){api('/api/follow',{driver:driverSelect.value})}function testCrossing(){api('/api/test-crossing',{lap:lapValue.value})}function addPenalty(){api('/api/add-penalty',{driver:driverSelect.value,penalty:penaltyValue.value})}function moveDriver(){api('/api/move',{driver:driverSelect.value,pos:movePos.value})}function addQuickChange(){api('/api/add-quick-change',{previous_team:qcTeam.value,pace_rank:qcRank.value,kart:qcKart.value,avg5:qcAvg.value,kart_delta:'--'})}function popQuickChange(){api('/api/pop-quick-change')}function testTop8PitEntry(){api('/api/test-top8-pit-entry')}function clearAlert(){genericOverlay.classList.remove('show');api('/api/clear-alert')}function clearTop8Alert(){top8PitOverlay.classList.remove('show');api('/api/clear-alert')}
+document.getElementById('iphoneFrame').addEventListener('load',resetPreviewViewport);
+document.getElementById('iphonePreview').addEventListener('click',e=>{if(e.target.id==='iphonePreview')toggleIphonePreview(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')toggleIphonePreview(false)});
+setModeClass(currentMode);
+setInterval(()=>clock.textContent=new Date().toLocaleTimeString('fr-FR'),1000);setInterval(updateRemainingDisplay,100);setInterval(load,1000);load();
+</script></body></html>

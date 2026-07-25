@@ -1,0 +1,202 @@
+[
+  {
+    "id": "brk",
+    "name": "BRK",
+    "country": "France",
+    "live_url": "https://apex-timing.com/live-timing/brk/",
+    "websocket_url": "wss://live-data.apex-timing.com:9143/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "brignoles-karting-loisir",
+    "name": "Brignoles Karting Loisir",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/brignoles-karting-loisir/",
+    "websocket_url": "wss://live-data.apex-timing.com:8603/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif."
+  },
+  {
+    "id": "cap-karting",
+    "name": "Cap Karting",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/capkarting/",
+    "websocket_url": "wss://live-data.apex-timing.com:7953/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "circuit-de-bresse",
+    "name": "Circuit de Bresse",
+    "country": "France",
+    "live_url": "https://live.apex-timing.com/circuitdebresse/",
+    "websocket_url": "wss://live-data.apex-timing.com:7853/",
+    "session_request": "",
+    "status": "validated",
+    "notes": "WebSocket relevé dans Chrome DevTools le 23/07/2026."
+  },
+  {
+    "id": "circuit-de-leurope",
+    "name": "Circuit de l'Europe",
+    "country": "France",
+    "live_url": "https://live.apex-timing.com/circuit-europe/",
+    "websocket_url": "wss://live-data.apex-timing.com:8203/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration corrigée le 24/07/2026. Live actif pour le test."
+  },
+  {
+    "id": "circuito-internazionale-triscina",
+    "name": "Circuito Internazionale Triscina",
+    "country": "Italie",
+    "live_url": "https://live.apex-timing.com/circuito-internazionale-triscina/",
+    "websocket_url": "wss://live-data.apex-timing.com:10293/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif."
+  },
+  {
+    "id": "dunois-kart",
+    "name": "Dunois Kart",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/dunois-kart/",
+    "websocket_url": "wss://live-data.apex-timing.com:8543/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "karting-45-saint-benoit",
+    "name": "Karting 45 Saint-Benoît",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/karting-45/",
+    "websocket_url": "wss://live-data.apex-timing.com:8373/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "karting-loudun",
+    "name": "Karting de Loudun",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/karting-loudun/",
+    "websocket_url": "wss://live-data.apex-timing.com:9173/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "kln",
+    "name": "Karting Loisirs Neuilly",
+    "country": "France",
+    "live_url": "https://apex-timing.com/live-timing/kln/",
+    "websocket_url": "wss://live-data.apex-timing.com:10053/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "karting-nevers-magny-cours",
+    "name": "Karting Nevers Magny-Cours",
+    "country": "France",
+    "live_url": "https://live.apex-timing.com/karting-magny-cours/",
+    "websocket_url": "wss://live-data.apex-timing.com:9003/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "kartland",
+    "name": "Kartland",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/kartland/",
+    "websocket_url": "wss://live-data.apex-timing.com:7733/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 24/07/2026 ; à valider pendant un live actif."
+  },
+  {
+    "id": "la-briqueterie-les-etards",
+    "name": "La Briqueterie Les Étards",
+    "country": "France",
+    "live_url": "https://live.apex-timing.com/lb-les-etards/",
+    "websocket_url": "wss://live-data.apex-timing.com:9733/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "lemans-alain-prost-a",
+    "name": "Le Mans Alain Prost A",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/lemans-karting/",
+    "websocket_url": "wss://live-data.apex-timing.com:7963/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "lemans-alain-prost-b",
+    "name": "Le Mans Alain Prost B",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/lemans-karting2/",
+    "websocket_url": "wss://live-data.apex-timing.com:8013/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "ouest-karting-essay",
+    "name": "Ouest Karting Essay",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/ouestkarting/",
+    "websocket_url": "wss://live-data.apex-timing.com:7983/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "rko-angerville",
+    "name": "RKO Angerville",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/rko-angerville/",
+    "websocket_url": "wss://live-data.apex-timing.com:8953/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "rko-anthoine-hubert",
+    "name": "RKO Anthoine Hubert",
+    "country": "France",
+    "live_url": "https://live.apex-timing.com/crkart/",
+    "websocket_url": "wss://live-data.apex-timing.com:7803/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif."
+  },
+  {
+    "id": "sek",
+    "name": "Sens Espace Karting",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/sek/",
+    "websocket_url": "wss://live-data.apex-timing.com:7973/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  },
+  {
+    "id": "top-gun-evasion",
+    "name": "Top Gun Évasion",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/topgun-evasion/",
+    "websocket_url": "wss://live-data.apex-timing.com:8573/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie ; à valider pendant un live actif."
+  }
+]
