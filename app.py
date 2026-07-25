@@ -40,7 +40,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "4.2.9-follow-lock",
+    "version": "4.2.11-beta-real-live",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",
@@ -54,7 +54,8 @@ STATE = {
         "last_frame_preview": None,
     },
     "followed_driver": "",
-    "follow_mode": "auto",
+    "followed_locked": False,
+    "followed_snapshot": None,
     "time_remaining": "—",
     "time_remaining_ms": None,
     "time_remaining_updated_at_ms": None,
@@ -355,13 +356,16 @@ def sync_state_from_race(snapshot, interpreted_events=None):
     live_drivers.sort(key=lambda d: (d["pos"] == 999, d["pos"]))
     if live_drivers:
         STATE["drivers"] = live_drivers
-        names = {d["driver"] for d in live_drivers}
-        # Mode AUTO : la ligne 1 suit toujours le P1 courant.
-        # Mode LOCK : le pilote choisi reste mémorisé, même s'il disparaît
-        # temporairement d'une trame Apex. Il ne change qu'au prochain clic.
-        if STATE.get("follow_mode") != "lock":
-            STATE["follow_mode"] = "auto"
+        # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.
+        # Mode LOCK : après un clic, on conserve impérativement le même pilote,
+        # même si une trame Apex intermédiaire ne contient pas sa ligne.
+        if not STATE.get("followed_locked"):
             STATE["followed_driver"] = live_drivers[0]["driver"]
+
+        followed_name = STATE.get("followed_driver")
+        followed_live = next((d for d in live_drivers if d.get("driver") == followed_name), None)
+        if followed_live:
+            STATE["followed_snapshot"] = deepcopy(followed_live)
         valid_best = [d for d in live_drivers if time_to_seconds(d["best"]) < 9999]
         if valid_best:
             leader = min(valid_best, key=lambda d: time_to_seconds(d["best"]))
@@ -474,6 +478,12 @@ def payload():
     data["circuits"] = load_circuits()
     data["drivers"].sort(key=lambda d: d["pos"])
     followed = next((d for d in data["drivers"] if d["driver"] == data["followed_driver"]), None)
+    # Certaines trames Apex sont partielles. Dans ce cas, ne jamais vider la ligne 1 :
+    # on garde le dernier instantané valide du pilote verrouillé jusqu'à son retour.
+    if followed is None and data.get("followed_locked"):
+        snapshot = data.get("followed_snapshot")
+        if snapshot and snapshot.get("driver") == data.get("followed_driver"):
+            followed = snapshot
     data["followed"] = followed
 
     top10_names = {d["driver"] for d in data["drivers"] if d["pos"] <= 10}
@@ -510,11 +520,11 @@ def payload():
                 "detail": "Leader sur P2",
             }
         else:
-            leader = next((d for d in data["drivers"] if d["pos"] == 1), None)
+            ahead = next((d for d in data["drivers"] if d["pos"] == followed["pos"] - 1), None)
             data["sprint_delta"] = {
-                "reference": "P1" if leader else "--",
-                "display": (followed.get("gap") or "--") if leader else "--",
-                "detail": "Écart avec P1" if leader else "--",
+                "reference": f"P{ahead['pos']}" if ahead else "--",
+                "display": followed["interval"] if ahead else "--",
+                "detail": f"Écart avec P{ahead['pos']}" if ahead else "--",
             }
     else:
         data["qualif_delta"] = "--"
@@ -543,9 +553,6 @@ def set_mode():
     if value not in {"qualification", "sprint", "endurance"}:
         return jsonify(ok=False), 400
     STATE["mode"] = value
-    # Chaque changement de mode repart en suivi automatique du P1.
-    STATE["follow_mode"] = "auto"
-    STATE["followed_driver"] = ""
     return jsonify(ok=True)
 
 
@@ -563,7 +570,8 @@ def reset_race_state_for_new_circuit(circuit_id):
         "circuit_id": circuit_id,
         "connection": "CONNEXION NAVIGATEUR…",
         "followed_driver": "",
-        "follow_mode": "auto",
+        "followed_locked": False,
+        "followed_snapshot": None,
         "time_remaining": "—",
         "time_remaining_ms": None,
         "time_remaining_updated_at_ms": None,
@@ -604,8 +612,9 @@ def follow():
     if not driver_by_name(name):
         return jsonify(ok=False), 400
     STATE["followed_driver"] = name
-    STATE["follow_mode"] = "lock"
+    STATE["followed_locked"] = True
     driver = driver_by_name(name)
+    STATE["followed_snapshot"] = deepcopy(driver)
     FOLLOWED_CROSSING_MARKER[name] = (driver.get("laps"), driver.get("last"))
     STATE["qualif_crossing"] = None
     return jsonify(ok=True)

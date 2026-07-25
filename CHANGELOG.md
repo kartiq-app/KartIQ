@@ -1,3 +1,31 @@
+# KartIQ V4.2.11
+
+## Calcul du delta selon le mode
+
+- Qualification :
+  - pilote suivi P1 : avance sur le P2, en vert ;
+  - pilote suivi hors P1 : écart avec le P1, en orange.
+- Sprint :
+  - pilote suivi P1 : avance sur le P2, en vert ;
+  - pilote suivi hors P1 : intervalle avec le pilote immédiatement devant au classement, en orange.
+- Le pilote suivi reste verrouillé jusqu’au clic sur un autre pilote.
+- Aucun changement de design ou d’informations dans la ligne 1.
+
+# KartIQ V4.2.10
+
+- Correction du suivi pilote persistant.
+- Une trame Apex partielle ne vide plus la position ni le delta de la ligne 1.
+- En mode AUTO, la ligne 1 suit le P1.
+- Après sélection d’un pilote, le verrouillage reste actif jusqu’au clic sur un autre pilote.
+- Aucun changement de design.
+
+# KartIQ V4.2.8 — Contrôles plein écran mobile
+
+- Le bouton ☰ reste accessible en plein écran.
+- Ajout d’un bouton ✕ flottant pour quitter immédiatement le plein écran.
+- Positionnement adapté à l’encoche et à la Dynamic Island grâce aux marges de sécurité iPhone.
+- Compatibilité avec les événements Fullscreen standards et WebKit.
+
 # KartIQ V4.2.5 Beta — Popup Qualification
 
 - Lorsqu’un pilote suivi signe le meilleur temps absolu : affichage P1, « 🥇 MEILLEUR TEMPS ! » et avance verte sur le deuxième pilote.
@@ -103,11 +131,3 @@ KartIQ V4.0.9
 - Bouton ⛶ de plein écran dans l’en-tête.
 - Installation PWA depuis l’écran d’accueil iOS.
 - Gestion des zones sûres autour de l’encoche et de la barre d’accueil.
-
-## V4.2.9 — Suivi pilote persistant
-- Mode AUTO : la ligne 1 suit le pilote P1.
-- Mode LOCK : un clic sur un pilote du classement verrouille la ligne 1 sur ce pilote.
-- Le pilote suivi ne change plus lors des mises à jour Apex ; seul un nouveau clic change la sélection.
-- Delta du P1 : avance sur le P2, affichée en vert.
-- Delta d'un pilote hors P1 : écart avec le P1, affiché en orange.
-- Aucun changement de design ni de structure de la ligne 1.
