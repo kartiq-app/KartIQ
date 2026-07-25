@@ -40,7 +40,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "4.3.3",
+    "version": "4.3.4",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",
@@ -75,6 +75,9 @@ STATE = {
 }
 
 
+
+PENALTY_LAST_VALUES = {}
+PENALTY_SEQUENCE = 0
 
 LIVE_LOCK = threading.Lock()
 LIVE_THREAD = None
@@ -359,15 +362,31 @@ def sync_state_from_race(snapshot, interpreted_events=None):
     if live_drivers:
         STATE["drivers"] = live_drivers
 
-        # Sprint : alimente automatiquement le panneau PÉNALITÉS depuis la grille Apex.
-        # Les valeurs vides, zéro ou équivalentes à « aucune » sont ignorées.
+        # Historique des pénalités Apex pour Sprint et Endurance.
+        # Une nouvelle entrée est créée uniquement lorsqu'une valeur de la colonne
+        # « Péna. » apparaît ou change. L'ordre est du plus récent au plus ancien.
+        global PENALTY_SEQUENCE
         no_penalty_values = {"", "-", "—", "0", "0 s", "0 sec", "aucune", "aucune pénalité", "none", "no"}
-        apex_penalties = []
         for driver in live_drivers:
+            driver_name = driver.get("driver") or "—"
             raw_penalty = str(driver.get("penalty") or "").strip()
-            if raw_penalty.lower() not in no_penalty_values:
-                apex_penalties.append({"driver": driver.get("driver") or "—", "penalty": raw_penalty})
-        STATE["penalties"] = apex_penalties
+            normalized = raw_penalty.lower()
+            previous = PENALTY_LAST_VALUES.get(driver_name, "")
+            current = "" if normalized in no_penalty_values else raw_penalty
+            if current and current != previous:
+                PENALTY_SEQUENCE += 1
+                STATE["penalties"].insert(0, {
+                    "driver": driver_name,
+                    "penalty": current,
+                    "observed_at": datetime.now().isoformat(timespec="milliseconds"),
+                    "sequence": PENALTY_SEQUENCE,
+                })
+            PENALTY_LAST_VALUES[driver_name] = current
+        STATE["penalties"] = sorted(
+            STATE.get("penalties", []),
+            key=lambda item: item.get("sequence", 0),
+            reverse=True,
+        )
         # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.
         # Mode LOCK : après un clic, on conserve impérativement le même pilote,
         # même si une trame Apex intermédiaire ne contient pas sa ligne.
@@ -498,8 +517,7 @@ def payload():
             followed = snapshot
     data["followed"] = followed
 
-    top10_names = {d["driver"] for d in data["drivers"] if d["pos"] <= 10}
-    data["visible_penalties"] = [p for p in data["penalties"] if p["driver"] in top10_names]
+    data["visible_penalties"] = list(data.get("penalties", []))
 
     if followed:
         # Recalcule le meilleur absolu directement depuis le classement courant.
@@ -577,6 +595,9 @@ def reset_race_state_for_new_circuit(circuit_id):
     LAP_HISTORY.clear()
     LAST_LAP_MARKER.clear()
     FOLLOWED_CROSSING_MARKER.clear()
+    PENALTY_LAST_VALUES.clear()
+    global PENALTY_SEQUENCE
+    PENALTY_SEQUENCE = 0
 
     STATE.update({
         "circuit_id": circuit_id,
@@ -685,7 +706,9 @@ def add_penalty():
     driver, penalty = p.get("driver", "").strip(), p.get("penalty", "").strip()
     if not driver or not penalty:
         return jsonify(ok=False), 400
-    STATE["penalties"].append({"driver": driver, "penalty": penalty})
+    global PENALTY_SEQUENCE
+    PENALTY_SEQUENCE += 1
+    STATE["penalties"].insert(0, {"driver": driver, "penalty": penalty, "observed_at": datetime.now().isoformat(timespec="milliseconds"), "sequence": PENALTY_SEQUENCE})
     return jsonify(ok=True)
 
 
@@ -872,7 +895,7 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print("\nKartIQ V4.3.3 — Pénalités Apex fiabilisées")
+    print("\nKartIQ V4.3.4 — Historique des pénalités Endurance et Sprint")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")

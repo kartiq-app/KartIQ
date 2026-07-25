@@ -1,3 +1,11 @@
+## V4.3.4 — Pénalités Sprint et Endurance
+
+- Ajout du bloc PÉNALITÉS sous le Top 8 en mode Endurance.
+- Conservation de l'historique des pénalités détectées dans la colonne Apex « Péna. ».
+- Affichage des pénalités de la plus récente à la plus ancienne en Sprint et en Endurance.
+- Ajout de la colonne « PÉNA. » au classement général Endurance.
+- Le Top 8 affiche désormais le rang de rythme et la position au classement général (P1, P2, etc.).
+
 ## V4.3.3 — Pénalités Apex fiabilisées
 
 - Correction du parseur de grille Apex : les libellés de colonnes sont désormais conservés même lorsque `data-type` est vide.
