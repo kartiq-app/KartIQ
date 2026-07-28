@@ -177,3 +177,13 @@ KartIQ V4.0.9
 - Bouton ⛶ de plein écran dans l’en-tête.
 - Installation PWA depuis l’écran d’accueil iOS.
 - Gestion des zones sûres autour de l’encoche et de la barre d’accueil.
+
+## V4.3.6 — Mode Focus Qualification
+- Ajout du bouton **Focus** dans la case Delta du mode Qualification, sans modifier la structure Position | Delta | Temps/Tours.
+- Écran Focus plein écran en deux lignes :
+  - Ligne 1 : Position 30 % | Delta 70 %.
+  - Ligne 2 : Temps restant ou tours 50 % | meilleur pilote de la séance 50 %.
+- Delta limité aux couleurs vert et orange.
+- Temps restant orange à 2 minutes ou moins.
+- Bouton × en haut à droite pour revenir au mode Qualification classique.
+- Tentative automatique d’affichage plein écran, orientation paysage et maintien de l’écran allumé lorsque le navigateur le permet.
