@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="KartIQ">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V4.3.5 — Pénalités stables Sprint et Endurance</title>
+<title>KartIQ V4.3.7 — Mode Focus Qualification</title>
 <style>
 :root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -909,8 +909,10 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 
 
 /* KartIQ V4.3.6 — mode Focus Qualification */
-.qual-focus-launch{margin-top:8px;padding:7px 18px;border:1px solid #ff9f1a;border-radius:8px;background:#171b22;color:#ff9f1a;font-family:var(--font-main);font-size:12px;font-weight:950;letter-spacing:.09em;text-transform:uppercase;cursor:pointer}
+.qual-delta-focus-cell{display:grid!important;grid-template-columns:25% 75%;align-items:stretch!important;padding:0!important}
+.qual-focus-launch{width:100%;height:100%;margin:0;padding:8px 6px;border:0;border-right:1px solid var(--line);border-radius:0;background:#171b22;color:#ff9f1a;font-family:var(--font-main);font-size:clamp(10px,1vw,13px);font-weight:950;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .qual-focus-launch:hover,.qual-focus-launch:focus-visible{background:#ff9f1a;color:#090b0f;outline:none}
+.qual-delta-content{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 10px}
 .qual-focus-overlay{position:fixed;inset:0;z-index:1000;display:none;background:#000;color:#fff;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .qual-focus-overlay.show{display:grid;grid-template-rows:1fr 1fr}
 .qual-focus-close{position:absolute;top:max(12px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:2;width:48px;height:48px;border:1px solid #454b55;border-radius:50%;background:#0b0d11;color:#fff;font-size:28px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -928,11 +930,12 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 .qual-focus-remaining.time-critical{color:#ff9f1a!important;text-shadow:0 0 18px rgba(255,159,26,.28)}
 .qual-focus-fastest{font-family:var(--font-driver);font-size:clamp(32px,7.5vh,88px);font-weight:850;line-height:1.05;text-transform:uppercase;overflow-wrap:anywhere}
 @media(max-width:680px) and (orientation:portrait){.qual-focus-position{font-size:clamp(58px,14vw,100px)}.qual-focus-delta{font-size:clamp(72px,18vw,130px)}.qual-focus-remaining{font-size:clamp(45px,11vw,85px)}.qual-focus-fastest{font-size:clamp(24px,6vw,48px)}.qual-focus-close{width:40px;height:40px;font-size:23px}}
+@media(max-width:680px){.qual-focus-launch{font-size:8px;letter-spacing:.03em;padding:4px 2px}.qual-delta-content{padding:3px 4px}.qual-delta-focus-cell .qual-delta{margin-top:0}}
 
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.3.4 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.3.7 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -979,12 +982,12 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.3.6</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.3.7</div>
     </div>
   </div>
 </section>
 
-<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><div class="qual-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">Écart avec —</div><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus">Focus</button></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
+<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><div class="qual-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus">Focus</button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">Écart avec —</div></div></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
 
 <section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><div class="sprint-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell"><div class="qual-delta" id="sDeltaValue">—</div><div class="sprint-session-info"><span id="sRemaining">—</span><span class="sprint-session-separator">•</span><span id="sLapsRemaining">—</span></div><div class="gap-with" id="sGapWith">Écart avec —</div></div><div class="sprint-cell fastest-last-block"><div class="label">&nbsp;</div><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><section class="panel card penalty-panel"><div class="label red">PÉNALITÉS</div><div id="penalties"></div></section></div></div></section>
 

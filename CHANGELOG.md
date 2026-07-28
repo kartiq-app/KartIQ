@@ -178,6 +178,13 @@ KartIQ V4.0.9
 - Installation PWA depuis l’écran d’accueil iOS.
 - Gestion des zones sûres autour de l’encoche et de la barre d’accueil.
 
+## V4.3.7 — Correction du bouton Focus Qualification
+
+- Le bouton **Focus** est désormais placé à gauche du delta dans la case centrale.
+- Répartition de la case centrale : **Focus 25 % / Delta 75 %**.
+- Le bouton n'est plus affiché sous le delta.
+- Le mode Focus plein écran et sa grille 30/70 puis 50/50 restent inchangés.
+
 ## V4.3.6 — Mode Focus Qualification
 - Ajout du bouton **Focus** dans la case Delta du mode Qualification, sans modifier la structure Position | Delta | Temps/Tours.
 - Écran Focus plein écran en deux lignes :
