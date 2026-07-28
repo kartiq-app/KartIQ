@@ -1,3 +1,11 @@
+## V4.3.8 — Informations enrichies du mode Focus Qualification
+
+- Affichage du **nom du pilote suivi sous sa position**.
+- Affichage simultané du **temps restant** et du **nombre de tours** lorsqu'ils sont disponibles.
+- Le nombre de tours est placé **sous le temps restant** dans la case inférieure gauche.
+- Le temps restant conserve son passage à l'orange à **2 minutes ou moins**.
+- La grille reste inchangée : ligne 1 en **30/70**, ligne 2 en **50/50**.
+
 # KartIQ V4.3.5 — Pénalités stables Sprint et Endurance
 
 - Retour au moteur de pénalités de la V4.3.3 : lecture directe de la colonne Apex « Péna. » sans historique.
