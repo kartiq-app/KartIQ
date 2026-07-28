@@ -1,3 +1,15 @@
+## V4.4.0 — Mode Focus Sprint et pénalités horodatées
+
+- Ajout d’un bouton **Focus** sur la page Sprint, à gauche du delta.
+- Nouveau plein écran Sprint sans navigation, avec fermeture par la croix **×**.
+- Affichage de la position et du nom du pilote suivi.
+- Affichage vertical du delta avec le pilote devant (orange) et de l’avance sur le pilote derrière (vert).
+- Affichage du temps restant et du nombre de tours ; le temps passe en orange sous 2 minutes.
+- Centre de gestion des pénalités dans le Focus Sprint.
+- Pénalités triées de la plus récente à la plus ancienne, avec heure de première détection.
+- Défilement automatique au-delà de six pénalités.
+- Les libellés de pénalité restent ceux fournis par Apex Timing.
+
 ## V4.3.8 — Informations enrichies du mode Focus Qualification
 
 - Affichage du **nom du pilote suivi sous sa position**.

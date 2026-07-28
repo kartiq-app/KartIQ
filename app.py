@@ -40,7 +40,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "4.3.8",
+    "version": "4.4.0",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",
@@ -85,6 +85,7 @@ LIVE_WS = None
 LAP_HISTORY = {}
 LAST_LAP_MARKER = {}
 FOLLOWED_CROSSING_MARKER = {}
+PENALTY_FIRST_SEEN = {}
 
 LOG_DIR = APP_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
@@ -364,10 +365,28 @@ def sync_state_from_race(snapshot, interpreted_events=None):
         # d'historique, ce qui évite les doublons pilote/équipe.
         no_penalty_values = {"", "-", "—", "0", "0 s", "0 sec", "aucune", "aucune pénalité", "none", "no"}
         apex_penalties = []
+        active_penalty_keys = set()
         for driver in live_drivers:
             raw_penalty = str(driver.get("penalty") or "").strip()
             if raw_penalty.lower() not in no_penalty_values:
-                apex_penalties.append({"driver": driver.get("driver") or "—", "penalty": raw_penalty})
+                display_name = driver.get("driver") or "—"
+                penalty_key = (display_name, raw_penalty)
+                active_penalty_keys.add(penalty_key)
+                first_seen = PENALTY_FIRST_SEEN.setdefault(
+                    penalty_key,
+                    datetime.now().isoformat(timespec="seconds"),
+                )
+                apex_penalties.append({
+                    "driver": display_name,
+                    "penalty": raw_penalty,
+                    "at": first_seen,
+                    "time": first_seen[11:16],
+                })
+        # Une pénalité disparue de la colonne Apex est retirée de l'état courant.
+        for penalty_key in list(PENALTY_FIRST_SEEN):
+            if penalty_key not in active_penalty_keys:
+                PENALTY_FIRST_SEEN.pop(penalty_key, None)
+        apex_penalties.sort(key=lambda item: item.get("at", ""), reverse=True)
         STATE["penalties"] = apex_penalties
         # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.
         # Mode LOCK : après un clic, on conserve impérativement le même pilote,
@@ -686,7 +705,9 @@ def add_penalty():
     driver, penalty = p.get("driver", "").strip(), p.get("penalty", "").strip()
     if not driver or not penalty:
         return jsonify(ok=False), 400
-    STATE["penalties"].append({"driver": driver, "penalty": penalty})
+    now = datetime.now().isoformat(timespec="seconds")
+    STATE["penalties"].append({"driver": driver, "penalty": penalty, "at": now, "time": now[11:16]})
+    STATE["penalties"].sort(key=lambda item: item.get("at", ""), reverse=True)
     return jsonify(ok=True)
 
 
