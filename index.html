@@ -1860,8 +1860,17 @@ async function closeSprintFocus(){
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 function sprintDriverBehind(driver){if(!driver?.pos)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(driver.pos)+1)||null}
-function sprintGapAhead(driver){return sprintDeltaFor(driver)}
-function sprintGapBehind(driver){const behind=sprintDriverBehind(driver);if(!behind)return '--';const raw=String(behind.interval||behind.gap||'--').trim();if(!raw||raw==='—'||raw==='--')return '--';return raw.replace(/^-/,'').startsWith('+')?raw.replace(/^-/,''):`+${raw.replace(/^-/,'')}`}
+function sprintGapAhead(driver){
+ const raw=String(sprintDeltaFor(driver)||'--').trim();
+ if(!raw||raw==='—'||raw==='--')return '--';
+ return `-${raw.replace(/^[+-]/,'')}`;
+}
+function sprintGapBehind(driver){
+ const behind=sprintDriverBehind(driver);if(!behind)return '--';
+ const raw=String(behind.interval||behind.gap||'--').trim();
+ if(!raw||raw==='—'||raw==='--')return '--';
+ return `+${raw.replace(/^[+-]/,'')}`;
+}
 function penaltyTime(p){if(p?.time)return p.time;const at=String(p?.at||'');return at.length>=16?at.slice(11,16):'--:--'}
 function lapSeconds(value){
  const raw=String(value||'').trim().replace(',', '.');if(!raw||raw==='—'||raw==='--')return null;

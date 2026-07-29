@@ -1,3 +1,9 @@
+# KartIQ V4.6.5 — Signes des deltas en mode Focus Sprint
+
+- Le delta orange avec le pilote devant est toujours affiché avec un signe `-`.
+- Le delta vert avec le pilote derrière est toujours affiché avec un signe `+`.
+- La règle s’applique également aux cas particuliers : P1 (vert uniquement) et dernier (orange uniquement).
+
 # KartIQ V4.6.4 — Deltas Focus Sprint aux extrémités du classement
 
 - Lorsque le pilote suivi est P1, affiche uniquement le delta vert avec le pilote P2.
