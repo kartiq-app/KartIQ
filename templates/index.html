@@ -1710,10 +1710,138 @@ body.current-sprint .gap-with{
   }
 }
 
+
+/* KartIQ V4.6.8 — portrait : KART + PILOTE strictement sur une seule ligne */
+@media (max-width:680px) and (orientation:portrait){
+  body.current-qualification #qualifTable td.name,
+  body.current-sprint #sprintTable td.name{
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    vertical-align:middle!important;
+  }
+  body.current-qualification #qualifTable .ranking-driver-cell,
+  body.current-sprint #sprintTable .ranking-driver-cell{
+    display:grid!important;
+    grid-template-columns:max-content minmax(0,1fr)!important;
+    grid-template-rows:1fr!important;
+    align-items:center!important;
+    column-gap:4px!important;
+    width:100%!important;
+    min-width:0!important;
+    height:100%!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+  body.current-qualification #qualifTable .ranking-kart,
+  body.current-sprint #sprintTable .ranking-kart{
+    grid-column:1!important;
+    grid-row:1!important;
+    display:block!important;
+    min-width:0!important;
+    width:auto!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    align-self:center!important;
+  }
+  body.current-qualification #qualifTable .ranking-driver-cell>.driver-name,
+  body.current-sprint #sprintTable .ranking-driver-cell>.driver-name,
+  body.current-qualification #qualifTable .ranking-driver-cell>.driver-last,
+  body.current-sprint #sprintTable .ranking-driver-cell>.driver-last{
+    grid-column:2!important;
+    grid-row:1!important;
+    display:inline-flex!important;
+    flex-direction:row!important;
+    flex-wrap:nowrap!important;
+    align-items:baseline!important;
+    width:auto!important;
+    min-width:0!important;
+    max-width:100%!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  body.current-qualification #qualifTable .ranking-driver-cell .driver-first,
+  body.current-qualification #qualifTable .ranking-driver-cell .driver-last,
+  body.current-sprint #sprintTable .ranking-driver-cell .driver-first,
+  body.current-sprint #sprintTable .ranking-driver-cell .driver-last{
+    display:inline!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+  body.current-qualification #qualifTable .ranking-driver-cell .driver-last,
+  body.current-sprint #sprintTable .ranking-driver-cell .driver-last{
+    min-width:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+}
+
+
+/* KartIQ V4.6.9 — vraie colonne KART conditionnelle en Qualification et Sprint */
+#qualification .optional-kart-head,
+#sprint .optional-kart-head{display:none}
+#qualification table.has-kart-column .optional-kart-head,
+#sprint table.has-kart-column .optional-kart-head{display:table-cell}
+#qualifTable .ranking-kart-column,
+#sprintTable .ranking-kart-column{
+  color:#aeb6c3!important;
+  font-family:var(--font-time)!important;
+  font-weight:800!important;
+  font-variant-numeric:tabular-nums;
+  text-align:center!important;
+  white-space:nowrap!important;
+}
+#qualifTable .ranking-driver-cell,
+#sprintTable .ranking-driver-cell{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  text-overflow:ellipsis!important;
+}
+#qualifTable .ranking-driver-cell .driver-name,
+#sprintTable .ranking-driver-cell .driver-name{
+  display:flex!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  text-overflow:ellipsis!important;
+}
+@media (max-width:680px), (orientation:portrait){
+  #qualification table.has-kart-column,
+  #sprint table.has-kart-column{table-layout:fixed!important;width:100%!important}
+  #qualification table.has-kart-column th:nth-child(1),
+  #qualification table.has-kart-column td.ranking-pos,
+  #sprint table.has-kart-column th:nth-child(1),
+  #sprint table.has-kart-column td.ranking-pos{width:6%!important;padding-left:5px!important;padding-right:1px!important}
+  #qualification table.has-kart-column th:nth-child(2),
+  #qualification table.has-kart-column td.ranking-kart-column,
+  #sprint table.has-kart-column th:nth-child(2),
+  #sprint table.has-kart-column td.ranking-kart-column{width:9%!important;padding-left:1px!important;padding-right:1px!important;text-align:center!important}
+  #qualification table.has-kart-column th:nth-child(3),
+  #qualification table.has-kart-column td.ranking-driver-column{width:25%!important;padding-left:3px!important}
+  #qualification table.has-kart-column th:nth-child(4),
+  #qualification table.has-kart-column td.ranking-last{width:20%!important}
+  #qualification table.has-kart-column th:nth-child(5),
+  #qualification table.has-kart-column td.ranking-best{width:20%!important}
+  #qualification table.has-kart-column th:nth-child(6),
+  #qualification table.has-kart-column td.ranking-gap{width:20%!important}
+  #sprint table.has-kart-column th:nth-child(3),
+  #sprint table.has-kart-column td.ranking-driver-column{width:28%!important;padding-left:3px!important}
+  #sprint table.has-kart-column th:nth-child(4),
+  #sprint table.has-kart-column td.ranking-last{width:19%!important}
+  #sprint table.has-kart-column th:nth-child(7),
+  #sprint table.has-kart-column td.ranking-interval{width:38%!important}
+  #qualification table.has-kart-column td,
+  #sprint table.has-kart-column td{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.6.7 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.6.9 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -1765,9 +1893,9 @@ body.current-sprint .gap-with{
   </div>
 </section>
 
-<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><div class="qual-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">⌂</button><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">vs —</div></div></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
+<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><div class="qual-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">⌂</button><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">vs —</div></div></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr id="qualifHead"><th>POS</th><th class="optional-kart-head">KART</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
 
-<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><div class="sprint-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">⌂</button><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openSprintFocus()" aria-label="Ouvrir le mode Focus Sprint"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="sDeltaValue">—</div><div class="sprint-session-info"><span id="sRemaining">—</span><span class="sprint-session-separator">•</span><span id="sLapsRemaining">—</span></div><div class="gap-with" id="sGapWith">vs —</div></div></div><div class="sprint-cell fastest-last-block"><div class="label">&nbsp;</div><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><section class="panel card penalty-panel"><div class="label red">PÉNALITÉS</div><div id="penalties"></div></section></div></div></section>
+<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><div class="sprint-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">⌂</button><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openSprintFocus()" aria-label="Ouvrir le mode Focus Sprint"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="sDeltaValue">—</div><div class="sprint-session-info"><span id="sRemaining">—</span><span class="sprint-session-separator">•</span><span id="sLapsRemaining">—</span></div><div class="gap-with" id="sGapWith">vs —</div></div></div><div class="sprint-cell fastest-last-block"><div class="label">&nbsp;</div><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr id="sprintHead"><th>POS</th><th class="optional-kart-head">KART</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><section class="panel card penalty-panel"><div class="label red">PÉNALITÉS</div><div id="penalties"></div></section></div></div></section>
 
 <section id="endurance" class="screen"><div class="endurance-grid"><section class="panel endurance-main-panel"><button class="inline-home-btn endurance-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="panel-title endurance-titlebar"><span>CLASSEMENT GÉNÉRAL</span><span class="endurance-remaining-box"><span class="endurance-remaining-label">TEMPS RESTANT</span><strong class="endurance-remaining-value" id="eRemaining">—</strong></span></div><div class="endurance-table-wrap"><table><thead><tr><th>POS</th><th>ÉQUIPE / PILOTE</th><th>KART</th><th>TOURS</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th><th>PÉNA.</th></tr></thead><tbody id="enduranceTable"></tbody></table></div></section><div class="right-stack"><section class="panel card"><div class="label">TOP 8 — RYTHME ACTUEL (MOYENNE 5 TOURS)</div><div id="paceTop8"></div></section><section class="panel card penalty-panel endurance-penalty-panel"><div class="label red">PÉNALITÉS</div><div id="endurancePenalties"></div></section><section class="panel live-diagnostics"><div class="label"><span id="liveStatusDot" class="live-status-dot"></span>LIVE APEX</div><div class="live-diagnostics-grid"><div class="live-stat"><span class="live-stat-label">Statut</span><span id="liveDiagStatus" class="live-stat-value">—</span></div><div class="live-stat"><span class="live-stat-label">Messages</span><span id="liveDiagMessages" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Mises à jour lues</span><span id="liveDiagParsed" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Dernière donnée</span><span id="liveDiagLast" class="live-stat-value">—</span></div><div class="live-stat live-frame-preview"><span class="live-stat-label">Dernière trame</span><span id="liveDiagPreview" class="live-stat-value">En attente…</span></div></div></section><section class="panel quick-change-panel"><div class="panel-title">QUICK CHANGE — FIFO STRICT</div><div class="quick-table-wrap"><table class="quick-table"><thead><tr><th>QUEUE</th><th>PIT</th><th>RANK</th><th>PREVIOUS TEAM</th><th>KART</th><th>AVG</th><th>Δ KART</th></tr></thead><tbody id="quickTable"></tbody></table></div></section></div></div></section>
 
@@ -2078,10 +2206,15 @@ function formatDriverName(fullName){
  const last=parts.join(' ');
  return `<span class="driver-name"><span class="driver-first">${first}</span><span class="driver-last">${last}</span></span>`;
 }
-function formatRankingDriver(driver){
+function validKartNumber(driver){
  const kart=String(driver?.apex??'').trim();
- const kartMarkup=(kart&&kart!=='—'&&kart!=='-')?`<span class="ranking-kart" title="Kart ${kart}">${kart}</span>`:'';
- return `<span class="ranking-driver-cell">${kartMarkup}${formatDriverName(driver?.driver)}</span>`;
+ return kart&&kart!=='—'&&kart!=='-'?kart:'';
+}
+function rankingHasKartColumn(){
+ return (state.drivers||[]).some(d=>Boolean(validKartNumber(d)));
+}
+function formatRankingDriver(driver){
+ return `<span class="ranking-driver-cell">${formatDriverName(driver?.driver)}</span>`;
 }
 function setDriverName(el,fullName){el.innerHTML=formatDriverName(fullName)}
 function formatDriverSurname(fullName){const raw=(fullName||'—').trim();if(raw==='—')return '—';const parts=raw.split(/\s+/);return `<span class="driver-last">${parts.length>1?parts.slice(1).join(' '):parts[0]}</span>`;}
@@ -2176,8 +2309,11 @@ function render(){
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);circuitName.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
  const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelect.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}circuitSelect.value=state.circuit_id||'';
  const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
- rows('qualifTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatRankingDriver(d)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td>`);
- rows('sprintTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatRankingDriver(d)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="mobile-hide ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="mobile-hide">${d.gap}</td><td>${d.interval}</td>`);
+ const showRankingKart=rankingHasKartColumn();
+ document.querySelector('#qualification .qual-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);
+ document.querySelector('#sprint .sprint-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);
+ rows('qualifTable',d=>`<td class="${positionClass(d.pos)} ranking-pos">${d.pos}</td>${showRankingKart?`<td class="ranking-kart-column">${validKartNumber(d)||'—'}</td>`:''}<td class="name ranking-driver-column">${formatRankingDriver(d)}</td><td class="ranking-last ${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="ranking-best ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="ranking-gap">${d.gap}</td>`);
+ rows('sprintTable',d=>`<td class="${positionClass(d.pos)} ranking-pos">${d.pos}</td>${showRankingKart?`<td class="ranking-kart-column">${validKartNumber(d)||'—'}</td>`:''}<td class="name ranking-driver-column">${formatRankingDriver(d)}</td><td class="ranking-last ${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="mobile-hide ranking-best ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="mobile-hide ranking-gap">${d.gap}</td><td class="ranking-interval">${d.interval}</td>`);
  rows('enduranceTable',d=>`<td class="pos endurance-position-cell"><span class="endurance-position-wrap"><span class="endurance-position-number${Number(d.pos)===1?' leader-pos':''}">${d.pos}</span>${endurancePitBadge(d)}</span></td><td class="name">${formatDriverName(d.driver)}</td><td>${d.apex}</td><td>${d.laps}</td><td>${d.pit_stops ?? '—'}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td><td class="red">${d.penalty||'—'}</td>`);
  const f=state.followed||{};qPos.textContent=f.pos?'P'+f.pos:'—';setDriverName(qName,f.driver||'—');qDelta.textContent=qualificationDeltaFor(f);qDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f));updateRemainingDisplay();qLapsRemaining.textContent=state.apex_laps_remaining||'—';const qReference=qualificationReferenceFor(f);qGapWith.innerHTML=gapWithMarkup('vs',qReference?.driver||'—');
  setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';const sprintDelta=sprintDeltaFor(f);const sprintReference=sprintReferenceFor(f);sDeltaValue.textContent=sprintDelta;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&sprintDelta!=='--');sDeltaValue.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&sprintDelta!=='--');sRemaining.textContent=liveRemainingMilliseconds()===null?(state.time_remaining||'—'):formatRemainingMilliseconds(liveRemainingMilliseconds());sLapsRemaining.textContent=state.apex_laps_remaining||'—';sGapWith.innerHTML=gapWithMarkup('vs',sprintReference?.driver||'—');const fastest=state.fastest_last_lap||{};sFastestName.textContent='🔥 '+(fastest.driver||'—');sFastestTime.textContent=fastest.lap||'—';

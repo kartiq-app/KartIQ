@@ -1,3 +1,11 @@
+# KartIQ V4.6.8
+
+- Correction du classement portrait Qualification et Sprint.
+- Le numéro de kart, lorsqu’il est disponible, reste strictement sur la même ligne que la position et le nom du pilote.
+- Ordre garanti : position → kart → pilote.
+- Le nom du pilote est tronqué avec une ellipse si la largeur disponible est insuffisante.
+- Cache du service worker renouvelé pour forcer la mise à jour sur iPhone.
+
 # V4.6.7 — Alignement portrait du numéro de kart
 
 - En Qualification et Sprint portrait, la position, le numéro de kart et le nom du pilote restent sur une seule ligne.
@@ -329,3 +337,9 @@ KartIQ V4.0.9
 - Temps restant orange à 2 minutes ou moins.
 - Bouton × en haut à droite pour revenir au mode Qualification classique.
 - Tentative automatique d’affichage plein écran, orientation paysage et maintien de l’écran allumé lorsque le navigateur le permet.
+
+## V4.6.9 — Colonne KART conditionnelle
+- Ajout d'une vraie colonne **KART** dans les classements Qualification et Sprint.
+- La colonne est affichée uniquement si au moins un numéro de kart est fourni par Apex Timing.
+- Si aucun numéro n'est disponible, la colonne disparaît totalement et la mise en page d'origine est conservée.
+- En portrait, position, kart et pilote restent chacun dans leur colonne sur une seule ligne.

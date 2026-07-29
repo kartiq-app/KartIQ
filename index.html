@@ -1650,6 +1650,73 @@ body.current-sprint .gap-with{
   .qual-focus-icon{width:18px;height:18px;flex-basis:18px;margin-right:6px}
 }
 
+
+/* KartIQ V4.6.8 — portrait : KART + PILOTE strictement sur une seule ligne */
+@media (max-width:680px) and (orientation:portrait){
+  body.current-qualification #qualifTable td.name,
+  body.current-sprint #sprintTable td.name{
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    vertical-align:middle!important;
+  }
+  body.current-qualification #qualifTable .ranking-driver-cell,
+  body.current-sprint #sprintTable .ranking-driver-cell{
+    display:grid!important;
+    grid-template-columns:max-content minmax(0,1fr)!important;
+    grid-template-rows:1fr!important;
+    align-items:center!important;
+    column-gap:4px!important;
+    width:100%!important;
+    min-width:0!important;
+    height:100%!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+  body.current-qualification #qualifTable .ranking-kart,
+  body.current-sprint #sprintTable .ranking-kart{
+    grid-column:1!important;
+    grid-row:1!important;
+    display:block!important;
+    min-width:0!important;
+    width:auto!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    align-self:center!important;
+  }
+  body.current-qualification #qualifTable .ranking-driver-cell>.driver-name,
+  body.current-sprint #sprintTable .ranking-driver-cell>.driver-name,
+  body.current-qualification #qualifTable .ranking-driver-cell>.driver-last,
+  body.current-sprint #sprintTable .ranking-driver-cell>.driver-last{
+    grid-column:2!important;
+    grid-row:1!important;
+    display:inline-flex!important;
+    flex-direction:row!important;
+    flex-wrap:nowrap!important;
+    align-items:baseline!important;
+    width:auto!important;
+    min-width:0!important;
+    max-width:100%!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  body.current-qualification #qualifTable .ranking-driver-cell .driver-first,
+  body.current-qualification #qualifTable .ranking-driver-cell .driver-last,
+  body.current-sprint #sprintTable .ranking-driver-cell .driver-first,
+  body.current-sprint #sprintTable .ranking-driver-cell .driver-last{
+    display:inline!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+  body.current-qualification #qualifTable .ranking-driver-cell .driver-last,
+  body.current-sprint #sprintTable .ranking-driver-cell .driver-last{
+    min-width:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+}
+
 </style>
 </head>
 <body>
