@@ -1,3 +1,9 @@
+# V4.5.8
+
+- Aligne le bouton Home à la même hauteur que la position du pilote suivi.
+- Rend toute la largeur de la carte disponible au nom du pilote.
+- Empêche le bouton Home de masquer les noms de pilotes longs.
+
 # KartIQ v4.5.7
 
 - Recentrage du bouton Home dans la carte du pilote suivi en Qualification et Sprint.
