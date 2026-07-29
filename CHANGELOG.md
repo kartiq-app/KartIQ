@@ -1,3 +1,10 @@
+# KartIQ V4.5.4
+
+- Affichage du meilleur dernier tour du Focus Sprint sur une seule ligne : pilote et chrono.
+- Suppression du séparateur « : » entre le pilote et son chrono.
+- Largeur de la mention de classement portée à 100 % dans la colonne du pilote suivi.
+- Taille adaptative avec `clamp()` pour éviter la coupure de « 2ÈME TEMPS », « 10ÈME TEMPS », etc.
+
 # KartIQ V4.5.3
 
 - Supprime le bandeau supérieur sur les pages Qualification et Sprint.

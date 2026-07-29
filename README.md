@@ -1,15 +1,8 @@
-## Focus Sprint V4.5.3
+# KartIQ V4.5.4
 
-Le mode Focus Sprint affiche désormais le rang du dernier tour du pilote suivi par rapport à la grille et le pilote le plus rapide sur le dernier tour. Ces données sont recalculées à chaque mise à jour Apex.
+## Nouveautés
 
-## Nouveautés V4.5.3
-
-- Le mode Focus Qualification récupère désormais le pilote et le chrono directement depuis la cellule violette du classement.
-- Cette cellule violette constitue la référence du meilleur temps absolu de la séance en cours.
-- Un calcul sur le classement reste disponible uniquement comme solution de repli avant le premier rendu du tableau.
-
-# KartIQ V4.5.3
-
-Cette version corrige le bloc **Meilleur temps** du Mode Focus Qualification : il affiche désormais directement le meilleur chrono absolu de la séance en cours.
-
-KartIQ V4.2.7 — version Web Render, mobile responsive et installable sur iPhone en plein écran.
+- Focus Sprint : le meilleur dernier tour est affiché sur une seule ligne, sans deux-points : `🔥 Martin Guerard 1:18.345`.
+- Focus Sprint : la zone de classement du dernier tour utilise désormais 100 % de la largeur utile de la colonne du pilote suivi.
+- La taille de `2ÈME TEMPS`, `10ÈME TEMPS`, etc. s’adapte avec `clamp()` tout en restant centrée et non tronquée.
+- Les évolutions de navigation des pages Qualification et Sprint de la V4.5.3 sont conservées.
