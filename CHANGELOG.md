@@ -1,3 +1,9 @@
+# KartIQ V4.6.3 — Suivi automatique Brice NGuessan
+
+- Sélection automatique du pilote suivi en modes Qualification et Sprint lorsque le classement contient Brice NGuessan, NGUESSAN, B. NGuessan ou Guessan.
+- Détection tolérante à la casse, aux apostrophes, aux points et aux espaces.
+- Une sélection manuelle reste prioritaire jusqu’au prochain rechargement de session.
+
 # V4.6.2
 
 - Corrige le débordement du delta et du temps/tours en mode Sprint portrait.

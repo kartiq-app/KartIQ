@@ -1740,6 +1740,7 @@ body.current-sprint .gap-with{
 <div id="installHelp" class="install-help" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle"><div class="install-help-card"><h2 id="installHelpTitle">KartIQ en plein écran sur iPhone</h2><p>Safari ne permet pas toujours d’activer le vrai plein écran depuis une page web. Pour obtenir l’affichage sans barre d’adresse :</p><p><strong>1.</strong> Appuie sur l’icône Partager de Safari.<br><strong>2.</strong> Choisis « Sur l’écran d’accueil ».<br><strong>3.</strong> Ouvre ensuite KartIQ depuis sa nouvelle icône.</p><button onclick="closeInstallHelp()">J’ai compris</button></div></div>
 <script>
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
+let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
 const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
 let iphoneOrientation='portrait';
@@ -1804,7 +1805,15 @@ function updateRemainingDisplay(){
  renderQualificationFocus();
  renderSprintFocus();
 }
-async function load(){const nextState=await fetch('/api/state').then(r=>r.json());syncRemainingFromState(nextState);state=nextState;render();ensureApexBrowserConnection()}
+async function load(){
+ const nextState=await fetch('/api/state').then(r=>r.json());
+ syncRemainingFromState(nextState);
+ state=nextState;
+ if(!(state.drivers||[]).length){autoBriceFollowApplied=false;manualFollowOverride=false}
+ render();
+ maybeAutoFollowBrice();
+ ensureApexBrowserConnection();
+}
 let apexBrowserSocket=null;
 let apexBrowserCircuitId=null;
 let apexBrowserConnecting=false;
@@ -1833,7 +1842,7 @@ function showMode(mode){
   document.getElementById('circuitSelect')?.focus();
   return;
  }
- currentMode=mode;setModeClass(mode);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));const screen=document.getElementById(mode);screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home')api('/api/mode',{mode})
+ currentMode=mode;setModeClass(mode);maybeAutoFollowBrice();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));const screen=document.getElementById(mode);screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home')api('/api/mode',{mode})
 }
 
 let sprintFocusWakeLock=null;
@@ -2023,7 +2032,36 @@ function qualificationDeltaIsLeader(driver){
  const leader=qualificationLeader();
  return Boolean(driver?.driver&&leader?.driver&&driver.driver===leader.driver);
 }
-async function followDriver(driverName){const selected=(state.drivers||[]).find(d=>d.driver===driverName);if(!selected)return;state.followed_driver=driverName;state.followed=selected;state.qualif_delta=qualificationDeltaFor(selected);render();await api('/api/follow',{driver:driverName})}
+function normalizeBriceDriverName(value){
+ return String(value||'')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[’'`´.]/g,' ')
+  .replace(/[^a-zA-Z0-9]+/g,' ')
+  .trim().toUpperCase();
+}
+function isBriceDriverName(value){
+ const normalized=normalizeBriceDriverName(value);
+ if(!normalized)return false;
+ return normalized==='BRICE NGUESSAN'||normalized==='NGUESSAN'||normalized==='B NGUESSAN'||normalized==='GUESSAN'||normalized.split(' ').includes('NGUESSAN')||normalized.split(' ').includes('GUESSAN');
+}
+async function maybeAutoFollowBrice(){
+ if(!['qualification','sprint'].includes(currentMode)||manualFollowOverride||autoBriceFollowApplied||autoBriceFollowInFlight)return;
+ const selected=(state.drivers||[]).find(d=>isBriceDriverName(d.driver));
+ if(!selected)return;
+ autoBriceFollowApplied=true;
+ autoBriceFollowInFlight=true;
+ state.followed_driver=selected.driver;
+ state.followed=selected;
+ state.qualif_delta=qualificationDeltaFor(selected);
+ render();
+ try{await fetch('/api/follow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver:selected.driver})})}
+ finally{autoBriceFollowInFlight=false}
+}
+async function followDriver(driverName,{automatic=false}={}){
+ const selected=(state.drivers||[]).find(d=>d.driver===driverName);if(!selected)return;
+ if(!automatic)manualFollowOverride=true;
+ state.followed_driver=driverName;state.followed=selected;state.qualif_delta=qualificationDeltaFor(selected);render();await api('/api/follow',{driver:driverName})
+}
 function driverAhead(followed){if(!followed||!followed.pos||Number(followed.pos)<=1)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(followed.pos)-1)||null}
 function sprintReferenceFor(driver){
  if(!driver||!driver.pos)return null;
