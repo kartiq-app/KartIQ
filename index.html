@@ -957,7 +957,7 @@ body.sprint-focus-active{overflow:hidden}
 
 
 
-/* KartIQ V4.5.3 — Navigation intégrée Qualification / Sprint */
+/* KartIQ V4.5.7 — Navigation intégrée et bouton Home recentré */
 /* Le bandeau principal reste disponible sur l'accueil et l'Endurance. */
 body:not(.preview-embedded).current-qualification > header,
 body:not(.preview-embedded).current-sprint > header{
@@ -978,7 +978,8 @@ body.current-sprint .position-cell .inline-home-btn{
   display:flex!important;
   align-items:center;
   justify-content:center;
-  left:10px;
+  /* Centre le bouton dans l’espace entre le bord gauche et la position. */
+  left:clamp(12px,calc(25% - 8px),72px);
   top:50%;
   transform:translateY(-50%);
   width:44px;
@@ -1024,7 +1025,7 @@ body.current-sprint .gap-with{
 @media(max-width:680px){
   body.current-qualification .position-cell .inline-home-btn,
   body.current-sprint .position-cell .inline-home-btn{
-    left:4px;
+    left:clamp(6px,calc(25% - 4px),34px);
     width:34px;
     height:34px;
     border-radius:6px!important;
@@ -1098,7 +1099,7 @@ body.current-sprint .gap-with{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.4.4</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.5.7</div>
     </div>
   </div>
 </section>

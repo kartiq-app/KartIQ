@@ -1,3 +1,9 @@
+# KartIQ v4.5.7
+
+- Recentrage du bouton Home dans la carte du pilote suivi en Qualification et Sprint.
+- Le bouton est désormais centré entre le bord gauche de la carte et la position affichée, sans sortir du cadre.
+- Conservation des améliorations précédentes du Focus Sprint et de l’affichage des pénalités.
+
 # KartIQ V4.5.5
 
 - Affiche le suffixe ordinal « er/ème » en exposant et dans une graisse plus fine dans le Focus Sprint.
