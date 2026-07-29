@@ -1,9 +1,9 @@
-## V4.4.5 — Lisibilité du Focus Sprint
+# KartIQ V4.4.6 — Alignement classement Focus Sprint
 
-- Affichage du meilleur dernier tour sur une seule ligne.
-- Clignotement violet de toute la case lors d’un nouveau meilleur dernier tour.
-- Agrandissement de 35 % et centrage du classement du dernier tour du pilote suivi.
-- Déplacement du filet rouge après le titre « PÉNALITÉS » pour gagner de la hauteur.
+- Correction du centrage de l’indicateur « Xème temps » sous la position et le pilote suivi.
+- Le bloc pilote occupe désormais toute la largeur de sa cellule pour partager un axe central unique.
+- Agrandissement effectif de 35 % du classement du dernier tour.
+- Conservation d’une largeur de 70 % pour l’indicateur.
 
 ## V4.4.4 — Classement du dernier tour en Focus Sprint
 
