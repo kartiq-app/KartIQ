@@ -1650,6 +1650,12 @@ body.current-sprint .gap-with{
   .qual-focus-icon{width:18px;height:18px;flex-basis:18px;margin-right:6px}
 }
 
+
+/* KartIQ V4.6.6 — numéro de kart dans les classements Qualification et Sprint */
+.ranking-driver-cell{display:flex;align-items:center;min-width:0;gap:8px}
+.ranking-kart{flex:0 0 auto;min-width:2.2em;text-align:center;color:#aeb6c3;font-family:var(--font-time)!important;font-weight:800;font-variant-numeric:tabular-nums}
+.ranking-driver-cell .driver-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:680px){.ranking-driver-cell{gap:4px}.ranking-kart{min-width:1.9em;font-size:.9em}}
 </style>
 </head>
 <body>
@@ -2018,6 +2024,11 @@ function formatDriverName(fullName){
  const last=parts.join(' ');
  return `<span class="driver-name"><span class="driver-first">${first}</span><span class="driver-last">${last}</span></span>`;
 }
+function formatRankingDriver(driver){
+ const kart=String(driver?.apex??'').trim();
+ const kartMarkup=(kart&&kart!=='—'&&kart!=='-')?`<span class="ranking-kart" title="Kart ${kart}">${kart}</span>`:'';
+ return `<span class="ranking-driver-cell">${kartMarkup}${formatDriverName(driver?.driver)}</span>`;
+}
 function setDriverName(el,fullName){el.innerHTML=formatDriverName(fullName)}
 function formatDriverSurname(fullName){const raw=(fullName||'—').trim();if(raw==='—')return '—';const parts=raw.split(/\s+/);return `<span class="driver-last">${parts.length>1?parts.slice(1).join(' '):parts[0]}</span>`;}
 function positionClass(pos,extra=''){return `pos${extra?' '+extra:''}`}
@@ -2111,8 +2122,8 @@ function render(){
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);circuitName.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
  const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelect.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}circuitSelect.value=state.circuit_id||'';
  const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
- rows('qualifTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatDriverName(d.driver)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td>`);
- rows('sprintTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatDriverName(d.driver)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="mobile-hide ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="mobile-hide">${d.gap}</td><td>${d.interval}</td>`);
+ rows('qualifTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatRankingDriver(d)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td>`);
+ rows('sprintTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatRankingDriver(d)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="mobile-hide ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="mobile-hide">${d.gap}</td><td>${d.interval}</td>`);
  rows('enduranceTable',d=>`<td class="pos endurance-position-cell"><span class="endurance-position-wrap"><span class="endurance-position-number${Number(d.pos)===1?' leader-pos':''}">${d.pos}</span>${endurancePitBadge(d)}</span></td><td class="name">${formatDriverName(d.driver)}</td><td>${d.apex}</td><td>${d.laps}</td><td>${d.pit_stops ?? '—'}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td><td class="red">${d.penalty||'—'}</td>`);
  const f=state.followed||{};qPos.textContent=f.pos?'P'+f.pos:'—';setDriverName(qName,f.driver||'—');qDelta.textContent=qualificationDeltaFor(f);qDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f));updateRemainingDisplay();qLapsRemaining.textContent=state.apex_laps_remaining||'—';const qReference=qualificationReferenceFor(f);qGapWith.innerHTML=gapWithMarkup('vs',qReference?.driver||'—');
  setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';const sprintDelta=sprintDeltaFor(f);const sprintReference=sprintReferenceFor(f);sDeltaValue.textContent=sprintDelta;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&sprintDelta!=='--');sDeltaValue.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&sprintDelta!=='--');sRemaining.textContent=liveRemainingMilliseconds()===null?(state.time_remaining||'—'):formatRemainingMilliseconds(liveRemainingMilliseconds());sLapsRemaining.textContent=state.apex_laps_remaining||'—';sGapWith.innerHTML=gapWithMarkup('vs',sprintReference?.driver||'—');const fastest=state.fastest_last_lap||{};sFastestName.textContent='🔥 '+(fastest.driver||'—');sFastestTime.textContent=fastest.lap||'—';

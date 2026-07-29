@@ -1,3 +1,11 @@
+# KartIQ V4.6.6 — Numéros de kart dans les classements
+
+- Ajout du numéro de kart Apex dans le classement général des modes Qualification et Sprint.
+- Le numéro provient directement du champ `KART` transmis par Apex Timing.
+- Il est affiché entre la position et le nom du pilote, en gris clair.
+- Lorsqu'aucun numéro de kart n'est fourni, aucun emplacement vide n'est ajouté devant le nom.
+- Les affichages Focus et Endurance ne sont pas modifiés.
+
 # KartIQ V4.6.5 — Signes des deltas en mode Focus Sprint
 
 - Le delta orange avec le pilote devant est toujours affiché avec un signe `-`.
