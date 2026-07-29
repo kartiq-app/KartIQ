@@ -1,3 +1,10 @@
+# KartIQ V4.6.4 — Deltas Focus Sprint aux extrémités du classement
+
+- Lorsque le pilote suivi est P1, affiche uniquement le delta vert avec le pilote P2.
+- Supprime le second delta et le séparateur puisqu’aucun pilote ne se trouve devant le leader.
+- Lorsque le pilote suivi est dernier, affiche uniquement le delta orange avec le pilote qui le précède.
+- Conserve les deux deltas pour toutes les autres positions.
+
 # KartIQ V4.6.3 — Suivi automatique Brice NGuessan
 
 - Sélection automatique du pilote suivi en modes Qualification et Sprint lorsque le classement contient Brice NGuessan, NGUESSAN, B. NGuessan ou Guessan.

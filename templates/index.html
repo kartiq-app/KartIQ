@@ -1881,7 +1881,12 @@ function renderSprintFocus(){
  const f=state.followed||{};sprintFocusPosition.textContent=f.pos?'P'+f.pos:'—';sprintFocusName.textContent=f.driver||state.followed_driver||'—';
  const lastRank=sprintLastLapRanking(f);sprintFocusLastRank.innerHTML=lastRank?frenchOrdinalMarkup(lastRank.rank):'—';
  const fastest=state.fastest_last_lap||{};sprintFocusFastestLast.innerHTML=`🔥 ${fastest.driver||'—'} <span class="sprint-focus-fastest-last-time">${fastest.lap||'—'}</span>`;
- sprintFocusAhead.textContent=sprintGapAhead(f);sprintFocusBehind.textContent=sprintGapBehind(f);
+ const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(sprintDriverBehind(f));
+ sprintFocusAhead.textContent=focusAhead;sprintFocusBehind.textContent=focusBehind;
+ // P1 : uniquement l'écart vert avec P2. Dernier : uniquement l'écart orange avec le pilote devant.
+ sprintFocusAhead.style.display=isLeader?'none':'';
+ sprintFocusBehind.style.display=(!isLeader&&!hasDriverBehind)?'none':'';
+ const sprintFocusDivider=overlay.querySelector('.sprint-focus-divider');if(sprintFocusDivider)sprintFocusDivider.style.display=(isLeader||!hasDriverBehind)?'none':'';
  const ms=liveRemainingMilliseconds();sprintFocusTime.textContent=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);sprintFocusTime.classList.toggle('time-critical',Number.isFinite(ms)&&ms<=120000);
  const laps=String(state.apex_laps_remaining||'—');sprintFocusLaps.textContent=(laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'—';
  const list=[...(state.penalties||[])].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
