@@ -1,3 +1,11 @@
+## V4.4.4 — Classement du dernier tour en Focus Sprint
+
+- Ajout du classement du dernier chrono du pilote suivi par rapport à la grille.
+- Mise à jour automatique de l’indication (« 1er temps », « 7ème temps », etc.) à chaque tour.
+- Gestion des égalités de chronos au même rang.
+- Ajout, au-dessus des pénalités, du pilote le plus rapide sur le dernier tour et de son chrono.
+- Conservation du panneau des pénalités avec défilement.
+
 ## V4.4.3 — Meilleur temps violet Qualification
 
 - Le bloc « Meilleur temps » du Focus Qualification lit désormais la cellule violette du classement.
