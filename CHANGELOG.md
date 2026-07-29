@@ -1,25 +1,10 @@
-# KartIQ V4.4.8 — Statut de course dans la carte du meilleur dernier tour
+# KartIQ V4.5.3
 
-- Sprint classique uniquement : pilote et chrono du meilleur dernier tour regroupés sur la première ligne.
-- Temps restant et/ou tours restants affichés sur une seconde ligne centrée.
-- Affichage adaptatif : temps + tours, temps seul ou tours seuls selon les données Apex disponibles.
-- Conservation du clignotement violet lors d’un nouveau meilleur dernier tour.
-- Aucun changement dans les modes Focus.
-
-# KartIQ V4.4.7 — Classement Focus Sprint non tronqué
-
-- Correction de la coupure du texte « Xème temps » dans la case du pilote suivi.
-- Le conteneur du pilote et celui du classement utilisent désormais 100 % de la largeur intérieure disponible.
-- Centrage du classement avec un conteneur flex commun à la position et au nom du pilote.
-- Taille responsive conservant l’agrandissement demandé tout en évitant le rognage sur les écrans plus étroits.
-- Suppression de la contrainte de largeur à 70 % et affichage complet du texte.
-
-# KartIQ V4.4.6 — Alignement classement Focus Sprint
-
-- Correction du centrage de l’indicateur « Xème temps » sous la position et le pilote suivi.
-- Le bloc pilote occupe désormais toute la largeur de sa cellule pour partager un axe central unique.
-- Agrandissement effectif de 35 % du classement du dernier tour.
-- Conservation d’une largeur de 70 % pour l’indicateur.
+- Supprime le bandeau supérieur sur les pages Qualification et Sprint.
+- Ajoute un bouton Home dans la carte du pilote suivi, sans modifier la structure de la ligne 1.
+- Conserve la carte Focus et fait de la carte Delta la zone la plus large.
+- Remplace « Écart avec » par « vs ».
+- Ne modifie ni l’Endurance ni les modes Focus.
 
 ## V4.4.4 — Classement du dernier tour en Focus Sprint
 
