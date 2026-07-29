@@ -1,3 +1,8 @@
+# V4.5.9
+
+- Centre horizontalement le bouton Home entre le bord gauche de la carte et la position du pilote suivi.
+- Conserve l’alignement vertical du bouton avec la position afin de ne jamais masquer le nom du pilote.
+
 # V4.5.8
 
 - Aligne le bouton Home à la même hauteur que la position du pilote suivi.

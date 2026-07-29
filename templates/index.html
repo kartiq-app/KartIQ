@@ -957,7 +957,7 @@ body.sprint-focus-active{overflow:hidden}
 
 
 
-/* KartIQ V4.5.8 — Bouton Home aligné sur la position du pilote */
+/* KartIQ V4.5.9 — Bouton Home centré entre le bord gauche et la position */
 /* Le bandeau principal reste disponible sur l'accueil et l'Endurance. */
 body:not(.preview-embedded).current-qualification > header,
 body:not(.preview-embedded).current-sprint > header{
@@ -979,9 +979,9 @@ body.current-sprint .position-cell .inline-home-btn{
   align-items:center;
   justify-content:center;
   /* Place le bouton entre le bord gauche et la position, sur la même ligne que P1/P2… */
-  left:clamp(12px,calc(25% - 8px),72px);
+  left:25%;
   top:calc(50% - 14px);
-  transform:translateY(-50%);
+  transform:translate(-50%,-50%);
   width:44px;
   height:44px;
   border:1px solid #303744!important;
@@ -1026,7 +1026,7 @@ body.current-sprint .gap-with{
 @media(max-width:680px){
   body.current-qualification .position-cell .inline-home-btn,
   body.current-sprint .position-cell .inline-home-btn{
-    left:clamp(6px,calc(25% - 4px),34px);
+    left:25%;
     top:calc(50% - 9px);
     width:34px;
     height:34px;
