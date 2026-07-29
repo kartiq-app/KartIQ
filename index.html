@@ -968,7 +968,7 @@ body:not(.preview-embedded).current-sprint .fastest-last-block.best-lap-flash{an
 @media(max-width:680px){body:not(.preview-embedded).current-sprint .fastest-last-block{gap:2px!important}body:not(.preview-embedded).current-sprint .fastest-last-name{font-size:12px}body:not(.preview-embedded).current-sprint .fastest-last-time{font-size:15px}body:not(.preview-embedded).current-sprint .fastest-last-status{font-size:10px}}
 
 
-/* V4.5.1 — paysage requis uniquement à l’entrée des modes Focus */
+/* V4.5.2 — paysage stable dans les modes Focus sur iPhone */
 .focus-orientation-guard{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;background:#000;color:#fff;padding:calc(24px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));text-align:center}
 .focus-orientation-guard.show{display:flex}
 .focus-orientation-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;max-width:520px}
@@ -979,6 +979,28 @@ body:not(.preview-embedded).current-sprint .fastest-last-block.best-lap-flash{an
 .focus-orientation-exit:active{transform:scale(.98)}
 @keyframes focusRotateHint{0%,100%{transform:rotate(0deg)}45%,55%{transform:rotate(90deg)}}
 @media(orientation:landscape){.focus-orientation-guard.show{display:none!important}}
+
+/* Après l’entrée en Focus, KartIQ conserve visuellement un canvas paysage sur iPhone. */
+body.focus-visual-landscape{overflow:hidden!important}
+body.focus-visual-landscape .sprint-focus-overlay.show,
+body.focus-visual-landscape .qual-focus-overlay.show{
+ position:fixed!important;
+ inset:auto!important;
+ top:50%!important;
+ left:50%!important;
+ width:100vh!important;
+ height:100vw!important;
+ min-width:100vh!important;
+ min-height:100vw!important;
+ max-width:none!important;
+ max-height:none!important;
+ transform:translate(-50%,-50%) rotate(90deg)!important;
+ transform-origin:center center!important;
+ padding:env(safe-area-inset-left) env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)!important;
+ overflow:hidden!important;
+}
+body.focus-visual-landscape .focus-orientation-guard.show{display:none!important}
+
 </style>
 </head>
 <body>
@@ -1192,17 +1214,23 @@ function showMode(mode){
 
 let activeFocusMode=null;
 let focusOrientationPending=false;
+let focusHasEnteredLandscape=false;
 const focusPortraitQuery=window.matchMedia('(orientation: portrait)');
 function isFocusOpen(){return document.getElementById('sprintFocus')?.classList.contains('show')||document.getElementById('qualificationFocus')?.classList.contains('show')}
 function updateFocusOrientationGuard(){
  const guard=document.getElementById('focusOrientationGuard');if(!guard)return;
- if(focusOrientationPending&&isFocusOpen()&&!focusPortraitQuery.matches){
+ const focusOpen=isFocusOpen();
+ if(focusOrientationPending&&focusOpen&&!focusPortraitQuery.matches){
   focusOrientationPending=false;
+  focusHasEnteredLandscape=true;
  }
- guard.classList.toggle('show',focusOrientationPending&&isFocusOpen());
+ guard.classList.toggle('show',focusOrientationPending&&focusOpen);
+ const shouldRotate=focusOpen&&focusHasEnteredLandscape&&focusPortraitQuery.matches;
+ document.body.classList.toggle('focus-visual-landscape',shouldRotate);
 }
 function beginFocusOrientationEntry(){
  focusOrientationPending=focusPortraitQuery.matches;
+ focusHasEnteredLandscape=!focusOrientationPending;
  updateFocusOrientationGuard();
 }
 function exitActiveFocusMode(){
@@ -1225,6 +1253,8 @@ async function requestFocusLandscape(){
 }
 function releaseFocusOrientation(){
  focusOrientationPending=false;
+ focusHasEnteredLandscape=false;
+ document.body.classList.remove('focus-visual-landscape');
  document.getElementById('focusOrientationGuard')?.classList.remove('show');
  try{screen.orientation?.unlock?.()}catch(e){}
 }

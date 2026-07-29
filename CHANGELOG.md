@@ -1,4 +1,14 @@
-# KartIQ V4.5.1 — Focus paysage stable sur iPhone
+# KartIQ V4.5.2 — Focus paysage stable sur iPhone
+
+- Le paysage reste une condition d’entrée dans les modes Focus Sprint et Qualifications.
+- Une fois le Focus ouvert en paysage, un retour physique de l’iPhone en portrait ne remet plus l’interface en page portrait.
+- KartIQ applique alors une rotation visuelle de 90° et conserve un canvas aux dimensions paysage.
+- La rotation est retirée automatiquement à la sortie du mode Focus.
+- Les zones sûres des iPhone avec encoche ou Dynamic Island sont prises en compte.
+
+---
+
+## KartIQ V4.5.1 — Focus paysage stable sur iPhone
 
 - Android/Chrome : demande du plein écran puis verrouillage automatique en mode paysage lorsque le navigateur l’autorise.
 - iPhone/Safari : affichage d’un écran invitant à tourner le téléphone tant que le mode Focus est ouvert en portrait.
