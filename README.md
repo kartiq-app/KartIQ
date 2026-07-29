@@ -1,4 +1,4 @@
-# KartIQ V4.5.4
+# KartIQ V4.5.5
 
 ## Nouveautés
 

@@ -1,3 +1,11 @@
+# KartIQ V4.5.5
+
+- Affiche le suffixe ordinal « er/ème » en exposant et dans une graisse plus fine dans le Focus Sprint.
+- Ajuste la taille de la mention de classement pour garantir son maintien intégral dans la case.
+- Supprime le titre « PÉNALITÉS » et le filet rouge du bloc de pénalités du Focus Sprint.
+- Conserve un affichage sur une seule colonne, trié de la pénalité la plus récente à la plus ancienne.
+- Conserve l’heure en petit et le défilement vertical tactile lorsque la liste dépasse la hauteur disponible.
+
 # KartIQ V4.5.4
 
 - Affichage du meilleur dernier tour du Focus Sprint sur une seule ligne : pilote et chrono.
