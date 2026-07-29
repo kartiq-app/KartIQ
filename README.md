@@ -1,3 +1,7 @@
+## Focus Sprint V4.4.7
+
+Le classement du dernier tour du pilote suivi utilise désormais toute la largeur utile de la colonne pilote. Les libellés comme « 2ème temps » ou « 12ème temps » restent centrés et entièrement visibles, sans coupure.
+
 ## Focus Sprint V4.4.4
 
 Le mode Focus Sprint affiche désormais le rang du dernier tour du pilote suivi par rapport à la grille et le pilote le plus rapide sur le dernier tour. Ces données sont recalculées à chaque mise à jour Apex.

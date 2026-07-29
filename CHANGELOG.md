@@ -1,3 +1,11 @@
+# KartIQ V4.4.7 — Classement Focus Sprint non tronqué
+
+- Correction de la coupure du texte « Xème temps » dans la case du pilote suivi.
+- Le conteneur du pilote et celui du classement utilisent désormais 100 % de la largeur intérieure disponible.
+- Centrage du classement avec un conteneur flex commun à la position et au nom du pilote.
+- Taille responsive conservant l’agrandissement demandé tout en évitant le rognage sur les écrans plus étroits.
+- Suppression de la contrainte de largeur à 70 % et affichage complet du texte.
+
 # KartIQ V4.4.6 — Alignement classement Focus Sprint
 
 - Correction du centrage de l’indicateur « Xème temps » sous la position et le pilote suivi.
