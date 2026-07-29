@@ -263,3 +263,9 @@ KartIQ V4.0.9
 - Temps restant orange à 2 minutes ou moins.
 - Bouton × en haut à droite pour revenir au mode Qualification classique.
 - Tentative automatique d’affichage plein écran, orientation paysage et maintien de l’écran allumé lorsque le navigateur le permet.
+
+## V4.4.9
+- Sprint classique : la carte « Meilleur dernier tour » est désormais affichée sur trois lignes centrées (pilote, chrono, statut de course).
+- Le statut affiche dynamiquement le temps restant et/ou le nombre de tours restants.
+- Le clignotement violet lors d'un nouveau meilleur dernier tour est conservé.
+- Les modes Focus Sprint et Qualifications demandent le plein écran et verrouillent l'orientation en paysage lorsque le navigateur l'autorise, puis libèrent l'orientation à la fermeture.
