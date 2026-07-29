@@ -1,3 +1,9 @@
+## V4.4.3 — Meilleur temps violet Qualification
+
+- Le bloc « Meilleur temps » du Focus Qualification lit désormais la cellule violette du classement.
+- Affichage du nom du pilote associé et de son chrono en violet.
+- Conservation d'un fallback numérique uniquement si le tableau n'est pas encore rendu.
+
 ## V4.4.2 — Correction du meilleur temps Qualification
 
 - Dans le Mode Focus Qualification, la zone inférieure droite affiche désormais uniquement le **meilleur temps absolu de la séance en cours**, directement sous le titre « Meilleur temps ».

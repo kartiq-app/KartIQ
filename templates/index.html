@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="KartIQ">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V4.4.2 — Correction du meilleur temps Qualification</title>
+<title>KartIQ V4.4.3 — Meilleur temps violet Qualification</title>
 <style>
 :root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -937,7 +937,7 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 @media(max-width:680px){.qual-focus-launch{font-size:8px;letter-spacing:.03em;padding:4px 2px}.qual-delta-content{padding:3px 4px}.qual-delta-focus-cell .qual-delta{margin-top:0}}
 
 
-/* KartIQ V4.4.2 — Correction du meilleur temps Qualification */
+/* KartIQ V4.4.3 — Meilleur temps violet Qualification */
 .sprint-focus-overlay{position:fixed;inset:0;z-index:1100;display:none;background:#000;color:#fff;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .sprint-focus-overlay.show{display:flex;flex-direction:column}
 .sprint-focus-header{height:54px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:8px 16px 6px;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
@@ -958,7 +958,7 @@ body.sprint-focus-active{overflow:hidden}
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.4.2 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.4.3 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -1005,7 +1005,7 @@ body.sprint-focus-active{overflow:hidden}
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.4.2</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.4.3</div>
     </div>
   </div>
 </section>
@@ -1036,7 +1036,7 @@ body.sprint-focus-active{overflow:hidden}
   <div class="qual-focus-header"><span>Qualifications</span><i></i><button class="qual-focus-close" type="button" onclick="closeQualificationFocus()" aria-label="Fermer le mode Focus Qualification">×</button></div>
   <div class="qual-focus-main">
     <div class="qual-focus-row qual-focus-row-one"><div class="qual-focus-cell"><div class="qual-focus-driver-block"><div class="qual-focus-position" id="focusPosition">—</div><div class="qual-focus-followed-name" id="focusFollowedName">—</div></div></div><div class="qual-focus-cell"><div class="qual-focus-delta" id="focusDelta">—</div></div></div>
-    <div class="qual-focus-row qual-focus-row-two"><div class="qual-focus-cell"><div class="qual-focus-session-block"><div class="qual-focus-remaining" id="focusRemaining">—</div><div class="qual-focus-laps is-empty" id="focusLaps">—</div></div></div><div class="qual-focus-cell"><div class="qual-focus-best-block"><div class="qual-focus-best-label">Meilleur temps</div><div class="qual-focus-best-time" id="focusBestTime">—</div></div></div></div>
+    <div class="qual-focus-row qual-focus-row-two"><div class="qual-focus-cell"><div class="qual-focus-session-block"><div class="qual-focus-remaining" id="focusRemaining">—</div><div class="qual-focus-laps is-empty" id="focusLaps">—</div></div></div><div class="qual-focus-cell"><div class="qual-focus-best-block"><div class="qual-focus-best-label">Meilleur temps</div><div class="qual-focus-fastest" id="focusFastestName">—</div><div class="qual-focus-best-time" id="focusBestTime">—</div></div></div></div>
   </div>
 </div>
 <div class="overlay" id="crossingOverlay"><div class="crossing-box"><div class="crossing-sub">POSITION</div><div class="crossing-pos" id="crossPos">—</div><div class="crossing-best" id="crossBest">🥇 MEILLEUR TEMPS !</div><div class="crossing-comparison"><span class="crossing-delta" id="crossDelta">—</span> <span>vs</span> <span class="crossing-reference" id="crossReference">—</span></div></div></div>
@@ -1187,11 +1187,20 @@ async function closeQualificationFocus(){
  try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
-function qualificationFastestLap(){
- const best=state.session_best||{};
- if(best.lap&&best.lap!=='—')return best.lap;
- const valid=(state.drivers||[]).map(d=>({lap:d.best,seconds:parseLapTime(d.best)})).filter(x=>Number.isFinite(x.seconds)).sort((a,b)=>a.seconds-b.seconds);
- return valid[0]?.lap||'—';
+function qualificationPurpleBest(){
+ // La cellule violette du tableau Qualification est la source de vérité visuelle :
+ // elle correspond au meilleur temps absolu affiché par KartIQ/Apex pour la séance.
+ const purpleCell=document.querySelector('#qualifTable tr td.purple');
+ if(purpleCell){
+  const row=purpleCell.closest('tr');
+  const driverKey=row?.dataset?.driver||'';
+  const driver=(state.drivers||[]).find(d=>(d.driver||String(d.pos))===driverKey);
+  return {driver:driver?.driver||driverKey||'—',lap:purpleCell.textContent.trim()||driver?.best||'—'};
+ }
+ // Repli de sécurité si le tableau n'est pas encore peint au premier rendu.
+ const ranking=qualificationRanking();
+ const leader=ranking[0];
+ return {driver:leader?.driver||'—',lap:leader?.best||'—'};
 }
 function qualificationFocusSessionStatus(){
  const laps=String(state.apex_laps_remaining||'').trim();
@@ -1212,6 +1221,7 @@ function renderQualificationFocus(){
  const delta=document.getElementById('focusDelta');
  const remaining=document.getElementById('focusRemaining');
  const laps=document.getElementById('focusLaps');
+ const fastestName=document.getElementById('focusFastestName');
  const bestTime=document.getElementById('focusBestTime');
  if(position)position.textContent=f.pos?'P'+f.pos:'—';
  if(followedName)followedName.textContent=f.driver||state.followed_driver||'—';
@@ -1219,7 +1229,9 @@ function renderQualificationFocus(){
  const sessionStatus=qualificationFocusSessionStatus();
  if(remaining){remaining.textContent=sessionStatus.time;remaining.classList.toggle('time-critical',sessionStatus.critical)}
  if(laps){laps.textContent=sessionStatus.laps||'—';laps.classList.toggle('is-empty',!sessionStatus.laps)}
- if(bestTime)bestTime.textContent=qualificationFastestLap();
+ const purpleBest=qualificationPurpleBest();
+ if(fastestName)fastestName.textContent=purpleBest.driver;
+ if(bestTime)bestTime.textContent=purpleBest.lap;
 }
 
 const rowLapSignatures=new Map();
