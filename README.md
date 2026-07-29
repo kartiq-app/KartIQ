@@ -17,3 +17,8 @@ Le mode Focus Sprint affiche désormais le rang du dernier tour du pilote suivi 
 Cette version corrige le bloc **Meilleur temps** du Mode Focus Qualification : il affiche désormais directement le meilleur chrono absolu de la séance en cours.
 
 KartIQ V4.2.7 — version Web Render, mobile responsive et installable sur iPhone en plein écran.
+
+
+## V4.5.1 — Orientation des modes Focus
+
+Sur Android/Chrome, KartIQ tente de passer en plein écran et de verrouiller l’orientation en paysage. Sur iPhone/Safari, un écran demande de tourner le téléphone lorsque le mode Focus est ouvert en portrait.

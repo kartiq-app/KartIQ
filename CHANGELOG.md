@@ -1,3 +1,13 @@
+# KartIQ V4.5.1 — Focus paysage stable sur iPhone
+
+- Android/Chrome : demande du plein écran puis verrouillage automatique en mode paysage lorsque le navigateur l’autorise.
+- iPhone/Safari : affichage d’un écran invitant à tourner le téléphone tant que le mode Focus est ouvert en portrait.
+- Masquage automatique de l’écran d’aide dès que le téléphone passe en paysage.
+- Réaffichage automatique si le téléphone revient en portrait pendant le mode Focus.
+- Bouton permettant de quitter le mode Focus depuis l’écran d’orientation.
+- Déverrouillage de l’orientation et sortie du plein écran à la fermeture du mode Focus.
+- Fonctionnement appliqué aux modes Focus Sprint et Focus Qualifications.
+
 # KartIQ V4.4.8 — Statut de course dans la carte du meilleur dernier tour
 
 - Sprint classique uniquement : pilote et chrono du meilleur dernier tour regroupés sur la première ligne.
@@ -269,3 +279,11 @@ KartIQ V4.0.9
 - Le statut affiche dynamiquement le temps restant et/ou le nombre de tours restants.
 - Le clignotement violet lors d'un nouveau meilleur dernier tour est conservé.
 - Les modes Focus Sprint et Qualifications demandent le plein écran et verrouillent l'orientation en paysage lorsque le navigateur l'autorise, puis libèrent l'orientation à la fermeture.
+
+
+## V4.5.1 — Paysage requis uniquement à l’entrée du mode Focus
+- Sur iPhone/Safari, l’écran « Tournez votre téléphone » s’affiche uniquement si le Focus est lancé en portrait.
+- Dès que l’iPhone passe en paysage, le mode Focus est validé et le contrôle d’orientation s’arrête.
+- Un mouvement ultérieur ou un retour momentané en portrait ne masque plus le mode Focus.
+- La tentative de plein écran et de verrouillage paysage reste active sur les navigateurs compatibles.
+- Ce comportement s’applique aux modes Focus Sprint et Qualifications.
