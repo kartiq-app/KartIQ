@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="KartIQ">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V4.5.5 — Classement compact et pénalités épurées</title>
+<title>KartIQ V4.6.0 — Portrait Qualification et Sprint</title>
 <style>
 :root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -937,7 +937,7 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 @media(max-width:680px){.qual-focus-launch{font-size:8px;letter-spacing:.03em;padding:4px 2px}.qual-delta-content{padding:3px 4px}.qual-delta-focus-cell .qual-delta{margin-top:0}}
 
 
-/* KartIQ V4.5.5 — Classement compact et pénalités épurées */
+/* KartIQ V4.6.0 — Portrait Qualification et Sprint */
 .sprint-focus-overlay{position:fixed;inset:0;z-index:1100;display:none;background:#000;color:#fff;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .sprint-focus-overlay.show{display:flex;flex-direction:column}
 .sprint-focus-header{height:54px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:8px 16px 6px;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
@@ -1051,6 +1051,284 @@ body.current-sprint .gap-with{
   }
 }
 
+
+
+/* KartIQ V4.6.0 — mise en page portrait Qualification et Sprint */
+@media (max-width:680px) and (orientation:portrait){
+  /* Deux premières lignes communes */
+  .current-qualification .qual-strip,
+  .current-sprint .sprint-strip{
+    display:grid!important;
+    grid-template-columns:52px minmax(0,1fr) minmax(108px,.92fr)!important;
+    grid-template-rows:74px 48px!important;
+    min-height:122px!important;
+    height:auto!important;
+    padding:0!important;
+    border-top-width:2px!important;
+    overflow:visible!important;
+  }
+
+  .current-qualification .position-cell,
+  .current-sprint .position-cell{
+    grid-column:1 / 3!important;
+    grid-row:1!important;
+    height:74px!important;
+    min-height:74px!important;
+    display:grid!important;
+    grid-template-columns:52px minmax(0,1fr)!important;
+    grid-template-rows:38px 36px!important;
+    align-items:center!important;
+    justify-items:start!important;
+    box-shadow:none!important;
+    background:#111114!important;
+    border-right:1px solid #29292e!important;
+  }
+  .current-qualification .position-cell .inline-home-btn,
+  .current-sprint .position-cell .inline-home-btn{
+    position:static!important;
+    grid-column:1!important;
+    grid-row:1!important;
+    justify-self:center!important;
+    align-self:center!important;
+    width:34px!important;
+    height:34px!important;
+    min-width:34px!important;
+    margin:0!important;
+    transform:none!important;
+  }
+  .current-qualification .position-cell .hero-position,
+  .current-sprint .position-cell .hero-position{
+    grid-column:2!important;
+    grid-row:1!important;
+    align-self:end!important;
+    justify-self:start!important;
+    font-size:33px!important;
+    line-height:.9!important;
+    margin:0!important;
+    padding:0 5px!important;
+  }
+  .current-qualification .position-cell .hero-name,
+  .current-sprint .position-cell .hero-name{
+    grid-column:2!important;
+    grid-row:2!important;
+    align-self:start!important;
+    justify-self:stretch!important;
+    width:calc(100% - 10px)!important;
+    max-width:calc(100% - 10px)!important;
+    font-size:11px!important;
+    line-height:1.05!important;
+    margin:2px 5px 0!important;
+    padding:0!important;
+    text-align:left!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+
+  .current-qualification .qual-delta-focus-cell,
+  .current-sprint .qual-delta-focus-cell{
+    display:contents!important;
+  }
+  .current-qualification .qual-delta-content{
+    grid-column:3!important;
+    grid-row:1!important;
+    height:74px!important;
+    min-height:74px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border-left:0!important;
+    background:#0c0c0f!important;
+  }
+  .current-qualification .qual-focus-launch,
+  .current-sprint .qual-focus-launch{
+    position:static!important;
+    grid-column:1 / 3!important;
+    grid-row:2!important;
+    width:100%!important;
+    height:48px!important;
+    min-height:48px!important;
+    margin:0!important;
+    border-radius:0!important;
+    transform:none!important;
+    align-self:stretch!important;
+    justify-self:stretch!important;
+  }
+  .current-qualification .status-values{
+    grid-column:3!important;
+    grid-row:2!important;
+    height:48px!important;
+    min-height:48px!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:5px!important;
+    border-left:1px solid #29292e!important;
+    padding:2px 4px!important;
+  }
+  .current-qualification .status-values strong{
+    width:auto!important;
+    height:auto!important;
+    border:0!important;
+    font-size:15px!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+  .current-qualification .status-values strong+strong{
+    border:0!important;
+  }
+  .current-qualification .qual-delta,
+  .current-sprint .qual-delta{
+    font-size:28px!important;
+    line-height:1!important;
+  }
+  .current-qualification .gap-with,
+  .current-sprint .gap-with{
+    font-size:8px!important;
+    line-height:1!important;
+    margin-top:3px!important;
+  }
+
+  /* Sprint : delta ligne 1, statut ligne 2, meilleur dernier tour ligne 3 */
+  .current-sprint .sprint-strip{
+    grid-template-rows:74px 48px 38px!important;
+    min-height:160px!important;
+  }
+  .current-sprint .qual-delta-content{
+    display:contents!important;
+  }
+  .current-sprint .qual-delta-content>.qual-delta{
+    grid-column:3!important;
+    grid-row:1!important;
+    align-self:center!important;
+    justify-self:center!important;
+  }
+  .current-sprint .qual-delta-content>.gap-with{
+    grid-column:3!important;
+    grid-row:1!important;
+    align-self:end!important;
+    justify-self:center!important;
+    margin-bottom:8px!important;
+  }
+  .current-sprint .sprint-session-info{
+    grid-column:3!important;
+    grid-row:2!important;
+    width:100%!important;
+    height:48px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:4px!important;
+    margin:0!important;
+    padding:0 3px!important;
+    border-left:1px solid #29292e!important;
+    font-family:var(--font-time)!important;
+    font-size:13px!important;
+    white-space:nowrap!important;
+  }
+  .current-sprint .fastest-last-block{
+    grid-column:1 / 4!important;
+    grid-row:3!important;
+    height:38px!important;
+    min-height:38px!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:7px!important;
+    padding:3px 8px!important;
+    border-left:0!important;
+    border-top:1px solid #29292e!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+  .current-sprint .fastest-last-block .label{display:none!important}
+  .current-sprint .fastest-last-name,
+  .current-sprint .fastest-last-time{
+    display:inline!important;
+    width:auto!important;
+    max-width:none!important;
+    margin:0!important;
+    font-size:12px!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  .current-sprint .fastest-last-name{max-width:70%!important}
+
+  /* Classements portrait : textes réduits de 50 %, positions orange et rapprochées */
+  .current-qualification #qualifTable td,
+  .current-sprint #sprintTable td{
+    height:18px!important;
+    min-height:18px!important;
+    padding:1px 3px!important;
+    font-size:10px!important;
+    line-height:1.05!important;
+  }
+  .current-qualification #qualifTable .pos,
+  .current-sprint #sprintTable .pos{
+    width:22px!important;
+    min-width:22px!important;
+    padding-left:3px!important;
+    padding-right:0!important;
+    font-size:10.5px!important;
+    text-align:left!important;
+    color:#ff8a00!important;
+  }
+  .current-qualification #qualifTable td:nth-child(2),
+  .current-sprint #sprintTable td:nth-child(2){
+    padding-left:0!important;
+  }
+  .current-qualification #qualifTable th,
+  .current-sprint #sprintTable th{
+    height:17px!important;
+    padding:2px 3px!important;
+    font-size:7px!important;
+    line-height:1!important;
+  }
+  .current-qualification #qualifTable th:nth-child(1),
+  .current-sprint #sprintTable th:nth-child(1){
+    width:22px!important;
+    padding-left:3px!important;
+    padding-right:0!important;
+  }
+  .current-qualification #qualifTable th:nth-child(2),
+  .current-sprint #sprintTable th:nth-child(2){padding-left:0!important}
+  .current-qualification #qualifTable .driver-name,
+  .current-sprint #sprintTable .driver-name{gap:.12em!important}
+
+  /* Sprint : pénalités sous le classement sur toute sa largeur */
+  .current-sprint .sprint-lower{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:2px!important;
+  }
+  .current-sprint .sprint-table-wrap,
+  .current-sprint .penalty-panel{
+    width:100%!important;
+    max-width:none!important;
+  }
+  .current-sprint .penalty-panel{
+    order:2!important;
+    height:auto!important;
+    max-height:120px!important;
+    overflow-y:auto!important;
+  }
+  .current-sprint .penalty-panel>.label{display:none!important}
+  .current-sprint #penalties .penalty-row,
+  .current-sprint #penalties .penalty-row b:first-child,
+  .current-sprint #penalties .penalty-row span{
+    min-height:20px!important;
+    height:auto!important;
+    padding:2px 4px!important;
+    font-size:10px!important;
+    line-height:1.05!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1101,7 +1379,7 @@ body.current-sprint .gap-with{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.5.7</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.6.0</div>
     </div>
   </div>
 </section>
