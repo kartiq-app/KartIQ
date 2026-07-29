@@ -1,3 +1,9 @@
+## V4.4.2 — Correction du meilleur temps Qualification
+
+- Dans le Mode Focus Qualification, la zone inférieure droite affiche désormais uniquement le **meilleur temps absolu de la séance en cours**, directement sous le titre « Meilleur temps ».
+- Suppression du nom du pilote dans ce bloc afin de respecter la présentation demandée.
+- Conservation d’un calcul de repli depuis le classement si `session_best` n’est pas fourni par Apex.
+
 ## V4.4.1 — Focus Sprint et Qualifications
 
 - Mode Focus Sprint : filet supérieur bleu porté à 8 px.

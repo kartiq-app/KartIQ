@@ -1,5 +1,5 @@
-# KartIQ V4.4.1
+# KartIQ V4.4.2
 
-Cette version ajoute le **Mode Focus Sprint** et l’affichage horodaté des pénalités Apex.
+Cette version corrige le bloc **Meilleur temps** du Mode Focus Qualification : il affiche désormais directement le meilleur chrono absolu de la séance en cours.
 
 KartIQ V4.2.7 — version Web Render, mobile responsive et installable sur iPhone en plein écran.
