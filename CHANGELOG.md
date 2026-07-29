@@ -1,3 +1,9 @@
+## V4.4.1 — Focus Sprint et Qualifications
+
+- Mode Focus Sprint : filet supérieur bleu porté à 8 px.
+- Mode Focus Qualifications : nouvel en-tête « Qualifications » avec filet supérieur rouge de 8 px.
+- Mode Focus Qualifications : la zone inférieure droite affiche désormais « Meilleur temps », le nom du pilote détenteur du meilleur chrono absolu et son temps.
+
 ## V4.4.0 — Mode Focus Sprint et pénalités horodatées
 
 - Ajout d’un bouton **Focus** sur la page Sprint, à gauche du delta.

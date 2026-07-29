@@ -1,4 +1,4 @@
-# KartIQ V4.4.0
+# KartIQ V4.4.1
 
 Cette version ajoute le **Mode Focus Sprint** et l’affichage horodaté des pénalités Apex.
 
