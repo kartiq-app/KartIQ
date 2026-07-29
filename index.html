@@ -1522,10 +1522,138 @@ body.current-sprint .gap-with{
   }
 }
 
+
+/* KartIQ V4.6.2 — corrections portrait + icône Focus */
+.qual-focus-icon{
+  width:22px;
+  height:22px;
+  flex:0 0 22px;
+  display:inline-block;
+  margin-right:8px;
+  color:#ff8a00;
+}
+.qual-focus-icon svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.qual-focus-launch{gap:0}
+.qual-focus-launch:hover .qual-focus-icon,
+.qual-focus-launch:focus-visible .qual-focus-icon{color:#090b0f}
+
+@media (max-width:680px) and (orientation:portrait){
+  /* Zone sûre iPhone : éloigne clairement la première ligne de la barre d’état. */
+  body.current-qualification .qual-wrap,
+  body.current-sprint .sprint-wrap{
+    padding-top:calc(env(safe-area-inset-top, 0px) + 16px)!important;
+  }
+
+  /* Home noir, sans gris résiduel. */
+  body.current-qualification .position-cell .inline-home-btn,
+  body.current-sprint .position-cell .inline-home-btn{
+    background:#000!important;
+  }
+
+  /* Le contenu de chaque colonne reste strictement contenu. */
+  body.current-qualification .qual-delta-content,
+  body.current-sprint .qual-delta-content,
+  body.current-qualification .status-values,
+  body.current-sprint .sprint-session-info{
+    min-width:0!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+
+  body.current-qualification .qual-delta,
+  body.current-sprint .qual-delta{
+    max-width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:clamp(22px,7.7vw,30px)!important;
+  }
+
+  /* Sprint : delta en ligne 1 et temps/tours en ligne 2, sans chevauchement. */
+  body.current-sprint .qual-delta-content{
+    display:contents!important;
+  }
+  body.current-sprint .qual-delta-content>.qual-delta{
+    grid-column:3!important;
+    grid-row:1!important;
+    align-self:center!important;
+    justify-self:center!important;
+    width:100%!important;
+    padding:0 5px!important;
+    text-align:center!important;
+  }
+  body.current-sprint .qual-delta-content>.gap-with{
+    grid-column:3!important;
+    grid-row:1!important;
+    align-self:end!important;
+    justify-self:center!important;
+    max-width:100%!important;
+    margin:0 0 7px!important;
+    padding:0 4px!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  body.current-sprint .sprint-session-info{
+    grid-column:3!important;
+    grid-row:2!important;
+    flex-wrap:nowrap!important;
+    font-size:clamp(11px,3.4vw,14px)!important;
+  }
+  body.current-sprint .sprint-session-info span{
+    min-width:0!important;
+    white-space:nowrap!important;
+  }
+
+  /* Noms du classement : une seule ligne et points de suspension. */
+  body.current-qualification #qualifTable,
+  body.current-sprint #sprintTable{table-layout:fixed!important;width:100%!important}
+  body.current-qualification #qualifTable td:nth-child(2),
+  body.current-sprint #sprintTable td:nth-child(2),
+  body.current-qualification #qualifTable td.name,
+  body.current-sprint #sprintTable td.name{
+    min-width:0!important;
+    max-width:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  body.current-qualification #qualifTable td:nth-child(2) *,
+  body.current-sprint #sprintTable td:nth-child(2) *{
+    display:block!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+
+  /* Sprint : meilleur dernier tour toujours sur une seule ligne. */
+  body.current-sprint .fastest-last-block{
+    justify-content:flex-start!important;
+    flex-wrap:nowrap!important;
+  }
+  body.current-sprint .fastest-last-name{
+    flex:1 1 auto!important;
+    min-width:0!important;
+    max-width:none!important;
+    text-align:left!important;
+  }
+  body.current-sprint .fastest-last-time{
+    flex:0 0 auto!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    color:var(--purple)!important;
+  }
+
+  .qual-focus-icon{width:18px;height:18px;flex-basis:18px;margin-right:6px}
+}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.5.5 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.6.2 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -1572,14 +1700,14 @@ body.current-sprint .gap-with{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.6.1</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.6.2</div>
     </div>
   </div>
 </section>
 
-<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><div class="qual-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">⌂</button><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus">Focus</button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">vs —</div></div></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
+<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><div class="qual-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">⌂</button><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">vs —</div></div></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
 
-<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><div class="sprint-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">⌂</button><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openSprintFocus()" aria-label="Ouvrir le mode Focus Sprint">Focus</button><div class="qual-delta-content"><div class="qual-delta" id="sDeltaValue">—</div><div class="sprint-session-info"><span id="sRemaining">—</span><span class="sprint-session-separator">•</span><span id="sLapsRemaining">—</span></div><div class="gap-with" id="sGapWith">vs —</div></div></div><div class="sprint-cell fastest-last-block"><div class="label">&nbsp;</div><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><section class="panel card penalty-panel"><div class="label red">PÉNALITÉS</div><div id="penalties"></div></section></div></div></section>
+<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><div class="sprint-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">⌂</button><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openSprintFocus()" aria-label="Ouvrir le mode Focus Sprint"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="sDeltaValue">—</div><div class="sprint-session-info"><span id="sRemaining">—</span><span class="sprint-session-separator">•</span><span id="sLapsRemaining">—</span></div><div class="gap-with" id="sGapWith">vs —</div></div></div><div class="sprint-cell fastest-last-block"><div class="label">&nbsp;</div><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><section class="panel card penalty-panel"><div class="label red">PÉNALITÉS</div><div id="penalties"></div></section></div></div></section>
 
 <section id="endurance" class="screen"><div class="endurance-grid"><section class="panel endurance-main-panel"><button class="inline-home-btn endurance-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="panel-title endurance-titlebar"><span>CLASSEMENT GÉNÉRAL</span><span class="endurance-remaining-box"><span class="endurance-remaining-label">TEMPS RESTANT</span><strong class="endurance-remaining-value" id="eRemaining">—</strong></span></div><div class="endurance-table-wrap"><table><thead><tr><th>POS</th><th>ÉQUIPE / PILOTE</th><th>KART</th><th>TOURS</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th><th>PÉNA.</th></tr></thead><tbody id="enduranceTable"></tbody></table></div></section><div class="right-stack"><section class="panel card"><div class="label">TOP 8 — RYTHME ACTUEL (MOYENNE 5 TOURS)</div><div id="paceTop8"></div></section><section class="panel card penalty-panel endurance-penalty-panel"><div class="label red">PÉNALITÉS</div><div id="endurancePenalties"></div></section><section class="panel live-diagnostics"><div class="label"><span id="liveStatusDot" class="live-status-dot"></span>LIVE APEX</div><div class="live-diagnostics-grid"><div class="live-stat"><span class="live-stat-label">Statut</span><span id="liveDiagStatus" class="live-stat-value">—</span></div><div class="live-stat"><span class="live-stat-label">Messages</span><span id="liveDiagMessages" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Mises à jour lues</span><span id="liveDiagParsed" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Dernière donnée</span><span id="liveDiagLast" class="live-stat-value">—</span></div><div class="live-stat live-frame-preview"><span class="live-stat-label">Dernière trame</span><span id="liveDiagPreview" class="live-stat-value">En attente…</span></div></div></section><section class="panel quick-change-panel"><div class="panel-title">QUICK CHANGE — FIFO STRICT</div><div class="quick-table-wrap"><table class="quick-table"><thead><tr><th>QUEUE</th><th>PIT</th><th>RANK</th><th>PREVIOUS TEAM</th><th>KART</th><th>AVG</th><th>Δ KART</th></tr></thead><tbody id="quickTable"></tbody></table></div></section></div></div></section>
 

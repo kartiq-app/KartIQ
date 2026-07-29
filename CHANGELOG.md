@@ -1,3 +1,12 @@
+# V4.6.2
+
+- Corrige le débordement du delta et du temps/tours en mode Sprint portrait.
+- Tronque les noms trop longs dans les classements portrait.
+- Maintient le meilleur dernier tour Sprint sur une seule ligne.
+- Passe le bouton Home portrait sur fond noir.
+- Ajoute l’icône cible orange devant FOCUS en Qualification et Sprint.
+- Renforce la marge supérieure iPhone via la safe area.
+
 # KartIQ V4.6.1 — Menu portrait Qualification et Sprint
 
 - Ligne 1 en proportions fixes : Home 20 %, pilote suivi 30 %, Delta 50 %.
