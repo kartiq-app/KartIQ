@@ -1,3 +1,10 @@
+## V4.4.5 — Lisibilité du Focus Sprint
+
+- Affichage du meilleur dernier tour sur une seule ligne.
+- Clignotement violet de toute la case lors d’un nouveau meilleur dernier tour.
+- Agrandissement de 35 % et centrage du classement du dernier tour du pilote suivi.
+- Déplacement du filet rouge après le titre « PÉNALITÉS » pour gagner de la hauteur.
+
 ## V4.4.4 — Classement du dernier tour en Focus Sprint
 
 - Ajout du classement du dernier chrono du pilote suivi par rapport à la grille.
