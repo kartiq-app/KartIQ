@@ -1,3 +1,9 @@
+# V4.6.7 — Alignement portrait du numéro de kart
+
+- En Qualification et Sprint portrait, la position, le numéro de kart et le nom du pilote restent sur une seule ligne.
+- Le numéro de kart est placé immédiatement avant le nom.
+- Les noms trop longs sont tronqués avec une ellipse sans provoquer de retour à la ligne.
+
 # KartIQ V4.6.6 — Numéros de kart dans les classements
 
 - Ajout du numéro de kart Apex dans le classement général des modes Qualification et Sprint.
