@@ -955,6 +955,51 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 body.sprint-focus-active{overflow:hidden}
 @media(max-width:680px) and (orientation:portrait){.sprint-focus-row-one,.sprint-focus-row-two{grid-template-columns:32% 68%}.sprint-focus-position{font-size:18vw}.sprint-focus-name{font-size:4.2vw}.sprint-focus-last-rank{font-size:clamp(23px,5.4vw,44px);width:100%}.sprint-focus-fastest-last{font-size:4vw}.sprint-focus-delta{font-size:14vw}.sprint-focus-time{font-size:11vw}.sprint-focus-laps{font-size:6vw}.sprint-focus-penalty-row{grid-template-columns:42px minmax(0,1fr);gap:6px}.sprint-focus-penalty-value{grid-column:2}.sprint-focus-penalty-name,.sprint-focus-penalty-value{font-size:4vw}}
 
+
+/* KartIQ V4.4.8 — Sprint classique : meilleur dernier tour et statut sur deux lignes centrées */
+body:not(.preview-embedded).current-sprint .fastest-last-block{
+  gap:7px!important;
+  text-align:center!important;
+}
+body:not(.preview-embedded).current-sprint .fastest-last-line{
+  width:100%;
+  max-width:100%;
+  font-family:var(--font-driver)!important;
+  font-size:25px;
+  font-weight:850;
+  line-height:1.08;
+  text-align:center;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body:not(.preview-embedded).current-sprint .fastest-last-status{
+  width:100%;
+  font-family:var(--font-time)!important;
+  font-size:20px;
+  font-weight:700;
+  line-height:1;
+  text-align:center;
+  color:var(--text);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+body:not(.preview-embedded).current-sprint .fastest-last-status.is-empty{color:var(--muted)}
+body:not(.preview-embedded).current-sprint .fastest-last-block.best-lap-flash{
+  animation:sprintClassicBestLapFlash .55s ease-in-out 0s 6 alternate;
+  background:#7b2cff;
+  color:#fff;
+}
+@keyframes sprintClassicBestLapFlash{
+  from{background:#7b2cff;box-shadow:inset 0 0 0 3px #b77cff,0 0 24px rgba(153,80,255,.8)}
+  to{background:#231035;box-shadow:inset 0 0 0 1px #7b2cff,0 0 4px rgba(153,80,255,.25)}
+}
+@media(max-width:680px){
+ body:not(.preview-embedded).current-sprint .fastest-last-line{font-size:13px}
+ body:not(.preview-embedded).current-sprint .fastest-last-status{font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -1012,7 +1057,7 @@ body.sprint-focus-active{overflow:hidden}
 
 <section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><div class="qual-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus">Focus</button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">Écart avec —</div></div></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
 
-<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><div class="sprint-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openSprintFocus()" aria-label="Ouvrir le mode Focus Sprint">Focus</button><div class="qual-delta-content"><div class="qual-delta" id="sDeltaValue">—</div><div class="sprint-session-info"><span id="sRemaining">—</span><span class="sprint-session-separator">•</span><span id="sLapsRemaining">—</span></div><div class="gap-with" id="sGapWith">Écart avec —</div></div></div><div class="sprint-cell fastest-last-block"><div class="label">&nbsp;</div><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><section class="panel card penalty-panel"><div class="label red">PÉNALITÉS</div><div id="penalties"></div></section></div></div></section>
+<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><div class="sprint-cell position-cell"><button class="inline-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openSprintFocus()" aria-label="Ouvrir le mode Focus Sprint">Focus</button><div class="qual-delta-content"><div class="qual-delta" id="sDeltaValue">—</div><div class="gap-with" id="sGapWith">Écart avec —</div></div></div><div class="sprint-cell fastest-last-block" id="sFastestCard"><div class="fastest-last-line" id="sFastestLine">🔥 — : —</div><div class="fastest-last-status" id="sFastestStatus">—</div></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr><th>POS</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><section class="panel card penalty-panel"><div class="label red">PÉNALITÉS</div><div id="penalties"></div></section></div></div></section>
 
 <section id="endurance" class="screen"><div class="endurance-grid"><section class="panel endurance-main-panel"><button class="inline-home-btn endurance-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="panel-title endurance-titlebar"><span>CLASSEMENT GÉNÉRAL</span><span class="endurance-remaining-box"><span class="endurance-remaining-label">TEMPS RESTANT</span><strong class="endurance-remaining-value" id="eRemaining">—</strong></span></div><div class="endurance-table-wrap"><table><thead><tr><th>POS</th><th>ÉQUIPE / PILOTE</th><th>KART</th><th>TOURS</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th><th>PÉNA.</th></tr></thead><tbody id="enduranceTable"></tbody></table></div></section><div class="right-stack"><section class="panel card"><div class="label">TOP 8 — RYTHME ACTUEL (MOYENNE 5 TOURS)</div><div id="paceTop8"></div></section><section class="panel card penalty-panel endurance-penalty-panel"><div class="label red">PÉNALITÉS</div><div id="endurancePenalties"></div></section><section class="panel live-diagnostics"><div class="label"><span id="liveStatusDot" class="live-status-dot"></span>LIVE APEX</div><div class="live-diagnostics-grid"><div class="live-stat"><span class="live-stat-label">Statut</span><span id="liveDiagStatus" class="live-stat-value">—</span></div><div class="live-stat"><span class="live-stat-label">Messages</span><span id="liveDiagMessages" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Mises à jour lues</span><span id="liveDiagParsed" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Dernière donnée</span><span id="liveDiagLast" class="live-stat-value">—</span></div><div class="live-stat live-frame-preview"><span class="live-stat-label">Dernière trame</span><span id="liveDiagPreview" class="live-stat-value">En attente…</span></div></div></section><section class="panel quick-change-panel"><div class="panel-title">QUICK CHANGE — FIFO STRICT</div><div class="quick-table-wrap"><table class="quick-table"><thead><tr><th>QUEUE</th><th>PIT</th><th>RANK</th><th>PREVIOUS TEAM</th><th>KART</th><th>AVG</th><th>Δ KART</th></tr></thead><tbody id="quickTable"></tbody></table></div></section></div></div></section>
 
@@ -1099,12 +1144,30 @@ function formatRemainingMilliseconds(ms){
  if(remainingCountdownUsesHours||hours>0)return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
  return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
 }
+function sprintClassicStatusParts(timeDisplay){
+ const time=String(timeDisplay??'').trim();
+ const rawLaps=String(state?.apex_laps_remaining??'').trim();
+ const hasTime=Boolean(time&&time!=='—'&&time!=='--');
+ const hasLaps=Boolean(rawLaps&&rawLaps!=='—'&&rawLaps!=='--');
+ let laps='';
+ if(hasLaps){
+  const match=rawLaps.match(/\d+/);
+  laps=match?`${match[0]} TOUR${Number(match[0])>1?'S':''}`:rawLaps.toUpperCase();
+ }
+ return {time:hasTime?time:'',laps};
+}
+function updateSprintClassicStatus(timeDisplay){
+ const target=document.getElementById('sFastestStatus');if(!target)return;
+ const parts=sprintClassicStatusParts(timeDisplay);
+ target.textContent=parts.time&&parts.laps?`${parts.time} • ${parts.laps}`:(parts.time||parts.laps||'—');
+ target.classList.toggle('is-empty',!parts.time&&!parts.laps);
+}
 function updateRemainingDisplay(){
  const ms=liveRemainingMilliseconds();
  const display=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);
  const seconds=ms===null?null:ms/1000;
  const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
- const sp=document.getElementById('sRemaining');if(sp)sp.textContent=display;
+ updateSprintClassicStatus(display);
  const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
  renderQualificationFocus();
  renderSprintFocus();
@@ -1144,6 +1207,8 @@ function showMode(mode){
 let sprintFocusWakeLock=null;
 let sprintFastestLastSignature='';
 let sprintFastestFlashTimer=null;
+let sprintClassicFastestSignature='';
+let sprintClassicFastestFlashTimer=null;
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
  overlay.classList.add('show');document.body.classList.add('sprint-focus-active');renderSprintFocus();
@@ -1377,7 +1442,7 @@ function render(){
  rows('sprintTable',d=>`<td class="${positionClass(d.pos)}">${d.pos}</td><td class="name">${formatDriverName(d.driver)}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="mobile-hide ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="mobile-hide">${d.gap}</td><td>${d.interval}</td>`);
  rows('enduranceTable',d=>`<td class="pos endurance-position-cell"><span class="endurance-position-wrap"><span class="endurance-position-number${Number(d.pos)===1?' leader-pos':''}">${d.pos}</span>${endurancePitBadge(d)}</span></td><td class="name">${formatDriverName(d.driver)}</td><td>${d.apex}</td><td>${d.laps}</td><td>${d.pit_stops ?? '—'}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td><td class="red">${d.penalty||'—'}</td>`);
  const f=state.followed||{};qPos.textContent=f.pos?'P'+f.pos:'—';setDriverName(qName,f.driver||'—');qDelta.textContent=qualificationDeltaFor(f);qDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f));updateRemainingDisplay();qLapsRemaining.textContent=state.apex_laps_remaining||'—';const qReference=qualificationReferenceFor(f);qGapWith.innerHTML=gapWithMarkup('Écart avec',qReference?.driver||'—');
- setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';const sprintDelta=sprintDeltaFor(f);const sprintReference=sprintReferenceFor(f);sDeltaValue.textContent=sprintDelta;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&sprintDelta!=='--');sDeltaValue.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&sprintDelta!=='--');sRemaining.textContent=liveRemainingMilliseconds()===null?(state.time_remaining||'—'):formatRemainingMilliseconds(liveRemainingMilliseconds());sLapsRemaining.textContent=state.apex_laps_remaining||'—';sGapWith.innerHTML=gapWithMarkup('Écart avec',sprintReference?.driver||'—');const fastest=state.fastest_last_lap||{};sFastestName.textContent='🔥 '+(fastest.driver||'—');sFastestTime.textContent=fastest.lap||'—';
+ setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';const sprintDelta=sprintDeltaFor(f);const sprintReference=sprintReferenceFor(f);sDeltaValue.textContent=sprintDelta;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&sprintDelta!=='--');sDeltaValue.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&sprintDelta!=='--');const sprintRemainingMs=liveRemainingMilliseconds();const sprintRemainingDisplay=sprintRemainingMs===null?(state.time_remaining||'—'):formatRemainingMilliseconds(sprintRemainingMs);updateSprintClassicStatus(sprintRemainingDisplay);sGapWith.innerHTML=gapWithMarkup('Écart avec',sprintReference?.driver||'—');const fastest=state.fastest_last_lap||{};const classicFastestSignature=(fastest.driver&&fastest.lap&&fastest.driver!=='—'&&fastest.lap!=='—')?`${fastest.driver}|${fastest.lap}`:'';sFastestLine.textContent=`🔥 ${fastest.driver||'—'} : ${fastest.lap||'—'}`;if(classicFastestSignature&&sprintClassicFastestSignature&&classicFastestSignature!==sprintClassicFastestSignature){const card=document.getElementById('sFastestCard');card?.classList.remove('best-lap-flash');void card?.offsetWidth;card?.classList.add('best-lap-flash');clearTimeout(sprintClassicFastestFlashTimer);sprintClassicFastestFlashTimer=setTimeout(()=>card?.classList.remove('best-lap-flash'),3600)}if(classicFastestSignature)sprintClassicFastestSignature=classicFastestSignature;
  const sortedPenalties=[...(state.penalties||[])].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))); const penaltyMarkup=sortedPenalties.length?sortedPenalties.map(p=>`<div class="penalty-row"><small class="penalty-time">${penaltyTime(p)}</small><b>${formatDriverSurname(p.driver)}</b><span class="red"><b>${p.penalty}</b></span></div>`).join(''):'<div class="empty">Aucune pénalité</div>';
  penalties.innerHTML=penaltyMarkup;
  if(document.getElementById('endurancePenalties'))endurancePenalties.innerHTML=penaltyMarkup;

@@ -1,3 +1,11 @@
+# KartIQ V4.4.8 — Statut de course dans la carte du meilleur dernier tour
+
+- Sprint classique uniquement : pilote et chrono du meilleur dernier tour regroupés sur la première ligne.
+- Temps restant et/ou tours restants affichés sur une seconde ligne centrée.
+- Affichage adaptatif : temps + tours, temps seul ou tours seuls selon les données Apex disponibles.
+- Conservation du clignotement violet lors d’un nouveau meilleur dernier tour.
+- Aucun changement dans les modes Focus.
+
 # KartIQ V4.4.7 — Classement Focus Sprint non tronqué
 
 - Correction de la coupure du texte « Xème temps » dans la case du pilote suivi.
