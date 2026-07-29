@@ -1329,6 +1329,199 @@ body.current-sprint .gap-with{
   }
 }
 
+
+
+/* KartIQ V4.6.1 — menu portrait 20/30/50 + zone sûre iPhone */
+@media (max-width:680px) and (orientation:portrait){
+  body.current-qualification .qual-wrap,
+  body.current-sprint .sprint-wrap{
+    padding-top:calc(env(safe-area-inset-top, 0px) + 10px)!important;
+  }
+
+  body.current-qualification .qual-strip,
+  body.current-sprint .sprint-strip{
+    display:grid!important;
+    grid-template-columns:20% 30% 50%!important;
+    grid-template-rows:76px 50px!important;
+    min-height:126px!important;
+    height:auto!important;
+    padding:0!important;
+    align-items:stretch!important;
+    overflow:hidden!important;
+  }
+
+  body.current-qualification .position-cell,
+  body.current-sprint .position-cell,
+  body.current-qualification .qual-delta-focus-cell,
+  body.current-sprint .qual-delta-focus-cell{
+    display:contents!important;
+  }
+
+  body.current-qualification .position-cell .inline-home-btn,
+  body.current-sprint .position-cell .inline-home-btn{
+    position:static!important;
+    grid-column:1!important;
+    grid-row:1!important;
+    align-self:stretch!important;
+    justify-self:stretch!important;
+    width:auto!important;
+    height:auto!important;
+    min-width:0!important;
+    margin:0!important;
+    transform:none!important;
+    border:0!important;
+    border-right:1px solid #29292e!important;
+    border-radius:0!important;
+    font-size:22px!important;
+  }
+
+  body.current-qualification .position-cell .hero-position,
+  body.current-sprint .position-cell .hero-position{
+    grid-column:2!important;
+    grid-row:1!important;
+    align-self:start!important;
+    justify-self:stretch!important;
+    margin:0!important;
+    padding:10px 5px 0!important;
+    font-size:34px!important;
+    line-height:.9!important;
+    text-align:center!important;
+  }
+
+  body.current-qualification .position-cell .hero-name,
+  body.current-sprint .position-cell .hero-name{
+    grid-column:2!important;
+    grid-row:1!important;
+    align-self:end!important;
+    justify-self:stretch!important;
+    width:auto!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0 5px 10px!important;
+    font-size:10px!important;
+    line-height:1!important;
+    text-align:center!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    border-right:1px solid #29292e!important;
+  }
+
+  body.current-qualification .qual-delta-content,
+  body.current-sprint .qual-delta-content{
+    grid-column:3!important;
+    grid-row:1!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:100%!important;
+    height:76px!important;
+    min-height:76px!important;
+    padding:3px 6px!important;
+    border:0!important;
+    background:#0c0c0f!important;
+  }
+
+  body.current-qualification .qual-focus-launch,
+  body.current-sprint .qual-focus-launch{
+    position:static!important;
+    grid-column:1 / 3!important;
+    grid-row:2!important;
+    align-self:stretch!important;
+    justify-self:stretch!important;
+    width:100%!important;
+    height:50px!important;
+    min-height:50px!important;
+    margin:0!important;
+    transform:none!important;
+    border-radius:0!important;
+  }
+
+  body.current-qualification .status-values{
+    grid-column:3!important;
+    grid-row:2!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:6px!important;
+    width:100%!important;
+    height:50px!important;
+    min-height:50px!important;
+    margin:0!important;
+    padding:3px 5px!important;
+    border-left:1px solid #29292e!important;
+  }
+
+  body.current-sprint .sprint-session-info{
+    grid-column:3!important;
+    grid-row:2!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:5px!important;
+    width:100%!important;
+    height:50px!important;
+    min-height:50px!important;
+    margin:0!important;
+    padding:3px 5px!important;
+    border-left:1px solid #29292e!important;
+    font-size:13px!important;
+    white-space:nowrap!important;
+  }
+
+  body.current-qualification .qual-delta,
+  body.current-sprint .qual-delta{
+    font-size:30px!important;
+    line-height:1!important;
+  }
+  body.current-qualification .gap-with,
+  body.current-sprint .gap-with{
+    font-size:8px!important;
+    line-height:1!important;
+    margin-top:4px!important;
+  }
+
+  body.current-sprint .sprint-strip{
+    grid-template-rows:76px 50px 40px!important;
+    min-height:166px!important;
+  }
+  body.current-sprint .fastest-last-block{
+    grid-column:1 / 4!important;
+    grid-row:3!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:7px!important;
+    width:100%!important;
+    height:40px!important;
+    min-height:40px!important;
+    margin:0!important;
+    padding:4px 8px!important;
+    border-left:0!important;
+    border-top:1px solid #29292e!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+  body.current-sprint .fastest-last-block .label{display:none!important}
+  body.current-sprint .fastest-last-name,
+  body.current-sprint .fastest-last-time{
+    display:inline!important;
+    width:auto!important;
+    margin:0!important;
+    font-size:12px!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+  body.current-sprint .fastest-last-name{
+    max-width:72%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1379,7 +1572,7 @@ body.current-sprint .gap-with{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.6.0</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.6.1</div>
     </div>
   </div>
 </section>

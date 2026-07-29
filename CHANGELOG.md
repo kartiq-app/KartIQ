@@ -1,3 +1,10 @@
+# KartIQ V4.6.1 — Menu portrait Qualification et Sprint
+
+- Ligne 1 en proportions fixes : Home 20 %, pilote suivi 30 %, Delta 50 %.
+- Ligne 2 : Focus 50 %, temps restant / tours 50 %.
+- Sprint : meilleur dernier tour sur une troisième ligne pleine largeur.
+- Ajout d’une marge supérieure tenant compte de la zone sûre iPhone.
+
 # V4.5.9
 
 - Centre horizontalement le bouton Home entre le bord gauche de la carte et la position du pilote suivi.
