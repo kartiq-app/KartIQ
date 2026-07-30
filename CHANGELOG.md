@@ -1,9 +1,10 @@
-# V4.8.4
+# V4.8.5
 
-- Suppression des correctifs CSS superposés V4.8.1 à V4.8.3 pour la case **Temps restant / Tours**.
-- Qualification et Sprint paysage utilisent désormais un composant Flex unique et simple, avec deux moitiés égales centrées horizontalement et verticalement.
-- Le séparateur central et l’alerte rouge sous deux minutes sont conservés.
-- Version de la home, version interne et cache PWA synchronisés en V4.8.4.
+- Qualification paysage : la dernière case de la ligne 1 est désormais entièrement vide.
+- Sprint paysage : la dernière case de la ligne 1 est désormais entièrement vide.
+- Suppression du contenu Temps / Tours et des mises à jour JavaScript associées dans ces deux cases.
+- Le compte à rebours reste disponible uniquement dans les vues Focus et Endurance.
+- Version de la home, version interne et cache PWA synchronisés en V4.8.5.
 
 # V4.8.3
 
