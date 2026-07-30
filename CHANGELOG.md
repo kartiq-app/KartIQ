@@ -1,3 +1,10 @@
+# V4.8.3
+
+- Correction du centrage réel de la case **Temps restant / Tours** en Qualification paysage et Sprint paysage.
+- Suppression de l’influence des anciennes règles de grille sur le contenu : chaque valeur est désormais positionnée et centrée dans sa demi-case.
+- Conservation de la parité des cases et filets en Qualification et Sprint portrait.
+- Version de la home, version interne et cache PWA synchronisés en V4.8.3.
+
 # V4.8.2
 
 - Qualification et Sprint paysage : centrage structurel du temps restant et des tours dans leur case, avec deux demi-hauteurs fixes de 44 px.
