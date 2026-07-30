@@ -1,3 +1,10 @@
+# V4.7.8
+
+- Sprint paysage : ligne supérieure complète et alignée avec la case Temps restant / Tours visible à droite.
+- Sprint portrait : position et nom du pilote suivi toujours centrés dans leur case.
+- Qualifications paysage : ajout d’un second filet rouge au-dessus du classement général.
+- Version de la home, version interne et cache PWA synchronisés en V4.7.8.
+
 # KartIQ V4.7.7
 
 - Sprint portrait : la case Temps restant / Tours tient sur une seule ligne et reprend exactement la hauteur de la case Focus.

@@ -2358,10 +2358,72 @@ body.current-sprint .position-cell{
   body.current-sprint .sprint-session-status strong+strong{border:0!important}
 }
 
+
+/* KartIQ V4.7.8 — corrections d’alignement Sprint et double filet Qualification */
+@media (orientation:landscape){
+  /* Ligne 1 Sprint complète et toujours visible : Menu | Pilote | Focus | Delta | Statut */
+  body:not(.preview-embedded).current-sprint .sprint-strip{
+    width:100%!important;
+    max-width:100%!important;
+    grid-template-columns:64px minmax(150px,1fr) minmax(92px,.52fr) minmax(220px,1.25fr) minmax(175px,.88fr)!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+  body:not(.preview-embedded).current-sprint .sprint-session-status{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    grid-column:5!important;
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+  body:not(.preview-embedded).current-sprint .sprint-session-status strong{
+    flex:0 1 auto!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+
+  /* Second filet rouge au-dessus du classement Qualification. */
+  body:not(.preview-embedded).current-qualification .qual-table-wrap{
+    border-top:3px solid var(--accent)!important;
+    box-sizing:border-box!important;
+  }
+}
+
+@media (max-width:680px) and (orientation:portrait){
+  /* Position et nom du pilote suivi toujours centrés dans Sprint portrait. */
+  body.current-sprint .position-cell{
+    text-align:center!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  body.current-sprint .position-cell .hero-position,
+  body.current-sprint .position-cell .hero-name{
+    width:100%!important;
+    max-width:100%!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+  body.current-sprint .position-cell .hero-name .driver-name,
+  body.current-sprint .position-cell .hero-name .driver-first,
+  body.current-sprint .position-cell .hero-name .driver-last{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    min-width:0!important;
+  }
+}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.7 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.8 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -2408,7 +2470,7 @@ body.current-sprint .position-cell{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.7.7</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.7.8</div>
     </div>
   </div>
 </section>
