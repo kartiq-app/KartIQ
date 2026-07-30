@@ -1,3 +1,10 @@
+# V4.8.0
+
+- Qualification paysage utilise désormais exactement la même grille à cinq cases que Sprint paysage.
+- Largeurs identiques pour Menu, Pilote suivi, Focus, Delta et Temps / Tours dans les deux modes.
+- Les cases Temps / Tours de Qualification et Sprint partagent la même structure sur deux lignes, le même séparateur et la même typographie.
+- Version de la home, version interne et cache PWA synchronisés en V4.8.0.
+
 # V4.7.9
 
 - Sprint paysage : la case Temps restant / Tours est désormais présentée sur deux lignes centrées.
