@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="KartIQ">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V4.8.6 — Case paysage vide et navigation restaurée</title>
+<title>KartIQ V4.8.7 — Temps et tours paysage recentrés</title>
 <style>
 :root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -2548,53 +2548,6 @@ body.current-sprint .position-cell{
 
 
 
-/* KartIQ V4.8.4 — composant Temps/Tours simplifié */
-@media (orientation:landscape){
-  body:not(.preview-embedded).current-qualification .status-values,
-  body:not(.preview-embedded).current-sprint .sprint-session-status{
-    grid-column:5!important;
-    display:flex!important;
-    flex-direction:column!important;
-    align-items:stretch!important;
-    justify-content:center!important;
-    width:100%!important;
-    height:88px!important;
-    min-height:88px!important;
-    max-height:88px!important;
-    padding:0!important;
-    margin:0!important;
-    gap:0!important;
-    border:0!important;
-    overflow:hidden!important;
-    box-sizing:border-box!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values > strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > strong{
-    position:static!important;
-    display:flex!important;
-    flex:1 1 50%!important;
-    align-items:center!important;
-    justify-content:center!important;
-    width:100%!important;
-    height:auto!important;
-    min-width:0!important;
-    min-height:0!important;
-    max-height:none!important;
-    padding:0!important;
-    margin:0!important;
-    border:0!important;
-    transform:none!important;
-    text-align:center!important;
-    text-indent:0!important;
-    line-height:1!important;
-    white-space:nowrap!important;
-    box-sizing:border-box!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values > strong + strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > strong + strong{
-    border-top:1px solid #29292e!important;
-  }
-}
 
 @media (max-width:680px) and (orientation:portrait){
   /* Qualification portrait identique au Sprint portrait. */
@@ -2637,26 +2590,65 @@ body.current-sprint .position-cell{
 
 
 
-/* KartIQ V4.8.6 — dernière case volontairement vide en paysage
-   Les éléments restent dans le DOM pour ne pas perturber la sélection des circuits
-   ni les mises à jour des autres modes. */
-@media (orientation: landscape){
-  body:not(.preview-embedded).current-qualification .status-values > *,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > *{
-    display:none!important;
-  }
+
+/* KartIQ V4.8.7 — composant Temps/Tours paysage nettoyé
+   Une seule règle commune à Qualification et Sprint. */
+@media (orientation:landscape){
   body:not(.preview-embedded).current-qualification .status-values,
   body:not(.preview-embedded).current-sprint .sprint-session-status{
-    background:transparent!important;
+    grid-column:5!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:repeat(2,minmax(0,1fr))!important;
+    place-items:stretch!important;
+    width:100%!important;
+    height:88px!important;
+    min-height:88px!important;
+    max-height:88px!important;
+    margin:0!important;
     padding:0!important;
     gap:0!important;
+    border:0!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+  body:not(.preview-embedded).current-qualification .status-values > strong,
+  body:not(.preview-embedded).current-sprint .sprint-session-status > strong{
+    position:static!important;
+    inset:auto!important;
+    display:grid!important;
+    place-items:center!important;
+    align-self:stretch!important;
+    justify-self:stretch!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-width:none!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0 8px!important;
+    border:0!important;
+    transform:none!important;
+    text-align:center!important;
+    text-indent:0!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    box-sizing:border-box!important;
+    font-variant-numeric:tabular-nums;
+  }
+  body:not(.preview-embedded).current-qualification .status-values > strong + strong,
+  body:not(.preview-embedded).current-sprint .sprint-session-status > strong + strong{
+    border-top:1px solid #29292e!important;
   }
 }
 
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.8.6 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.8.7 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -2703,7 +2695,7 @@ body.current-sprint .position-cell{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.8.6</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.8.7</div>
     </div>
   </div>
 </section>

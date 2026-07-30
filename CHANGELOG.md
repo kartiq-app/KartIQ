@@ -1,3 +1,13 @@
+# KartIQ — Journal des modifications
+
+## V4.8.7 — Nettoyage ciblé de la case Temps / Tours
+- Suppression des correctifs expérimentaux V4.8.4 et V4.8.6 qui se superposaient sur la dernière case de la ligne 1.
+- Restauration du contenu Temps / Tours en Qualification paysage et Sprint paysage.
+- Une seule règle CSS commune utilise une grille de deux moitiés strictement égales.
+- Centrage horizontal et vertical assuré individuellement pour le temps et les tours, sans position absolue ni transformation.
+- La sélection des circuits et toute la logique JavaScript restent inchangées.
+- Cache PWA mis à jour en V4.8.7.
+
 # V4.8.6
 
 - Correction de la régression empêchant la sélection d’un circuit depuis l’accueil.
