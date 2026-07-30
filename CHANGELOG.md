@@ -1,3 +1,14 @@
+## V4.9.0 — Files de karts Endurance
+
+- Ajout d’une zone dynamique de redistribution sous le classement général et le Top 8 du mode Endurance.
+- Gestion de 1, 2 ou 3 files.
+- Ajout manuel de karts à chaque file avec le visuel RT10 fourni.
+- Sélection d’un kart par clic, déplacement vers l’avant ou l’arrière, et retrait de la file.
+- Mise en valeur du premier kart disponible de chaque file.
+- Sauvegarde automatique des files dans le navigateur.
+- Interface tactile et défilement horizontal adaptés au mobile.
+- Cache PWA mis à jour en V4.9.0.
+
 ## V4.8.9 — Isolation complète des valeurs Temps / Tours
 
 - Reprise de la V4.8.8 fonctionnelle.
