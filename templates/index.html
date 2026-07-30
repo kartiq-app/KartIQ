@@ -2420,10 +2420,69 @@ body.current-sprint .position-cell{
   }
 }
 
+
+/* KartIQ V4.7.9 — statut Sprint paysage sur deux lignes et hauteurs harmonisées */
+@media (orientation:landscape){
+  /* Qualification et Sprint utilisent exactement la même hauteur de ligne supérieure. */
+  body:not(.preview-embedded).current-qualification .qual-strip,
+  body:not(.preview-embedded).current-sprint .sprint-strip{
+    height:88px!important;
+    min-height:88px!important;
+    max-height:88px!important;
+    box-sizing:border-box!important;
+  }
+  body:not(.preview-embedded).current-qualification .qual-cell,
+  body:not(.preview-embedded).current-qualification .position-cell,
+  body:not(.preview-embedded).current-qualification .qual-focus-launch,
+  body:not(.preview-embedded).current-qualification .qual-delta-content,
+  body:not(.preview-embedded).current-qualification .status-values{
+    height:88px!important;
+    min-height:88px!important;
+    max-height:88px!important;
+    box-sizing:border-box!important;
+  }
+
+  /* Sprint : temps restant au-dessus, tours en dessous, centrés et séparés par un filet. */
+  body:not(.preview-embedded).current-sprint .sprint-session-status{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    grid-template-rows:1fr 1fr!important;
+    align-items:stretch!important;
+    justify-items:stretch!important;
+    gap:0!important;
+    padding:0!important;
+    height:88px!important;
+    min-height:88px!important;
+    max-height:88px!important;
+  }
+  body:not(.preview-embedded).current-sprint .sprint-session-status strong{
+    display:flex!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    padding:0 8px!important;
+    margin:0!important;
+    border:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    box-sizing:border-box!important;
+    font-size:clamp(18px,1.75vw,27px)!important;
+    line-height:1!important;
+  }
+  body:not(.preview-embedded).current-sprint .sprint-session-status strong+strong{
+    border-top:1px solid #29292e!important;
+  }
+}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.8 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.9 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -2470,7 +2529,7 @@ body.current-sprint .position-cell{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.7.8</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.7.9</div>
     </div>
   </div>
 </section>
@@ -2570,7 +2629,7 @@ function updateRemainingDisplay(){
  const display=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);
  const seconds=ms===null?null:ms/1000;
  const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
- const sp=document.getElementById('sRemaining');if(sp)sp.textContent=display;
+ const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
  const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
  renderQualificationFocus();
  renderSprintFocus();
@@ -2898,7 +2957,7 @@ function render(){
  rows('sprintTable',d=>`<td class="${positionClass(d.pos)} ranking-pos">${d.pos}</td>${showRankingKart?`<td class="ranking-kart-column">${validKartNumber(d)||'—'}</td>`:''}<td class="name ranking-driver-column">${formatRankingDriver(d)}</td><td class="ranking-last ${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="mobile-hide ranking-best ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="mobile-hide ranking-gap">${d.gap}</td><td class="ranking-interval">${d.interval}</td>`);
  rows('enduranceTable',d=>`<td class="pos endurance-position-cell"><span class="endurance-position-wrap"><span class="endurance-position-number${Number(d.pos)===1?' leader-pos':''}">${d.pos}</span>${endurancePitBadge(d)}</span></td><td class="name">${formatDriverName(d.driver)}</td><td>${d.apex}</td><td>${d.laps}</td><td>${d.pit_stops ?? '—'}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td><td class="red">${d.penalty||'—'}</td>`);
  const f=state.followed||{};qPos.textContent=f.pos?'P'+f.pos:'—';setDriverName(qName,f.driver||'—');qDelta.textContent=qualificationDeltaFor(f);qDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f));updateRemainingDisplay();qLapsRemaining.textContent=state.apex_laps_remaining||'—';const qReference=qualificationReferenceFor(f);qGapWith.innerHTML=gapWithMarkup('vs',qReference?.driver||'—');
- setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';const sprintDelta=sprintDeltaFor(f);const sprintReference=sprintReferenceFor(f);sDeltaValue.textContent=sprintDelta;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&sprintDelta!=='--');sDeltaValue.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&sprintDelta!=='--');sRemaining.textContent=liveRemainingMilliseconds()===null?(state.time_remaining||'—'):formatRemainingMilliseconds(liveRemainingMilliseconds());sLapsRemaining.textContent=state.apex_laps_remaining||'—';sGapWith.innerHTML=gapWithMarkup('vs',sprintReference?.driver||'—');const fastest=state.fastest_last_lap||{};sFastestName.textContent='🔥 '+(fastest.driver||'—');sFastestTime.textContent=fastest.lap||'—';
+ setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';const sprintDelta=sprintDeltaFor(f);const sprintReference=sprintReferenceFor(f);sDeltaValue.textContent=sprintDelta;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&sprintDelta!=='--');sDeltaValue.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&sprintDelta!=='--');const sprintRemainingMs=liveRemainingMilliseconds();sRemaining.textContent=sprintRemainingMs===null?(state.time_remaining||'—'):formatRemainingMilliseconds(sprintRemainingMs);sRemaining.classList.toggle('time-critical',Number.isFinite(sprintRemainingMs)&&sprintRemainingMs<120000);sLapsRemaining.textContent=state.apex_laps_remaining||'—';sGapWith.innerHTML=gapWithMarkup('vs',sprintReference?.driver||'—');const fastest=state.fastest_last_lap||{};sFastestName.textContent='🔥 '+(fastest.driver||'—');sFastestTime.textContent=fastest.lap||'—';
  const sortedPenalties=[...(state.penalties||[])].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))); const penaltyMarkup=sortedPenalties.length?sortedPenalties.map(p=>`<div class="penalty-row"><small class="penalty-time">${penaltyTime(p)}</small><b>${formatDriverSurname(p.driver)}</b><span class="red"><b>${p.penalty}</b></span></div>`).join(''):'<div class="empty">Aucune pénalité</div>';
  penalties.innerHTML=penaltyMarkup;
  if(document.getElementById('endurancePenalties'))endurancePenalties.innerHTML=penaltyMarkup;

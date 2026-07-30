@@ -1,3 +1,11 @@
+# V4.7.9
+
+- Sprint paysage : la case Temps restant / Tours est désormais présentée sur deux lignes centrées.
+- Sprint paysage : ajout d’un filet séparateur entre le chrono et le nombre de tours, comme en Qualifications.
+- Sprint paysage : le chrono passe en rouge sous la barre des deux minutes.
+- Qualifications paysage : la ligne supérieure adopte exactement la même hauteur que celle du Sprint paysage.
+- Version de la home, version interne et cache PWA synchronisés en V4.7.9.
+
 # V4.7.8
 
 - Sprint paysage : ligne supérieure complète et alignée avec la case Temps restant / Tours visible à droite.
