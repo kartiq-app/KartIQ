@@ -2547,95 +2547,57 @@ body.current-sprint .position-cell{
 }
 
 
-/* KartIQ V4.8.1 — centrage des statuts et filets Sprint portrait */
+
+/* KartIQ V4.8.4 — composant Temps/Tours simplifié */
 @media (orientation:landscape){
-  /* Le contenu Temps / Tours est centré dans chacune des deux moitiés. */
   body:not(.preview-embedded).current-qualification .status-values,
   body:not(.preview-embedded).current-sprint .sprint-session-status{
-    place-items:center!important;
-    place-content:center!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status strong{
-    display:grid!important;
-    place-items:center!important;
-    place-content:center!important;
-    align-self:stretch!important;
-    justify-self:stretch!important;
-    padding:0!important;
-    margin:0!important;
-    text-align:center!important;
-    line-height:1!important;
-    text-indent:0!important;
-  }
-}
-
-@media (max-width:680px) and (orientation:portrait){
-  /* Sprint portrait : chaque case des lignes 1 et 2 est clairement délimitée. */
-  body.current-sprint .sprint-menu-cell,
-  body.current-sprint .position-cell,
-  body.current-sprint .qual-delta-content,
-  body.current-sprint .qual-focus-launch,
-  body.current-sprint .sprint-session-status{
-    border:0!important;
-    box-shadow:inset 0 0 0 1px #29292e!important;
-    box-sizing:border-box!important;
-  }
-}
-
-
-/* KartIQ V4.8.2 — centrage absolu Temps/Tours et parité portrait Qualification/Sprint */
-@media (orientation:landscape){
-  /* Le statut occupe toute la cinquième case ; chaque valeur est centrée dans sa demi-case. */
-  body:not(.preview-embedded).current-qualification .status-values,
-  body:not(.preview-embedded).current-sprint .sprint-session-status{
-    position:relative!important;
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr)!important;
-    grid-template-rows:44px 44px!important;
+    grid-column:5!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:center!important;
     width:100%!important;
     height:88px!important;
-    min-width:0!important;
     min-height:88px!important;
     max-height:88px!important;
     padding:0!important;
     margin:0!important;
-    align-items:stretch!important;
-    justify-items:stretch!important;
-    place-content:stretch!important;
+    gap:0!important;
+    border:0!important;
     overflow:hidden!important;
     box-sizing:border-box!important;
   }
-  body:not(.preview-embedded).current-qualification .status-values strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status strong{
-    position:relative!important;
-    inset:auto!important;
+  body:not(.preview-embedded).current-qualification .status-values > strong,
+  body:not(.preview-embedded).current-sprint .sprint-session-status > strong{
+    position:static!important;
     display:flex!important;
-    flex:1 1 auto!important;
+    flex:1 1 50%!important;
     align-items:center!important;
     justify-content:center!important;
     width:100%!important;
-    height:44px!important;
+    height:auto!important;
     min-width:0!important;
-    min-height:44px!important;
-    max-height:44px!important;
+    min-height:0!important;
+    max-height:none!important;
     padding:0!important;
     margin:0!important;
+    border:0!important;
     transform:none!important;
     text-align:center!important;
     text-indent:0!important;
-    box-sizing:border-box!important;
-    line-height:44px!important;
+    line-height:1!important;
     white-space:nowrap!important;
+    box-sizing:border-box!important;
   }
-  body:not(.preview-embedded).current-qualification .status-values strong+strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status strong+strong{
+  body:not(.preview-embedded).current-qualification .status-values > strong + strong,
+  body:not(.preview-embedded).current-sprint .sprint-session-status > strong + strong{
     border-top:1px solid #29292e!important;
   }
 }
 
 @media (max-width:680px) and (orientation:portrait){
-  /* Qualification portrait reprend exactement la grille et les dimensions du Sprint portrait. */
+  /* Qualification portrait identique au Sprint portrait. */
   body.current-qualification .qual-strip{
     display:grid!important;
     grid-template-columns:20% 30% 50%!important;
@@ -2649,147 +2611,34 @@ body.current-sprint .position-cell{
     overflow:hidden!important;
     box-sizing:border-box!important;
   }
-  body.current-qualification .qual-menu-cell{
-    position:static!important;
-    grid-column:1!important;
-    grid-row:1!important;
-    width:100%!important;
-    height:76px!important;
-    min-height:76px!important;
-    margin:0!important;
-    transform:none!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-  }
-  body.current-qualification .position-cell{
-    grid-column:2!important;
-    grid-row:1!important;
-    width:100%!important;
-    height:76px!important;
-    min-height:76px!important;
-    max-height:76px!important;
-    padding:4px 5px!important;
-  }
+  body.current-qualification .qual-menu-cell{position:static!important;grid-column:1!important;grid-row:1!important;width:100%!important;height:76px!important;min-height:76px!important;margin:0!important;transform:none!important;display:flex!important;align-items:center!important;justify-content:center!important}
+  body.current-qualification .position-cell{grid-column:2!important;grid-row:1!important;width:100%!important;height:76px!important;min-height:76px!important;max-height:76px!important;padding:4px 5px!important}
   body.current-qualification .qual-delta-focus-cell{display:contents!important}
-  body.current-qualification .qual-delta-content{
-    grid-column:3!important;
-    grid-row:1!important;
-    width:100%!important;
-    height:76px!important;
-    min-height:76px!important;
-    max-height:76px!important;
-  }
-  body.current-qualification .qual-focus-launch{
-    grid-column:1 / 3!important;
-    grid-row:2!important;
-    width:100%!important;
-    height:50px!important;
-    min-height:50px!important;
-    max-height:50px!important;
-  }
-  body.current-qualification .status-values{
-    grid-column:3!important;
-    grid-row:2!important;
-    display:flex!important;
-    flex-direction:row!important;
-    align-items:center!important;
-    justify-content:center!important;
-    gap:5px!important;
-    width:100%!important;
-    height:50px!important;
-    min-height:50px!important;
-    max-height:50px!important;
-    margin:0!important;
-    padding:3px 5px!important;
-    overflow:hidden!important;
-    box-sizing:border-box!important;
-  }
-  body.current-qualification .status-values strong{
-    display:inline-flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    width:auto!important;
-    height:auto!important;
-    min-width:0!important;
-    min-height:0!important;
-    padding:0!important;
-    margin:0!important;
-    border:0!important;
-    font-size:14px!important;
-    line-height:1!important;
-    white-space:nowrap!important;
-    text-align:center!important;
-  }
+  body.current-qualification .qual-delta-content{grid-column:3!important;grid-row:1!important;width:100%!important;height:76px!important;min-height:76px!important;max-height:76px!important}
+  body.current-qualification .qual-focus-launch{grid-column:1 / 3!important;grid-row:2!important;width:100%!important;height:50px!important;min-height:50px!important;max-height:50px!important}
+  body.current-qualification .status-values{grid-column:3!important;grid-row:2!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:5px!important;width:100%!important;height:50px!important;min-height:50px!important;max-height:50px!important;margin:0!important;padding:3px 5px!important;overflow:hidden!important;box-sizing:border-box!important}
+  body.current-qualification .status-values strong{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;font-size:14px!important;line-height:1!important;white-space:nowrap!important;text-align:center!important}
   body.current-qualification .status-values strong+strong{border:0!important}
-
-  /* Toutes les cases des lignes 1 et 2 sont délimitées comme en Sprint portrait. */
   body.current-qualification .qual-menu-cell,
   body.current-qualification .position-cell,
   body.current-qualification .qual-delta-content,
   body.current-qualification .qual-focus-launch,
-  body.current-qualification .status-values{
+  body.current-qualification .status-values,
+  body.current-sprint .sprint-menu-cell,
+  body.current-sprint .position-cell,
+  body.current-sprint .qual-delta-content,
+  body.current-sprint .qual-focus-launch,
+  body.current-sprint .sprint-session-status{
     border:0!important;
     box-shadow:inset 0 0 0 1px #29292e!important;
     box-sizing:border-box!important;
   }
 }
 
-
-
-/* KartIQ V4.8.3 — recentrage réel de la case Temps/Tours en paysage */
-@media (orientation:landscape){
-  body:not(.preview-embedded).current-qualification .status-values,
-  body:not(.preview-embedded).current-sprint .sprint-session-status{
-    position:relative!important;
-    display:block!important;
-    width:100%!important;
-    height:88px!important;
-    min-height:88px!important;
-    max-height:88px!important;
-    padding:0!important;
-    margin:0!important;
-    overflow:hidden!important;
-    box-sizing:border-box!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values > strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > strong{
-    position:absolute!important;
-    left:0!important;
-    right:0!important;
-    width:100%!important;
-    height:44px!important;
-    min-height:44px!important;
-    max-height:44px!important;
-    padding:0!important;
-    margin:0!important;
-    border:0!important;
-    transform:none!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    text-align:center!important;
-    text-indent:0!important;
-    line-height:1!important;
-    box-sizing:border-box!important;
-    white-space:nowrap!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values > strong:first-child,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > strong:first-child{
-    top:0!important;
-    bottom:auto!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values > strong:last-child,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > strong:last-child{
-    top:44px!important;
-    bottom:auto!important;
-    border-top:1px solid #29292e!important;
-  }
-}
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.8.3 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.8.4 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -2836,7 +2685,7 @@ body.current-sprint .position-cell{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.8.3</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.8.4</div>
     </div>
   </div>
 </section>
