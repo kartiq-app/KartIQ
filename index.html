@@ -1821,10 +1821,60 @@ body.current-sprint #sprintTable td.pos{
   }
 }
 
+
+
+/* KartIQ V4.7.2 — troncature pilote suivi renforcée + menu paysage à gauche */
+body.current-qualification .position-cell,
+body.current-sprint .position-cell{
+  min-width:0!important;
+  overflow:hidden!important;
+}
+body.current-qualification .position-cell .hero-name,
+body.current-sprint .position-cell .hero-name{
+  display:block!important;
+  width:calc(100% - 16px)!important;
+  max-width:calc(100% - 16px)!important;
+  min-width:0!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.current-qualification .position-cell .hero-name .driver-name,
+body.current-sprint .position-cell .hero-name .driver-name{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.current-qualification .position-cell .hero-name .driver-first,
+body.current-qualification .position-cell .hero-name .driver-last,
+body.current-sprint .position-cell .hero-name .driver-first,
+body.current-sprint .position-cell .hero-name .driver-last{
+  display:inline!important;
+  white-space:nowrap!important;
+}
+@media (orientation:landscape){
+  body.current-qualification .position-cell .inline-home-btn,
+  body.current-sprint .position-cell .inline-home-btn{
+    position:fixed!important;
+    left:calc(env(safe-area-inset-left, 0px) + 8px)!important;
+    right:auto!important;
+    top:calc(env(safe-area-inset-top, 0px) + 8px)!important;
+    transform:none!important;
+    z-index:120!important;
+    background:#000!important;
+  }
+}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.1 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.2 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 

@@ -1,3 +1,10 @@
+# KartIQ V4.7.2
+
+- Qualification et Sprint : troncature renforcée du nom du pilote suivi, y compris lorsque le nom est composé de plusieurs éléments HTML.
+- Le nom reste sur une seule ligne et affiche une ellipse lorsqu’il dépasse de sa carte.
+- En mode paysage, le menu hamburger est désormais ancré complètement à gauche de l’écran, avec prise en compte de la zone sûre du téléphone.
+- Cache PWA renouvelé pour forcer le chargement de la correction sur mobile.
+
 # KartIQ V4.7.1
 
 - Qualification et Sprint : le nom du pilote suivi est tronqué proprement lorsqu’il dépasse de sa carte.
