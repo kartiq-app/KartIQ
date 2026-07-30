@@ -9,6 +9,7 @@ import socket
 import threading
 import time
 import webbrowser
+import unicodedata
 
 try:
     import websocket
@@ -31,16 +32,27 @@ PROTOCOL_ENGINE = ProtocolEngine()
 EVENT_STORE = ApexEventStore(APP_DIR / "recordings")
 
 
+def _circuit_sort_key(circuit):
+    """Tri alphabétique stable, insensible aux accents et à la casse."""
+    name = str(circuit.get("name", ""))
+    return unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii").casefold()
+
+
 def load_circuits():
+    """Charge la base centralisée des circuits et garantit son ordre alphabétique."""
     path = APP_DIR / "config" / "circuits.json"
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        circuits = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(circuits, list):
+            raise ValueError("config/circuits.json doit contenir une liste")
+        circuits = [c for c in circuits if isinstance(c, dict) and c.get("id") and c.get("name")]
+        return sorted(circuits, key=_circuit_sort_key)
     except Exception:
         return [{"id": "circuit-de-leurope", "name": "Circuit de l'Europe", "live_url": "", "websocket_url": ""}]
 
 
 STATE = {
-    "version": "4.4.4",
+    "version": "4.7.0",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",

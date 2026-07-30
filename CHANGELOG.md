@@ -343,3 +343,15 @@ KartIQ V4.0.9
 - La colonne est affichée uniquement si au moins un numéro de kart est fourni par Apex Timing.
 - Si aucun numéro n'est disponible, la colonne disparaît totalement et la mise en page d'origine est conservée.
 - En portrait, position, kart et pilote restent chacun dans leur colonne sur une seule ligne.
+
+## V4.7.0 — Base circuits centralisée et 7 nouveaux circuits
+- La liste des circuits est chargée depuis le fichier unique `config/circuits.json`.
+- Le serveur garantit automatiquement un tri alphabétique insensible aux accents et à la casse.
+- Ajout de **Circuit de l'Indre**.
+- Ajout de **GP Kart Concept**.
+- Ajout de **Harbor Circuit Makuhari** (Japon).
+- Ajout de **Lignano Circuit** (Italie).
+- Ajout de **PKS - Circuit du Val d'Argenton**.
+- Ajout de **Racing Kart JPR Ostricourt**.
+- Ajout de **RKC - Karting Paris**.
+- Mise à jour du cache PWA afin de forcer le chargement de la nouvelle version sur mobile.
