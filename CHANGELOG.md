@@ -1,3 +1,13 @@
+# KartIQ V4.7.1
+
+- Qualification et Sprint : le nom du pilote suivi est tronqué proprement lorsqu’il dépasse de sa carte.
+- Le bouton Focus (icône et texte) reste centré en portrait comme en paysage, sur téléphone comme sur ordinateur.
+- Les positions des classements généraux Qualification et Sprint sont affichées en orange.
+- Le bouton de retour à l’accueil utilise désormais une icône à trois traits et se place dans le coin supérieur droit en paysage.
+- Sprint portrait : ajout du titre rouge « Pénalités ».
+- Sprint portrait : affichage des pénalités sur trois colonnes sans entêtes — heure, équipe/pilote et pénalité.
+- Cache PWA renouvelé pour forcer le chargement de la version sur mobile.
+
 # KartIQ V4.6.8
 
 - Correction du classement portrait Qualification et Sprint.
