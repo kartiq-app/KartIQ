@@ -1,3 +1,11 @@
+# KartIQ V4.7.7
+
+- Sprint portrait : la case Temps restant / Tours tient sur une seule ligne et reprend exactement la hauteur de la case Focus.
+- Sprint paysage : première ligne reconstruite et alignée comme en Qualification : Menu, Pilote suivi, Focus, Delta, Temps restant / Tours.
+- Sprint paysage : toutes les cases de la ligne supérieure ont la même hauteur et des séparations nettes.
+- Bloc Meilleur dernier tour aligné sur le filet supérieur du classement général, avec la même épaisseur de filet.
+- Version de la page d’accueil, version interne et cache PWA synchronisés en V4.7.7.
+
 # KartIQ V4.7.6
 
 - Sprint classique paysage : grille des colonnes recalée avec une largeur dédiée à Dernier et Intervalle.
