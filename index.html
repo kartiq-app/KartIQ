@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="KartIQ">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V4.9.0 — Files de karts Endurance</title>
+<title>KartIQ V4.9.1 — Endurance mobile pleine largeur</title>
 <style>
 :root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -2716,10 +2716,102 @@ body:not(.preview-embedded).current-endurance .screen.active{overflow-y:auto!imp
 body:not(.preview-embedded).current-endurance .endurance-grid{height:auto!important;min-height:100%!important;overflow:visible!important;grid-template-rows:minmax(560px,calc(100vh - 76px)) auto!important}
 body:not(.preview-embedded).current-endurance .endurance-queue-panel{margin-bottom:12px}
 
+
+
+/* KartIQ V4.9.1 — Top 8 et Quick Change adaptés à la largeur d’un smartphone */
+@media (max-width:680px){
+  body.current-endurance .right-stack,
+  body.current-endurance .right-stack > .panel,
+  body.current-endurance #paceTop8,
+  body.current-endurance .quick-change-panel{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+  }
+
+  /* Top 8 : trois zones compactes, sans débordement horizontal. */
+  body.current-endurance #paceTop8 .pace-row{
+    width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    grid-template-columns:42px minmax(0,1fr) 66px!important;
+    gap:5px!important;
+    padding:6px 2px!important;
+  }
+  body.current-endurance #paceTop8 .pace-rank{
+    min-width:0!important;
+    gap:3px!important;
+    font-size:15px!important;
+    white-space:nowrap!important;
+  }
+  body.current-endurance #paceTop8 .pace-general-pos{
+    font-size:8px!important;
+  }
+  body.current-endurance #paceTop8 .pace-row > span:nth-child(2){
+    min-width:0!important;
+    overflow:hidden!important;
+    font-size:10px!important;
+    line-height:1.1!important;
+  }
+  body.current-endurance #paceTop8 .pace-row > span:nth-child(2) > b{
+    display:block!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  body.current-endurance #paceTop8 .pace-row > span:nth-child(2) .label{
+    display:block!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:7px!important;
+  }
+  body.current-endurance #paceTop8 .pace-row > b:last-child{
+    min-width:0!important;
+    text-align:right!important;
+    white-space:nowrap!important;
+    font-size:10px!important;
+  }
+
+  /* Quick Change : les sept colonnes restent visibles sur une seule largeur d’écran. */
+  body.current-endurance .quick-table-wrap{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow-x:hidden!important;
+  }
+  body.current-endurance .quick-table{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    table-layout:fixed!important;
+  }
+  body.current-endurance .quick-table th,
+  body.current-endurance .quick-table td{
+    min-width:0!important;
+    max-width:none!important;
+    box-sizing:border-box!important;
+    padding:4px 1px!important;
+    font-size:7px!important;
+    line-height:1.05!important;
+    text-align:center!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  body.current-endurance .quick-table th:nth-child(1),body.current-endurance .quick-table td:nth-child(1){width:8%!important}
+  body.current-endurance .quick-table th:nth-child(2),body.current-endurance .quick-table td:nth-child(2){width:15%!important}
+  body.current-endurance .quick-table th:nth-child(3),body.current-endurance .quick-table td:nth-child(3){width:10%!important}
+  body.current-endurance .quick-table th:nth-child(4),body.current-endurance .quick-table td:nth-child(4){width:25%!important}
+  body.current-endurance .quick-table th:nth-child(5),body.current-endurance .quick-table td:nth-child(5){width:9%!important}
+  body.current-endurance .quick-table th:nth-child(6),body.current-endurance .quick-table td:nth-child(6){width:17%!important}
+  body.current-endurance .quick-table th:nth-child(7),body.current-endurance .quick-table td:nth-child(7){width:16%!important}
+}
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.9.0 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.9.1 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -2766,7 +2858,7 @@ body:not(.preview-embedded).current-endurance .endurance-queue-panel{margin-bott
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.9.0</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.9.1</div>
     </div>
   </div>
 </section>

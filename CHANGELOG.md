@@ -1,3 +1,12 @@
+## V4.9.1 — Endurance mobile pleine largeur
+
+- Le Top 8 du rythme actuel tient désormais entièrement dans la largeur d’un smartphone.
+- Les noms d’équipe trop longs sont tronqués proprement au lieu d’élargir la carte.
+- Le tableau Quick Change conserve ses sept colonnes visibles sans défilement horizontal.
+- Largeurs, tailles et espacements optimisés uniquement pour le mode Endurance mobile.
+- Aucun changement sur la logique Apex, Qualification, Sprint ou les files de karts.
+- Cache PWA mis à jour en V4.9.1.
+
 ## V4.9.0 — Files de karts Endurance
 
 - Ajout d’une zone dynamique de redistribution sous le classement général et le Top 8 du mode Endurance.
