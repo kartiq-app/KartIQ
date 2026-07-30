@@ -1,3 +1,9 @@
+# V4.8.1
+
+- Qualification et Sprint paysage : centrage horizontal et vertical renforcé du contenu Temps restant / Tours.
+- Sprint portrait : chaque case des lignes 1 et 2 est désormais délimitée par un filet fin.
+- Version de la home, version interne et cache PWA synchronisés en V4.8.1.
+
 # V4.8.0
 
 - Qualification paysage utilise désormais exactement la même grille à cinq cases que Sprint paysage.
