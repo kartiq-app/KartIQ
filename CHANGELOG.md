@@ -1,3 +1,13 @@
+# KartIQ V4.7.6
+
+- Sprint classique paysage : grille des colonnes recalée avec une largeur dédiée à Dernier et Intervalle.
+- Largeur de la colonne Pilote conservée à l’identique.
+- Chronos Dernier affichés intégralement et en-têtes alignés avec les valeurs.
+- Espacement renforcé avant la colonne Intervalle sans superposition.
+- Bloc du meilleur dernier tour aligné sous l’en-tête, au niveau de la première ligne du classement.
+- Colonne latérale et bloc Pénalités compactés et alignés.
+- Version de la page d’accueil, version interne et cache PWA synchronisés en V4.7.6.
+
 # KartIQ V4.7.5
 
 - Sprint classique paysage : décalage supplémentaire de la colonne **Intervalle** pour créer un espace net avec **Dernier**.

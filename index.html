@@ -1993,10 +1993,83 @@ body.current-sprint .position-cell{
   body.preview-embedded.current-sprint .penalty-panel{order:2;width:100%}
 }
 
+
+
+/* KartIQ V4.7.6 — grille Sprint paysage alignée et panneau latéral calé sur la première ligne */
+@media (orientation:landscape){
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table{
+    table-layout:fixed!important;
+    width:100%!important;
+  }
+
+  /* Conserver la largeur PILOTE et répartir proprement DERNIER / INTERVALLE. */
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(1),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-pos{width:6%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(2),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-kart-column{width:9%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(3),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-driver-column{width:28%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(4),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-last{width:24%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(7),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-interval{width:33%!important}
+
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(1),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-pos{width:8%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(2),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-driver-column{width:40%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(3),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-last{width:24%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(6),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-interval{width:28%!important}
+
+  /* Même calage pour les titres et les valeurs, avec un vrai espace avant INTERVALLE. */
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-last,
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap th:nth-child(4){
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+    padding-left:4px!important;
+    padding-right:12px!important;
+    box-sizing:border-box!important;
+  }
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-interval,
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap th:nth-child(7){
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+    padding-left:34px!important;
+    padding-right:6px!important;
+    box-sizing:border-box!important;
+  }
+
+  /* Le panneau latéral démarre sous l'en-tête, au niveau de la première ligne pilote. */
+  body:not(.preview-embedded).current-sprint .sprint-side-stack{
+    padding-top:28px!important;
+    box-sizing:border-box!important;
+    gap:8px!important;
+  }
+  body:not(.preview-embedded).current-sprint .fastest-last-panel{
+    min-height:0!important;
+    height:72px!important;
+    padding:7px 12px!important;
+    gap:4px!important;
+    flex:0 0 72px!important;
+  }
+  body:not(.preview-embedded).current-sprint .fastest-last-panel .fastest-last-name{
+    font-size:clamp(14px,1.35vw,22px)!important;
+    line-height:1!important;
+  }
+  body:not(.preview-embedded).current-sprint .fastest-last-panel .fastest-last-time{
+    font-size:clamp(19px,1.8vw,28px)!important;
+    line-height:1!important;
+  }
+}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.5 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.6 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -2043,7 +2116,7 @@ body.current-sprint .position-cell{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.7.5</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.7.6</div>
     </div>
   </div>
 </section>
