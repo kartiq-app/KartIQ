@@ -1,4 +1,11 @@
-# KartIQ V4.7.2
+# KartIQ V4.7.3
+
+- Correction ciblée de la page Sprint classique en mode paysage.
+- La colonne « Dernier » affiche désormais le chrono complet sans troncature ni points de suspension.
+- Aucun changement sur le Sprint portrait, la Qualification ou les modes Focus.
+- Numéro de version de la home, de l’en-tête, de l’état applicatif et du cache PWA mis à jour.
+
+## KartIQ V4.7.2
 
 - Qualification et Sprint : troncature renforcée du nom du pilote suivi, y compris lorsque le nom est composé de plusieurs éléments HTML.
 - Le nom reste sur une seule ligne et affiche une ellipse lorsqu’il dépasse de sa carte.
