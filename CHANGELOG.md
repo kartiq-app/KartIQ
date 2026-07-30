@@ -1,3 +1,11 @@
+# KartIQ V4.7.5
+
+- Sprint classique paysage : décalage supplémentaire de la colonne **Intervalle** pour créer un espace net avec **Dernier**.
+- La troisième case du bandeau supérieur affiche désormais le **temps restant** et/ou le **nombre de tours restants** transmis par Apex Timing.
+- Le meilleur temps du dernier tour est déplacé dans une carte dédiée au-dessus des pénalités.
+- La carte affiche sur deux lignes le nom du pilote puis son chrono du dernier tour.
+- Version de la page d’accueil, version interne et cache PWA synchronisés en V4.7.5.
+
 # KartIQ V4.7.4
 
 - Sprint classique paysage : séparation renforcée entre les colonnes **Dernier** et **Intervalle**, sans superposition.
