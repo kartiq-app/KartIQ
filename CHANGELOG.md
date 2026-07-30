@@ -1,3 +1,13 @@
+## V4.8.8 — Isolation définitive de la case Temps / Tours
+
+- Reprise de la dernière version fonctionnelle V4.8.7.
+- Qualification et Sprint utilisent désormais une classe dédiée `landscape-session-clock`.
+- Les anciens sélecteurs `.status-values` et `.sprint-session-status` ne peuvent plus modifier cette case.
+- Une seule définition CSS pilote le composant en paysage.
+- Les deux valeurs occupent chacune exactement la moitié de la case et sont centrées horizontalement et verticalement.
+- Les identifiants JavaScript et la sélection des circuits restent inchangés.
+- Cache PWA mis à jour en V4.8.8.
+
 # KartIQ — Journal des modifications
 
 ## V4.8.7 — Nettoyage ciblé de la case Temps / Tours
