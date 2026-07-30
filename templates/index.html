@@ -2013,10 +2013,83 @@ body.current-sprint .position-cell .hero-name .driver-last{
     white-space:nowrap!important;
   }
 }
+
+
+/* KartIQ V4.7.4 — espacement Dernier/Intervalle, menus isolés et alignement Sprint portrait */
+/* Qualification classique : suppression du filet vertical rouge. Sprint classique : suppression du filet vertical bleu. */
+body.current-qualification .position-cell,
+body.current-sprint .position-cell{
+  box-shadow:none!important;
+}
+
+/* Sprint classique paysage : réserver des colonnes distinctes à DERNIER et INTERVALLE. */
+@media (orientation:landscape){
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-last{
+    width:24%!important;
+    min-width:9ch!important;
+    padding-left:3px!important;
+    padding-right:8px!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+    box-sizing:border-box!important;
+  }
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-interval{
+    width:28%!important;
+    min-width:0!important;
+    padding-left:10px!important;
+    padding-right:3px!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+    box-sizing:border-box!important;
+  }
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(1),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-pos{width:8%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(3),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-driver-column{width:40%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(4){width:24%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(7){width:28%!important;padding-left:10px!important}
+
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(1),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-pos{width:6%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(2),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-kart-column{width:9%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(3),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-driver-column{width:28%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(4),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-last{width:22%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(7),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-interval{width:35%!important;padding-left:10px!important}
+}
+
+/* Sprint portrait : centrer le pilote du meilleur dernier tour sur l'axe du chrono. */
+@media (orientation:portrait){
+  body.current-sprint .fastest-last-block{
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  body.current-sprint .fastest-last-name{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    align-self:stretch!important;
+    text-align:center!important;
+    line-height:1!important;
+  }
+  body.current-sprint .fastest-last-time{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    align-self:center!important;
+    line-height:1!important;
+  }
+}
+
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.3 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.7.4 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -2063,7 +2136,7 @@ body.current-sprint .position-cell .hero-name .driver-last{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.7.3</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.7.4</div>
     </div>
   </div>
 </section>

@@ -1,3 +1,11 @@
+# KartIQ V4.7.4
+
+- Sprint classique paysage : séparation renforcée entre les colonnes **Dernier** et **Intervalle**, sans superposition.
+- Qualification classique : suppression du filet vertical rouge en haut à gauche pour isoler le menu hamburger.
+- Sprint classique : suppression du filet vertical bleu en haut à gauche pour isoler le menu hamburger.
+- Sprint portrait : centrage horizontal et vertical du pilote ayant réalisé le meilleur temps du dernier tour, aligné avec le chrono.
+- Version de la page d’accueil, version interne et cache PWA synchronisés en V4.7.4.
+
 # KartIQ V4.7.3
 
 - Correction ciblée de la page Sprint classique en mode paysage.
