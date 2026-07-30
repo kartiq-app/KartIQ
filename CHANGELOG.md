@@ -1,3 +1,10 @@
+# V4.8.2
+
+- Qualification et Sprint paysage : centrage structurel du temps restant et des tours dans leur case, avec deux demi-hauteurs fixes de 44 px.
+- Qualification portrait : grille, dimensions et case Temps/Tours rendues identiques à celles du Sprint portrait.
+- Qualification portrait : chaque case des lignes 1 et 2 est désormais délimitée par un filet.
+- Version de la home, version interne et cache PWA synchronisés en V4.8.2.
+
 # V4.8.1
 
 - Qualification et Sprint paysage : centrage horizontal et vertical renforcé du contenu Temps restant / Tours.
