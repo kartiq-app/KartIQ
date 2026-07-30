@@ -1,10 +1,17 @@
-# V4.8.5
+# V4.8.6
 
-- Qualification paysage : la dernière case de la ligne 1 est désormais entièrement vide.
-- Sprint paysage : la dernière case de la ligne 1 est désormais entièrement vide.
-- Suppression du contenu Temps / Tours et des mises à jour JavaScript associées dans ces deux cases.
-- Le compte à rebours reste disponible uniquement dans les vues Focus et Endurance.
-- Version de la home, version interne et cache PWA synchronisés en V4.8.5.
+- Correction de la régression empêchant la sélection d’un circuit depuis l’accueil.
+- Restauration de la base fonctionnelle V4.8.4 et de toutes les règles nécessaires aux listes de circuits et aux classements.
+- En Qualification paysage et Sprint paysage, la dernière case de la ligne 1 reste présente mais son contenu est masqué.
+- Les éléments Temps/Tours restent dans le DOM afin de préserver la logique JavaScript et les autres modes.
+- Version de la home, version interne et cache PWA synchronisés en V4.8.6.
+
+# V4.8.4
+
+- Suppression des correctifs CSS superposés V4.8.1 à V4.8.3 pour la case **Temps restant / Tours**.
+- Qualification et Sprint paysage utilisent désormais un composant Flex unique et simple, avec deux moitiés égales centrées horizontalement et verticalement.
+- Le séparateur central et l’alerte rouge sous deux minutes sont conservés.
+- Version de la home, version interne et cache PWA synchronisés en V4.8.4.
 
 # V4.8.3
 

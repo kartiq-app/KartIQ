@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="KartIQ">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V4.8.5 — Case paysage vide</title>
+<title>KartIQ V4.8.6 — Case paysage vide et navigation restaurée</title>
 <style>
 :root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -2547,95 +2547,57 @@ body.current-sprint .position-cell{
 }
 
 
-/* KartIQ V4.8.1 — centrage des statuts et filets Sprint portrait */
+
+/* KartIQ V4.8.4 — composant Temps/Tours simplifié */
 @media (orientation:landscape){
-  /* Le contenu Temps / Tours est centré dans chacune des deux moitiés. */
   body:not(.preview-embedded).current-qualification .status-values,
   body:not(.preview-embedded).current-sprint .sprint-session-status{
-    place-items:center!important;
-    place-content:center!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status strong{
-    display:grid!important;
-    place-items:center!important;
-    place-content:center!important;
-    align-self:stretch!important;
-    justify-self:stretch!important;
-    padding:0!important;
-    margin:0!important;
-    text-align:center!important;
-    line-height:1!important;
-    text-indent:0!important;
-  }
-}
-
-@media (max-width:680px) and (orientation:portrait){
-  /* Sprint portrait : chaque case des lignes 1 et 2 est clairement délimitée. */
-  body.current-sprint .sprint-menu-cell,
-  body.current-sprint .position-cell,
-  body.current-sprint .qual-delta-content,
-  body.current-sprint .qual-focus-launch,
-  body.current-sprint .sprint-session-status{
-    border:0!important;
-    box-shadow:inset 0 0 0 1px #29292e!important;
-    box-sizing:border-box!important;
-  }
-}
-
-
-/* KartIQ V4.8.2 — centrage absolu Temps/Tours et parité portrait Qualification/Sprint */
-@media (orientation:landscape){
-  /* Le statut occupe toute la cinquième case ; chaque valeur est centrée dans sa demi-case. */
-  body:not(.preview-embedded).current-qualification .status-values,
-  body:not(.preview-embedded).current-sprint .sprint-session-status{
-    position:relative!important;
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr)!important;
-    grid-template-rows:44px 44px!important;
+    grid-column:5!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:center!important;
     width:100%!important;
     height:88px!important;
-    min-width:0!important;
     min-height:88px!important;
     max-height:88px!important;
     padding:0!important;
     margin:0!important;
-    align-items:stretch!important;
-    justify-items:stretch!important;
-    place-content:stretch!important;
+    gap:0!important;
+    border:0!important;
     overflow:hidden!important;
     box-sizing:border-box!important;
   }
-  body:not(.preview-embedded).current-qualification .status-values strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status strong{
-    position:relative!important;
-    inset:auto!important;
+  body:not(.preview-embedded).current-qualification .status-values > strong,
+  body:not(.preview-embedded).current-sprint .sprint-session-status > strong{
+    position:static!important;
     display:flex!important;
-    flex:1 1 auto!important;
+    flex:1 1 50%!important;
     align-items:center!important;
     justify-content:center!important;
     width:100%!important;
-    height:44px!important;
+    height:auto!important;
     min-width:0!important;
-    min-height:44px!important;
-    max-height:44px!important;
+    min-height:0!important;
+    max-height:none!important;
     padding:0!important;
     margin:0!important;
+    border:0!important;
     transform:none!important;
     text-align:center!important;
     text-indent:0!important;
-    box-sizing:border-box!important;
-    line-height:44px!important;
+    line-height:1!important;
     white-space:nowrap!important;
+    box-sizing:border-box!important;
   }
-  body:not(.preview-embedded).current-qualification .status-values strong+strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status strong+strong{
+  body:not(.preview-embedded).current-qualification .status-values > strong + strong,
+  body:not(.preview-embedded).current-sprint .sprint-session-status > strong + strong{
     border-top:1px solid #29292e!important;
   }
 }
 
 @media (max-width:680px) and (orientation:portrait){
-  /* Qualification portrait reprend exactement la grille et les dimensions du Sprint portrait. */
+  /* Qualification portrait identique au Sprint portrait. */
   body.current-qualification .qual-strip{
     display:grid!important;
     grid-template-columns:20% 30% 50%!important;
@@ -2649,86 +2611,24 @@ body.current-sprint .position-cell{
     overflow:hidden!important;
     box-sizing:border-box!important;
   }
-  body.current-qualification .qual-menu-cell{
-    position:static!important;
-    grid-column:1!important;
-    grid-row:1!important;
-    width:100%!important;
-    height:76px!important;
-    min-height:76px!important;
-    margin:0!important;
-    transform:none!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-  }
-  body.current-qualification .position-cell{
-    grid-column:2!important;
-    grid-row:1!important;
-    width:100%!important;
-    height:76px!important;
-    min-height:76px!important;
-    max-height:76px!important;
-    padding:4px 5px!important;
-  }
+  body.current-qualification .qual-menu-cell{position:static!important;grid-column:1!important;grid-row:1!important;width:100%!important;height:76px!important;min-height:76px!important;margin:0!important;transform:none!important;display:flex!important;align-items:center!important;justify-content:center!important}
+  body.current-qualification .position-cell{grid-column:2!important;grid-row:1!important;width:100%!important;height:76px!important;min-height:76px!important;max-height:76px!important;padding:4px 5px!important}
   body.current-qualification .qual-delta-focus-cell{display:contents!important}
-  body.current-qualification .qual-delta-content{
-    grid-column:3!important;
-    grid-row:1!important;
-    width:100%!important;
-    height:76px!important;
-    min-height:76px!important;
-    max-height:76px!important;
-  }
-  body.current-qualification .qual-focus-launch{
-    grid-column:1 / 3!important;
-    grid-row:2!important;
-    width:100%!important;
-    height:50px!important;
-    min-height:50px!important;
-    max-height:50px!important;
-  }
-  body.current-qualification .status-values{
-    grid-column:3!important;
-    grid-row:2!important;
-    display:flex!important;
-    flex-direction:row!important;
-    align-items:center!important;
-    justify-content:center!important;
-    gap:5px!important;
-    width:100%!important;
-    height:50px!important;
-    min-height:50px!important;
-    max-height:50px!important;
-    margin:0!important;
-    padding:3px 5px!important;
-    overflow:hidden!important;
-    box-sizing:border-box!important;
-  }
-  body.current-qualification .status-values strong{
-    display:inline-flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    width:auto!important;
-    height:auto!important;
-    min-width:0!important;
-    min-height:0!important;
-    padding:0!important;
-    margin:0!important;
-    border:0!important;
-    font-size:14px!important;
-    line-height:1!important;
-    white-space:nowrap!important;
-    text-align:center!important;
-  }
+  body.current-qualification .qual-delta-content{grid-column:3!important;grid-row:1!important;width:100%!important;height:76px!important;min-height:76px!important;max-height:76px!important}
+  body.current-qualification .qual-focus-launch{grid-column:1 / 3!important;grid-row:2!important;width:100%!important;height:50px!important;min-height:50px!important;max-height:50px!important}
+  body.current-qualification .status-values{grid-column:3!important;grid-row:2!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:5px!important;width:100%!important;height:50px!important;min-height:50px!important;max-height:50px!important;margin:0!important;padding:3px 5px!important;overflow:hidden!important;box-sizing:border-box!important}
+  body.current-qualification .status-values strong{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;font-size:14px!important;line-height:1!important;white-space:nowrap!important;text-align:center!important}
   body.current-qualification .status-values strong+strong{border:0!important}
-
-  /* Toutes les cases des lignes 1 et 2 sont délimitées comme en Sprint portrait. */
   body.current-qualification .qual-menu-cell,
   body.current-qualification .position-cell,
   body.current-qualification .qual-delta-content,
   body.current-qualification .qual-focus-launch,
-  body.current-qualification .status-values{
+  body.current-qualification .status-values,
+  body.current-sprint .sprint-menu-cell,
+  body.current-sprint .position-cell,
+  body.current-sprint .qual-delta-content,
+  body.current-sprint .qual-focus-launch,
+  body.current-sprint .sprint-session-status{
     border:0!important;
     box-shadow:inset 0 0 0 1px #29292e!important;
     box-sizing:border-box!important;
@@ -2737,70 +2637,26 @@ body.current-sprint .position-cell{
 
 
 
-/* KartIQ V4.8.3 — recentrage réel de la case Temps/Tours en paysage */
-@media (orientation:landscape){
+/* KartIQ V4.8.6 — dernière case volontairement vide en paysage
+   Les éléments restent dans le DOM pour ne pas perturber la sélection des circuits
+   ni les mises à jour des autres modes. */
+@media (orientation: landscape){
+  body:not(.preview-embedded).current-qualification .status-values > *,
+  body:not(.preview-embedded).current-sprint .sprint-session-status > *{
+    display:none!important;
+  }
   body:not(.preview-embedded).current-qualification .status-values,
   body:not(.preview-embedded).current-sprint .sprint-session-status{
-    position:relative!important;
-    display:block!important;
-    width:100%!important;
-    height:88px!important;
-    min-height:88px!important;
-    max-height:88px!important;
+    background:transparent!important;
     padding:0!important;
-    margin:0!important;
-    overflow:hidden!important;
-    box-sizing:border-box!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values > strong,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > strong{
-    position:absolute!important;
-    left:0!important;
-    right:0!important;
-    width:100%!important;
-    height:44px!important;
-    min-height:44px!important;
-    max-height:44px!important;
-    padding:0!important;
-    margin:0!important;
-    border:0!important;
-    transform:none!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    text-align:center!important;
-    text-indent:0!important;
-    line-height:1!important;
-    box-sizing:border-box!important;
-    white-space:nowrap!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values > strong:first-child,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > strong:first-child{
-    top:0!important;
-    bottom:auto!important;
-  }
-  body:not(.preview-embedded).current-qualification .status-values > strong:last-child,
-  body:not(.preview-embedded).current-sprint .sprint-session-status > strong:last-child{
-    top:44px!important;
-    bottom:auto!important;
-    border-top:1px solid #29292e!important;
+    gap:0!important;
   }
 }
 
-/* KartIQ V4.8.5 — dernière case volontairement vide en paysage. */
-@media (orientation:landscape){
-  body.current-qualification .landscape-empty-cell,
-  body.current-sprint .landscape-empty-cell{
-    display:block!important;
-    min-width:0!important;
-    overflow:hidden!important;
-    background:#0c0c0f!important;
-  }
-}
 </style>
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.8.5 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V4.8.6 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -2847,14 +2703,14 @@ body.current-sprint .position-cell{
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.8.5</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v4.8.6</div>
     </div>
   </div>
 </section>
 
-<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><button class="inline-home-btn qual-menu-cell" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="qual-cell position-cell"><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">vs —</div></div></div><div class="qual-cell landscape-empty-cell" aria-hidden="true"></div></section></div><section class="panel qual-table-wrap"><table><thead><tr id="qualifHead"><th>POS</th><th class="optional-kart-head">KART</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
+<section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><button class="inline-home-btn qual-menu-cell" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="qual-cell position-cell"><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">vs —</div></div></div><div class="qual-cell session-status status-values"><strong class="remaining-time" id="qRemaining">—</strong><strong class="remaining-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr id="qualifHead"><th>POS</th><th class="optional-kart-head">KART</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
 
-<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><button class="inline-home-btn sprint-menu-cell" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="sprint-cell position-cell"><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openSprintFocus()" aria-label="Ouvrir le mode Focus Sprint"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="sDeltaValue">—</div><div class="gap-with" id="sGapWith">vs —</div></div></div><div class="sprint-cell landscape-empty-cell" aria-hidden="true"></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr id="sprintHead"><th>POS</th><th class="optional-kart-head">KART</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><div class="sprint-side-stack"><section class="panel card fastest-last-panel" aria-label="Meilleur temps du dernier tour"><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></section><section class="panel card penalty-panel"><div class="label red">Pénalités</div><div id="penalties"></div></section></div></div></div></section>
+<section id="sprint" class="screen"><div class="sprint-wrap"><div class="sprint-top"><section class="panel sprint-strip"><button class="inline-home-btn sprint-menu-cell" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="sprint-cell position-cell"><div class="hero-position" id="sPos">—</div><div class="hero-name" id="sName">—</div></div><div class="sprint-cell sprint-delta-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openSprintFocus()" aria-label="Ouvrir le mode Focus Sprint"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="sDeltaValue">—</div><div class="gap-with" id="sGapWith">vs —</div></div></div><div class="sprint-cell sprint-session-status status-values"><strong class="remaining-time" id="sRemaining">—</strong><strong class="remaining-laps" id="sLapsRemaining">—</strong></div></section></div><div class="sprint-lower"><section class="panel sprint-table-wrap"><table><thead><tr id="sprintHead"><th>POS</th><th class="optional-kart-head">KART</th><th>PILOTE</th><th>DERNIER</th><th class="mobile-hide">MEILLEUR</th><th class="mobile-hide">ÉCART</th><th>INTERVALLE</th></tr></thead><tbody id="sprintTable"></tbody></table></section><div class="sprint-side-stack"><section class="panel card fastest-last-panel" aria-label="Meilleur temps du dernier tour"><div class="fastest-last-name" id="sFastestName">🔥 —</div><div class="fastest-last-time" id="sFastestTime">—</div></section><section class="panel card penalty-panel"><div class="label red">Pénalités</div><div id="penalties"></div></section></div></div></div></section>
 
 <section id="endurance" class="screen"><div class="endurance-grid"><section class="panel endurance-main-panel"><button class="inline-home-btn endurance-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="panel-title endurance-titlebar"><span>CLASSEMENT GÉNÉRAL</span><span class="endurance-remaining-box"><span class="endurance-remaining-label">TEMPS RESTANT</span><strong class="endurance-remaining-value" id="eRemaining">—</strong></span></div><div class="endurance-table-wrap"><table><thead><tr><th>POS</th><th>ÉQUIPE / PILOTE</th><th>KART</th><th>TOURS</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th><th>PÉNA.</th></tr></thead><tbody id="enduranceTable"></tbody></table></div></section><div class="right-stack"><section class="panel card"><div class="label">TOP 8 — RYTHME ACTUEL (MOYENNE 5 TOURS)</div><div id="paceTop8"></div></section><section class="panel card penalty-panel endurance-penalty-panel"><div class="label red">PÉNALITÉS</div><div id="endurancePenalties"></div></section><section class="panel live-diagnostics"><div class="label"><span id="liveStatusDot" class="live-status-dot"></span>LIVE APEX</div><div class="live-diagnostics-grid"><div class="live-stat"><span class="live-stat-label">Statut</span><span id="liveDiagStatus" class="live-stat-value">—</span></div><div class="live-stat"><span class="live-stat-label">Messages</span><span id="liveDiagMessages" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Mises à jour lues</span><span id="liveDiagParsed" class="live-stat-value">0</span></div><div class="live-stat"><span class="live-stat-label">Dernière donnée</span><span id="liveDiagLast" class="live-stat-value">—</span></div><div class="live-stat live-frame-preview"><span class="live-stat-label">Dernière trame</span><span id="liveDiagPreview" class="live-stat-value">En attente…</span></div></div></section><section class="panel quick-change-panel"><div class="panel-title">QUICK CHANGE — FIFO STRICT</div><div class="quick-table-wrap"><table class="quick-table"><thead><tr><th>QUEUE</th><th>PIT</th><th>RANK</th><th>PREVIOUS TEAM</th><th>KART</th><th>AVG</th><th>Δ KART</th></tr></thead><tbody id="quickTable"></tbody></table></div></section></div></div></section>
 
@@ -3274,7 +3130,7 @@ function render(){
  rows('qualifTable',d=>`<td class="${positionClass(d.pos)} ranking-pos">${d.pos}</td>${showRankingKart?`<td class="ranking-kart-column">${validKartNumber(d)||'—'}</td>`:''}<td class="name ranking-driver-column">${formatRankingDriver(d)}</td><td class="ranking-last ${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="ranking-best ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="ranking-gap">${d.gap}</td>`);
  rows('sprintTable',d=>`<td class="${positionClass(d.pos)} ranking-pos">${d.pos}</td>${showRankingKart?`<td class="ranking-kart-column">${validKartNumber(d)||'—'}</td>`:''}<td class="name ranking-driver-column">${formatRankingDriver(d)}</td><td class="ranking-last ${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="mobile-hide ranking-best ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="mobile-hide ranking-gap">${d.gap}</td><td class="ranking-interval">${d.interval}</td>`);
  rows('enduranceTable',d=>`<td class="pos endurance-position-cell"><span class="endurance-position-wrap"><span class="endurance-position-number${Number(d.pos)===1?' leader-pos':''}">${d.pos}</span>${endurancePitBadge(d)}</span></td><td class="name">${formatDriverName(d.driver)}</td><td>${d.apex}</td><td>${d.laps}</td><td>${d.pit_stops ?? '—'}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td><td class="red">${d.penalty||'—'}</td>`);
- const f=state.followed||{};qPos.textContent=f.pos?'P'+f.pos:'—';setDriverName(qName,f.driver||'—');qDelta.textContent=qualificationDeltaFor(f);qDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f));updateRemainingDisplay();const qReference=qualificationReferenceFor(f);qGapWith.innerHTML=gapWithMarkup('vs',qReference?.driver||'—');
+ const f=state.followed||{};qPos.textContent=f.pos?'P'+f.pos:'—';setDriverName(qName,f.driver||'—');qDelta.textContent=qualificationDeltaFor(f);qDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f));updateRemainingDisplay();qLapsRemaining.textContent=state.apex_laps_remaining||'—';const qReference=qualificationReferenceFor(f);qGapWith.innerHTML=gapWithMarkup('vs',qReference?.driver||'—');
  setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';const sprintDelta=sprintDeltaFor(f);const sprintReference=sprintReferenceFor(f);sDeltaValue.textContent=sprintDelta;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&sprintDelta!=='--');sDeltaValue.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&sprintDelta!=='--');const sprintRemainingMs=liveRemainingMilliseconds();sRemaining.textContent=sprintRemainingMs===null?(state.time_remaining||'—'):formatRemainingMilliseconds(sprintRemainingMs);sRemaining.classList.toggle('time-critical',Number.isFinite(sprintRemainingMs)&&sprintRemainingMs<120000);sLapsRemaining.textContent=state.apex_laps_remaining||'—';sGapWith.innerHTML=gapWithMarkup('vs',sprintReference?.driver||'—');const fastest=state.fastest_last_lap||{};sFastestName.textContent='🔥 '+(fastest.driver||'—');sFastestTime.textContent=fastest.lap||'—';
  const sortedPenalties=[...(state.penalties||[])].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))); const penaltyMarkup=sortedPenalties.length?sortedPenalties.map(p=>`<div class="penalty-row"><small class="penalty-time">${penaltyTime(p)}</small><b>${formatDriverSurname(p.driver)}</b><span class="red"><b>${p.penalty}</b></span></div>`).join(''):'<div class="empty">Aucune pénalité</div>';
  penalties.innerHTML=penaltyMarkup;
