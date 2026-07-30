@@ -1,3 +1,14 @@
+## V4.8.9 — Isolation complète des valeurs Temps / Tours
+
+- Reprise de la V4.8.8 fonctionnelle.
+- Suppression des anciennes classes `remaining-time` et `remaining-laps` sur les cases paysage Qualification et Sprint.
+- Nouvelles classes dédiées `landscape-clock-time`, `landscape-clock-laps` et `landscape-clock-value`.
+- Les anciennes règles CSS ne peuvent plus imposer leur taille, leur espacement ou leur alignement aux valeurs de cette case.
+- Centrage horizontal et vertical assuré uniquement par le composant `landscape-session-clock`.
+- Conservation des identifiants JavaScript et de la logique de sélection des circuits.
+- Couleur rouge sous deux minutes conservée avec une règle dédiée.
+- Cache PWA mis à jour en V4.8.9.
+
 ## V4.8.8 — Isolation définitive de la case Temps / Tours
 
 - Reprise de la dernière version fonctionnelle V4.8.7.
