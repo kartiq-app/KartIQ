@@ -1,4 +1,4 @@
-# KartIQ V5.0.2 — Modularisation JavaScript
+# KartIQ V5.1.0 — Architecture métier
 
 Cette version inaugure la refactorisation progressive du projet. Le CSS est désormais externalisé dans `static/css/kartiq.css`, sans modification fonctionnelle attendue. Consultez `docs/ARCHITECTURE.md` et `docs/VALIDATION_V5.md`.
 
@@ -11,6 +11,10 @@ Cette version inaugure la refactorisation progressive du projet. Le CSS est dés
 - La taille de `2ÈME TEMPS`, `10ÈME TEMPS`, etc. s’adapte avec `clamp()` tout en restant centrée et non tronquée.
 - Les évolutions de navigation des pages Qualification et Sprint de la V4.5.3 sont conservées.
 
+
+## V5.1.0
+
+Cette version organise le JavaScript par domaines fonctionnels (`core`, `sprint`, `qualification`, `ui`, `endurance`) sans modifier la logique métier ni l’interface.
 
 ## V5.0.2
 

@@ -1,3 +1,11 @@
+## V5.1.0 — Architecture métier
+
+- Réorganisation des scripts JavaScript par domaines fonctionnels.
+- Création des dossiers `core`, `sprint`, `qualification`, `ui` et `endurance`.
+- Conservation stricte du contenu et de l’ordre de chargement de la V5.0.2.
+- Mise à jour du cache PWA et de toutes les références de version.
+- Ajout de la documentation `docs/MODULES.md`.
+
 ## V5.0.2 — Correctif sélection du circuit
 
 - Remplacement de la dépendance implicite à `window.circuitSelect` par une référence DOM explicite.

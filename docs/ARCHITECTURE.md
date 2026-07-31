@@ -1,47 +1,31 @@
-# Architecture KartIQ V5.0.2
+# Architecture KartIQ V5.1.0
 
 ## Objectif
 
-La V5.0.2 découpe le JavaScript en fichiers thématiques sans modifier la logique métier ni l’interface attendue.
+La V5.1.0 introduit une organisation JavaScript par domaines fonctionnels, sans modification volontaire du comportement, des calculs ni de l’interface.
 
-## Arborescence actuelle
+## Arborescence principale
 
 ```text
-KartIQ/
-├── app.py                     # Serveur Flask, API locale et connexion Apex
-├── templates/index.html       # Structure HTML et JavaScript historique
-├── static/css/kartiq.css      # Tous les styles extraits de index.html
-├── static/assets/             # Images de l’interface
-├── static/fonts/              # Polices
-├── static/icons/              # Icônes PWA
-├── static/manifest.json       # Manifest PWA
-├── static/sw.js               # Service worker servi par Flask
-├── config/circuits.json       # Configuration des circuits
-├── apex_*.py                  # Décodage et interprétation Apex
-├── protocol_engine.py         # Traitement du protocole
-└── event_store.py             # Historique des événements
+static/
+├── css/
+│   └── kartiq.css
+└── js/
+    ├── core/
+    │   ├── core.js
+    │   └── bootstrap.js
+    ├── sprint/
+    │   └── sprint.js
+    ├── qualification/
+    │   └── qualification.js
+    ├── endurance/
+    │   └── queues.js
+    └── ui/
+        └── race-ui.js
 ```
 
-## Étape réalisée
+## Principe de sécurité
 
-- Extraction intégrale du bloc `<style>` vers `static/css/kartiq.css`.
-- Conservation stricte de l’ordre des règles CSS pour éviter les régressions de cascade.
-- Aucun sélecteur supprimé, renommé ou réorganisé.
-- Aucun JavaScript déplacé dans cette étape.
-- Mise à jour du cache PWA pour charger la feuille externe.
+Le contenu des six scripts de la V5.0.2 a uniquement été déplacé et renommé. Leur ordre de chargement reste identique. Les dépendances globales existantes sont donc conservées.
 
-## Prochaine étape recommandée
-
-Après validation visuelle et fonctionnelle, séparer progressivement le JavaScript par domaine sans réécrire les fonctions : connexion Apex, interface commune, Qualification, Sprint et Endurance.
-
-
-## JavaScript
-
-- `static/js/00-core.js` : état global, compte à rebours, connexion Apex et navigation.
-- `static/js/10-sprint.js` : mode Focus et calculs Sprint.
-- `static/js/20-qualification.js` : mode Focus et calculs Qualification.
-- `static/js/30-race-ui.js` : rendu commun, classements, suivi pilote et actions UI.
-- `static/js/40-endurance-queues.js` : gestion locale des files de karts.
-- `static/js/50-pwa-bootstrap.js` : plein écran, PWA et initialisation finale.
-- Les fonctions, variables globales et l’ordre d’exécution sont conservés à l’identique.
-- La modularisation par fonctionnalité sera réalisée dans une étape ultérieure, après validation de cette extraction.
+Voir `docs/MODULES.md` pour la responsabilité et l’ordre de chargement de chaque fichier.

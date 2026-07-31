@@ -1,31 +1,18 @@
-# Validation KartIQ V5.0.2
+# Validation KartIQ V5.1.0
 
-Cette version doit se comporter exactement comme la V4.9.1.
+Cette version ne doit introduire aucun changement visuel ou fonctionnel.
 
-## Vérifications prioritaires
+## Contrôles prioritaires
 
-- [ ] La page d’accueil s’affiche sans décalage visuel.
-- [ ] La liste des circuits est chargée.
-- [ ] La connexion Apex peut être lancée et interrompue.
-- [ ] Qualification : classement, Focus, temps restant et tours.
-- [ ] Sprint : classement, pénalités, temps restant et tours.
-- [ ] Endurance : Top 8, Quick Change et files de karts.
-- [ ] Affichage smartphone en portrait.
-- [ ] Affichage smartphone en paysage.
-- [ ] Aperçu iPhone SE.
-- [ ] Installation et rechargement PWA.
-- [ ] Comportement hors live.
+- sélection d’un circuit depuis l’accueil ;
+- connexion et reconnexion Apex ;
+- navigation Qualification / Sprint / Endurance ;
+- affichage des classements, temps, tours et pénalités ;
+- mode Focus ;
+- files de karts en Endurance ;
+- smartphone portrait et paysage ;
+- ouverture depuis la PWA et rechargement après mise à jour.
 
-## Contrôle technique réalisé
+## Contrôle technique
 
-Le CSS a été déplacé sans changement de contenu ni d’ordre. Le HTML charge désormais `/static/css/kartiq.css?v=5.0.2`.
-
-
-## Contrôles spécifiques V5.0.2
-
-- Vérifier que les six fichiers de `/static/js/` répondent en HTTP 200.
-- Vérifier qu’ils sont chargés dans l’ordre numérique de `00` à `50`.
-- Vérifier l’absence d’erreur rouge `ReferenceError` dans la console.
-- Vérifier l’absence d’erreur JavaScript dans la console.
-- Tester les boutons utilisant des gestionnaires `onclick`.
-- Tester la connexion Apex, les mises à jour automatiques et le service worker.
+Dans l’onglet Réseau, les six scripts sous `/static/js/` doivent répondre avec le statut HTTP 200. Aucune erreur rouge ne doit apparaître dans la console.
