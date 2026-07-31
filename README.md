@@ -1,4 +1,4 @@
-# KartIQ V6.0.2 — Architecture quatre modes
+# KartIQ V6.0.3 — Architecture quatre modes
 
 Cette version introduit les quatre accès **Qualification**, **Sprint**, **Endurance** et **Analyzer**.
 
@@ -131,7 +131,7 @@ Le contrôle JavaScript est effectué automatiquement lorsque Node.js est instal
 - `scripts/quality_check.py` : validation statique du dépôt ;
 - `tests/` : tests unitaires sans réseau ;
 - `docs/` : documentation technique et historique des refactorisations.
-## Ajustements V6.0.2
+## Ajustements V6.0.3
 
 - Accueil ordonné : Qualification, Sprint, Endurance, Analyzer.
 - Une colonne en portrait et quatre cartes sur une ligne en paysage mobile.

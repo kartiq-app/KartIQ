@@ -1,11 +1,18 @@
-# KartIQ V6.0.2
+# KartIQ V6.0.3
+
+
+## V6.0.3 — Correction des filets Endurance
+
+- Desktop et smartphone paysage : le filet sous l’en-tête du classement Endurance est orange.
+- Les séparateurs entre les lignes du classement restent gris, comme en Qualification et Sprint.
+- Le mode Focus Endurance conserve les accents orange et les séparateurs internes gris.
 
 - Accueil Desktop : les quatre cartes sont affichées sur une seule ligne dans l’ordre Qualification, Sprint, Endurance, Analyzer.
 - Endurance : les deux filets hérités de Qualification sont maintenant orange.
 - Focus Endurance : le filet supérieur est maintenant orange.
 - Aucun changement fonctionnel dans Qualification, Sprint ou Analyzer.
 
-## V6.0.2 — Accueil responsive et thème Endurance
+## V6.0.3 — Accueil responsive et thème Endurance
 
 - Ordre des cartes : Qualification, Sprint, Endurance, Analyzer.
 - Accueil portrait : cartes affichées sur une seule colonne.

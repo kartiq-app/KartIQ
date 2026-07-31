@@ -168,3 +168,27 @@ body[data-app-mode="endurance"] #endurance .qual-table-wrap thead th{
 body[data-app-mode="endurance"] #qualificationFocus .qual-focus-header i{
   background:#ff8a00!important;
 }
+
+/* KartIQ V6.0.3 — correction des filets Endurance.
+   Desktop et smartphone paysage :
+   - filets de thème (haut du tableau + sous l'en-tête) en orange ;
+   - séparateurs des lignes du classement en gris, comme Qualification et Sprint. */
+@media (min-width:921px), (max-width:920px) and (orientation:landscape){
+  body[data-app-mode="endurance"] #endurance .qual-strip{
+    border-top-color:#ff8a00!important;
+  }
+  body[data-app-mode="endurance"] #endurance .qual-table-wrap thead th{
+    border-bottom-color:#ff8a00!important;
+  }
+  body[data-app-mode="endurance"] #endurance .qual-table-wrap tbody td{
+    border-top-color:#222227!important;
+  }
+  body[data-app-mode="endurance"] #qualificationFocus .qual-focus-row-one,
+  body[data-app-mode="endurance"] #qualificationFocus .qual-focus-row-two,
+  body[data-app-mode="endurance"] #qualificationFocus .qual-focus-ranking tbody td{
+    border-color:#24272d!important;
+  }
+  body[data-app-mode="endurance"] #qualificationFocus .qual-focus-header i{
+    background:#ff8a00!important;
+  }
+}
