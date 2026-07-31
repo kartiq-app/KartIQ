@@ -14,7 +14,7 @@ function syncRemainingFromApex(milliseconds,{direct=false}={}){
  const ms=Number(milliseconds);
  if(!Number.isFinite(ms)||ms<0)return false;
  remainingCountdownMs=Math.max(0,ms);
- remainingCountdownPerfAt=performance.now();
+ remainingCountdownPerfAt=Date.now();
  remainingCountdownUsesHours=ms>=3600000;
  if(direct)remainingCountdownDirectSyncAt=Date.now();
  updateRemainingDisplay();
@@ -43,14 +43,14 @@ function syncRemainingFromState(nextState){
  if(current===null||(!directIsFresh&&Math.abs(current-candidate)>500))syncRemainingFromApex(candidate);
 }
 function liveRemainingMilliseconds(){
- if(!Number.isFinite(remainingCountdownMs))return null;
- return remainingCountdownMs;
+ if(!Number.isFinite(remainingCountdownMs)||!remainingCountdownPerfAt)return null;
+ return Math.max(0,remainingCountdownMs-(Date.now()-remainingCountdownPerfAt));
 }
 function formatRemainingMilliseconds(ms){
  if(!Number.isFinite(ms))return '—';
  // Apex conserve la seconde en cours jusqu'à son terme : on arrondit donc
  // vers le haut plutôt que d'afficher la seconde suivante trop tôt.
- const total=Math.max(0,Math.ceil(ms/1000));
+ const total=Math.max(0,Math.floor(ms/1000));
  const hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60),seconds=total%60;
  if(remainingCountdownUsesHours||hours>0)return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
  return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
