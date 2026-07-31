@@ -1,3 +1,12 @@
+## V5.5.1 — Centrage temps et tours en paysage
+
+- Centrage horizontal et vertical renforcé de la dernière case de la ligne supérieure en Qualification paysage.
+- Même correction appliquée au mode Sprint paysage.
+- Les deux valeurs, temps restant et nombre de tours, occupent chacune exactement la moitié de la case.
+- Aucun impact sur les vues portrait, Focus, Endurance, les données Apex ou les calculs métier.
+- Synchronisation de la version, du cache PWA, du README et du contrôle qualité.
+- Ajout de `docs/LANDSCAPE_CLOCK_CENTERING_V5_5_1.md`.
+
 ## V5.5.0 — Audit qualité & certification
 
 - Audit statique reproductible du Python, JavaScript, JSON, CSS et cache PWA.

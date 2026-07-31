@@ -843,3 +843,25 @@ body.current-sprint .position-cell{
 
 
 
+
+
+/* KartIQ V5.5.1 — centrage strict du temps restant et du nombre de tours en paysage. */
+@media (orientation:landscape){
+  body:not(.preview-embedded).current-qualification .landscape-session-clock,
+  body:not(.preview-embedded).current-sprint .landscape-session-clock{
+    place-items:stretch!important;
+  }
+  body:not(.preview-embedded).current-qualification .landscape-session-clock > .landscape-clock-value,
+  body:not(.preview-embedded).current-sprint .landscape-session-clock > .landscape-clock-value{
+    display:grid!important;
+    place-items:center!important;
+    place-self:stretch!important;
+    width:100%!important;
+    height:100%!important;
+    padding:0!important;
+    margin:0!important;
+    line-height:1!important;
+    text-align:center!important;
+    vertical-align:middle!important;
+  }
+}

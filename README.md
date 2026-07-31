@@ -1,6 +1,18 @@
-# KartIQ V5.5.0 — Audit qualité & certification
+# KartIQ V5.5.1 — Centrage temps et tours en paysage
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
+
+
+## V5.5.1
+
+Cette version apporte un ajustement visuel ciblé aux modes Qualification et Sprint en orientation paysage :
+
+- centrage horizontal et vertical strict du temps restant ;
+- centrage horizontal et vertical strict du nombre de tours ;
+- ciblage limité à la dernière case de la première ligne ;
+- aucun changement en mode portrait, Focus, Endurance ou dans la logique métier.
+
+Le détail de la modification se trouve dans `docs/LANDSCAPE_CLOCK_CENTERING_V5_5_1.md`.
 
 ## V5.5.0
 
