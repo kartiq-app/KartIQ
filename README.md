@@ -1,6 +1,6 @@
-# KartIQ V5.5.10 — Rééquilibrage ligne 1 smartphone paysage
+# KartIQ V5.5.11 — Rééquilibrage ligne 1 smartphone paysage
 
-## Évolution V5.5.10
+## Évolution V5.5.11
 
 En Qualification et Sprint sur smartphone en mode paysage uniquement :
 

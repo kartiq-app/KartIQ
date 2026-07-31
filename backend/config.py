@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "5.5.10"
+APP_VERSION = "5.5.11"
 APP_RELEASE_NAME = "Rééquilibrage ligne 1 smartphone paysage"
 
 
