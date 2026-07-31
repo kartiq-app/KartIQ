@@ -1,8 +1,8 @@
-# Architecture KartIQ V5.3.2
+# Architecture KartIQ V5.3.3
 
 ## Objectif
 
-La V5.3.2 introduit une organisation JavaScript par domaines fonctionnels, sans modification volontaire du comportement, des calculs ni de l’interface.
+La V5.3.3 introduit une organisation JavaScript par domaines fonctionnels, sans modification volontaire du comportement, des calculs ni de l’interface.
 
 ## Arborescence principale
 
@@ -31,6 +31,6 @@ Le contenu des six scripts de la V5.0.2 a uniquement été déplacé et renommé
 Voir `docs/MODULES.md` pour la responsabilité et l’ordre de chargement de chaque fichier.
 
 
-## CSS V5.3.2
+## CSS V5.3.3
 
 La feuille principale est maintenant un agrégateur de six modules séquentiels. Voir `docs/CSS_MODULES.md`.

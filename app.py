@@ -25,6 +25,8 @@ from protocol_engine import ProtocolEngine
 from event_store import ApexEventStore
 
 APP_DIR = Path(__file__).resolve().parent
+APP_VERSION = "5.3.3"
+APP_RELEASE_NAME = "Cohérence des versions"
 app = Flask(__name__)
 
 APEX_TABLE = ApexTable()
@@ -52,7 +54,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "5.3.2",
+    "version": APP_VERSION,
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",
@@ -624,7 +626,7 @@ def payload():
 
 @app.get("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", app_version=APP_VERSION)
 
 
 @app.get("/api/state")
@@ -949,7 +951,7 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print("\nKartIQ V5.3.2 — Consolidation CSS sûre")
+    print(f"\nKartIQ V{APP_VERSION} — {APP_RELEASE_NAME}")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")

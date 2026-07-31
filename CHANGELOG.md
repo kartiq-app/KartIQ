@@ -1,3 +1,13 @@
+## V5.3.3 — Cohérence des versions
+
+- Ajout de `APP_VERSION` comme source unique de la version côté serveur.
+- Injection de la version dans le HTML via Jinja pour le titre, le bandeau, l’accueil et les paramètres de cache.
+- Synchronisation de `STATE["version"]` et du message de démarrage avec la même constante.
+- Mise à jour explicite de la clé du cache PWA en `kartiq-v5-3-3`.
+- Ajout d’un `.gitignore` adapté au projet.
+- Correction de l’intitulé V5.3.1 dans l’historique.
+- Aucun changement visuel ou métier attendu.
+
 ## V5.3.2 — Sources statiques unifiées
 
 - Suppression des copies identiques à la racine (`index.html`, `manifest.json`, `assets/`, `fonts/`, `icons/`).
@@ -7,7 +17,7 @@
 - Documentation ajoutée dans `docs/STATIC_SOURCES_V5_3_2.md`.
 - Aucun changement visuel ou métier attendu.
 
-## V5.3.2 — Consolidation CSS sûre
+## V5.3.1 — Consolidation CSS sûre
 
 - Suppression de six règles CSS strictement identiques conservées en double.
 - Nettoyage ciblé des feuilles Sprint paysage et Qualification portrait.
