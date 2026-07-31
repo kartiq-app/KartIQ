@@ -912,3 +912,48 @@ body.current-sprint .position-cell{
     border-top:1px solid #29292e!important;
   }
 }
+
+
+/* KartIQ V5.5.3 — correction de la grille iPhone en paysage.
+   Sur les iPhone dont le viewport CSS est inférieur à la somme des anciennes
+   largeurs minimales, la dernière colonne était repoussée hors écran. La grille
+   utilise désormais des proportions bornées et chaque cellule peut réellement
+   se réduire sans provoquer de débordement horizontal. */
+@media (orientation:landscape) and (max-width:950px){
+  body:not(.preview-embedded).current-qualification .qual-strip,
+  body:not(.preview-embedded).current-sprint .sprint-strip{
+    grid-template-columns:9% 23% 14% 34% 20%!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+
+  body.current-qualification .qual-strip > *,
+  body.current-sprint .sprint-strip > *{
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+
+  body.current-qualification .landscape-session-clock,
+  body.current-sprint .landscape-session-clock{
+    grid-column:5!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    right:auto!important;
+    left:auto!important;
+    transform:none!important;
+    -webkit-transform:none!important;
+  }
+
+  body.current-qualification .landscape-session-clock > .landscape-clock-value,
+  body.current-sprint .landscape-session-clock > .landscape-clock-value{
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+}

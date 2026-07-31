@@ -1,3 +1,13 @@
+## V5.5.3 — Correction de la grille iPhone en paysage
+
+- Correction du débordement horizontal de la première ligne sur les iPhone en paysage.
+- Remplacement des largeurs minimales incompatibles avec les petits viewports CSS par cinq colonnes proportionnelles.
+- La case Temps/Tours reste désormais entièrement visible dans l'écran.
+- Centrage horizontal et vertical conservé dans les deux demi-cases.
+- Aucun changement sur Desktop, portrait, Focus ou Endurance.
+- Cache PWA et version synchronisés en V5.5.3.
+- Ajout de `docs/IPHONE_LANDSCAPE_GRID_V5_5_3.md`.
+
 ## V5.5.2 — Correction du centrage sur iPhone en paysage
 
 - Correction spécifique à Safari iOS du centrage du temps restant et du nombre de tours.

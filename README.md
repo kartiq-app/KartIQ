@@ -1,7 +1,14 @@
-# KartIQ V5.5.2 — Correction du centrage iPhone en paysage
+# KartIQ V5.5.3 — Correction de la grille iPhone en paysage
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
 
+
+
+## V5.5.3
+
+Correction spécifique à Safari iOS en mode paysage : la somme des anciennes largeurs minimales dépassait le viewport CSS de certains iPhone et repoussait la case Temps/Tours hors écran. La ligne supérieure utilise désormais une grille proportionnelle qui tient entièrement dans la largeur disponible.
+
+Le détail se trouve dans `docs/IPHONE_LANDSCAPE_GRID_V5_5_3.md`.
 
 ## V5.5.2
 

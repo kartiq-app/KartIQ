@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "5.5.2"
+APP_VERSION = "5.5.3"
 APP_RELEASE_NAME = "Centrage temps et tours en paysage"
 
 
