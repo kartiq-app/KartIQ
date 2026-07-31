@@ -1,3 +1,11 @@
+## V6.0.1 — Accueil responsive et thème Endurance
+
+- Ordre des cartes : Qualification, Sprint, Endurance, Analyzer.
+- Accueil portrait : cartes affichées sur une seule colonne.
+- Accueil paysage smartphone : quatre modes alignés sur une seule ligne.
+- Bandeaux du mode Endurance passés à l’orange.
+- Couleurs Qualification (rouge), Sprint (bleu) et Analyzer inchangées.
+
 ## V6.0.0 — Architecture quatre modes
 
 - Accueil étendu à quatre cartes : Qualification, Sprint, Analyzer et Endurance.
