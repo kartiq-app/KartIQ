@@ -1,4 +1,4 @@
-# KartIQ V6.0.3 — Architecture quatre modes
+# KartIQ V6.0.4 — Endurance aligné sur Qualification
 
 Cette version introduit les quatre accès **Qualification**, **Sprint**, **Endurance** et **Analyzer**.
 
@@ -136,3 +136,11 @@ Le contrôle JavaScript est effectué automatiquement lorsque Node.js est instal
 - Accueil ordonné : Qualification, Sprint, Endurance, Analyzer.
 - Une colonne en portrait et quatre cartes sur une ligne en paysage mobile.
 - Identité visuelle orange réservée au mode Endurance.
+
+
+## Ajustements V6.0.4
+
+- Le mode Endurance affiche directement la page Qualification validée.
+- Les informations, le responsive portrait/paysage, le desktop et le Focus sont strictement identiques.
+- L’identité orange Endurance est conservée via `data-app-mode="endurance"`.
+- Qualification et Sprint restent inchangés.

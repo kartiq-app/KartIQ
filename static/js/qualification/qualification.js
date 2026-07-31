@@ -1,7 +1,7 @@
 let qualificationFocusSourceMode='qualification';
 async function openQualificationFocus(){
- qualificationFocusSourceMode='qualification';
- const title=document.querySelector('#qualificationFocus .qual-focus-header span');if(title)title.textContent='Qualifications';
+ qualificationFocusSourceMode=currentMode==='endurance'?'endurance':'qualification';
+ const title=document.querySelector('#qualificationFocus .qual-focus-header span');if(title)title.textContent=qualificationFocusSourceMode==='endurance'?'Endurance':'Qualifications';
  const overlay=document.getElementById('qualificationFocus');
  if(!overlay)return;
  overlay.classList.add('show');

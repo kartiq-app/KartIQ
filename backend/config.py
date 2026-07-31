@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.0.2"
+APP_VERSION = "6.0.4"
 APP_RELEASE_NAME = "Architecture quatre modes"
 
 

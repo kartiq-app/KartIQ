@@ -1,4 +1,13 @@
-# KartIQ V6.0.3
+# KartIQ V6.0.4
+
+## V6.0.4 — Endurance copié sur Qualification
+
+- Le bouton Endurance ouvre désormais directement la page Qualification validée.
+- Même contenu et même mise en page en desktop, smartphone portrait et smartphone paysage.
+- Le mode Focus est le même que Qualification, avec le titre Endurance.
+- L’accent orange Endurance est conservé ; les séparateurs de lignes restent gris.
+- Aucun changement fonctionnel sur Qualification et Sprint.
+
 
 
 ## V6.0.3 — Correction des filets Endurance

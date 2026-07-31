@@ -192,3 +192,29 @@ body[data-app-mode="endurance"] #qualificationFocus .qual-focus-header i{
     background:#ff8a00!important;
   }
 }
+
+
+/* KartIQ V6.0.4 — Endurance fondé directement sur la page Qualification.
+   Quand data-app-mode="endurance", l'écran visible est #qualification :
+   toutes les mises en page validées (portrait, paysage, desktop et Focus)
+   sont donc reprises à l'identique, avec uniquement l'accent orange. */
+body[data-app-mode="endurance"] #qualification .qual-strip{
+  border-top-color:#ff8a00!important;
+}
+body[data-app-mode="endurance"] #qualification .position-cell{
+  box-shadow:inset 6px 0 #ff8a00!important;
+}
+body[data-app-mode="endurance"] #qualification .qual-table-wrap thead th{
+  border-bottom-color:#ff8a00!important;
+}
+body[data-app-mode="endurance"] #qualification .qual-table-wrap tbody td{
+  border-top-color:#222227!important;
+}
+body[data-app-mode="endurance"] #qualificationFocus .qual-focus-header i{
+  background:#ff8a00!important;
+}
+body[data-app-mode="endurance"] #qualificationFocus .qual-focus-row-one,
+body[data-app-mode="endurance"] #qualificationFocus .qual-focus-row-two,
+body[data-app-mode="endurance"] #qualificationFocus .qual-focus-ranking tbody td{
+  border-color:#24272d!important;
+}
