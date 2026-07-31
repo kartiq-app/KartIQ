@@ -185,3 +185,46 @@ body[data-app-mode="endurance"] #endurance .qual-menu-cell{
 body[data-app-mode="endurance"] #endurance .position-cell{
   box-shadow:none!important;
 }
+
+
+/* KartIQ V6.0.13 — Focus Endurance métier.
+   Le Focus Sprint reste inchangé. */
+#enduranceFocus .sprint-focus-header i{background:#FF8A00!important}
+#enduranceFocus .endurance-focus-driver{gap:clamp(4px,1vh,12px)}
+#enduranceFocus .endurance-focus-last-rank{
+  display:flex;align-items:center;justify-content:center;gap:.28em;
+  width:100%;font-family:var(--font-time);font-size:clamp(30px,6.2vh,72px);
+  line-height:1;color:#fff;font-variant-numeric:tabular-nums
+}
+#enduranceFocus .endurance-focus-stopwatch{display:inline-flex;width:.82em;height:.82em;flex:0 0 auto}
+#enduranceFocus .endurance-focus-stopwatch svg{display:block;width:100%;height:100%;fill:#fff}
+#enduranceFocus .endurance-focus-rank-number{display:inline-flex;align-items:flex-start;line-height:1}
+#enduranceFocus .endurance-focus-rank-number sup{font-size:.45em;line-height:1;margin:.02em 0 0 .05em}
+#enduranceFocus .endurance-focus-deltas{
+  grid-template-rows:auto minmax(0,1fr) 1px minmax(0,1fr) auto;
+  align-items:center;padding:clamp(10px,1.5vw,24px)
+}
+#enduranceFocus .endurance-focus-neighbour-name{
+  width:100%;min-width:0;padding:0 .5em;font-family:var(--font-driver);
+  font-size:clamp(15px,2.6vh,30px);font-weight:800;line-height:1.05;
+  text-align:center;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+#enduranceFocus .endurance-focus-deltas .sprint-focus-delta{min-height:0}
+#enduranceFocus .endurance-focus-last-lap-cell{display:flex;align-items:center;justify-content:center;padding:clamp(10px,2vw,28px)}
+#enduranceFocus .endurance-focus-last-lap{
+  width:100%;font-family:var(--font-time);font-size:clamp(52px,11vw,150px);
+  font-weight:900;line-height:.9;text-align:center;color:#fff;font-variant-numeric:tabular-nums;
+  white-space:nowrap;overflow:hidden;text-overflow:clip
+}
+@media(max-width:680px) and (orientation:portrait){
+  #enduranceFocus .endurance-focus-last-rank{font-size:clamp(24px,8vw,44px)}
+  #enduranceFocus .endurance-focus-neighbour-name{font-size:clamp(11px,3.1vw,18px)}
+  #enduranceFocus .endurance-focus-deltas{padding:8px 5px}
+  #enduranceFocus .endurance-focus-last-lap{font-size:clamp(40px,12vw,68px)}
+}
+@media(max-height:500px) and (orientation:landscape){
+  #enduranceFocus .endurance-focus-last-rank{font-size:clamp(24px,8vh,44px)}
+  #enduranceFocus .endurance-focus-neighbour-name{font-size:clamp(11px,3.8vh,20px)}
+  #enduranceFocus .endurance-focus-deltas{padding:5px 10px}
+  #enduranceFocus .endurance-focus-last-lap{font-size:clamp(46px,18vh,96px)}
+}

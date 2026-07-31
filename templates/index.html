@@ -100,12 +100,31 @@
   <div class="sprint-focus-header"><span>Endurance</span><i></i><button class="sprint-focus-close" type="button" onclick="closeEnduranceFocus()" aria-label="Fermer le mode Focus Endurance">×</button></div>
   <div class="sprint-focus-main">
     <div class="sprint-focus-row sprint-focus-row-one">
-      <div class="sprint-focus-cell"><div class="sprint-focus-driver"><div class="sprint-focus-position" id="enduranceFocusPosition">—</div><div class="sprint-focus-name" id="enduranceFocusName">—</div><div class="sprint-focus-last-rank" id="enduranceFocusLastRank">—</div></div></div>
-      <div class="sprint-focus-cell sprint-focus-deltas"><div class="sprint-focus-delta ahead" id="enduranceFocusAhead">—</div><div class="sprint-focus-divider"></div><div class="sprint-focus-delta behind" id="enduranceFocusBehind">—</div></div>
+      <div class="sprint-focus-cell">
+        <div class="sprint-focus-driver endurance-focus-driver">
+          <div class="sprint-focus-position" id="enduranceFocusPosition">—</div>
+          <div class="sprint-focus-name" id="enduranceFocusName">—</div>
+          <div class="endurance-focus-last-rank" id="enduranceFocusLastRank">—</div>
+        </div>
+      </div>
+      <div class="sprint-focus-cell sprint-focus-deltas endurance-focus-deltas">
+        <div class="endurance-focus-neighbour-name" id="enduranceFocusAheadName">—</div>
+        <div class="sprint-focus-delta ahead" id="enduranceFocusAhead">—</div>
+        <div class="sprint-focus-divider"></div>
+        <div class="sprint-focus-delta behind" id="enduranceFocusBehind">—</div>
+        <div class="endurance-focus-neighbour-name" id="enduranceFocusBehindName">—</div>
+      </div>
     </div>
     <div class="sprint-focus-row sprint-focus-row-two">
-      <div class="sprint-focus-cell"><div class="sprint-focus-session"><div class="sprint-focus-time" id="enduranceFocusTime">—</div><div class="sprint-focus-laps" id="enduranceFocusLaps">—</div></div></div>
-      <div class="sprint-focus-cell sprint-focus-penalty-cell"><div class="sprint-focus-fastest-last"><span id="enduranceFocusFastestLast">🔥 — —</span></div><div class="sprint-focus-penalty-box"><div class="sprint-focus-penalties" id="enduranceFocusPenalties" aria-label="Pénalités, de la plus récente à la plus ancienne"></div></div></div>
+      <div class="sprint-focus-cell">
+        <div class="sprint-focus-session">
+          <div class="sprint-focus-time" id="enduranceFocusTime">—</div>
+          <div class="sprint-focus-laps" id="enduranceFocusLaps">—</div>
+        </div>
+      </div>
+      <div class="sprint-focus-cell endurance-focus-last-lap-cell">
+        <div class="endurance-focus-last-lap" id="enduranceFocusLastLap">—</div>
+      </div>
     </div>
   </div>
 </div>

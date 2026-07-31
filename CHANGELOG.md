@@ -1,3 +1,15 @@
+# KartIQ V6.0.13
+
+## Focus Endurance
+
+- Remplacement du panneau des pénalités par le dernier tour du pilote ou de l’équipe suivie, affiché en grand.
+- Suppression du panneau du pilote le plus rapide.
+- Conservation de la position et du nom de l’entité suivie.
+- Classement du dernier tour affiché avec une icône chronomètre blanche et un ordinal compact (`2ᵉ`).
+- Ajout du nom du concurrent devant au-dessus de son delta.
+- Ajout du nom du concurrent derrière sous son delta.
+- Aucun changement sur les Focus Qualification et Sprint.
+
 # KartIQ V6.0.12
 
 ## V6.0.11 — Filets distinctifs Endurance
