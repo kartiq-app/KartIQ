@@ -1,3 +1,14 @@
+# KartIQ V6.0.5
+
+## V6.0.5 — Endurance clone strict de Qualification
+
+- Le mode Endurance affiche directement la page Qualification.
+- Les informations, mises en page, couleurs, filets et comportements sont identiques en desktop, portrait, paysage et Focus.
+- Suppression de tous les styles de couleur spécifiques au mode Endurance ajoutés dans les versions précédentes.
+- Aucun changement sur Qualification, Sprint ou Analyzer.
+
+---
+
 # KartIQ V6.0.4
 
 ## V6.0.4 — Endurance copié sur Qualification

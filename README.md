@@ -1,4 +1,4 @@
-# KartIQ V6.0.4 — Endurance aligné sur Qualification
+# KartIQ V6.0.5 — Endurance clone strict de Qualification
 
 Cette version introduit les quatre accès **Qualification**, **Sprint**, **Endurance** et **Analyzer**.
 
@@ -138,9 +138,14 @@ Le contrôle JavaScript est effectué automatiquement lorsque Node.js est instal
 - Identité visuelle orange réservée au mode Endurance.
 
 
-## Ajustements V6.0.4
+## Ajustements V6.0.5
 
 - Le mode Endurance affiche directement la page Qualification validée.
 - Les informations, le responsive portrait/paysage, le desktop et le Focus sont strictement identiques.
-- L’identité orange Endurance est conservée via `data-app-mode="endurance"`.
+- Aucune personnalisation de couleur n’est appliquée au mode Endurance : il reprend strictement les couleurs de Qualification.
 - Qualification et Sprint restent inchangés.
+
+
+## V6.0.5 — Clone strict Endurance
+
+Le mode Endurance affiche directement la page Qualification, avec les mêmes informations, mises en page, couleurs, filets et comportements en desktop, portrait, paysage et Focus. Aucune initiative graphique spécifique à Endurance n’est appliquée.

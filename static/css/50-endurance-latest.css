@@ -146,10 +146,8 @@ body.current-endurance #qualificationFocus .qual-focus-header i{background:#ff8a
   .race-mode-card{min-width:0!important}
 }
 
-/* KartIQ V6.0.2 — accueil desktop sur une ligne et filets Endurance orange.
-   Le mode Endurance réutilise volontairement la classe visuelle
-   current-qualification ; data-app-mode permet de le cibler sans modifier
-   les styles validés de Qualification. */
+/* KartIQ V6.0.5 — accueil desktop sur une ligne.
+   Le mode Endurance utilise strictement la page et les couleurs de Qualification. */
 @media (min-width:921px){
   .race-mode-cards{
     grid-template-columns:repeat(4,minmax(0,1fr))!important;
@@ -157,64 +155,4 @@ body.current-endurance #qualificationFocus .qual-focus-header i{background:#ff8a
     width:100%!important;
   }
   .race-mode-card{min-width:0!important}
-}
-
-body[data-app-mode="endurance"] #endurance .qual-strip{
-  border-top-color:#ff8a00!important;
-}
-body[data-app-mode="endurance"] #endurance .qual-table-wrap thead th{
-  border-bottom-color:#ff8a00!important;
-}
-body[data-app-mode="endurance"] #qualificationFocus .qual-focus-header i{
-  background:#ff8a00!important;
-}
-
-/* KartIQ V6.0.3 — correction des filets Endurance.
-   Desktop et smartphone paysage :
-   - filets de thème (haut du tableau + sous l'en-tête) en orange ;
-   - séparateurs des lignes du classement en gris, comme Qualification et Sprint. */
-@media (min-width:921px), (max-width:920px) and (orientation:landscape){
-  body[data-app-mode="endurance"] #endurance .qual-strip{
-    border-top-color:#ff8a00!important;
-  }
-  body[data-app-mode="endurance"] #endurance .qual-table-wrap thead th{
-    border-bottom-color:#ff8a00!important;
-  }
-  body[data-app-mode="endurance"] #endurance .qual-table-wrap tbody td{
-    border-top-color:#222227!important;
-  }
-  body[data-app-mode="endurance"] #qualificationFocus .qual-focus-row-one,
-  body[data-app-mode="endurance"] #qualificationFocus .qual-focus-row-two,
-  body[data-app-mode="endurance"] #qualificationFocus .qual-focus-ranking tbody td{
-    border-color:#24272d!important;
-  }
-  body[data-app-mode="endurance"] #qualificationFocus .qual-focus-header i{
-    background:#ff8a00!important;
-  }
-}
-
-
-/* KartIQ V6.0.4 — Endurance fondé directement sur la page Qualification.
-   Quand data-app-mode="endurance", l'écran visible est #qualification :
-   toutes les mises en page validées (portrait, paysage, desktop et Focus)
-   sont donc reprises à l'identique, avec uniquement l'accent orange. */
-body[data-app-mode="endurance"] #qualification .qual-strip{
-  border-top-color:#ff8a00!important;
-}
-body[data-app-mode="endurance"] #qualification .position-cell{
-  box-shadow:inset 6px 0 #ff8a00!important;
-}
-body[data-app-mode="endurance"] #qualification .qual-table-wrap thead th{
-  border-bottom-color:#ff8a00!important;
-}
-body[data-app-mode="endurance"] #qualification .qual-table-wrap tbody td{
-  border-top-color:#222227!important;
-}
-body[data-app-mode="endurance"] #qualificationFocus .qual-focus-header i{
-  background:#ff8a00!important;
-}
-body[data-app-mode="endurance"] #qualificationFocus .qual-focus-row-one,
-body[data-app-mode="endurance"] #qualificationFocus .qual-focus-row-two,
-body[data-app-mode="endurance"] #qualificationFocus .qual-focus-ranking tbody td{
-  border-color:#24272d!important;
 }
