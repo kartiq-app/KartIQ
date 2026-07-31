@@ -1,4 +1,10 @@
-## V5.2.2 — Couleurs du meilleur dernier tour Sprint
+## V5.2.3 — Affichage orange du meilleur dernier tour Sprint
+
+- Correction de la couleur blanche dans la case 🔥 en Sprint portrait, Sprint paysage et Focus Sprint.
+- Ajout de la variable CSS `--orange`, utilisée lorsque le pilote le plus rapide du tour n’améliore pas son meilleur temps personnel.
+- La logique reste : violet pour le meilleur temps absolu de session, vert pour une amélioration personnelle, orange sinon.
+
+## V5.2.3 — Couleurs du meilleur dernier tour Sprint
 
 - Dans la case avec la flamme, le chrono est orange lorsque le pilote n'améliore pas son meilleur temps personnel précédent.
 - Le chrono devient vert lorsque le pilote améliore son meilleur temps personnel précédent.
@@ -7,7 +13,7 @@
 - Le premier tour valide d'un pilote est considéré comme une amélioration personnelle.
 - Mise à jour de la version et du cache PWA.
 
-## V5.2.2 — Synchronisation du meilleur dernier tour Sprint
+## V5.2.3 — Synchronisation du meilleur dernier tour Sprint
 
 - La carte avec la flamme compare uniquement les pilotes ayant parcouru exactement le même nombre de tours que le pilote suivi.
 - Le pilote et le chrono affichés appartiennent donc au même tour de course que le pilote suivi.

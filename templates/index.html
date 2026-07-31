@@ -9,11 +9,11 @@
 <meta name="apple-mobile-web-app-title" content="KartIQ">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V5.2.2 — Modularisation CSS</title>
-<link rel="stylesheet" href="/static/css/kartiq.css?v=5.2.2">
+<title>KartIQ V5.2.3 — Modularisation CSS</title>
+<link rel="stylesheet" href="/static/css/kartiq.css?v=5.2.3">
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V5.2.2 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V5.2.3 LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -60,7 +60,7 @@
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v5.2.2</div>
+      <div class="home-version" aria-label="Version de KartIQ">KartIQ v5.2.3</div>
     </div>
   </div>
 </section>
@@ -98,4 +98,4 @@
 <div class="overlay" id="genericOverlay" onclick="clearAlert()"><div class="generic-box"><div class="label" id="alertTitle">ALERTE</div><h1 id="alertLine1">—</h1><div class="line2" id="alertLine2">—</div></div></div>
 <div class="overlay" id="top8PitOverlay"><div class="top8-alert-box"><div class="top8-alert-title">🚨 ALERTE</div><div class="top8-alert-team" id="top8AlertTeam">—</div><div class="top8-alert-message">vient d'entrer aux stands</div><div class="top8-alert-position-label">Position</div><div class="top8-alert-position" id="top8AlertPosition">P— / Top 8</div><button class="top8-alert-close" onclick="clearTop8Alert()">FERMER</button></div></div>
 <div id="installHelp" class="install-help" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle"><div class="install-help-card"><h2 id="installHelpTitle">KartIQ en plein écran sur iPhone</h2><p>Safari ne permet pas toujours d’activer le vrai plein écran depuis une page web. Pour obtenir l’affichage sans barre d’adresse :</p><p><strong>1.</strong> Appuie sur l’icône Partager de Safari.<br><strong>2.</strong> Choisis « Sur l’écran d’accueil ».<br><strong>3.</strong> Ouvre ensuite KartIQ depuis sa nouvelle icône.</p><button onclick="closeInstallHelp()">J’ai compris</button></div></div>
-<script src="/static/js/core/core.js?v=5.2.2"></script><script src="/static/js/sprint/sprint.js?v=5.2.2"></script><script src="/static/js/qualification/qualification.js?v=5.2.2"></script><script src="/static/js/ui/race-ui.js?v=5.2.2"></script><script src="/static/js/endurance/queues.js?v=5.2.2"></script><script src="/static/js/core/bootstrap.js?v=5.2.2"></script></body></html>
+<script src="/static/js/core/core.js?v=5.2.3"></script><script src="/static/js/sprint/sprint.js?v=5.2.3"></script><script src="/static/js/qualification/qualification.js?v=5.2.3"></script><script src="/static/js/ui/race-ui.js?v=5.2.3"></script><script src="/static/js/endurance/queues.js?v=5.2.3"></script><script src="/static/js/core/bootstrap.js?v=5.2.3"></script></body></html>

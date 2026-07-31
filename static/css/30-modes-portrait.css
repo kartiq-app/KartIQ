@@ -1,4 +1,4 @@
-/* KartIQ V5.2.2 — Qualification/Sprint, navigation et mises en page portrait.
+/* KartIQ V5.2.3 — Qualification/Sprint, navigation et mises en page portrait.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
 /* KartIQ V4.6.0 — Portrait Qualification et Sprint */
 .sprint-focus-overlay{position:fixed;inset:0;z-index:1100;display:none;background:#000;color:#fff;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
