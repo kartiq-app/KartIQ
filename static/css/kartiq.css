@@ -2795,3 +2795,8 @@ body:not(.preview-embedded).current-endurance .endurance-queue-panel{margin-bott
   body.current-endurance .quick-table th:nth-child(6),body.current-endurance .quick-table td:nth-child(6){width:17%!important}
   body.current-endurance .quick-table th:nth-child(7),body.current-endurance .quick-table td:nth-child(7){width:16%!important}
 }
+
+/* KartIQ V5.1.2 — Couleur du meilleur dernier tour Sprint
+   Vert par défaut ; violet uniquement s'il égale le meilleur temps absolu de la session. */
+body.current-sprint .fastest-last-time.fastest-lap-green{color:var(--green)!important}
+body.current-sprint .fastest-last-time.fastest-session-best{color:var(--purple)!important}

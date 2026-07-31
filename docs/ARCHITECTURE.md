@@ -1,8 +1,8 @@
-# Architecture KartIQ V5.1.1
+# Architecture KartIQ V5.1.2
 
 ## Objectif
 
-La V5.1.1 introduit une organisation JavaScript par domaines fonctionnels, sans modification volontaire du comportement, des calculs ni de l’interface.
+La V5.1.2 introduit une organisation JavaScript par domaines fonctionnels, sans modification volontaire du comportement, des calculs ni de l’interface.
 
 ## Arborescence principale
 

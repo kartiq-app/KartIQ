@@ -1,3 +1,10 @@
+## V5.1.2 — Couleur conditionnelle du meilleur dernier tour Sprint
+
+- Le chrono de la carte avec la flamme reste vert par défaut.
+- Il devient violet uniquement lorsqu'il correspond au meilleur temps absolu de la session.
+- Le correctif s'applique notamment à l'affichage Sprint en portrait.
+- Mise à jour du cache PWA et des références de version.
+
 ## V5.1.1 — Correctif meilleur tour précédent en Sprint
 - Correction du cartouche avec la flamme : le nom du pilote est de nouveau affiché.
 - Le calcul compare désormais les chronos appartenant au même numéro de tour, au lieu de mélanger les dernières valeurs reçues ligne par ligne.
