@@ -1,4 +1,4 @@
-/* KartIQ V5.3.0 — Fondations, composants initiaux et historique V1–V2.7.
+/* KartIQ V5.3.1 — Fondations, composants initiaux et historique V1–V2.7.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
 :root{--bg:#050505;--panel:#0b0b0d;--panel2:#121216;--line:#2a2a2f;--text:#f7f7f8;--muted:#8f8f98;--yellow:#ffd230;--orange:#ff9f1c;--green:#31e981;--red:#ff334f;--purple:#b66cff;--blue:#58a6ff;--accent:#e10600;--font-time:"F1 Regular",Arial,sans-serif;--font-driver:"F1 Torque","Arial Narrow",Arial,sans-serif}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -54,7 +54,7 @@ body.preview-embedded.current-sprint .empty{grid-column:1/-1;font-size:9px}
  .qual-table-wrap{max-height:calc(100dvh - 105px);overflow-y:auto}
  .sprint-table-wrap{max-height:none!important;height:100%;overflow-y:auto!important}
  #qualifTable td,#sprintTable td{font-size:20px;line-height:1;height:24px;padding:1px 3px}
- #qualifTable .pos,#sprintTable .pos{font-size:26px}
+ 
  #qualifTable th,#sprintTable th{font-size:16px;padding:3px;line-height:1;height:22px}
  .sprint-table-wrap th:nth-child(1),.sprint-table-wrap td:nth-child(1){width:12%}
  .sprint-table-wrap th:nth-child(2),.sprint-table-wrap td:nth-child(2){width:38%}

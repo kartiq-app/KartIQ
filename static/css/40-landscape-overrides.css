@@ -1,4 +1,4 @@
-/* KartIQ V5.3.0 — Paysage, classements et correctifs de cascade V4.7–V4.8.9.
+/* KartIQ V5.3.1 — Paysage, classements et correctifs de cascade V4.7–V4.8.9.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
 /* Pilote suivi : une seule ligne, tronquée dans sa carte en Qualification et Sprint. */
 body.current-qualification .position-cell .hero-name,
@@ -203,19 +203,15 @@ body.current-sprint .position-cell{
     text-overflow:clip!important;
     box-sizing:border-box!important;
   }
-  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(1),
-  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-pos{width:8%!important}
+  
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(3),
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-driver-column{width:40%!important}
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(4){width:24%!important}
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(7){width:28%!important;padding-left:10px!important}
 
-  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(1),
-  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-pos{width:6%!important}
-  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(2),
-  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-kart-column{width:9%!important}
-  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(3),
-  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-driver-column{width:28%!important}
+  
+  
+  
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(4),
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-last{width:22%!important}
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(7),
@@ -702,7 +698,7 @@ body.current-sprint .position-cell{
   }
   body.current-qualification .position-cell .hero-position{width:100%!important;margin:0!important;padding:0!important;text-align:center!important;align-self:auto!important;font-size:34px!important}
   body.current-qualification .position-cell .hero-name{width:100%!important;max-width:100%!important;margin:3px 0 0!important;padding:0 3px!important;border:0!important;text-align:center!important;align-self:auto!important;font-size:10px!important}
-  body.current-qualification .qual-delta-focus-cell{display:contents!important}
+  
 }
 
 

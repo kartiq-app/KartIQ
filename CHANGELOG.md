@@ -1,3 +1,12 @@
+## V5.3.1 — Consolidation CSS sûre
+
+- Suppression de six règles CSS strictement identiques conservées en double.
+- Nettoyage ciblé des feuilles Sprint paysage et Qualification portrait.
+- Conservation systématique de la dernière occurrence afin de préserver la cascade.
+- Aucun sélecteur réécrit et aucune valeur modifiée.
+- Suppression des fichiers Python compilés (`__pycache__`, `.pyc`) de l’archive GitHub.
+- Version, cache PWA et documentation synchronisés.
+
 ## V5.3.0 — Nettoyage CSS sûr
 
 - Fusion des trois déclarations globales `:root` en une source unique, sans modifier les valeurs finales calculées.

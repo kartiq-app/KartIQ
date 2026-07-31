@@ -1,6 +1,10 @@
-# KartIQ V5.3.0 — Modularisation CSS
+# KartIQ V5.3.1 — Consolidation CSS sûre
 
 Cette version inaugure la refactorisation progressive du projet. Le CSS est désormais externalisé et découpé en modules séquentiels chargés par `static/css/kartiq.css`, sans modification fonctionnelle attendue. Consultez `docs/ARCHITECTURE.md` et `docs/VALIDATION_V5.md`.
+
+## V5.3.1
+
+Nettoyage CSS prudent : six règles strictement identiques ont été supprimées en conservant la dernière occurrence dans la cascade. Les fichiers Python compilés ont également été retirés de l’archive GitHub. Aucun rendu ni comportement n’est volontairement modifié.
 
 # KartIQ V4.5.5
 
@@ -12,7 +16,7 @@ Cette version inaugure la refactorisation progressive du projet. Le CSS est dés
 - Les évolutions de navigation des pages Qualification et Sprint de la V4.5.3 sont conservées.
 
 
-## V5.3.0
+## V5.2.3
 
 Correctif d’affichage de la case 🔥 : la couleur orange est maintenant définie et visible dans tous les modes Sprint.
 

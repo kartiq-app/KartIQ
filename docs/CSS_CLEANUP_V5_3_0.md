@@ -1,6 +1,6 @@
 # Nettoyage CSS sûr — KartIQ V5.3.0
 
-Cette version réalise uniquement des consolidations dont l’équivalence de cascade peut être démontrée.
+La V5.3.0 réalise uniquement des consolidations dont l’équivalence de cascade peut être démontrée.
 
 ## Changements réalisés
 
