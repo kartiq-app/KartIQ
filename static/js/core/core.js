@@ -43,8 +43,8 @@ function syncRemainingFromState(nextState){
  if(current===null||(!directIsFresh&&Math.abs(current-candidate)>500))syncRemainingFromApex(candidate);
 }
 function liveRemainingMilliseconds(){
- if(!Number.isFinite(remainingCountdownMs)||!remainingCountdownPerfAt)return null;
- return Math.max(0,remainingCountdownMs-(performance.now()-remainingCountdownPerfAt));
+ if(!Number.isFinite(remainingCountdownMs))return null;
+ return remainingCountdownMs;
 }
 function formatRemainingMilliseconds(ms){
  if(!Number.isFinite(ms))return '—';
