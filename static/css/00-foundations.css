@@ -1,6 +1,6 @@
-/* KartIQ V5.2.3 — Fondations, composants initiaux et historique V1–V2.7.
+/* KartIQ V5.3.0 — Fondations, composants initiaux et historique V1–V2.7.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
-:root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
+:root{--bg:#050505;--panel:#0b0b0d;--panel2:#121216;--line:#2a2a2f;--text:#f7f7f8;--muted:#8f8f98;--yellow:#ffd230;--orange:#ff9f1c;--green:#31e981;--red:#ff334f;--purple:#b66cff;--blue:#58a6ff;--accent:#e10600;--font-time:"F1 Regular",Arial,sans-serif;--font-driver:"F1 Torque","Arial Narrow",Arial,sans-serif}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
 header{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--line);background:#0d1119ef;position:sticky;top:0;z-index:10}.header-left{display:flex;align-items:center;gap:12px}.brand{font-size:28px;font-weight:950}.brand i{font-style:normal;color:var(--yellow)}.home-btn{border:1px solid var(--line);background:#151b26;color:#fff;width:42px;height:42px;border-radius:10px;font-size:20px;cursor:pointer;font-weight:900}.home-btn:hover{border-color:var(--yellow);color:var(--yellow)}.meta{display:flex;align-items:center;gap:13px;color:var(--muted);font-size:13px}.live{color:var(--green);font-weight:900}.mode-tabs{display:flex;gap:8px}.mode-btn{border:1px solid var(--line);background:#151b26;color:#c7ced9;padding:9px 14px;border-radius:9px;font-weight:850;cursor:pointer}.mode-btn.active{background:var(--yellow);color:#111;border-color:var(--yellow)}
 .screen{display:none}.screen.active{display:block}.home{padding:50px 20px}.home-card{max-width:900px;margin:auto;padding:28px;background:linear-gradient(180deg,var(--panel),#0c121b);border:1px solid var(--line);border-radius:18px}.home-card h1{font-size:48px;margin:0 0 6px}.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}.field label{display:block;color:var(--muted);font-weight:800;font-size:12px;margin-bottom:8px}.field select{width:100%;padding:14px;background:#0c111a;color:white;border:1px solid var(--line);border-radius:10px}.mode-cards{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.mode-card{padding:20px;border:1px solid var(--line);background:#131a26;border-radius:13px;cursor:pointer}.mode-card:hover{border-color:var(--yellow)}
@@ -44,7 +44,7 @@ body.preview-embedded.current-sprint .empty{grid-column:1/-1;font-size:9px}
 .qual-table-wrap{max-height:calc(100dvh - 235px)}
 .sprint-table-wrap{max-height:calc(100dvh - 235px)}
 #qualifTable td,#sprintTable td{font-size:28px;line-height:1;height:46px;padding-top:2px;padding-bottom:2px;vertical-align:middle}
-#qualifTable .pos,#sprintTable .pos{font-size:38px}
+
 #qualifTable th,#sprintTable th{position:sticky;top:0;z-index:2;background:#111722}
 .penalty-panel{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
 #penalties{display:block!important}
@@ -71,7 +71,7 @@ body.preview-embedded.current-sprint #penalties .penalty-row{font-size:40px!impo
 body.preview-embedded.current-sprint #penalties .penalty-row span{font-size:40px!important}
 
 /* V2.0 — Broadcast Edition */
-:root{--bg:#050505;--panel:#0b0b0d;--panel2:#121216;--line:#2a2a2f;--text:#f7f7f8;--muted:#8f8f98;--yellow:#ffd230;--orange:#ff9f1c;--green:#31e981;--red:#ff334f;--purple:#b66cff;--accent:#e10600}
+
 body.current-qualification{--accent:#e10600}
 body.current-sprint{--accent:#168bff}
 body.current-endurance{--accent:#ff8a00}
@@ -108,7 +108,7 @@ body.preview-embedded header{display:none!important}body.preview-embedded.curren
 /* KartIQ V2.1 — typographies officielles fournies par l'utilisateur */
 @font-face{font-family:"F1 Regular";src:url("/static/fonts/f1-regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
 @font-face{font-family:"F1 Torque";src:url("/static/fonts/f1-torque.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
-:root{--font-time:"F1 Regular",Arial,sans-serif;--font-driver:"F1 Torque","Arial Narrow",Arial,sans-serif}
+
 /* Tous les temps, écarts et chiffres de classement */
 .pos,#qualifTable td:nth-child(n+3),#sprintTable td:nth-child(n+3),#enduranceTable td:nth-child(1),#enduranceTable td:nth-child(n+5),.hero-lap,.sprint-fast-lap,.remaining-time,.remaining-laps,.penalty-row span,.crossing-last,.pace-row>b,.quick-table td:nth-child(2),.quick-table td:nth-child(6),.quick-table td:nth-child(7){font-family:var(--font-time)!important;font-variant-numeric:tabular-nums}
 /* Noms, bloc P5 + pilote, et delta central */

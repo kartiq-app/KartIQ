@@ -1,3 +1,11 @@
+## V5.3.0 — Nettoyage CSS sûr
+
+- Fusion des trois déclarations globales `:root` en une source unique, sans modifier les valeurs finales calculées.
+- Conservation de la variable historique `--blue` et centralisation des variables typographiques.
+- Suppression d’une déclaration CSS strictement identique de `#qualifTable .pos, #sprintTable .pos`, en conservant sa dernière occurrence dans la cascade.
+- Aucun sélecteur réécrit et aucune règle potentiellement obsolète supprimée dans cette étape prudente.
+- Synchronisation de la version, de la documentation et du cache PWA.
+
 ## V5.2.3 — Affichage orange du meilleur dernier tour Sprint
 
 - Correction de la couleur blanche dans la case 🔥 en Sprint portrait, Sprint paysage et Focus Sprint.

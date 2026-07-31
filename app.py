@@ -52,7 +52,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "5.2.3",
+    "version": "5.3.0",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",
@@ -949,7 +949,7 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print("\nKartIQ V5.2.3 — Couleurs du meilleur dernier tour Sprint")
+    print("\nKartIQ V5.3.0 — Nettoyage CSS sûr")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")
