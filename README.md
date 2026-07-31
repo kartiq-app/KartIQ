@@ -1,3 +1,7 @@
+# KartIQ V5.0.0 Foundation
+
+Cette version inaugure la refactorisation progressive du projet. Le CSS est désormais externalisé dans `static/css/kartiq.css`, sans modification fonctionnelle attendue. Consultez `docs/ARCHITECTURE.md` et `docs/VALIDATION_V5.md`.
+
 # KartIQ V4.5.5
 
 ## Nouveautés

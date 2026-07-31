@@ -1,3 +1,12 @@
+## V5.0.0 — Foundation CSS
+
+- Première étape de la refactorisation progressive de KartIQ.
+- Extraction intégrale du CSS de `index.html` vers `static/css/kartiq.css`.
+- Ordre et contenu des règles conservés afin de ne provoquer aucun changement visuel.
+- Ajout de `docs/ARCHITECTURE.md` et `docs/VALIDATION_V5.md`.
+- Version interne, page d’accueil, titre et cache PWA mis à jour en V5.0.0.
+- Aucune logique JavaScript ou fonctionnalité métier modifiée.
+
 ## V4.9.1 — Endurance mobile pleine largeur
 
 - Le Top 8 du rythme actuel tient désormais entièrement dans la largeur d’un smartphone.
