@@ -1,4 +1,14 @@
-# KartIQ V6.0.9
+# KartIQ V6.0.10
+
+## V6.0.10 — Restauration des filets Endurance
+
+- Le filet horizontal supérieur de la page Endurance reste orange `#FF8A00`.
+- Le filet horizontal au-dessus du classement reste orange `#FF8A00`.
+- Le filet vertical de la case Menu reste gris, identique à Qualification et Sprint.
+- Le filet vertical de la case Position passe en orange `#FF8A00`.
+- Tous les séparateurs de lignes restent gris.
+- Qualification, Sprint et Analyzer ne sont pas modifiés.
+- Le Focus Endurance reste identique au Focus Sprint avec son filet supérieur orange.
 
 ## V6.0.9 — Correction du routage Focus Endurance
 

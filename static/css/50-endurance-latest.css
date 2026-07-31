@@ -131,10 +131,11 @@ body.current-sprint .fastest-last-time.fastest-session-best{color:var(--purple)!
 .sprint-focus-fastest-last-time.fastest-session-best{color:var(--purple)!important}
 
 
-/* KartIQ V6.0.7 — identité Endurance ciblée.
-   Seuls les deux filets horizontaux hérités du rouge #E10600 restent orange #FF8A00.
-   Le séparateur vertical entre la case Menu et la case Position redevient gris,
-   identique à Qualification et Sprint. */
+/* KartIQ V6.0.10 — identité Endurance ciblée.
+   Deux filets horizontaux orange #FF8A00.
+   Filet vertical de la case Menu gris, identique à Qualification et Sprint.
+   Filet vertical de la case Position orange #FF8A00.
+   Les séparateurs de lignes restent gris. */
 body[data-app-mode="endurance"] #qualification .qual-strip{
   border-top-color:#FF8A00!important;
 }
@@ -142,7 +143,7 @@ body[data-app-mode="endurance"] #qualification .qual-table-wrap{
   border-top-color:#FF8A00!important;
 }
 body[data-app-mode="endurance"] #qualification .position-cell{
-  box-shadow:none!important;
+  box-shadow:inset 6px 0 #FF8A00!important;
 }
 body[data-app-mode="endurance"] #qualification .qual-menu-cell{
   border-right-color:#29292e!important;
