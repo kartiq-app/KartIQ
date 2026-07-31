@@ -1,3 +1,11 @@
+## V5.5.10 — Rééquilibrage de la ligne 1 smartphone paysage
+
+- Réduction de 30 % de la carte du pilote suivi en Qualification et Sprint paysage smartphone.
+- Agrandissement de 30 % de la carte Temps/Tours.
+- Conservation du centrage et de l'adaptation automatique du bloc Temps/Tours.
+- Desktop, portrait et Endurance inchangés.
+- Cache PWA et version synchronisés en V5.5.10.
+
 ## V5.5.9 — Centrage définitif du bloc Temps/Tours sur smartphone paysage
 
 - Réinitialisation des anciennes positions absolues encore actives sur Safari iOS.

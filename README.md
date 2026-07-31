@@ -1,4 +1,15 @@
-# KartIQ V5.5.9 — Bloc Temps/Tours centré sur smartphone paysage
+# KartIQ V5.5.10 — Rééquilibrage ligne 1 smartphone paysage
+
+## Évolution V5.5.10
+
+En Qualification et Sprint sur smartphone en mode paysage uniquement :
+
+- la carte du pilote suivi est réduite de 30 % ;
+- la carte Temps/Tours est agrandie de 30 % ;
+- le bloc Temps/Tours reste centré et responsive ;
+- aucun impact sur Desktop, portrait ou Endurance.
+
+---
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
 
