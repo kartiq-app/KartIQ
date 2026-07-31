@@ -6,25 +6,25 @@
     return document.querySelectorAll('#qualification .landscape-session-clock, #sprint .landscape-session-clock');
   }
 
-  function fits(container, values, size){
-    container.style.setProperty('--landscape-clock-font-size', `${size}px`);
+  function fits(container, values, baseSize){
+    container.style.setProperty('--landscape-clock-font-size', `${baseSize}px`);
     const style=getComputedStyle(container);
-    const horizontalPadding=parseFloat(style.paddingLeft)+parseFloat(style.paddingRight);
-    const verticalPadding=parseFloat(style.paddingTop)+parseFloat(style.paddingBottom);
+    const horizontalPadding=(parseFloat(style.paddingLeft)||0)+(parseFloat(style.paddingRight)||0);
+    const verticalPadding=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);
     const gap=parseFloat(style.rowGap||style.gap)||0;
     const availableWidth=Math.max(0,container.clientWidth-horizontalPadding);
     const availableHeight=Math.max(0,container.clientHeight-verticalPadding);
-    const requiredWidth=Math.max(...values.map(value=>value.scrollWidth));
-    const requiredHeight=values.reduce((total,value)=>total+value.scrollHeight,0)+gap*(values.length-1);
-    return requiredWidth<=availableWidth+.5&&requiredHeight<=availableHeight+.5;
+    const requiredWidth=Math.max(...values.map(value=>value.getBoundingClientRect().width));
+    const requiredHeight=values.reduce((total,value)=>total+value.getBoundingClientRect().height,0)+gap*(values.length-1);
+    return requiredWidth<=availableWidth-2&&requiredHeight<=availableHeight-2;
   }
 
   function fitContainer(container){
     const values=[...container.querySelectorAll(':scope > .landscape-clock-value')];
     if(values.length!==2||container.clientWidth<=0||container.clientHeight<=0)return;
     let low=12;
-    let high=64;
-    for(let i=0;i<8;i+=1){
+    let high=56;
+    for(let i=0;i<10;i+=1){
       const middle=(low+high)/2;
       if(fits(container,values,middle))low=middle;else high=middle;
     }
@@ -49,7 +49,7 @@
   }
   mobileLandscapeQuery.addEventListener?.('change',fitAll);
   window.addEventListener('resize',fitAll,{passive:true});
-  window.addEventListener('orientationchange',()=>setTimeout(fitAll,120),{passive:true});
+  window.addEventListener('orientationchange',()=>setTimeout(fitAll,150),{passive:true});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)fitAll()});
   window.fitLandscapeSessionClocks=fitAll;
   fitAll();

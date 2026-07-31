@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "5.5.8"
+APP_VERSION = "5.5.9"
 APP_RELEASE_NAME = "Alignement des classements desktop"
 
 

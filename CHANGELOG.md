@@ -1,3 +1,13 @@
+## V5.5.9 — Centrage définitif du bloc Temps/Tours sur smartphone paysage
+
+- Réinitialisation des anciennes positions absolues encore actives sur Safari iOS.
+- Temps restant et nombre de tours regroupés dans un seul bloc Flex centré horizontalement et verticalement.
+- Temps restant affiché 60 % plus grand que la taille de base commune.
+- Nombre de tours lié à la même taille responsive afin que les deux informations s’adaptent ensemble.
+- Ajustement JavaScript basé sur les dimensions réelles rendues pour éviter tout débordement.
+- Aucun impact sur Desktop ni sur le mode portrait.
+- Cache PWA et version synchronisés en V5.5.9.
+
 ## V5.5.8 — Bloc temps/tours réellement responsive sur iPhone paysage
 
 - Correction des sélecteurs CSS : les classes réellement utilisées sont désormais ciblées.

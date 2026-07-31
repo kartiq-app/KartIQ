@@ -1129,38 +1129,67 @@ body.current-sprint .position-cell{
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-interval{width:14%!important}
 }
 
-/* KartIQ V5.5.8 — Temps + tours comme un bloc unique sur smartphone paysage.
-   La taille commune est calculée par session-clock-fit.js pour ne jamais déborder. */
+/* KartIQ V5.5.9 — bloc Temps/Tours réellement centré sur smartphone paysage.
+   Les anciennes règles iOS positionnaient encore les deux valeurs en absolu.
+   On réinitialise explicitement leur position, puis on centre le groupe complet.
+   Le temps est 60 % plus grand que la taille de base commune ; les tours restent
+   liés à cette même base et les deux valeurs sont recalculées ensemble par JS. */
 @media (hover:none) and (pointer:coarse) and (orientation:landscape) and (max-height:500px){
   body:not(.preview-embedded).current-qualification .landscape-session-clock,
   body:not(.preview-embedded).current-sprint .landscape-session-clock{
+    position:relative!important;
     display:flex!important;
     flex-direction:column!important;
     align-items:center!important;
     justify-content:center!important;
-    gap:2px!important;
-    padding:5px 6px!important;
+    gap:4px!important;
+    width:100%!important;
+    height:88px!important;
+    min-height:88px!important;
+    max-height:88px!important;
+    padding:6px 6px!important;
     overflow:hidden!important;
     box-sizing:border-box!important;
   }
 
   body:not(.preview-embedded).current-qualification .landscape-session-clock > .landscape-clock-value,
   body:not(.preview-embedded).current-sprint .landscape-session-clock > .landscape-clock-value{
+    position:static!important;
+    inset:auto!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:auto!important;
     display:block!important;
     flex:0 0 auto!important;
     width:auto!important;
     height:auto!important;
-    max-width:100%!important;
     min-width:0!important;
+    min-height:0!important;
+    max-width:100%!important;
+    max-height:none!important;
     margin:0!important;
     padding:0!important;
     border:0!important;
-    font-size:var(--landscape-clock-font-size, 32px)!important;
-    line-height:.92!important;
+    transform:none!important;
+    -webkit-transform:none!important;
     text-align:center!important;
     white-space:nowrap!important;
     overflow:visible!important;
     text-overflow:clip!important;
+    box-sizing:border-box!important;
+  }
+
+  body:not(.preview-embedded).current-qualification .landscape-clock-time,
+  body:not(.preview-embedded).current-sprint .landscape-clock-time{
+    font-size:calc(var(--landscape-clock-font-size, 26px) * 1.6)!important;
+    line-height:.84!important;
+  }
+
+  body:not(.preview-embedded).current-qualification .landscape-clock-laps,
+  body:not(.preview-embedded).current-sprint .landscape-clock-laps{
+    font-size:calc(var(--landscape-clock-font-size, 26px) * .82)!important;
+    line-height:.9!important;
   }
 
   body:not(.preview-embedded).current-qualification .landscape-session-clock > .landscape-clock-value + .landscape-clock-value,

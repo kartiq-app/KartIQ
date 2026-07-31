@@ -1,8 +1,12 @@
-# KartIQ V5.5.8 — Alignement des classements
+# KartIQ V5.5.9 — Bloc Temps/Tours centré sur smartphone paysage
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
 
-## V5.5.8
+## Correction V5.5.9
+
+En Qualification et Sprint sur smartphone en paysage, le temps restant et le nombre de tours forment désormais un seul ensemble centré dans la case. Le temps est 60 % plus grand, tandis que les deux valeurs s’adaptent ensemble pour ne jamais déborder. Le Desktop et le portrait restent inchangés.
+
+## V5.5.9
 
 - Sprint smartphone paysage : suppression de la colonne MEILLEUR, avec ÉCART conservé.
 - Sprint Desktop : largeurs corrigées pour empêcher le chevauchement de MEILLEUR, ÉCART et INTERVALLE.
