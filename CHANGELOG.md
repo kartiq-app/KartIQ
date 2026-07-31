@@ -1,11 +1,11 @@
-## V5.5.6 — Alignement des classements
+## V5.5.7 — Alignement des classements
 
 - Suppression de la colonne MEILLEUR dans le classement Sprint sur smartphone en paysage.
 - Conservation de la colonne ÉCART dans cette vue simplifiée.
 - Correction des largeurs Desktop Sprint afin d'éviter tout chevauchement entre MEILLEUR, ÉCART et INTERVALLE.
 - Positionnement de KART immédiatement après POS dans le classement Qualification Desktop.
 - Centrage homogène des en-têtes et valeurs numériques en Qualification et Sprint Desktop.
-- Cache PWA et version synchronisés en V5.5.6.
+- Cache PWA et version synchronisés en V5.5.7.
 - Ajout de `docs/RANKING_ALIGNMENT_V5_5_6.md`.
 
 ## V5.5.5 — Classements Sprint responsive
