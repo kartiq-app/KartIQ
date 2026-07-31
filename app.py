@@ -52,7 +52,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "5.0.0",
+    "version": "5.0.1",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",

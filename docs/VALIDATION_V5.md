@@ -18,7 +18,7 @@ Cette version doit se comporter exactement comme la V4.9.1.
 
 ## Contrôle technique réalisé
 
-Le CSS a été déplacé sans changement de contenu ni d’ordre. Le HTML charge désormais `/static/css/kartiq.css?v=5.0.0`.
+Le CSS a été déplacé sans changement de contenu ni d’ordre. Le HTML charge désormais `/static/css/kartiq.css?v=5.0.1`.
 
 
 ## Contrôles spécifiques V5.0.1

@@ -1,5 +1,12 @@
 ## V5.0.1 — Foundation JavaScript
 
+### Correctif de cohérence de version
+
+- Version de la page d’accueil synchronisée en V5.0.1.
+- Version interne de l’application synchronisée en 5.0.1.
+- Paramètres de cache CSS et JavaScript synchronisés en 5.0.1.
+- Cache PWA renouvelé pour forcer le chargement des fichiers corrigés.
+
 - Extraction intégrale du JavaScript de `index.html` vers `static/js/kartiq.js`.
 - Fonctions, variables globales et ordre d’exécution conservés sans modification.
 - Aucun changement fonctionnel ou visuel attendu.
