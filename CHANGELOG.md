@@ -1,3 +1,13 @@
+## V5.4.0 — Fondations backend modulaires
+
+- Création du package Python `backend/`.
+- Déplacement de la configuration applicative et du chargement des circuits dans `backend/config.py`.
+- Centralisation des journaux Apex et de la boîte noire dans `backend/logging_tools.py`.
+- Déplacement de l'utilitaire réseau `local_ip()` dans `backend/network.py`.
+- Conservation des mêmes routes, réponses JSON, fichiers de logs et comportements métier.
+- Mise à jour de la version, du cache PWA, du README et de la documentation.
+- Aucun changement visuel ou fonctionnel attendu.
+
 ## V5.3.3 — Cohérence des versions
 
 - Ajout de `APP_VERSION` comme source unique de la version côté serveur.

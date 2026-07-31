@@ -1,6 +1,6 @@
-# Modules CSS — KartIQ V5.3.3
+# Modules CSS — KartIQ V5.4.0
 
-La V5.3.3 découpe la feuille monolithique sans modifier son comportement.
+La V5.4.0 découpe la feuille monolithique sans modifier son comportement.
 
 ## Point d’entrée
 

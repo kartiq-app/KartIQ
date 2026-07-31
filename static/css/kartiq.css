@@ -1,4 +1,4 @@
-/* KartIQ V5.3.3 — Point d’entrée CSS modulaire.
+/* KartIQ V5.4.0 — Point d’entrée CSS modulaire.
    Ne pas modifier l’ordre des imports : il reproduit strictement la cascade V5.1.2. */
 @import url("./00-foundations.css");
 @import url("./10-components-live.css");

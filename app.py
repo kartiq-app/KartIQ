@@ -1,15 +1,12 @@
 from copy import deepcopy
 from datetime import datetime
-from pathlib import Path
 import json
 import re
 import io
 import zipfile
-import socket
 import threading
 import time
 import webbrowser
-import unicodedata
 
 try:
     import websocket
@@ -23,35 +20,15 @@ from apex_grid import parse_grid_frame
 from apex_table import ApexTable
 from protocol_engine import ProtocolEngine
 from event_store import ApexEventStore
+from backend.config import APP_DIR, APP_RELEASE_NAME, APP_VERSION, load_circuits
+from backend.logging_tools import ApexLogManager
+from backend.network import local_ip
 
-APP_DIR = Path(__file__).resolve().parent
-APP_VERSION = "5.3.3"
-APP_RELEASE_NAME = "Cohérence des versions"
 app = Flask(__name__)
 
 APEX_TABLE = ApexTable()
 PROTOCOL_ENGINE = ProtocolEngine()
 EVENT_STORE = ApexEventStore(APP_DIR / "recordings")
-
-
-def _circuit_sort_key(circuit):
-    """Tri alphabétique stable, insensible aux accents et à la casse."""
-    name = str(circuit.get("name", ""))
-    return unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii").casefold()
-
-
-def load_circuits():
-    """Charge la base centralisée des circuits et garantit son ordre alphabétique."""
-    path = APP_DIR / "config" / "circuits.json"
-    try:
-        circuits = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(circuits, list):
-            raise ValueError("config/circuits.json doit contenir une liste")
-        circuits = [c for c in circuits if isinstance(c, dict) and c.get("id") and c.get("name")]
-        return sorted(circuits, key=_circuit_sort_key)
-    except Exception:
-        return [{"id": "circuit-de-leurope", "name": "Circuit de l'Europe", "live_url": "", "websocket_url": ""}]
-
 
 STATE = {
     "version": APP_VERSION,
@@ -103,50 +80,19 @@ LAST_LAP_MARKER = {}
 FOLLOWED_CROSSING_MARKER = {}
 PENALTY_FIRST_SEEN = {}
 
-LOG_DIR = APP_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
-LOG_FILE = LOG_DIR / "apex_live.log"
-TRAFFIC_IN_FILE = LOG_DIR / "apex_in.log"
-TRAFFIC_OUT_FILE = LOG_DIR / "apex_out.log"
-TRAFFIC_LOCK = threading.Lock()
-
-
-def local_ip():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        sock.connect(("8.8.8.8", 80))
-        return sock.getsockname()[0]
-    except Exception:
-        return "127.0.0.1"
-    finally:
-        sock.close()
+LOG_MANAGER = ApexLogManager(APP_DIR)
+LOG_FILE = LOG_MANAGER.live_file
+TRAFFIC_IN_FILE = LOG_MANAGER.traffic_in_file
+TRAFFIC_OUT_FILE = LOG_MANAGER.traffic_out_file
+TRAFFIC_LOCK = LOG_MANAGER.traffic_lock
 
 
 def write_live_log(message):
-    stamp = datetime.now().isoformat(timespec="milliseconds")
-    try:
-        with LOG_FILE.open("a", encoding="utf-8") as handle:
-            handle.write(f"[{stamp}] {message}\n")
-    except Exception:
-        pass
+    LOG_MANAGER.write_live(message)
 
 
 def write_traffic(direction, message):
-    """Enregistre une trame Apex brute lorsque la boîte noire est activée."""
-    if not STATE.get("traffic_recording"):
-        return
-    stamp = datetime.now().isoformat(timespec="milliseconds")
-    target = TRAFFIC_IN_FILE if direction == "IN" else TRAFFIC_OUT_FILE
-    if isinstance(message, bytes):
-        message = message.decode("utf-8", errors="replace")
-    text = str(message)
-    try:
-        with TRAFFIC_LOCK:
-            with target.open("a", encoding="utf-8") as handle:
-                handle.write(f"[{stamp}] {direction}\n{text}\n---\n")
-    except Exception as exc:
-        write_live_log(f"ERREUR ENREGISTREMENT TRAFIC {exc}")
-
+    LOG_MANAGER.write_traffic(direction, message, enabled=STATE.get("traffic_recording", False))
 
 def set_live_status(status, connection, error=None):
     with LIVE_LOCK:
@@ -903,9 +849,7 @@ def developer_settings():
     STATE["developer_mode"] = developer_mode
     if recording and not STATE.get("traffic_recording"):
         # Chaque démarrage produit une capture propre et facile à partager.
-        with TRAFFIC_LOCK:
-            TRAFFIC_IN_FILE.write_text("", encoding="utf-8")
-            TRAFFIC_OUT_FILE.write_text("", encoding="utf-8")
+        LOG_MANAGER.reset_traffic()
         STATE["traffic_recording_started_at"] = datetime.now().isoformat(timespec="seconds")
         write_live_log("Boîte noire Apex démarrée")
     elif not recording and STATE.get("traffic_recording"):

@@ -1,19 +1,19 @@
-# KartIQ V5.3.3 — Cohérence des versions
+# KartIQ V5.4.0 — Fondations backend modulaires
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
 
-## V5.3.3
+## V5.4.0
 
-Cette version réduit les risques d’oubli lors des futures mises à jour :
+Cette version commence le nettoyage interne du backend sans modifier le comportement de l'application :
 
-- la version applicative est définie une seule fois dans `app.py` avec `APP_VERSION` ;
-- le titre, le bandeau, la page d’accueil et les paramètres de cache des ressources HTML utilisent cette valeur via Jinja ;
-- `STATE["version"]` utilise la même constante ;
-- le message de démarrage utilise également cette source unique ;
-- ajout d’un `.gitignore` pour exclure les caches Python, journaux, captures et fichiers système ;
-- correction de l’intitulé V5.3.1 dans le changelog.
+- création du package `backend/` ;
+- centralisation de la version, du nom de release et du catalogue des circuits dans `backend/config.py` ;
+- centralisation des journaux Apex et de la boîte noire dans `backend/logging_tools.py` ;
+- déplacement de l'utilitaire d'adresse réseau dans `backend/network.py` ;
+- réduction des responsabilités techniques de `app.py` ;
+- routes, réponses JSON, connexion Apex et interface inchangées.
 
-Le cache PWA conserve sa propre clé explicite dans `static/sw.js`, car ce fichier est exécuté côté navigateur.
+La documentation détaillée se trouve dans `docs/BACKEND_FOUNDATIONS_V5_4_0.md`.
 
 ## Lancement local
 
@@ -25,7 +25,8 @@ KartIQ est ensuite disponible sur `http://127.0.0.1:8200`.
 
 ## Structure
 
-- `app.py` : serveur Flask et état de l’application ;
+- `app.py` : serveur Flask, état métier, connexion Apex et routes ;
+- `backend/` : configuration, journaux et utilitaires techniques ;
 - `templates/index.html` : interface principale ;
 - `static/css/` : feuilles de style modulaires ;
 - `static/js/` : modules JavaScript par domaine ;
