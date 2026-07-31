@@ -1,3 +1,10 @@
+## V5.0.2 — Correctif sélection du circuit
+
+- Remplacement de la dépendance implicite à `window.circuitSelect` par une référence DOM explicite.
+- Branchement explicite de l’événement `change` sur le sélecteur de circuit.
+- Exposition de `changeCircuit` sur `window` pour conserver la compatibilité.
+- Mise à jour du cache PWA afin de forcer le chargement du correctif.
+
 ## V5.0.2 — Modularisation JavaScript
 
 - Découpage de `static/js/kartiq.js` en six fichiers thématiques chargés dans l’ordre historique.

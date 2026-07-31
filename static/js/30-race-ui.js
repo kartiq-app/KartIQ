@@ -1,3 +1,4 @@
+const circuitSelectElement=document.getElementById('circuitSelect');
 function endurancePitBadge(driver){
  const key=String(driver.apex_row??driver.driver??driver.pos);
  const current=driver.status||'unknown';
@@ -147,7 +148,7 @@ function renderDeveloperRecorder(){
 function render(){
  renderDeveloperRecorder();
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);circuitName.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
- const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelect.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}circuitSelect.value=state.circuit_id||'';
+ const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelectElement.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}circuitSelectElement.value=state.circuit_id||'';
  const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
  const showRankingKart=rankingHasKartColumn();
  document.querySelector('#qualification .qual-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);
@@ -169,8 +170,8 @@ function render(){
 }
 function reconnectLive(){connectApexBrowser(true)}
 async function changeCircuit(){
- if(!circuitSelect.value)return;
- const nextCircuitId=circuitSelect.value;
+ if(!circuitSelectElement?.value)return;
+ const nextCircuitId=circuitSelectElement.value;
  document.getElementById('homeCircuit')?.classList.remove('needs-selection');
  // Coupe d'abord l'ancienne piste afin qu'aucune trame tardive ne puisse être envoyée.
  closeApexBrowserSocket();
@@ -189,3 +190,6 @@ document.getElementById('iphonePreview').addEventListener('click',e=>{if(e.targe
 
 
 
+
+window.changeCircuit=changeCircuit;
+circuitSelectElement?.addEventListener('change',changeCircuit);
