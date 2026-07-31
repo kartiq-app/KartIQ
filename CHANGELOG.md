@@ -1,3 +1,12 @@
+## V5.0.1 — Foundation JavaScript
+
+- Extraction intégrale du JavaScript de `index.html` vers `static/js/kartiq.js`.
+- Fonctions, variables globales et ordre d’exécution conservés sans modification.
+- Aucun changement fonctionnel ou visuel attendu.
+- Ajout du fichier JavaScript au cache PWA.
+- Documentation d’architecture et de validation mise à jour.
+- Version interne, titre, accueil et message de lancement mis à jour en V5.0.1.
+
 ## V5.0.0 — Foundation CSS
 
 - Première étape de la refactorisation progressive de KartIQ.

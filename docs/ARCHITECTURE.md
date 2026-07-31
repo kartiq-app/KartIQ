@@ -1,8 +1,8 @@
-# Architecture KartIQ V5.0.0
+# Architecture KartIQ V5.0.1
 
 ## Objectif
 
-La V5.0.0 Foundation commence la modularisation sans modifier la logique métier ni l’interface attendue.
+La V5.0.1 Foundation poursuit la modularisation sans modifier la logique métier ni l’interface attendue.
 
 ## Arborescence actuelle
 
@@ -33,3 +33,10 @@ KartIQ/
 ## Prochaine étape recommandée
 
 Après validation visuelle et fonctionnelle, séparer progressivement le JavaScript par domaine sans réécrire les fonctions : connexion Apex, interface commune, Qualification, Sprint et Endurance.
+
+
+## JavaScript
+
+- `static/js/kartiq.js` contient l’intégralité du JavaScript précédemment intégré à `index.html`.
+- Les fonctions, variables globales et l’ordre d’exécution sont conservés à l’identique.
+- La modularisation par fonctionnalité sera réalisée dans une étape ultérieure, après validation de cette extraction.

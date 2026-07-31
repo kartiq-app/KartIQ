@@ -906,7 +906,7 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print("\nKartIQ V5.0.0 — Foundation CSS")
+    print("\nKartIQ V5.0.1 — Foundation JavaScript")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")
