@@ -1,8 +1,19 @@
-# KartIQ V5.5.3 — Correction de la grille iPhone en paysage
+# KartIQ V5.5.4 — Polish Temps/Tours smartphone paysage
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
 
 
+
+## V5.5.4
+
+Amélioration visuelle ciblée sur les smartphones en orientation paysage, dans les modes Qualification et Sprint :
+
+- suppression du filet horizontal au milieu de la case Temps/Tours ;
+- augmentation de 30 % de la taille du temps restant et du nombre de tours ;
+- aucune modification des libellés ;
+- aucun changement sur Desktop, portrait, Focus ou Endurance.
+
+Le détail se trouve dans `docs/SMARTPHONE_LANDSCAPE_CLOCK_POLISH_V5_5_4.md`.
 
 ## V5.5.3
 

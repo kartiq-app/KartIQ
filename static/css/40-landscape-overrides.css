@@ -957,3 +957,18 @@ body.current-sprint .position-cell{
     box-sizing:border-box!important;
   }
 }
+
+/* KartIQ V5.5.4 — finition de la case Temps/Tours sur smartphone en paysage.
+   Le filet central est supprimé et seules les valeurs sont agrandies de 30 %.
+   Le Desktop reste inchangé grâce au ciblage des écrans tactiles de faible largeur. */
+@media (orientation:landscape) and (max-width:950px) and (hover:none) and (pointer:coarse){
+  body.current-qualification .landscape-session-clock > .landscape-clock-value,
+  body.current-sprint .landscape-session-clock > .landscape-clock-value{
+    font-size:23.4px!important;
+  }
+
+  body.current-qualification .landscape-session-clock > .landscape-clock-value:last-child,
+  body.current-sprint .landscape-session-clock > .landscape-clock-value:last-child{
+    border-top:0!important;
+  }
+}

@@ -1,3 +1,12 @@
+## V5.5.4 — Polish Temps/Tours smartphone paysage
+
+- Suppression du filet horizontal qui traversait visuellement la case Temps/Tours sur smartphone en paysage.
+- Augmentation de 30 % de la taille des seules valeurs du temps restant et du nombre de tours.
+- Ciblage limité aux écrans tactiles de largeur inférieure ou égale à 950 px en orientation paysage.
+- Aucun changement sur Desktop, portrait, Focus ou Endurance.
+- Cache PWA et version synchronisés en V5.5.4.
+- Ajout de `docs/SMARTPHONE_LANDSCAPE_CLOCK_POLISH_V5_5_4.md`.
+
 ## V5.5.3 — Correction de la grille iPhone en paysage
 
 - Correction du débordement horizontal de la première ligne sur les iPhone en paysage.
