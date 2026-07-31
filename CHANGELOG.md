@@ -1,3 +1,14 @@
+## V5.5.0 — Audit qualité & certification
+
+- Audit statique reproductible du Python, JavaScript, JSON, CSS et cache PWA.
+- Ajout de `scripts/quality_check.py`, sans dépendance externe.
+- Ajout de tests unitaires ciblés pour `RaceStateService`.
+- Suppression de l’import `time` inutilisé dans `app.py`.
+- Suppression des caches Python et fichiers compilés de l’archive GitHub.
+- Synchronisation de la version, des en-têtes CSS, du README et du cache PWA.
+- Ajout du rapport `docs/QUALITY_AUDIT_V5_5_0.md`.
+- Aucun changement visuel, métier, API ou protocole Apex attendu.
+
 ## V5.4.1 — Modularisation métier du backend
 
 - Création de `backend/services/race_state.py`.

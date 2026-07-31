@@ -5,7 +5,6 @@ import re
 import io
 import zipfile
 import threading
-import time
 import webbrowser
 
 try:

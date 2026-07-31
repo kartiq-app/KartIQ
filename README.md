@@ -1,20 +1,20 @@
-# KartIQ V5.4.1 — Modularisation métier du backend
+# KartIQ V5.5.0 — Audit qualité & certification
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
 
-## V5.4.1
+## V5.5.0
 
-Cette version extrait de `app.py` le cœur métier qui transforme les données Apex en état KartIQ :
+Cette version clôt la refactorisation V5 avec une validation technique reproductible :
 
-- création de `backend/services/race_state.py` ;
-- centralisation des historiques de tours et des marqueurs de passage ;
-- extraction des calculs Qualification, Sprint et Endurance ;
-- extraction de la construction du payload envoyé à l’interface ;
-- centralisation de la remise à zéro lors d’un changement de circuit ;
-- réduction de `app.py` de 904 à 558 lignes ;
-- conservation des mêmes routes, réponses JSON et comportements visibles.
+- audit Python, JavaScript, JSON, CSS et PWA ;
+- suppression d’un import Python devenu inutilisé ;
+- tests unitaires des conversions fondamentales du service métier ;
+- ajout de `scripts/quality_check.py` ;
+- nettoyage des fichiers générés de l’archive GitHub ;
+- synchronisation de la version et du cache PWA ;
+- aucun changement visuel ou métier attendu.
 
-La documentation détaillée se trouve dans `docs/BACKEND_BUSINESS_V5_4_1.md`.
+Le rapport complet se trouve dans `docs/QUALITY_AUDIT_V5_5_0.md`.
 
 ## Lancement local
 
@@ -23,6 +23,15 @@ python3 app.py
 ```
 
 KartIQ est ensuite disponible sur `http://127.0.0.1:8200`.
+
+## Validation technique
+
+```bash
+python3 scripts/quality_check.py
+python3 -m unittest discover -s tests -v
+```
+
+Le contrôle JavaScript est effectué automatiquement lorsque Node.js est installé.
 
 ## Structure
 
@@ -36,4 +45,6 @@ KartIQ est ensuite disponible sur `http://127.0.0.1:8200`.
 - `static/js/` : modules JavaScript par domaine ;
 - `static/sw.js` : service worker PWA ;
 - `config/circuits.json` : catalogue des circuits ;
+- `scripts/quality_check.py` : validation statique du dépôt ;
+- `tests/` : tests unitaires sans réseau ;
 - `docs/` : documentation technique et historique des refactorisations.
