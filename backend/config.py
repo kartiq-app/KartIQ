@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "5.4.0"
-APP_RELEASE_NAME = "Fondations backend modulaires"
+APP_VERSION = "5.4.1"
+APP_RELEASE_NAME = "Modularisation métier du backend"
 
 
 def _circuit_sort_key(circuit):

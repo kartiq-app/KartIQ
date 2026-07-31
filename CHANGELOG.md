@@ -1,3 +1,14 @@
+## V5.4.1 — Modularisation métier du backend
+
+- Création de `backend/services/race_state.py`.
+- Extraction de la synchronisation du modèle Apex vers l’état KartIQ.
+- Centralisation des historiques de tours, performances personnelles, passages Qualification et pénalités courantes.
+- Extraction des calculs Qualification, Sprint, Endurance et du payload de l’API `/api/state`.
+- Centralisation de la remise à zéro métier lors d’un changement de circuit.
+- Réduction de `app.py` de 904 à 558 lignes.
+- Conservation des routes, formats JSON, connexions Apex et comportements visibles.
+- Mise à jour de la version, du cache PWA, du README et de la documentation.
+
 ## V5.4.0 — Fondations backend modulaires
 
 - Création du package Python `backend/`.

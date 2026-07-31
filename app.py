@@ -23,6 +23,7 @@ from event_store import ApexEventStore
 from backend.config import APP_DIR, APP_RELEASE_NAME, APP_VERSION, load_circuits
 from backend.logging_tools import ApexLogManager
 from backend.network import local_ip
+from backend.services.race_state import RaceStateService
 
 app = Flask(__name__)
 
@@ -66,19 +67,14 @@ STATE = {
 }
 
 
+RACE_STATE = RaceStateService(STATE)
+
 
 LIVE_LOCK = threading.Lock()
 LIVE_THREAD = None
 LIVE_STOP = threading.Event()
 LIVE_WS = None
 
-# Historique local des tours par pilote/équipe pour calculer le rythme réel sur 5 tours.
-LAP_HISTORY = {}
-LAP_RESULTS_BY_NUMBER = {}
-LAST_LAP_PERFORMANCE = {}
-LAST_LAP_MARKER = {}
-FOLLOWED_CROSSING_MARKER = {}
-PENALTY_FIRST_SEEN = {}
 
 LOG_MANAGER = ApexLogManager(APP_DIR)
 LOG_FILE = LOG_MANAGER.live_file
@@ -243,331 +239,23 @@ def live_worker(circuit):
 
 
 def time_to_seconds(value):
-    try:
-        mins, secs = value.split(":")
-        return int(mins) * 60 + float(secs)
-    except Exception:
-        return 9999.0
-
-
-def format_lap_seconds(seconds):
-    if seconds is None or seconds >= 9999:
-        return "—"
-    minutes = int(seconds // 60)
-    remaining = seconds - minutes * 60
-    return f"{minutes}:{remaining:06.3f}" if minutes else f"{remaining:.3f}"
+    return RACE_STATE.time_to_seconds(value)
 
 
 def fmt_delta(seconds):
-    if abs(seconds) < 0.0005:
-        return "0.000 s"
-    return f"{seconds:+.3f} s"
+    return RACE_STATE.fmt_delta(seconds)
 
 
 def driver_by_name(name):
-    return next((d for d in STATE["drivers"] if d["driver"] == name), None)
-
-
-def _format_remaining(ms):
-    if ms is None:
-        return "—"
-    total = max(0, int(ms // 1000))
-    hours, rem = divmod(total, 3600)
-    minutes, seconds = divmod(rem, 60)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}" if hours else f"{minutes:02d}:{seconds:02d}"
+    return RACE_STATE.driver_by_name(name)
 
 
 def sync_state_from_race(snapshot, interpreted_events=None):
-    """Injecte le modèle unifié Apex dans l'interface moderne KartIQ."""
-    previous_drivers = {d.get("driver"): d for d in STATE.get("drivers", [])}
-    rows = snapshot.get("rows", [])
-    live_drivers = []
-    for row in rows:
-        name = (row.get("name") or "").strip()
-        position = row.get("position")
-        if not name and position is None:
-            continue
-        best = row.get("best_lap") or "—"
-        last = row.get("last_lap") or "—"
-        driver_name = name or f"Ligne Apex {row.get('row', '?')}"
-        history_key = str(row.get("row") if row.get("row") is not None else driver_name)
-        lap_number = row.get("laps") if row.get("laps") is not None else 0
-        lap_seconds = time_to_seconds(last)
-        marker = (lap_number, last)
-        # Une valeur de dernier tour n'est ajoutée qu'une fois, au passage d'un nouveau tour.
-        if lap_seconds < 9999 and LAST_LAP_MARKER.get(history_key) != marker:
-            previous_laps = list(LAP_HISTORY.get(history_key, []))
-            previous_best_seconds = min(previous_laps) if previous_laps else None
-            improved_personal_best = (
-                previous_best_seconds is None
-                or lap_seconds < previous_best_seconds - 0.0005
-            )
-            LAST_LAP_PERFORMANCE[history_key] = {
-                "marker": marker,
-                "improved_personal_best": improved_personal_best,
-                "previous_best_seconds": previous_best_seconds,
-            }
-            LAP_HISTORY.setdefault(history_key, []).append(lap_seconds)
-            LAP_HISTORY[history_key] = LAP_HISTORY[history_key][-20:]
-            # Mémorise le chrono avec le numéro du tour afin que le cartouche Sprint
-            # affiche le meilleur pilote du dernier tour réellement terminé, sans
-            # mélanger des chronos provenant de tours différents.
-            if isinstance(lap_number, int) and lap_number > 0:
-                LAP_RESULTS_BY_NUMBER.setdefault(lap_number, {})[history_key] = {
-                    "driver": driver_name,
-                    "lap": last,
-                    "seconds": lap_seconds,
-                }
-                # Limite l'historique aux 10 derniers numéros de tour.
-                for old_lap in sorted(LAP_RESULTS_BY_NUMBER)[:-10]:
-                    LAP_RESULTS_BY_NUMBER.pop(old_lap, None)
-            LAST_LAP_MARKER[history_key] = marker
-        recent_five = LAP_HISTORY.get(history_key, [])[-5:]
-        pace5_seconds = sum(recent_five) / len(recent_five) if recent_five else None
-        pace5 = format_lap_seconds(pace5_seconds) if pace5_seconds is not None else "—"
-        live_drivers.append({
-            "pos": position if position is not None else 999,
-            "driver": driver_name,
-            "apex": row.get("kart") if row.get("kart") is not None else "—",
-            "laps": lap_number,
-            "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else "—",
-            "penalty": row.get("penalty") or "",
-            "last": last,
-            "best": best,
-            "gap": row.get("gap") or "—",
-            "interval": row.get("interval") or "—",
-            "pace5": pace5,
-            "pace5_laps": len(recent_five),
-            "status": row.get("status", "unknown"),
-            "apex_row": row.get("row"),
-            "last_improved_personal_best": bool(
-                LAST_LAP_PERFORMANCE.get(history_key, {}).get("marker") == marker
-                and LAST_LAP_PERFORMANCE.get(history_key, {}).get("improved_personal_best")
-            ),
-        })
-    live_drivers.sort(key=lambda d: (d["pos"] == 999, d["pos"]))
-    if live_drivers:
-        STATE["drivers"] = live_drivers
-
-        # Pénalités Apex : logique stable de la V4.3.3.
-        # On affiche l'état courant de la colonne « Péna. » sans construire
-        # d'historique, ce qui évite les doublons pilote/équipe.
-        no_penalty_values = {"", "-", "—", "0", "0 s", "0 sec", "aucune", "aucune pénalité", "none", "no"}
-        apex_penalties = []
-        active_penalty_keys = set()
-        for driver in live_drivers:
-            raw_penalty = str(driver.get("penalty") or "").strip()
-            if raw_penalty.lower() not in no_penalty_values:
-                display_name = driver.get("driver") or "—"
-                penalty_key = (display_name, raw_penalty)
-                active_penalty_keys.add(penalty_key)
-                first_seen = PENALTY_FIRST_SEEN.setdefault(
-                    penalty_key,
-                    datetime.now().isoformat(timespec="seconds"),
-                )
-                apex_penalties.append({
-                    "driver": display_name,
-                    "penalty": raw_penalty,
-                    "at": first_seen,
-                    "time": first_seen[11:16],
-                })
-        # Une pénalité disparue de la colonne Apex est retirée de l'état courant.
-        for penalty_key in list(PENALTY_FIRST_SEEN):
-            if penalty_key not in active_penalty_keys:
-                PENALTY_FIRST_SEEN.pop(penalty_key, None)
-        apex_penalties.sort(key=lambda item: item.get("at", ""), reverse=True)
-        STATE["penalties"] = apex_penalties
-        # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.
-        # Mode LOCK : après un clic, on conserve impérativement le même pilote,
-        # même si une trame Apex intermédiaire ne contient pas sa ligne.
-        if not STATE.get("followed_locked"):
-            STATE["followed_driver"] = live_drivers[0]["driver"]
-
-        followed_name = STATE.get("followed_driver")
-        followed_live = next((d for d in live_drivers if d.get("driver") == followed_name), None)
-        if followed_live:
-            STATE["followed_snapshot"] = deepcopy(followed_live)
-        valid_best = [d for d in live_drivers if time_to_seconds(d["best"]) < 9999]
-        if valid_best:
-            leader = min(valid_best, key=lambda d: time_to_seconds(d["best"]))
-            STATE["session_best"] = {"driver": leader["driver"], "lap": leader["best"]}
-        # Sprint : meilleur chrono du tour précédent. Apex met les lignes à jour
-        # au fil des passages ; comparer simplement la colonne « dernier tour »
-        # mélange donc parfois plusieurs numéros de tour. On privilégie ici le
-        # dernier numéro de tour entièrement dépassé par le leader.
-        lap_numbers = [d.get("laps") for d in live_drivers if isinstance(d.get("laps"), int)]
-        target_lap = max(lap_numbers) - 1 if lap_numbers and max(lap_numbers) > 1 else None
-        lap_results = list(LAP_RESULTS_BY_NUMBER.get(target_lap, {}).values()) if target_lap else []
-        if lap_results:
-            fastest = min(lap_results, key=lambda item: item["seconds"])
-            STATE["fastest_last_lap"] = {"driver": fastest["driver"], "lap": fastest["lap"]}
-        else:
-            # Repli utile au démarrage de séance, avant qu'un tour complet soit disponible.
-            valid_last = [d for d in live_drivers if time_to_seconds(d["last"]) < 9999]
-            if valid_last:
-                fastest = min(valid_last, key=lambda d: time_to_seconds(d["last"]))
-                STATE["fastest_last_lap"] = {"driver": fastest["driver"], "lap": fastest["last"]}
-
-        # En qualification, le popup est lié au pilote choisi par l'utilisateur.
-        # Son marqueur courant est mémorisé au clic, puis le prochain changement
-        # (nombre de tours ou dernier chrono) correspond à un passage sur la ligne.
-        followed_name = STATE.get("followed_driver")
-        followed_now = next((d for d in live_drivers if d.get("driver") == followed_name), None)
-        if STATE.get("mode") == "qualification" and followed_now:
-            new_marker = (followed_now.get("laps"), followed_now.get("last"))
-            old_marker = FOLLOWED_CROSSING_MARKER.get(followed_name)
-            if old_marker is None:
-                FOLLOWED_CROSSING_MARKER[followed_name] = new_marker
-            elif new_marker != old_marker:
-                FOLLOWED_CROSSING_MARKER[followed_name] = new_marker
-                if time_to_seconds(followed_now.get("last")) < 9999:
-                    # Le popup compare le tour qui vient d'être réalisé aux meilleurs
-                    # temps absolus de la session.
-                    ranking = sorted(valid_best, key=lambda d: time_to_seconds(d["best"]))
-                    leader = ranking[0] if ranking else None
-                    second = ranking[1] if len(ranking) > 1 else None
-                    last_sec = time_to_seconds(followed_now["last"])
-                    leader_sec = time_to_seconds(leader["best"]) if leader else 9999
-
-                    # Cas P1 : le tour franchi est bien le nouveau meilleur temps
-                    # absolu. On affiche alors l'avance sur le deuxième pilote.
-                    is_new_session_best = bool(
-                        leader
-                        and leader.get("driver") == followed_name
-                        and abs(last_sec - leader_sec) < 0.0005
-                    )
-                    if is_new_session_best and second:
-                        reference_driver = second.get("driver") or "—"
-                        delta_value = last_sec - time_to_seconds(second.get("best"))
-                    elif is_new_session_best:
-                        reference_driver = "—"
-                        delta_value = 0.0
-                    else:
-                        reference_driver = leader.get("driver") if leader else "—"
-                        delta_value = last_sec - leader_sec if leader else 0.0
-
-                    STATE["qualif_crossing"] = {
-                        "event_id": datetime.now().isoformat(timespec="milliseconds"),
-                        "position": followed_now["pos"],
-                        "delta": fmt_delta(delta_value),
-                        "reference_driver": reference_driver,
-                        "is_session_best": is_new_session_best,
-                    }
-
-    session = snapshot.get("session", {})
-    end_at_ms = session.get("remaining_end_at_ms")
-    current_remaining_ms = None
-    if end_at_ms is not None:
-        try:
-            current_remaining_ms = max(0, int(end_at_ms) - int(time.time() * 1000))
-        except (TypeError, ValueError):
-            current_remaining_ms = None
-    if current_remaining_ms is None:
-        current_remaining_ms = session.get("remaining_ms")
-    STATE["time_remaining"] = _format_remaining(current_remaining_ms)
-    STATE["time_remaining_ms"] = current_remaining_ms
-    STATE["time_remaining_updated_at_ms"] = int(time.time() * 1000) if current_remaining_ms is not None else None
-    STATE["time_remaining_end_at_ms"] = end_at_ms
-
-    # Apex ne fournit pas toujours un objectif de tours. Lorsque ce total est
-    # disponible, on affiche les tours restants ; sinon on affiche le nombre de
-    # tours actuellement couverts par le leader, afin de ne jamais inventer une
-    # valeur de tours restants.
-    leader_laps = max(
-        (int(d.get("laps") or 0) for d in live_drivers if str(d.get("laps") or "").isdigit()),
-        default=0,
-    )
-    session_total_laps = session.get("total_laps") or STATE.get("total_laps") or 0
-    try:
-        session_total_laps = int(session_total_laps)
-    except (TypeError, ValueError):
-        session_total_laps = 0
-    if session_total_laps > 0:
-        STATE["total_laps"] = session_total_laps
-        remaining_laps = max(0, session_total_laps - leader_laps)
-        STATE["apex_laps_remaining"] = f"{remaining_laps} TOUR" + ("S" if remaining_laps != 1 else "")
-    elif leader_laps > 0:
-        STATE["apex_laps_remaining"] = f"TOUR {leader_laps}"
-    else:
-        STATE["apex_laps_remaining"] = "—"
-
-    for event in interpreted_events or []:
-        if event.get("type") != "pit_in":
-            continue
-        row_id = event.get("row")
-        entrant = next((d for d in live_drivers if d.get("apex_row") == row_id), None)
-        if STATE.get("mode") == "endurance" and entrant and isinstance(entrant.get("pos"), int) and entrant["pos"] <= 8:
-            STATE["generic_alert"] = {
-                "event_id": event.get("at") or datetime.now().isoformat(timespec="milliseconds"),
-                "kind": "top8_pit_entry",
-                "title": "🚨 ALERTE",
-                "team": entrant["driver"],
-                "position": entrant["pos"],
-            }
+    return RACE_STATE.sync_state_from_race(snapshot, interpreted_events)
 
 
 def payload():
-    data = deepcopy(STATE)
-    data["circuits"] = load_circuits()
-    data["drivers"].sort(key=lambda d: d["pos"])
-    followed = next((d for d in data["drivers"] if d["driver"] == data["followed_driver"]), None)
-    # Certaines trames Apex sont partielles. Dans ce cas, ne jamais vider la ligne 1 :
-    # on garde le dernier instantané valide du pilote verrouillé jusqu'à son retour.
-    if followed is None and data.get("followed_locked"):
-        snapshot = data.get("followed_snapshot")
-        if snapshot and snapshot.get("driver") == data.get("followed_driver"):
-            followed = snapshot
-    data["followed"] = followed
-
-    top10_names = {d["driver"] for d in data["drivers"] if d["pos"] <= 10}
-    data["visible_penalties"] = [p for p in data["penalties"] if p["driver"] in top10_names]
-
-    if followed:
-        # Recalcule le meilleur absolu directement depuis le classement courant.
-        # Cela évite qu'une ancienne valeur de session_best reste en cache au
-        # moment où l'utilisateur clique sur un nouveau pilote.
-        valid_best_drivers = [
-            d for d in data["drivers"]
-            if time_to_seconds(d.get("best")) < 9999
-        ]
-        if valid_best_drivers and time_to_seconds(followed.get("best")) < 9999:
-            absolute_best = min(
-                valid_best_drivers,
-                key=lambda d: time_to_seconds(d.get("best")),
-            )
-            session_best_sec = time_to_seconds(absolute_best.get("best"))
-            followed_best_sec = time_to_seconds(followed.get("best"))
-            data["session_best"] = {
-                "driver": absolute_best.get("driver"),
-                "lap": absolute_best.get("best"),
-            }
-            data["qualif_delta"] = fmt_delta(max(0.0, followed_best_sec - session_best_sec))
-        else:
-            data["qualif_delta"] = "--"
-        if followed["pos"] == 1:
-            p2 = next((d for d in data["drivers"] if d["pos"] == 2), None)
-            gap = p2["gap"].lstrip("+") if p2 else "--"
-            data["sprint_delta"] = {
-                "reference": "P2",
-                "display": f"+{gap}" if gap != "--" else "--",
-                "detail": "Leader sur P2",
-            }
-        else:
-            ahead = next((d for d in data["drivers"] if d["pos"] == followed["pos"] - 1), None)
-            data["sprint_delta"] = {
-                "reference": f"P{ahead['pos']}" if ahead else "--",
-                "display": followed["interval"] if ahead else "--",
-                "detail": f"Écart avec P{ahead['pos']}" if ahead else "--",
-            }
-    else:
-        data["qualif_delta"] = "--"
-        data["sprint_delta"] = {"reference": "--", "display": "--", "detail": "Pilote non trouvé"}
-
-    pace = sorted([d for d in data["drivers"] if time_to_seconds(d.get("pace5")) < 9999], key=lambda d: time_to_seconds(d["pace5"]))[:8]
-    for i, d in enumerate(pace, 1):
-        d["pace_rank"] = i
-    data["pace_top8"] = pace
-    return data
+    return RACE_STATE.payload()
 
 
 @app.get("/")
@@ -595,41 +283,7 @@ def reset_race_state_for_new_circuit(circuit_id):
     APEX_TABLE.reset()
     PROTOCOL_ENGINE.reset()
     EVENT_STORE.reset()
-    LAP_HISTORY.clear()
-    LAP_RESULTS_BY_NUMBER.clear()
-    LAST_LAP_PERFORMANCE.clear()
-    LAST_LAP_MARKER.clear()
-    FOLLOWED_CROSSING_MARKER.clear()
-
-    STATE.update({
-        "circuit_id": circuit_id,
-        "connection": "CONNEXION NAVIGATEUR…",
-        "followed_driver": "",
-        "followed_locked": False,
-        "followed_snapshot": None,
-        "time_remaining": "—",
-        "time_remaining_ms": None,
-        "time_remaining_updated_at_ms": None,
-        "time_remaining_end_at_ms": None,
-        "apex_laps_remaining": "—",
-        "total_laps": 0,
-        "session_best": {"driver": "—", "lap": "—"},
-        "fastest_last_lap": {"driver": "—", "lap": "—"},
-        "drivers": [],
-        "penalties": [],
-        "quick_change": [],
-        "qualif_crossing": None,
-        "generic_alert": None,
-    })
-    STATE["live"] = {
-        "status": "connecting",
-        "messages": 0,
-        "last_message_at": None,
-        "last_error": None,
-        "websocket_url": None,
-        "parsed_updates": 0,
-        "last_frame_preview": None,
-    }
+    RACE_STATE.reset_state(circuit_id)
 
 
 @app.post("/api/circuit")
@@ -650,7 +304,7 @@ def follow():
     STATE["followed_locked"] = True
     driver = driver_by_name(name)
     STATE["followed_snapshot"] = deepcopy(driver)
-    FOLLOWED_CROSSING_MARKER[name] = (driver.get("laps"), driver.get("last"))
+    RACE_STATE.followed_crossing_marker[name] = (driver.get("laps"), driver.get("last"))
     STATE["qualif_crossing"] = None
     return jsonify(ok=True)
 
