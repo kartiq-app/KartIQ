@@ -1,4 +1,4 @@
-# KartIQ V5.0.1 Foundation JavaScript
+# KartIQ V5.0.2 — Modularisation JavaScript
 
 Cette version inaugure la refactorisation progressive du projet. Le CSS est désormais externalisé dans `static/css/kartiq.css`, sans modification fonctionnelle attendue. Consultez `docs/ARCHITECTURE.md` et `docs/VALIDATION_V5.md`.
 
@@ -12,6 +12,18 @@ Cette version inaugure la refactorisation progressive du projet. Le CSS est dés
 - Les évolutions de navigation des pages Qualification et Sprint de la V4.5.3 sont conservées.
 
 
-## V5.0.1
+## V5.0.2
 
-Le JavaScript applicatif a été extrait de `index.html` vers `static/js/kartiq.js` sans modification de logique ni d’ordre d’exécution.
+Le fichier JavaScript unique a été découpé en six fichiers classiques, chargés dans le même ordre que le code d’origine :
+
+```text
+static/js/
+├── 00-core.js
+├── 10-sprint.js
+├── 20-qualification.js
+├── 30-race-ui.js
+├── 40-endurance-queues.js
+└── 50-pwa-bootstrap.js
+```
+
+Aucune fonction n’a été renommée ou réécrite dans cette version.

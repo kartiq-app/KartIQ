@@ -1,8 +1,8 @@
-# Architecture KartIQ V5.0.1
+# Architecture KartIQ V5.0.2
 
 ## Objectif
 
-La V5.0.1 Foundation poursuit la modularisation sans modifier la logique métier ni l’interface attendue.
+La V5.0.2 découpe le JavaScript en fichiers thématiques sans modifier la logique métier ni l’interface attendue.
 
 ## Arborescence actuelle
 
@@ -37,6 +37,11 @@ Après validation visuelle et fonctionnelle, séparer progressivement le JavaScr
 
 ## JavaScript
 
-- `static/js/kartiq.js` contient l’intégralité du JavaScript précédemment intégré à `index.html`.
+- `static/js/00-core.js` : état global, compte à rebours, connexion Apex et navigation.
+- `static/js/10-sprint.js` : mode Focus et calculs Sprint.
+- `static/js/20-qualification.js` : mode Focus et calculs Qualification.
+- `static/js/30-race-ui.js` : rendu commun, classements, suivi pilote et actions UI.
+- `static/js/40-endurance-queues.js` : gestion locale des files de karts.
+- `static/js/50-pwa-bootstrap.js` : plein écran, PWA et initialisation finale.
 - Les fonctions, variables globales et l’ordre d’exécution sont conservés à l’identique.
 - La modularisation par fonctionnalité sera réalisée dans une étape ultérieure, après validation de cette extraction.

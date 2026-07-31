@@ -1,3 +1,11 @@
+## V5.0.2 — Modularisation JavaScript
+
+- Découpage de `static/js/kartiq.js` en six fichiers thématiques chargés dans l’ordre historique.
+- Conservation exacte du code JavaScript et de son ordre d’exécution : aucune logique métier modifiée.
+- Modules créés : cœur/Apex, Sprint, Qualification, interface course, files Endurance et démarrage PWA.
+- Mise à jour de la version affichée, de la version interne et du cache PWA.
+- Préparation de la modularisation fonctionnelle plus fine sans introduire de modules ES.
+
 ## V5.0.1 — Foundation JavaScript
 
 ### Correctif de cohérence de version
