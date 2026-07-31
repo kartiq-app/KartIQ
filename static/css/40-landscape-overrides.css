@@ -972,3 +972,25 @@ body.current-sprint .position-cell{
     border-top:0!important;
   }
 }
+
+/* KartIQ V5.5.5 — Sprint responsive.
+   Smartphone paysage : valeurs Temps/Tours encore agrandies de 30 % et
+   suppression de la colonne Intervalle du classement général. */
+@media (orientation:landscape) and (max-width:950px) and (hover:none) and (pointer:coarse){
+  body.current-qualification .landscape-session-clock > .landscape-clock-value,
+  body.current-sprint .landscape-session-clock > .landscape-clock-value{
+    font-size:30.42px!important;
+  }
+
+  body.current-sprint #sprintHead th:last-child,
+  body.current-sprint #sprintTable td.ranking-interval{
+    display:none!important;
+  }
+
+  body.current-sprint .sprint-table-wrap table{
+    table-layout:fixed!important;
+    width:100%!important;
+  }
+  body.current-sprint #sprintTable td.ranking-driver-column{width:46%!important}
+  body.current-sprint #sprintTable td.ranking-last{width:28%!important}
+}

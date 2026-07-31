@@ -1,3 +1,12 @@
+## V5.5.5 — Classements Sprint responsive
+
+- Nouvelle augmentation de 30 % des valeurs Temps/Tours, uniquement sur smartphone en paysage.
+- Suppression de la colonne Intervalle dans le classement Sprint sur smartphone en paysage.
+- Alignement du classement Sprint portrait sur le classement Qualification portrait : POS, KART, PILOTE, DERNIER, MEILLEUR et ÉCART.
+- Aucun changement sur Desktop, Qualification portrait, Focus ou Endurance.
+- Cache PWA et version synchronisés en V5.5.5.
+- Ajout de `docs/SPRINT_RESPONSIVE_V5_5_5.md`.
+
 ## V5.5.4 — Polish Temps/Tours smartphone paysage
 
 - Suppression du filet horizontal qui traversait visuellement la case Temps/Tours sur smartphone en paysage.

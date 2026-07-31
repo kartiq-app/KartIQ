@@ -1,8 +1,14 @@
-# KartIQ V5.5.4 — Polish Temps/Tours smartphone paysage
+# KartIQ V5.5.5 — Classements Sprint responsive
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
 
+## V5.5.5
 
+- Smartphone paysage : taille des valeurs Temps/Tours augmentée à nouveau de 30 %, sans impact Desktop.
+- Sprint paysage smartphone : suppression de la colonne Intervalle du classement général.
+- Sprint portrait : mêmes informations et même structure que le classement Qualification portrait (POS, KART si disponible, PILOTE, DERNIER, MEILLEUR, ÉCART).
+
+Le détail se trouve dans `docs/SPRINT_RESPONSIVE_V5_5_5.md`.
 
 ## V5.5.4
 
