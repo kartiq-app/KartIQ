@@ -1,3 +1,11 @@
+## V5.2.1 — Synchronisation du meilleur dernier tour Sprint
+
+- La carte avec la flamme compare uniquement les pilotes ayant parcouru exactement le même nombre de tours que le pilote suivi.
+- Le pilote et le chrono affichés appartiennent donc au même tour de course que le pilote suivi.
+- La même règle est appliquée au mode Focus Sprint.
+- Conservation de la couleur verte, sauf si le chrono correspond au meilleur temps absolu de la session.
+- Mise à jour de la version et du cache PWA.
+
 ## V5.2.0 — Modularisation CSS
 
 - Découpage de `static/css/kartiq.css` en six feuilles de style ordonnées.

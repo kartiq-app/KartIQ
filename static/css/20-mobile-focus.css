@@ -1,4 +1,4 @@
-/* KartIQ V5.2.0 — PWA mobile, plein écran, desktop et mode Focus Qualification.
+/* KartIQ V5.2.1 — PWA mobile, plein écran, desktop et mode Focus Qualification.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
 /* KartIQ V4.2.7 — interface mobile et plein écran */
 .fullscreen-btn{border:1px solid var(--line);background:#151b26;color:#fff;width:42px;height:42px;border-radius:10px;font-size:23px;line-height:1;cursor:pointer;font-weight:900;display:inline-flex;align-items:center;justify-content:center}.fullscreen-btn:hover,.fullscreen-btn.active{border-color:var(--yellow);color:var(--yellow)}

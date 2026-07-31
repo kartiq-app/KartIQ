@@ -31,6 +31,17 @@ function lapSeconds(value){
 }
 function frenchOrdinal(rank){return rank===1?`${rank}ᵉʳ`:`${rank}ᵉ`}
 function frenchOrdinalMarkup(rank){return `<span class="rank-number">${frenchOrdinal(rank)}</span><span class="rank-label">TEMPS</span>`}
+
+function sprintFastestLastLapForFollowed(followed=state.followed){
+ const followedLaps=Number(followed?.laps);
+ if(!Number.isFinite(followedLaps))return null;
+ const candidates=(state.drivers||[])
+  .filter(d=>Number(d?.laps)===followedLaps)
+  .map(d=>({...d,_lastSec:lapSeconds(d.last)}))
+  .filter(d=>Number.isFinite(d._lastSec))
+  .sort((a,b)=>a._lastSec-b._lastSec);
+ return candidates[0]||null;
+}
 function sprintLastLapRanking(driver){
  const valid=(state.drivers||[]).map(d=>({...d,_lastSec:lapSeconds(d.last)})).filter(d=>Number.isFinite(d._lastSec)).sort((a,b)=>a._lastSec-b._lastSec);
  const target=valid.find(d=>d.driver===driver?.driver);if(!target)return null;
@@ -41,7 +52,7 @@ function renderSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay?.classList.contains('show'))return;
  const f=state.followed||{};sprintFocusPosition.textContent=f.pos?'P'+f.pos:'—';sprintFocusName.textContent=f.driver||state.followed_driver||'—';
  const lastRank=sprintLastLapRanking(f);sprintFocusLastRank.innerHTML=lastRank?frenchOrdinalMarkup(lastRank.rank):'—';
- const fastest=state.fastest_last_lap||{};const fastestFallback=(state.drivers||[]).filter(d=>Number.isFinite(lapSeconds(d.last))).sort((a,b)=>lapSeconds(a.last)-lapSeconds(b.last))[0]||{};const fastestDriver=fastest.driver&&fastest.driver!=='—'?fastest.driver:(fastestFallback.driver||'—');const fastestLap=fastest.lap&&fastest.lap!=='—'?fastest.lap:(fastestFallback.last||'—');sprintFocusFastestLast.innerHTML=`🔥 ${fastestDriver} <span class="sprint-focus-fastest-last-time">${fastestLap}</span>`;
+ const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';sprintFocusFastestLast.innerHTML=`🔥 ${fastestDriver} <span class="sprint-focus-fastest-last-time">${fastestLap}</span>`;
  const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(sprintDriverBehind(f));
  sprintFocusAhead.textContent=focusAhead;sprintFocusBehind.textContent=focusBehind;
  // P1 : uniquement l'écart vert avec P2. Dernier : uniquement l'écart orange avec le pilote devant.
