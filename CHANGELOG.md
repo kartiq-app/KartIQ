@@ -1,6 +1,14 @@
-# KartIQ V6.0.5
+# KartIQ V6.0.6
 
-## V6.0.5 — Endurance clone strict de Qualification
+## V6.0.6 — Trois filets Endurance orange
+
+- Dans le mode Endurance uniquement, les deux filets horizontaux hérités de `#E10600` passent à `#FF8A00`.
+- Le filet vertical de la case Position passe également à `#FF8A00`.
+- Les séparateurs gris restent inchangés.
+- Qualification, Sprint, Analyzer et le Focus ne sont pas modifiés.
+
+
+## V6.0.6 — Endurance clone strict de Qualification
 
 - Le mode Endurance affiche directement la page Qualification.
 - Les informations, mises en page, couleurs, filets et comportements sont identiques en desktop, portrait, paysage et Focus.

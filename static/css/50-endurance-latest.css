@@ -131,12 +131,21 @@ body.current-sprint .fastest-last-time.fastest-session-best{color:var(--purple)!
 .sprint-focus-fastest-last-time.fastest-session-best{color:var(--purple)!important}
 
 
-/* KartIQ V6.0.2 — ordre de l'accueil et identité orange Endurance */
-body.current-endurance{--accent:#ff8a00!important}
-body.current-endurance #endurance .qual-strip{border-top-color:#ff8a00!important}
-body.current-endurance #endurance .position-cell{box-shadow:inset 6px 0 #ff8a00!important}
-body.current-endurance #endurance .qual-table-wrap thead th{border-bottom-color:#ff8a00!important}
-body.current-endurance #qualificationFocus .qual-focus-header i{background:#ff8a00!important}
+/* KartIQ V6.0.6 — accents orange strictement limités à la page Endurance.
+   Qualification reste le modèle visuel et fonctionnel. Seuls les trois filets
+   hérités du rouge #E10600 passent en orange #FF8A00 :
+   - filet horizontal supérieur ;
+   - filet horizontal au-dessus du classement ;
+   - filet vertical de la case Position. */
+body[data-app-mode="endurance"] #qualification .qual-strip{
+  border-top-color:#FF8A00!important;
+}
+body[data-app-mode="endurance"] #qualification .qual-table-wrap{
+  border-top-color:#FF8A00!important;
+}
+body[data-app-mode="endurance"] #qualification .position-cell{
+  box-shadow:inset 6px 0 #FF8A00!important;
+}
 
 @media (max-width:760px) and (orientation:portrait){
   .race-mode-cards{grid-template-columns:1fr!important}
