@@ -1,4 +1,4 @@
-/* KartIQ V5.2.1 — Endurance, Quick Change et derniers correctifs.
+/* KartIQ V5.2.2 — Endurance, Quick Change et derniers correctifs.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
 /* KartIQ V4.9.0 — gestion visuelle des files de karts en Endurance */
 .endurance-queue-panel{grid-column:1/-1;min-width:0;padding:14px 16px 16px;border:1px solid #29384d;border-radius:12px;background:linear-gradient(180deg,#101722,#0a0f17);box-shadow:0 0 0 1px rgba(43,139,255,.08) inset}
@@ -123,5 +123,9 @@ body:not(.preview-embedded).current-endurance .endurance-queue-panel{margin-bott
 
 /* KartIQ V5.1.2 — Couleur du meilleur dernier tour Sprint
    Vert par défaut ; violet uniquement s'il égale le meilleur temps absolu de la session. */
+body.current-sprint .fastest-last-time.fastest-lap-orange{color:var(--orange)!important}
 body.current-sprint .fastest-last-time.fastest-lap-green{color:var(--green)!important}
 body.current-sprint .fastest-last-time.fastest-session-best{color:var(--purple)!important}
+.sprint-focus-fastest-last-time.fastest-lap-orange{color:var(--orange)!important}
+.sprint-focus-fastest-last-time.fastest-lap-green{color:var(--green)!important}
+.sprint-focus-fastest-last-time.fastest-session-best{color:var(--purple)!important}

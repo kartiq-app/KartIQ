@@ -52,7 +52,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "5.2.1",
+    "version": "5.2.2",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",
@@ -96,6 +96,7 @@ LIVE_WS = None
 # Historique local des tours par pilote/équipe pour calculer le rythme réel sur 5 tours.
 LAP_HISTORY = {}
 LAP_RESULTS_BY_NUMBER = {}
+LAST_LAP_PERFORMANCE = {}
 LAST_LAP_MARKER = {}
 FOLLOWED_CROSSING_MARKER = {}
 PENALTY_FIRST_SEEN = {}
@@ -347,6 +348,17 @@ def sync_state_from_race(snapshot, interpreted_events=None):
         marker = (lap_number, last)
         # Une valeur de dernier tour n'est ajoutée qu'une fois, au passage d'un nouveau tour.
         if lap_seconds < 9999 and LAST_LAP_MARKER.get(history_key) != marker:
+            previous_laps = list(LAP_HISTORY.get(history_key, []))
+            previous_best_seconds = min(previous_laps) if previous_laps else None
+            improved_personal_best = (
+                previous_best_seconds is None
+                or lap_seconds < previous_best_seconds - 0.0005
+            )
+            LAST_LAP_PERFORMANCE[history_key] = {
+                "marker": marker,
+                "improved_personal_best": improved_personal_best,
+                "previous_best_seconds": previous_best_seconds,
+            }
             LAP_HISTORY.setdefault(history_key, []).append(lap_seconds)
             LAP_HISTORY[history_key] = LAP_HISTORY[history_key][-20:]
             # Mémorise le chrono avec le numéro du tour afin que le cartouche Sprint
@@ -380,6 +392,10 @@ def sync_state_from_race(snapshot, interpreted_events=None):
             "pace5_laps": len(recent_five),
             "status": row.get("status", "unknown"),
             "apex_row": row.get("row"),
+            "last_improved_personal_best": bool(
+                LAST_LAP_PERFORMANCE.get(history_key, {}).get("marker") == marker
+                and LAST_LAP_PERFORMANCE.get(history_key, {}).get("improved_personal_best")
+            ),
         })
     live_drivers.sort(key=lambda d: (d["pos"] == 999, d["pos"]))
     if live_drivers:
@@ -633,6 +649,7 @@ def reset_race_state_for_new_circuit(circuit_id):
     EVENT_STORE.reset()
     LAP_HISTORY.clear()
     LAP_RESULTS_BY_NUMBER.clear()
+    LAST_LAP_PERFORMANCE.clear()
     LAST_LAP_MARKER.clear()
     FOLLOWED_CROSSING_MARKER.clear()
 
@@ -932,7 +949,7 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print("\nKartIQ V5.2.1 — Modularisation CSS")
+    print("\nKartIQ V5.2.2 — Couleurs du meilleur dernier tour Sprint")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")

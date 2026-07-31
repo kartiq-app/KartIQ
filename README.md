@@ -1,4 +1,4 @@
-# KartIQ V5.2.1 — Modularisation CSS
+# KartIQ V5.2.2 — Modularisation CSS
 
 Cette version inaugure la refactorisation progressive du projet. Le CSS est désormais externalisé et découpé en modules séquentiels chargés par `static/css/kartiq.css`, sans modification fonctionnelle attendue. Consultez `docs/ARCHITECTURE.md` et `docs/VALIDATION_V5.md`.
 
@@ -12,7 +12,9 @@ Cette version inaugure la refactorisation progressive du projet. Le CSS est dés
 - Les évolutions de navigation des pages Qualification et Sprint de la V4.5.3 sont conservées.
 
 
-## V5.2.1
+## V5.2.2
+
+La case 🔥 du mode Sprint utilise désormais trois couleurs : orange sans amélioration personnelle, vert en cas de nouveau meilleur temps personnel et violet pour le meilleur temps absolu de la session.
 
 Cette version organise le JavaScript par domaines fonctionnels (`core`, `sprint`, `qualification`, `ui`, `endurance`) sans modifier la logique métier ni l’interface.
 

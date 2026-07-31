@@ -1,4 +1,4 @@
-/* KartIQ V5.2.1 — Fondations, composants initiaux et historique V1–V2.7.
+/* KartIQ V5.2.2 — Fondations, composants initiaux et historique V1–V2.7.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
 :root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}

@@ -1,4 +1,13 @@
-## V5.2.1 — Synchronisation du meilleur dernier tour Sprint
+## V5.2.2 — Couleurs du meilleur dernier tour Sprint
+
+- Dans la case avec la flamme, le chrono est orange lorsque le pilote n'améliore pas son meilleur temps personnel précédent.
+- Le chrono devient vert lorsque le pilote améliore son meilleur temps personnel précédent.
+- Le violet reste prioritaire lorsque le chrono correspond au meilleur temps absolu de la session.
+- La même logique est appliquée au mode Sprint classique et au mode Focus Sprint.
+- Le premier tour valide d'un pilote est considéré comme une amélioration personnelle.
+- Mise à jour de la version et du cache PWA.
+
+## V5.2.2 — Synchronisation du meilleur dernier tour Sprint
 
 - La carte avec la flamme compare uniquement les pilotes ayant parcouru exactement le même nombre de tours que le pilote suivi.
 - Le pilote et le chrono affichés appartiennent donc au même tour de course que le pilote suivi.
