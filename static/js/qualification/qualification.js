@@ -11,11 +11,6 @@ async function openQualificationFocus(){
  try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
  try{if('wakeLock' in navigator)qualificationFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
-async function openEnduranceFocus(){
- qualificationFocusSourceMode='endurance';
- const title=document.querySelector('#qualificationFocus .qual-focus-header span');if(title)title.textContent='Endurance';
- const overlay=document.getElementById('qualificationFocus');if(!overlay)return;overlay.classList.add('show');document.body.classList.add('qualification-focus-active');renderQualificationFocus();try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}try{if('wakeLock' in navigator)qualificationFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
-}
 async function closeQualificationFocus(){
  document.getElementById('qualificationFocus')?.classList.remove('show');
  document.body.classList.remove('qualification-focus-active');

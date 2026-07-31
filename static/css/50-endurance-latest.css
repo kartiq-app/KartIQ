@@ -166,3 +166,8 @@ body[data-app-mode="endurance"] #qualification .qual-menu-cell{
   }
   .race-mode-card{min-width:0!important}
 }
+
+
+/* KartIQ V6.0.8 — Focus Endurance copié du Focus Sprint. */
+body.endurance-focus-active{overflow:hidden}
+#enduranceFocus .sprint-focus-header i{background:#FF8A00!important}

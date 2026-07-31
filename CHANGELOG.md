@@ -1,3 +1,11 @@
+# KartIQ V6.0.8
+
+## V6.0.8 — Focus Endurance copié du Focus Sprint
+
+- Le mode Focus Endurance reprend intégralement la structure, les informations et le comportement du Focus Sprint.
+- Le filet supérieur du Focus Endurance est orange `#FF8A00`.
+- Le Focus Sprint reste inchangé.
+
 # KartIQ V6.0.7
 
 ## V6.0.7 — Filet Menu Endurance gris

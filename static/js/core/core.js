@@ -64,6 +64,7 @@ function updateRemainingDisplay(){
  const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
  renderQualificationFocus();
  renderSprintFocus();
+ renderEnduranceFocus();
 }
 async function load(){
  // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle

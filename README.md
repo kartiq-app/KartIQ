@@ -1,4 +1,4 @@
-# KartIQ V6.0.7 — Filet Menu Endurance gris
+# KartIQ V6.0.8 — Focus Endurance basé sur Sprint
 
 Cette version conserve les deux filets horizontaux orange du mode Endurance et remet le séparateur vertical de la case Menu en gris, comme en Qualification et Sprint.
 

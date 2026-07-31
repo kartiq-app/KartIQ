@@ -1,4 +1,4 @@
-const CACHE = 'kartiq-v6-0-7';
+const CACHE = 'kartiq-v6-0-8';
 
 const ASSETS = [
   '/',

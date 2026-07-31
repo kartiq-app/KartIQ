@@ -11,6 +11,20 @@ async function closeSprintFocus(){
  try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
+async function openEnduranceFocus(){
+ const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
+ overlay.classList.add('show');document.body.classList.add('endurance-focus-active');renderEnduranceFocus();
+ try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
+ try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
+ try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
+}
+async function closeEnduranceFocus(){
+ document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');
+ try{if(enduranceFocusWakeLock){await enduranceFocusWakeLock.release();enduranceFocusWakeLock=null}}catch(e){}
+ try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
+ try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
+}
+
 function sprintDriverBehind(driver){if(!driver?.pos)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(driver.pos)+1)||null}
 function sprintGapAhead(driver){
  const raw=String(sprintDeltaFor(driver)||'--').trim();
@@ -64,5 +78,34 @@ function renderSprintFocus(){
  const list=[...(state.penalties||[])].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
  sprintFocusPenalties.innerHTML=list.length?list.map(p=>`<div class="sprint-focus-penalty-row"><small class="sprint-focus-penalty-time">${penaltyTime(p)}</small><b class="sprint-focus-penalty-name">${p.driver||'—'}</b><b class="sprint-focus-penalty-value">${p.penalty||'—'}</b></div>`).join(''):'<div class="sprint-focus-empty">Aucune pénalité</div>';
 }
+
+
+function renderEnduranceFocus(){
+ const overlay=document.getElementById('enduranceFocus');if(!overlay?.classList.contains('show'))return;
+ const f=state.followed||{};
+ const position=document.getElementById('enduranceFocusPosition');
+ const name=document.getElementById('enduranceFocusName');
+ const lastRankEl=document.getElementById('enduranceFocusLastRank');
+ const fastestEl=document.getElementById('enduranceFocusFastestLast');
+ const aheadEl=document.getElementById('enduranceFocusAhead');
+ const behindEl=document.getElementById('enduranceFocusBehind');
+ const timeEl=document.getElementById('enduranceFocusTime');
+ const lapsEl=document.getElementById('enduranceFocusLaps');
+ const penaltiesEl=document.getElementById('enduranceFocusPenalties');
+ if(position)position.textContent=f.pos?'P'+f.pos:'—';
+ if(name)name.textContent=f.driver||state.followed_driver||'—';
+ const lastRank=sprintLastLapRanking(f);if(lastRankEl)lastRankEl.innerHTML=lastRank?frenchOrdinalMarkup(lastRank.rank):'—';
+ const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';const fastestLapSeconds=lapSeconds(fastestLap);const sessionBestSeconds=absoluteSessionBestSeconds();const isAbsoluteSessionBest=Number.isFinite(fastestLapSeconds)&&Number.isFinite(sessionBestSeconds)&&Math.abs(fastestLapSeconds-sessionBestSeconds)<0.0005;const fastestColorClass=isAbsoluteSessionBest?'fastest-session-best':(fastest.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange');if(fastestEl)fastestEl.innerHTML=`🔥 ${fastestDriver} <span class="sprint-focus-fastest-last-time ${fastestColorClass}">${fastestLap}</span>`;
+ const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(sprintDriverBehind(f));
+ if(aheadEl){aheadEl.textContent=focusAhead;aheadEl.style.display=isLeader?'none':''}
+ if(behindEl){behindEl.textContent=focusBehind;behindEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
+ const divider=overlay.querySelector('.sprint-focus-divider');if(divider)divider.style.display=(isLeader||!hasDriverBehind)?'none':'';
+ const ms=liveRemainingMilliseconds();if(timeEl){timeEl.textContent=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);timeEl.classList.toggle('time-critical',Number.isFinite(ms)&&ms<=120000)}
+ const laps=String(state.apex_laps_remaining||'—');if(lapsEl)lapsEl.textContent=(laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'—';
+ const list=[...(state.penalties||[])].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+ if(penaltiesEl)penaltiesEl.innerHTML=list.length?list.map(p=>`<div class="sprint-focus-penalty-row"><small class="sprint-focus-penalty-time">${penaltyTime(p)}</small><b class="sprint-focus-penalty-name">${p.driver||'—'}</b><b class="sprint-focus-penalty-value">${p.penalty||'—'}</b></div>`).join(''):'<div class="sprint-focus-empty">Aucune pénalité</div>';
+}
+
+let enduranceFocusWakeLock=null;
 
 let qualificationFocusWakeLock=null;
