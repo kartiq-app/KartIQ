@@ -1,4 +1,4 @@
-# Validation KartIQ V5.3.1
+# Validation KartIQ V5.3.2
 
 Cette version ne doit introduire aucun changement visuel ou fonctionnel.
 

@@ -1,4 +1,4 @@
-# Consolidation CSS sûre — KartIQ V5.3.1
+# Consolidation CSS sûre — KartIQ V5.3.2
 
 Cette étape poursuit le nettoyage sans modifier le rendu attendu.
 

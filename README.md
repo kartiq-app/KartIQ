@@ -1,10 +1,10 @@
-# KartIQ V5.3.1 — Consolidation CSS sûre
+# KartIQ V5.3.2 — Sources statiques unifiées
 
 Cette version inaugure la refactorisation progressive du projet. Le CSS est désormais externalisé et découpé en modules séquentiels chargés par `static/css/kartiq.css`, sans modification fonctionnelle attendue. Consultez `docs/ARCHITECTURE.md` et `docs/VALIDATION_V5.md`.
 
-## V5.3.1
+## V5.3.2
 
-Nettoyage CSS prudent : six règles strictement identiques ont été supprimées en conservant la dernière occurrence dans la cascade. Les fichiers Python compilés ont également été retirés de l’archive GitHub. Aucun rendu ni comportement n’est volontairement modifié.
+Nettoyage de l’arborescence : les copies identiques présentes à la racine ont été supprimées. `templates/index.html` devient l’unique source HTML et `static/` l’unique source pour le manifest, le service worker, les images, les polices et les icônes. Le service worker actif précache désormais aussi les six modules CSS importés par `kartiq.css`. Aucun changement visuel ni métier n’est attendu.
 
 # KartIQ V4.5.5
 

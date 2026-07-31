@@ -1,4 +1,13 @@
-## V5.3.1 — Consolidation CSS sûre
+## V5.3.2 — Sources statiques unifiées
+
+- Suppression des copies identiques à la racine (`index.html`, `manifest.json`, `assets/`, `fonts/`, `icons/`).
+- Suppression du service worker racine inutilisé.
+- `templates/index.html` et `static/` deviennent les sources uniques.
+- Précache PWA complété avec les six modules CSS.
+- Documentation ajoutée dans `docs/STATIC_SOURCES_V5_3_2.md`.
+- Aucun changement visuel ou métier attendu.
+
+## V5.3.2 — Consolidation CSS sûre
 
 - Suppression de six règles CSS strictement identiques conservées en double.
 - Nettoyage ciblé des feuilles Sprint paysage et Qualification portrait.
