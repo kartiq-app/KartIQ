@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "5.5.5"
-APP_RELEASE_NAME = "Classements Sprint responsive"
+APP_VERSION = "5.5.6"
+APP_RELEASE_NAME = "Alignement des classements desktop"
 
 
 def _circuit_sort_key(circuit):

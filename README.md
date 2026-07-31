@@ -1,6 +1,15 @@
-# KartIQ V5.5.5 — Classements Sprint responsive
+# KartIQ V5.5.6 — Alignement des classements
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
+
+## V5.5.6
+
+- Sprint smartphone paysage : suppression de la colonne MEILLEUR, avec ÉCART conservé.
+- Sprint Desktop : largeurs corrigées pour empêcher le chevauchement de MEILLEUR, ÉCART et INTERVALLE.
+- Qualification Desktop : KART placé juste après POS et numéros parfaitement centrés.
+- Qualification et Sprint Desktop : toutes les données numériques sont centrées sous leurs colonnes.
+
+Le détail se trouve dans `docs/RANKING_ALIGNMENT_V5_5_6.md`.
 
 ## V5.5.5
 

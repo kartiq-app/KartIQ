@@ -994,3 +994,137 @@ body.current-sprint .position-cell{
   body.current-sprint #sprintTable td.ranking-driver-column{width:46%!important}
   body.current-sprint #sprintTable td.ranking-last{width:28%!important}
 }
+
+/* KartIQ V5.5.6 — tableaux Qualification et Sprint.
+   Smartphone paysage : le classement Sprint masque aussi MEILLEUR, tout en
+   conservant ÉCART. Desktop : colonnes stables, sans chevauchement, et toutes
+   les données numériques sont centrées sous leur en-tête. */
+@media (orientation:landscape) and (max-width:950px) and (hover:none) and (pointer:coarse){
+  body.current-sprint #sprintHead th:nth-child(5),
+  body.current-sprint #sprintTable td.ranking-best{
+    display:none!important;
+  }
+
+  body.current-sprint #sprintHead th:nth-child(6),
+  body.current-sprint #sprintTable td.ranking-gap{
+    display:table-cell!important;
+  }
+
+  body.current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(1),
+  body.current-sprint .sprint-table-wrap table.has-kart-column td.ranking-pos{width:8%!important}
+  body.current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(2),
+  body.current-sprint .sprint-table-wrap table.has-kart-column td.ranking-kart-column{width:10%!important}
+  body.current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(3),
+  body.current-sprint .sprint-table-wrap table.has-kart-column td.ranking-driver-column{width:40%!important}
+  body.current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(4),
+  body.current-sprint .sprint-table-wrap table.has-kart-column td.ranking-last{width:21%!important}
+  body.current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(6),
+  body.current-sprint .sprint-table-wrap table.has-kart-column td.ranking-gap{width:21%!important}
+
+  body.current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(1),
+  body.current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-pos{width:9%!important}
+  body.current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(3),
+  body.current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-driver-column{width:47%!important}
+  body.current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(4),
+  body.current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-last{width:22%!important}
+  body.current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(6),
+  body.current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-gap{width:22%!important}
+}
+
+@media (min-width:951px){
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table,
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table{
+    width:100%!important;
+    table-layout:fixed!important;
+  }
+
+  body:not(.preview-embedded).current-qualification .qual-table-wrap th,
+  body:not(.preview-embedded).current-qualification .qual-table-wrap td,
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap th,
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap td{
+    box-sizing:border-box!important;
+    min-width:0!important;
+    padding-left:8px!important;
+    padding-right:8px!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+  }
+
+  body:not(.preview-embedded).current-qualification #qualifHead th,
+  body:not(.preview-embedded).current-qualification #qualifTable td.ranking-pos,
+  body:not(.preview-embedded).current-qualification #qualifTable td.ranking-kart-column,
+  body:not(.preview-embedded).current-qualification #qualifTable td.ranking-last,
+  body:not(.preview-embedded).current-qualification #qualifTable td.ranking-best,
+  body:not(.preview-embedded).current-qualification #qualifTable td.ranking-gap,
+  body:not(.preview-embedded).current-sprint #sprintHead th,
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-pos,
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-kart-column,
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-last,
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-best,
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-gap,
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-interval{
+    text-align:center!important;
+  }
+
+  body:not(.preview-embedded).current-qualification #qualifHead th:nth-child(3),
+  body:not(.preview-embedded).current-qualification #qualifTable td.ranking-driver-column,
+  body:not(.preview-embedded).current-sprint #sprintHead th:nth-child(3),
+  body:not(.preview-embedded).current-sprint #sprintTable td.ranking-driver-column{
+    text-align:left!important;
+  }
+
+  /* Qualification Desktop avec KART : KART reste immédiatement après POS. */
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column th:nth-child(1),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column td.ranking-pos{width:7%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column th:nth-child(2),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column td.ranking-kart-column{width:9%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column th:nth-child(3),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column td.ranking-driver-column{width:30%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column th:nth-child(4),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column td.ranking-last{width:18%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column th:nth-child(5),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column td.ranking-best{width:18%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column th:nth-child(6),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table.has-kart-column td.ranking-gap{width:18%!important}
+
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) th:nth-child(1),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) td.ranking-pos{width:7%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) th:nth-child(3),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) td.ranking-driver-column{width:39%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) th:nth-child(4),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) td.ranking-last{width:18%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) th:nth-child(5),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) td.ranking-best{width:18%!important}
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) th:nth-child(6),
+  body:not(.preview-embedded).current-qualification .qual-table-wrap table:not(.has-kart-column) td.ranking-gap{width:18%!important}
+
+  /* Sprint Desktop : espace réservé à chaque valeur, notamment MEILLEUR / ÉCART / INTERVALLE. */
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(1),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-pos{width:6%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(2),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-kart-column{width:8%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(3),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-driver-column{width:30%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(4),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-last{width:14%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(5),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-best{width:14%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(6),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-gap{width:14%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column th:nth-child(7),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table.has-kart-column td.ranking-interval{width:14%!important}
+
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(1),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-pos{width:7%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(3),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-driver-column{width:37%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(4),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-last{width:14%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(5),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-best{width:14%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(6),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-gap{width:14%!important}
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) th:nth-child(7),
+  body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-interval{width:14%!important}
+}
