@@ -1,7 +1,13 @@
-# KartIQ V5.5.1 — Centrage temps et tours en paysage
+# KartIQ V5.5.2 — Correction du centrage iPhone en paysage
 
 Application web d’analyse du live timing Apex Timing pour les modes Qualification, Sprint et Endurance.
 
+
+## V5.5.2
+
+Cette version corrige sur iPhone en mode paysage le centrage du temps restant et du nombre de tours dans les modes Qualification et Sprint. La correction utilise un positionnement explicite des deux moitiés de la case pour garantir un rendu identique dans Safari iOS.
+
+Le détail se trouve dans `docs/IPHONE_LANDSCAPE_CENTERING_V5_5_2.md`.
 
 ## V5.5.1
 

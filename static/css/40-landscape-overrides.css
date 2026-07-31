@@ -865,3 +865,50 @@ body.current-sprint .position-cell{
     vertical-align:middle!important;
   }
 }
+
+/* KartIQ V5.5.2 — centrage iPhone/Safari en paysage.
+   Sur les petits écrans tactiles, chaque valeur occupe une moitié positionnée
+   explicitement afin de ne pas dépendre de l’alignement Grid de Safari iOS. */
+@media (orientation:landscape) and (max-width:950px){
+  body.current-qualification .landscape-session-clock,
+  body.current-sprint .landscape-session-clock{
+    position:relative!important;
+    display:block!important;
+    width:100%!important;
+    height:88px!important;
+    min-height:88px!important;
+    max-height:88px!important;
+    padding:0!important;
+    margin:0!important;
+    overflow:hidden!important;
+  }
+  body.current-qualification .landscape-session-clock > .landscape-clock-value,
+  body.current-sprint .landscape-session-clock > .landscape-clock-value{
+    position:absolute!important;
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    height:50%!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    line-height:1!important;
+    transform:none!important;
+    -webkit-transform:none!important;
+  }
+  body.current-qualification .landscape-session-clock > .landscape-clock-value:first-child,
+  body.current-sprint .landscape-session-clock > .landscape-clock-value:first-child{
+    top:0!important;
+    bottom:auto!important;
+  }
+  body.current-qualification .landscape-session-clock > .landscape-clock-value:last-child,
+  body.current-sprint .landscape-session-clock > .landscape-clock-value:last-child{
+    top:50%!important;
+    bottom:auto!important;
+    border-top:1px solid #29292e!important;
+  }
+}

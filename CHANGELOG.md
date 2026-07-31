@@ -1,3 +1,11 @@
+## V5.5.2 — Correction du centrage sur iPhone en paysage
+
+- Correction spécifique à Safari iOS du centrage du temps restant et du nombre de tours.
+- Positionnement explicite des deux moitiés de la case sur les petits écrans en paysage.
+- Aucun changement sur Desktop, Portrait, Focus ou Endurance.
+- Cache PWA et version synchronisés en V5.5.2.
+- Ajout de `docs/IPHONE_LANDSCAPE_CENTERING_V5_5_2.md`.
+
 ## V5.5.1 — Centrage temps et tours en paysage
 
 - Centrage horizontal et vertical renforcé de la dernière case de la ligne supérieure en Qualification paysage.
