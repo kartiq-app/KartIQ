@@ -1,4 +1,8 @@
-# KartIQ V6.0.6 — Endurance clone strict de Qualification
+# KartIQ V6.0.7 — Filet Menu Endurance gris
+
+Cette version conserve les deux filets horizontaux orange du mode Endurance et remet le séparateur vertical de la case Menu en gris, comme en Qualification et Sprint.
+
+# KartIQ V6.0.5 — Endurance clone strict de Qualification
 
 Cette version introduit les quatre accès **Qualification**, **Sprint**, **Endurance** et **Analyzer**.
 
@@ -138,7 +142,7 @@ Le contrôle JavaScript est effectué automatiquement lorsque Node.js est instal
 - Identité visuelle orange réservée au mode Endurance.
 
 
-## Ajustements V6.0.6
+## Ajustements V6.0.5
 
 - Le mode Endurance affiche directement la page Qualification validée.
 - Les informations, le responsive portrait/paysage, le desktop et le Focus sont strictement identiques.
@@ -146,11 +150,6 @@ Le contrôle JavaScript est effectué automatiquement lorsque Node.js est instal
 - Qualification et Sprint restent inchangés.
 
 
-## V6.0.6 — Clone strict Endurance
+## V6.0.5 — Clone strict Endurance
 
 Le mode Endurance affiche directement la page Qualification, avec les mêmes informations, mises en page, couleurs, filets et comportements en desktop, portrait, paysage et Focus. Aucune initiative graphique spécifique à Endurance n’est appliquée.
-
-
-## V6.0.6 — Trois filets orange Endurance
-
-Dans le mode Endurance uniquement, les deux filets horizontaux et le filet vertical de la case Position utilisent `#FF8A00`. Aucun autre élément graphique ou fonctionnel n’est modifié.
