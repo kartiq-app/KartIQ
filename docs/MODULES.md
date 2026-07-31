@@ -1,6 +1,6 @@
-# Modules JavaScript — KartIQ V5.1.0
+# Modules JavaScript — KartIQ V5.1.1
 
-La V5.1.0 organise les scripts par domaine fonctionnel, sans réécriture de la logique.
+La V5.1.1 organise les scripts par domaine fonctionnel, sans réécriture de la logique.
 
 ## Ordre de chargement
 

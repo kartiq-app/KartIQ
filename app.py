@@ -52,7 +52,7 @@ def load_circuits():
 
 
 STATE = {
-    "version": "5.1.0",
+    "version": "5.1.1",
     "mode": "qualification",
     "circuit_id": "",
     "connection": "HORS LIGNE",
@@ -95,6 +95,7 @@ LIVE_WS = None
 
 # Historique local des tours par pilote/équipe pour calculer le rythme réel sur 5 tours.
 LAP_HISTORY = {}
+LAP_RESULTS_BY_NUMBER = {}
 LAST_LAP_MARKER = {}
 FOLLOWED_CROSSING_MARKER = {}
 PENALTY_FIRST_SEEN = {}
@@ -348,6 +349,18 @@ def sync_state_from_race(snapshot, interpreted_events=None):
         if lap_seconds < 9999 and LAST_LAP_MARKER.get(history_key) != marker:
             LAP_HISTORY.setdefault(history_key, []).append(lap_seconds)
             LAP_HISTORY[history_key] = LAP_HISTORY[history_key][-20:]
+            # Mémorise le chrono avec le numéro du tour afin que le cartouche Sprint
+            # affiche le meilleur pilote du dernier tour réellement terminé, sans
+            # mélanger des chronos provenant de tours différents.
+            if isinstance(lap_number, int) and lap_number > 0:
+                LAP_RESULTS_BY_NUMBER.setdefault(lap_number, {})[history_key] = {
+                    "driver": driver_name,
+                    "lap": last,
+                    "seconds": lap_seconds,
+                }
+                # Limite l'historique aux 10 derniers numéros de tour.
+                for old_lap in sorted(LAP_RESULTS_BY_NUMBER)[:-10]:
+                    LAP_RESULTS_BY_NUMBER.pop(old_lap, None)
             LAST_LAP_MARKER[history_key] = marker
         recent_five = LAP_HISTORY.get(history_key, [])[-5:]
         pace5_seconds = sum(recent_five) / len(recent_five) if recent_five else None
@@ -414,10 +427,22 @@ def sync_state_from_race(snapshot, interpreted_events=None):
         if valid_best:
             leader = min(valid_best, key=lambda d: time_to_seconds(d["best"]))
             STATE["session_best"] = {"driver": leader["driver"], "lap": leader["best"]}
-        valid_last = [d for d in live_drivers if time_to_seconds(d["last"]) < 9999]
-        if valid_last:
-            fastest = min(valid_last, key=lambda d: time_to_seconds(d["last"]))
-            STATE["fastest_last_lap"] = {"driver": fastest["driver"], "lap": fastest["last"]}
+        # Sprint : meilleur chrono du tour précédent. Apex met les lignes à jour
+        # au fil des passages ; comparer simplement la colonne « dernier tour »
+        # mélange donc parfois plusieurs numéros de tour. On privilégie ici le
+        # dernier numéro de tour entièrement dépassé par le leader.
+        lap_numbers = [d.get("laps") for d in live_drivers if isinstance(d.get("laps"), int)]
+        target_lap = max(lap_numbers) - 1 if lap_numbers and max(lap_numbers) > 1 else None
+        lap_results = list(LAP_RESULTS_BY_NUMBER.get(target_lap, {}).values()) if target_lap else []
+        if lap_results:
+            fastest = min(lap_results, key=lambda item: item["seconds"])
+            STATE["fastest_last_lap"] = {"driver": fastest["driver"], "lap": fastest["lap"]}
+        else:
+            # Repli utile au démarrage de séance, avant qu'un tour complet soit disponible.
+            valid_last = [d for d in live_drivers if time_to_seconds(d["last"]) < 9999]
+            if valid_last:
+                fastest = min(valid_last, key=lambda d: time_to_seconds(d["last"]))
+                STATE["fastest_last_lap"] = {"driver": fastest["driver"], "lap": fastest["last"]}
 
         # En qualification, le popup est lié au pilote choisi par l'utilisateur.
         # Son marqueur courant est mémorisé au clic, puis le prochain changement
@@ -607,6 +632,7 @@ def reset_race_state_for_new_circuit(circuit_id):
     PROTOCOL_ENGINE.reset()
     EVENT_STORE.reset()
     LAP_HISTORY.clear()
+    LAP_RESULTS_BY_NUMBER.clear()
     LAST_LAP_MARKER.clear()
     FOLLOWED_CROSSING_MARKER.clear()
 
@@ -906,7 +932,7 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print("\nKartIQ V5.1.0 — Architecture métier")
+    print("\nKartIQ V5.1.1 — Architecture métier")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")

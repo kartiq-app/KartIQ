@@ -1,4 +1,10 @@
-## V5.1.0 — Architecture métier
+## V5.1.1 — Correctif meilleur tour précédent en Sprint
+- Correction du cartouche avec la flamme : le nom du pilote est de nouveau affiché.
+- Le calcul compare désormais les chronos appartenant au même numéro de tour, au lieu de mélanger les dernières valeurs reçues ligne par ligne.
+- Ajout d’un repli côté interface si Apex transmet temporairement le chrono avant le nom du pilote.
+- Cache PWA actualisé.
+
+## V5.1.1 — Architecture métier
 
 - Réorganisation des scripts JavaScript par domaines fonctionnels.
 - Création des dossiers `core`, `sprint`, `qualification`, `ui` et `endurance`.
