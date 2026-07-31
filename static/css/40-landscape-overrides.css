@@ -995,7 +995,7 @@ body.current-sprint .position-cell{
   body.current-sprint #sprintTable td.ranking-last{width:28%!important}
 }
 
-/* KartIQ V5.5.7 — tableaux Qualification et Sprint.
+/* KartIQ V5.5.6 — tableaux Qualification et Sprint.
    Smartphone paysage : le classement Sprint masque aussi MEILLEUR, tout en
    conservant ÉCART. Desktop : colonnes stables, sans chevauchement, et toutes
    les données numériques sont centrées sous leur en-tête. */
@@ -1129,37 +1129,42 @@ body.current-sprint .position-cell{
   body:not(.preview-embedded).current-sprint .sprint-table-wrap table:not(.has-kart-column) td.ranking-interval{width:14%!important}
 }
 
+/* KartIQ V5.5.8 — Temps + tours comme un bloc unique sur smartphone paysage.
+   La taille commune est calculée par session-clock-fit.js pour ne jamais déborder. */
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (max-height:500px){
+  body:not(.preview-embedded).current-qualification .landscape-session-clock,
+  body:not(.preview-embedded).current-sprint .landscape-session-clock{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:2px!important;
+    padding:5px 6px!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
 
-/* V5.5.7 smartphone landscape unified timer */
-@media (hover:none) and (pointer:coarse) and (orientation:landscape){
-.session-clock,.landscape-session-clock,.session-clock-card{
- display:flex!important;
- flex-direction:column!important;
- justify-content:center!important;
- align-items:center!important;
- gap:.35rem!important;
-}
-.session-clock *,.landscape-session-clock *,.session-clock-card *{
- text-align:center!important;
-}
-.session-clock .session-time,
-.session-clock .session-laps,
-.landscape-session-clock .session-time,
-.landscape-session-clock .session-laps,
-.session-clock-card .session-time,
-.session-clock-card .session-laps{
- font-size:clamp(2rem,7vw,3.6rem)!important;
- line-height:1!important;
- max-width:100%;
- overflow:hidden;
- text-overflow:clip;
- white-space:nowrap;
-}
-.session-clock hr,.landscape-session-clock hr,.session-clock-card hr,
-.session-clock .divider,.landscape-session-clock .divider,.session-clock-card .divider{
- display:none!important;
-}
-.session-clock .label,.landscape-session-clock .label,.session-clock-card .label{
- display:none!important;
-}
+  body:not(.preview-embedded).current-qualification .landscape-session-clock > .landscape-clock-value,
+  body:not(.preview-embedded).current-sprint .landscape-session-clock > .landscape-clock-value{
+    display:block!important;
+    flex:0 0 auto!important;
+    width:auto!important;
+    height:auto!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    font-size:var(--landscape-clock-font-size, 32px)!important;
+    line-height:.92!important;
+    text-align:center!important;
+    white-space:nowrap!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+
+  body:not(.preview-embedded).current-qualification .landscape-session-clock > .landscape-clock-value + .landscape-clock-value,
+  body:not(.preview-embedded).current-sprint .landscape-session-clock > .landscape-clock-value + .landscape-clock-value{
+    border-top:0!important;
+  }
 }

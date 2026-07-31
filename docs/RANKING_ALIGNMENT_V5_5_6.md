@@ -1,4 +1,4 @@
-# KartIQ V5.5.7 — Alignement des classements
+# KartIQ V5.5.6 — Alignement des classements
 
 ## Sprint — smartphone paysage
 

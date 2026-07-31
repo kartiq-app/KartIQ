@@ -1,11 +1,21 @@
-## V5.5.7 — Alignement des classements
+## V5.5.8 — Bloc temps/tours réellement responsive sur iPhone paysage
+
+- Correction des sélecteurs CSS : les classes réellement utilisées sont désormais ciblées.
+- Temps restant et nombre de tours gérés comme un seul ensemble centré.
+- Calcul JavaScript d’une taille de police commune adaptée à la largeur et à la hauteur disponibles.
+- Réduction simultanée des deux valeurs pour garantir l’absence de débordement.
+- Aucun libellé ajouté dans la case.
+- Aucun impact sur Desktop ou sur le mode portrait.
+- Cache PWA et version synchronisés en V5.5.8.
+
+## V5.5.8 — Alignement des classements
 
 - Suppression de la colonne MEILLEUR dans le classement Sprint sur smartphone en paysage.
 - Conservation de la colonne ÉCART dans cette vue simplifiée.
 - Correction des largeurs Desktop Sprint afin d'éviter tout chevauchement entre MEILLEUR, ÉCART et INTERVALLE.
 - Positionnement de KART immédiatement après POS dans le classement Qualification Desktop.
 - Centrage homogène des en-têtes et valeurs numériques en Qualification et Sprint Desktop.
-- Cache PWA et version synchronisés en V5.5.7.
+- Cache PWA et version synchronisés en V5.5.8.
 - Ajout de `docs/RANKING_ALIGNMENT_V5_5_6.md`.
 
 ## V5.5.5 — Classements Sprint responsive
