@@ -1,6 +1,16 @@
-# KartIQ V6.0.10
+# KartIQ V6.0.11
 
-## V6.0.10 — Restauration des filets Endurance
+## V6.0.11 — Filets distinctifs Endurance
+
+- Qualification conserve ses filets rouges.
+- Sprint conserve ses filets bleus.
+- Endurance utilise deux filets horizontaux orange `#FF8A00`.
+- Le filet vertical de la case Position est orange `#FF8A00`.
+- Le filet vertical de la case Menu reste gris `#29292E`.
+- Tous les séparateurs de lignes restent gris.
+- Analyzer n’est pas modifié.
+
+## V6.0.11 — Restauration des filets Endurance
 
 - Le filet horizontal supérieur de la page Endurance reste orange `#FF8A00`.
 - Le filet horizontal au-dessus du classement reste orange `#FF8A00`.

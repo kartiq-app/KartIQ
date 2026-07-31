@@ -131,22 +131,25 @@ body.current-sprint .fastest-last-time.fastest-session-best{color:var(--purple)!
 .sprint-focus-fastest-last-time.fastest-session-best{color:var(--purple)!important}
 
 
-/* KartIQ V6.0.10 — identité Endurance ciblée.
-   Deux filets horizontaux orange #FF8A00.
-   Filet vertical de la case Menu gris, identique à Qualification et Sprint.
-   Filet vertical de la case Position orange #FF8A00.
-   Les séparateurs de lignes restent gris. */
-body[data-app-mode="endurance"] #qualification .qual-strip{
-  border-top-color:#FF8A00!important;
+/* KartIQ V6.0.11 — identité visuelle propre au mode Endurance.
+   Les signes distinctifs du dashboard Endurance sont orange #FF8A00.
+   Le filet de la case Menu et les séparateurs de lignes restent gris. */
+body[data-app-mode="endurance"] #endurance .qual-strip{
+  border-top:3px solid #FF8A00!important;
 }
-body[data-app-mode="endurance"] #qualification .qual-table-wrap{
-  border-top-color:#FF8A00!important;
+body[data-app-mode="endurance"] #endurance .qual-table-wrap{
+  border-top:3px solid #FF8A00!important;
 }
-body[data-app-mode="endurance"] #qualification .position-cell{
+body[data-app-mode="endurance"] #endurance .position-cell{
   box-shadow:inset 6px 0 #FF8A00!important;
 }
-body[data-app-mode="endurance"] #qualification .qual-menu-cell{
-  border-right-color:#29292e!important;
+body[data-app-mode="endurance"] #endurance .qual-menu-cell{
+  border-right:1px solid #29292e!important;
+  box-shadow:none!important;
+}
+body[data-app-mode="endurance"] #endurance .qual-table-wrap thead th,
+body[data-app-mode="endurance"] #endurance .qual-table-wrap tbody td{
+  border-bottom-color:#29292e!important;
 }
 
 @media (max-width:760px) and (orientation:portrait){
