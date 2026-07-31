@@ -1,4 +1,11 @@
-## V6.0.1 — Accueil responsive et thème Endurance
+# KartIQ V6.0.2
+
+- Accueil Desktop : les quatre cartes sont affichées sur une seule ligne dans l’ordre Qualification, Sprint, Endurance, Analyzer.
+- Endurance : les deux filets hérités de Qualification sont maintenant orange.
+- Focus Endurance : le filet supérieur est maintenant orange.
+- Aucun changement fonctionnel dans Qualification, Sprint ou Analyzer.
+
+## V6.0.2 — Accueil responsive et thème Endurance
 
 - Ordre des cartes : Qualification, Sprint, Endurance, Analyzer.
 - Accueil portrait : cartes affichées sur une seule colonne.

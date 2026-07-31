@@ -1,4 +1,4 @@
-# KartIQ V6.0.1 — Accueil responsive et thème Endurance
+# KartIQ V6.0.2 — Accueil responsive et thème Endurance
 
 ## Accueil
 

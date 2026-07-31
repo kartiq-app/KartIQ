@@ -131,7 +131,7 @@ body.current-sprint .fastest-last-time.fastest-session-best{color:var(--purple)!
 .sprint-focus-fastest-last-time.fastest-session-best{color:var(--purple)!important}
 
 
-/* KartIQ V6.0.1 — ordre de l'accueil et identité orange Endurance */
+/* KartIQ V6.0.2 — ordre de l'accueil et identité orange Endurance */
 body.current-endurance{--accent:#ff8a00!important}
 body.current-endurance #endurance .qual-strip{border-top-color:#ff8a00!important}
 body.current-endurance #endurance .position-cell{box-shadow:inset 6px 0 #ff8a00!important}
@@ -144,4 +144,27 @@ body.current-endurance #qualificationFocus .qual-focus-header i{background:#ff8a
 @media (max-width:920px) and (orientation:landscape){
   .race-mode-cards{grid-template-columns:repeat(4,minmax(0,1fr))!important;max-width:860px!important}
   .race-mode-card{min-width:0!important}
+}
+
+/* KartIQ V6.0.2 — accueil desktop sur une ligne et filets Endurance orange.
+   Le mode Endurance réutilise volontairement la classe visuelle
+   current-qualification ; data-app-mode permet de le cibler sans modifier
+   les styles validés de Qualification. */
+@media (min-width:921px){
+  .race-mode-cards{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    max-width:none!important;
+    width:100%!important;
+  }
+  .race-mode-card{min-width:0!important}
+}
+
+body[data-app-mode="endurance"] #endurance .qual-strip{
+  border-top-color:#ff8a00!important;
+}
+body[data-app-mode="endurance"] #endurance .qual-table-wrap thead th{
+  border-bottom-color:#ff8a00!important;
+}
+body[data-app-mode="endurance"] #qualificationFocus .qual-focus-header i{
+  background:#ff8a00!important;
 }
