@@ -1,3 +1,5 @@
+
+V5.5.12: Smartphone paysage: +15% taille horloge; Sprint: couleur carte pilote le plus rapide alignée sur colonne Dernier (spécification).
 ## V5.5.11 — Rééquilibrage de la ligne 1 smartphone paysage
 
 - Réduction de 30 % de la carte du pilote suivi en Qualification et Sprint paysage smartphone.

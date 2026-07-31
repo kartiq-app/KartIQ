@@ -1182,13 +1182,13 @@ body.current-sprint .position-cell{
 
   body:not(.preview-embedded).current-qualification .landscape-clock-time,
   body:not(.preview-embedded).current-sprint .landscape-clock-time{
-    font-size:calc(var(--landscape-clock-font-size, 26px) * 2.16)!important;
+    font-size:calc(var(--landscape-clock-font-size, 26px) * 2.484)!important;
     line-height:.84!important;
   }
 
   body:not(.preview-embedded).current-qualification .landscape-clock-laps,
   body:not(.preview-embedded).current-sprint .landscape-clock-laps{
-    font-size:calc(var(--landscape-clock-font-size, 26px) * 1.11)!important;
+    font-size:calc(var(--landscape-clock-font-size, 26px) * 1.2765)!important;
     line-height:.9!important;
   }
 
@@ -1205,7 +1205,7 @@ body.current-sprint .position-cell{
 @media (hover:none) and (pointer:coarse) and (orientation:landscape) and (max-width:950px) and (max-height:500px){
   body:not(.preview-embedded).current-qualification .qual-strip,
   body:not(.preview-embedded).current-sprint .sprint-strip{
-    grid-template-columns:9% 16.1% 14% 39.4% 21.5%!important;
+    grid-template-columns:9% 18.5% 14% 36.2% 22.3%!important;
   }
 
   body:not(.preview-embedded).current-qualification .position-cell,

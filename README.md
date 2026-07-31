@@ -1,3 +1,5 @@
+
+V5.5.12: Smartphone paysage: +15% taille horloge; Sprint: couleur carte pilote le plus rapide alignée sur colonne Dernier (spécification).
 # KartIQ V5.5.11 — Rééquilibrage ligne 1 smartphone paysage
 
 ## Évolution V5.5.11
