@@ -1,3 +1,13 @@
+# KartIQ V6.0.9
+
+## V6.0.9 — Correction du routage Focus Endurance
+
+- Le mode Endurance ouvre désormais son propre écran cloné de Qualification.
+- Le bouton Focus Endurance ouvre le composant Focus Sprint dédié à Endurance, et non le Focus Qualification.
+- La structure, les informations et le comportement sont identiques au Focus Sprint.
+- Le filet supérieur du Focus Endurance reste orange `#FF8A00`.
+- Qualification, Sprint et Analyzer ne sont pas modifiés.
+
 # KartIQ V6.0.8
 
 ## V6.0.8 — Focus Endurance copié du Focus Sprint

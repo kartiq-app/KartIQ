@@ -1,4 +1,4 @@
-# KartIQ V6.0.8 — Focus Endurance basé sur Sprint
+# KartIQ V6.0.9 — Focus Endurance identique au Focus Sprint
 
 Cette version conserve les deux filets horizontaux orange du mode Endurance et remet le séparateur vertical de la case Menu en gris, comme en Qualification et Sprint.
 

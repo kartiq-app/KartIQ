@@ -117,10 +117,10 @@ function showMode(mode){
   return;
  }
  currentMode=mode;setModeClass(mode);maybeAutoFollowBrice();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
- // Le mode Endurance utilise volontairement la page Qualification validée.
- // Cela garantit une interface et des informations strictement identiques
- // en portrait, paysage, desktop et Focus, sans maintenir deux copies CSS.
- const screen=document.getElementById(mode==='endurance'?'qualification':mode);
+ // Chaque mode ouvre désormais son propre écran. La page Endurance reste
+ // un clone de Qualification pour le dashboard, mais son bouton Focus ouvre
+ // le Focus Sprint dédié à Endurance.
+ const screen=document.getElementById(mode);
  screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode})
 }
 
