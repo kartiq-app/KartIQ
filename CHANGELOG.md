@@ -1,4 +1,4 @@
-# KartIQ V6.0.11
+# KartIQ V6.0.12
 
 ## V6.0.11 — Filets distinctifs Endurance
 

@@ -175,3 +175,13 @@ body[data-app-mode="endurance"] #endurance .qual-table-wrap tbody td{
 /* KartIQ V6.0.8 — Focus Endurance copié du Focus Sprint. */
 body.endurance-focus-active{overflow:hidden}
 #enduranceFocus .sprint-focus-header i{background:#FF8A00!important}
+
+/* KartIQ V6.0.12 — Correction unique : le filet vertical de la case Menu
+   du mode Endurance reste gris, comme en Qualification et Sprint. */
+body[data-app-mode="endurance"] #endurance .qual-menu-cell{
+  border-right:1px solid #29292E!important;
+  box-shadow:none!important;
+}
+body[data-app-mode="endurance"] #endurance .position-cell{
+  box-shadow:none!important;
+}

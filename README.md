@@ -1,4 +1,4 @@
-# KartIQ V6.0.11 — Identité couleur des modes
+# KartIQ V6.0.12 — Identité couleur des modes
 
 Cette version conserve les deux filets horizontaux orange du mode Endurance et remet le séparateur vertical de la case Menu en gris, comme en Qualification et Sprint.
 
