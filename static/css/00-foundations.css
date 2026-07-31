@@ -1,0 +1,448 @@
+/* KartIQ V5.2.0 — Fondations, composants initiaux et historique V1–V2.7.
+   Ordre de cascade conservé depuis kartiq.css V5.1.2. */
+:root{--bg:#07090e;--panel:#111722;--panel2:#171f2c;--line:#2b3445;--text:#f6f8fc;--muted:#929daf;--yellow:#ffd43b;--green:#35dc84;--red:#ff586c;--purple:#b889ff;--blue:#58a6ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
+header{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--line);background:#0d1119ef;position:sticky;top:0;z-index:10}.header-left{display:flex;align-items:center;gap:12px}.brand{font-size:28px;font-weight:950}.brand i{font-style:normal;color:var(--yellow)}.home-btn{border:1px solid var(--line);background:#151b26;color:#fff;width:42px;height:42px;border-radius:10px;font-size:20px;cursor:pointer;font-weight:900}.home-btn:hover{border-color:var(--yellow);color:var(--yellow)}.meta{display:flex;align-items:center;gap:13px;color:var(--muted);font-size:13px}.live{color:var(--green);font-weight:900}.mode-tabs{display:flex;gap:8px}.mode-btn{border:1px solid var(--line);background:#151b26;color:#c7ced9;padding:9px 14px;border-radius:9px;font-weight:850;cursor:pointer}.mode-btn.active{background:var(--yellow);color:#111;border-color:var(--yellow)}
+.screen{display:none}.screen.active{display:block}.home{padding:50px 20px}.home-card{max-width:900px;margin:auto;padding:28px;background:linear-gradient(180deg,var(--panel),#0c121b);border:1px solid var(--line);border-radius:18px}.home-card h1{font-size:48px;margin:0 0 6px}.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}.field label{display:block;color:var(--muted);font-weight:800;font-size:12px;margin-bottom:8px}.field select{width:100%;padding:14px;background:#0c111a;color:white;border:1px solid var(--line);border-radius:10px}.mode-cards{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.mode-card{padding:20px;border:1px solid var(--line);background:#131a26;border-radius:13px;cursor:pointer}.mode-card:hover{border-color:var(--yellow)}
+.panel{background:linear-gradient(180deg,var(--panel),#0e141e);border:1px solid var(--line);border-radius:14px;overflow:hidden}.panel-title{padding:14px 16px;border-bottom:1px solid var(--line);font-size:12px;font-weight:950;letter-spacing:.08em}.qual-wrap{padding:16px}.qual-top{margin-bottom:14px}.qual-strip{min-height:132px;display:grid;grid-template-columns:1fr 2.25fr 1fr;align-items:center;text-align:center;padding:8px 24px}.qual-cell{min-width:0}.qual-cell+.qual-cell{border-left:1px solid var(--line)}.hero-card{min-height:175px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px}.label{font-size:11px;color:var(--muted);font-weight:850;letter-spacing:.09em}.hero-position{font-size:68px;font-weight:1000;line-height:1}.hero-name{font-size:18px;font-weight:900;margin-top:10px}.qual-delta{font-size:92px;font-weight:1000;line-height:1;margin-top:8px;color:var(--yellow);letter-spacing:-.05em}.hero-best{font-size:28px;font-weight:950;margin-top:8px}.hero-lap{font-size:23px;font-weight:900;color:var(--purple);margin-top:8px}
+table{width:100%;border-collapse:collapse}th{padding:11px 10px;color:var(--muted);font-size:10px;text-align:left}td{padding:13px 10px;border-top:1px solid #222b3a;font-size:14px}.clickable{cursor:pointer}.clickable:hover{background:#1b2331}.followed{background:linear-gradient(90deg,#5b4e172a,#2d291743);box-shadow:inset 4px 0 var(--yellow)}.pos{font-size:19px;font-weight:950}.name{font-weight:850}.green{color:var(--green)}.purple{color:var(--purple)}.red{color:var(--red)}.yellow{color:var(--yellow)}
+.grid{display:grid;grid-template-columns:minmax(690px,1fr) 360px;gap:16px;padding:16px}.sidebar{display:flex;flex-direction:column;gap:16px}.card{padding:18px}.big{font-size:31px;font-weight:950;margin-top:7px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.stat{padding:12px;background:#0c111a;border:1px solid #242d3b;border-radius:10px}.stat b{display:block;font-size:20px;margin-top:5px}.penalty-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #242d3b}.empty{padding:12px 0;color:var(--muted)}
+.endurance-grid{display:grid;grid-template-columns:minmax(560px,.9fr) minmax(700px,1.35fr);gap:16px;padding:16px}.right-stack{display:flex;flex-direction:column;gap:16px}.pace-row{display:grid;grid-template-columns:78px 1fr auto;align-items:center;padding:9px 0;border-bottom:1px solid #242d3b}.pace-rank{font-size:22px;font-weight:950;display:flex;align-items:center;gap:8px}.pace-general-pos{font-size:13px;color:var(--muted);font-family:var(--font-time);font-weight:800}.quick-table{min-width:780px}.delta-good{color:var(--green);font-weight:950}.delta-bad{color:var(--red);font-weight:950}
+.overlay{position:fixed;inset:0;background:#04060bd9;display:none;align-items:center;justify-content:center;z-index:100}.overlay.show{display:flex}.crossing-box{width:min(900px,92vw);min-height:520px;background:linear-gradient(180deg,#101722,#080c13);border:2px solid var(--yellow);border-radius:24px;display:flex;flex-direction:column;gap:22px;align-items:center;justify-content:center;text-align:center;padding:42px}.crossing-pos,.crossing-last{font-size:84px;font-weight:1000}.crossing-best{display:none;font-size:36px;font-weight:1000;color:var(--yellow);text-transform:uppercase}.crossing-best.show{display:block}.crossing-comparison{font-size:42px;font-weight:1000}.crossing-delta{font-size:58px;font-weight:1000;letter-spacing:-.04em}.crossing-delta.delta-first{color:var(--green)}.crossing-delta.delta-behind{color:#ff4d4f}.crossing-reference{font-size:34px;font-weight:900;color:#fff;text-transform:uppercase}.crossing-sub{font-size:14px;color:var(--muted);font-weight:900;letter-spacing:.1em}.generic-box{width:min(760px,90vw);padding:50px;text-align:center;background:#111722;border:2px solid var(--yellow);border-radius:22px}.generic-box h1{font-size:54px;margin:20px 0}.generic-box .line2{font-size:28px;color:var(--yellow)}
+.testbar{margin:0 16px 16px;border:1px dashed #414b60;border-radius:12px;padding:12px;background:#0d121a}.testbar summary{cursor:pointer;color:var(--muted);font-weight:850}.test-grid{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;margin-top:12px}.test-grid input,.test-grid select,.test-grid button{padding:9px;background:#151b26;color:white;border:1px solid var(--line);border-radius:8px}.test-grid button{cursor:pointer;background:#242d3b}
+
+.sprint-wrap{padding:16px}.sprint-top{margin-bottom:14px}.sprint-strip{min-height:132px;display:grid;grid-template-columns:1fr 2.25fr 1fr;align-items:center;text-align:center;padding:8px 24px}.sprint-cell{min-width:0}.sprint-cell+.sprint-cell{border-left:1px solid var(--line)}.sprint-fast-driver{font-size:25px;font-weight:950;margin-top:8px}.sprint-fast-lap{font-size:23px;font-weight:900;color:var(--green);margin-top:8px}.sprint-subinfo{margin-top:6px;font-size:23px;font-weight:900;color:var(--muted);letter-spacing:.03em;line-height:1}.sprint-subinfo strong{color:var(--text)}.sprint-lower{display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:14px}.mobile-hide{display:table-cell}
+@media(max-width:1000px){.grid,.endurance-grid{grid-template-columns:1fr}.mode-cards{grid-template-columns:1fr}.home-grid{grid-template-columns:1fr}.crossing-box{grid-template-columns:1fr;min-height:auto}.crossing-delta{font-size:78px}.test-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){body{min-height:100dvh;overflow-x:hidden}header{height:54px;padding:0 8px;gap:6px}.brand{font-size:20px}.brand span{display:none}.home-btn{width:36px;height:36px}.mode-tabs{display:none}.meta{gap:6px;font-size:10px}.meta #clock{display:none}.home{padding:14px 8px}.home-card{padding:16px}.home-card h1{font-size:34px}.qual-wrap,.sprint-wrap{padding:7px}.qual-top,.sprint-top{margin-bottom:7px}.qual-strip,.sprint-strip{min-height:84px;grid-template-columns:.72fr 1.45fr 1.05fr;padding:3px 5px}.qual-cell+.qual-cell,.sprint-cell+.sprint-cell{border-left:1px solid var(--line);border-top:0;padding-top:0}.hero-position{font-size:43px}.hero-name{font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.qual-delta{font-size:45px;margin-top:0}.sprint-subinfo{margin-top:3px;font-size:15px;line-height:1;white-space:nowrap}.hero-best,.sprint-fast-driver{font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px}.hero-lap,.sprint-fast-lap{font-size:15px;margin-top:4px}.panel-title{padding:7px 8px;font-size:9px}th{padding:5px 4px;font-size:8px}td{padding:6px 4px;font-size:10px}.pos{font-size:13px}.mobile-hide{display:none!important}.sprint-lower{grid-template-columns:1fr;gap:7px}.penalty-panel{max-height:78px;overflow:auto}.penalty-row{padding:4px 0;font-size:10px}.empty{padding:5px 0;font-size:10px}.sprint-table-wrap{max-height:calc(100dvh - 260px);overflow:hidden}.sprint-table-wrap table{table-layout:fixed}.sprint-table-wrap th:nth-child(1),.sprint-table-wrap td:nth-child(1){width:9%}.sprint-table-wrap th:nth-child(2),.sprint-table-wrap td:nth-child(2){width:31%}.sprint-table-wrap th:nth-child(3),.sprint-table-wrap td:nth-child(3){width:11%}.sprint-table-wrap th:nth-child(4),.sprint-table-wrap td:nth-child(4){width:20%}.sprint-table-wrap th:nth-child(7),.sprint-table-wrap td:nth-child(7){width:20%}.sprint-table-wrap td.name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+.preview-btn{border:1px solid var(--line);background:#151b26;color:#fff;height:42px;padding:0 12px;border-radius:10px;font-size:13px;cursor:pointer;font-weight:900;white-space:nowrap}.preview-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+.device-preview{position:fixed;inset:0;z-index:250;background:#03050ad9;display:none;align-items:center;justify-content:center;padding:18px;overflow:auto}.device-preview.show{display:flex}.device-preview-stage{display:flex;flex-direction:column;align-items:center;gap:10px}.device-preview-toolbar{width:395px;display:flex;justify-content:space-between;align-items:center;gap:12px;color:#fff;font-size:13px;font-weight:900}.device-preview-title{white-space:nowrap}.device-preview-actions{display:flex;align-items:center;gap:7px}.orientation-btn,.device-preview-close{border:1px solid var(--line);background:#151b26;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-weight:900}.orientation-btn.active{background:var(--yellow);border-color:var(--yellow);color:#111}.device-frame{width:395px;height:687px;padding:10px;background:#05070b;border:2px solid #3a4352;border-radius:28px;box-shadow:0 24px 80px #000;transition:width .2s ease,height .2s ease}.device-frame iframe{display:block;width:375px;height:667px;border:0;border-radius:18px;background:#07090e;transition:width .2s ease,height .2s ease}.device-preview-stage.landscape .device-preview-toolbar{width:687px}.device-preview-stage.landscape .device-frame{width:687px;height:395px}.device-preview-stage.landscape .device-frame iframe{width:667px;height:375px}.preview-only-hide{display:initial}
+.inline-home-btn{display:none;position:absolute;left:8px;top:8px;width:30px;height:30px;border:1px solid var(--line);background:#151b26;color:#fff;border-radius:8px;font-size:17px;font-weight:900;cursor:pointer;z-index:2}.inline-home-btn:hover{border-color:var(--yellow);color:var(--yellow)}.position-cell{position:relative}
+body.preview-embedded.current-qualification header,body.preview-embedded.current-sprint header{display:none}
+body.preview-embedded.current-qualification .inline-home-btn,
+body.preview-embedded.current-sprint .inline-home-btn,
+body.preview-embedded.current-endurance .inline-home-btn{display:block}
+body.preview-embedded.current-qualification .qual-wrap,body.preview-embedded.current-sprint .sprint-wrap{padding-top:7px}
+body.preview-embedded.current-sprint .testbar{display:none!important}
+body.preview-embedded.current-sprint{height:100dvh;overflow:hidden}
+body.preview-embedded.current-sprint #sprint{height:100dvh;overflow:hidden}
+body.preview-embedded.current-sprint .sprint-wrap{height:100%;display:flex;flex-direction:column}
+body.preview-embedded.current-sprint .sprint-lower{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:7px}
+body.preview-embedded.current-sprint .sprint-table-wrap{max-height:none;height:100%;overflow:hidden;min-width:0}
+body.preview-embedded.current-sprint .penalty-panel{height:100%;overflow:hidden;min-width:0;padding:8px}
+body.preview-embedded.current-sprint .penalty-panel .label{font-size:8px;white-space:nowrap}
+body.preview-embedded.current-sprint #penalties{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:6px;row-gap:0}
+body.preview-embedded.current-sprint .penalty-row{min-width:0;gap:3px;padding:4px 0;font-size:8px}
+body.preview-embedded.current-sprint .penalty-row b:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.preview-embedded.current-sprint .penalty-row span{white-space:nowrap}
+body.preview-embedded.current-sprint .empty{grid-column:1/-1;font-size:9px}
+
+@media(max-width:740px){.preview-btn{height:36px;padding:0 8px;font-size:0}.preview-btn::before{content:'📱';font-size:17px}.device-preview{padding:8px}.device-preview-stage{transform:scale(.88)}.device-preview-stage.landscape{transform:scale(.82)} }
+
+/* V1.7 — classements complets et défilement tactile */
+.qual-table-wrap,.sprint-table-wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+.qual-table-wrap{max-height:calc(100dvh - 235px)}
+.sprint-table-wrap{max-height:calc(100dvh - 235px)}
+#qualifTable td,#sprintTable td{font-size:28px;line-height:1;height:46px;padding-top:2px;padding-bottom:2px;vertical-align:middle}
+#qualifTable .pos,#sprintTable .pos{font-size:38px}
+#qualifTable th,#sprintTable th{position:sticky;top:0;z-index:2;background:#111722}
+.penalty-panel{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+#penalties{display:block!important}
+#penalties .penalty-row{display:flex;grid-template-columns:none;font-size:24px;line-height:1.05;padding:13px 0;gap:10px}
+#penalties .penalty-row b:first-child{white-space:normal;overflow:visible;text-overflow:clip}
+@media(max-width:680px){
+ .qual-table-wrap{max-height:calc(100dvh - 105px);overflow-y:auto}
+ .sprint-table-wrap{max-height:none!important;height:100%;overflow-y:auto!important}
+ #qualifTable td,#sprintTable td{font-size:20px;line-height:1;height:24px;padding:1px 3px}
+ #qualifTable .pos,#sprintTable .pos{font-size:26px}
+ #qualifTable th,#sprintTable th{font-size:16px;padding:3px;line-height:1;height:22px}
+ .sprint-table-wrap th:nth-child(1),.sprint-table-wrap td:nth-child(1){width:12%}
+ .sprint-table-wrap th:nth-child(2),.sprint-table-wrap td:nth-child(2){width:38%}
+ .sprint-table-wrap th:nth-child(3),.sprint-table-wrap td:nth-child(3){width:25%}
+ .sprint-table-wrap th:nth-child(6),.sprint-table-wrap td:nth-child(6){width:25%}
+ #penalties .penalty-row{font-size:40px;line-height:1;padding:12px 2px;display:flex;flex-direction:column;align-items:flex-start}
+ #penalties .penalty-row span{font-size:40px}
+ .penalty-panel{max-height:none!important;height:100%;overflow-y:auto!important}
+ .penalty-panel .label{position:sticky;top:0;z-index:2;background:#111722;padding:4px 0}
+}
+body.preview-embedded.current-sprint .sprint-table-wrap,body.preview-embedded.current-sprint .penalty-panel{overflow-y:auto!important}
+body.preview-embedded.current-sprint #penalties{display:block!important}
+body.preview-embedded.current-sprint #penalties .penalty-row{font-size:40px!important;padding:12px 2px!important;display:flex!important;flex-direction:column!important}
+body.preview-embedded.current-sprint #penalties .penalty-row span{font-size:40px!important}
+
+/* V2.0 — Broadcast Edition */
+:root{--bg:#050505;--panel:#0b0b0d;--panel2:#121216;--line:#2a2a2f;--text:#f7f7f8;--muted:#8f8f98;--yellow:#ffd230;--green:#31e981;--red:#ff334f;--purple:#b66cff;--accent:#e10600}
+body.current-qualification{--accent:#e10600}
+body.current-sprint{--accent:#168bff}
+body.current-endurance{--accent:#ff8a00}
+body{background:#050505;font-family:"Arial Narrow","Roboto Condensed","Helvetica Neue Condensed",Arial,sans-serif;letter-spacing:.01em}
+header{background:#09090bcc;border-bottom:2px solid #1f1f24;backdrop-filter:blur(10px)}
+.brand{font-style:italic;letter-spacing:-.05em}.brand i{color:var(--accent)}
+.panel{background:linear-gradient(180deg,#0c0c0f,#070708);border:0;border-radius:0;box-shadow:inset 0 1px #26262b}
+.qual-wrap,.sprint-wrap{padding:10px}.qual-top,.sprint-top{margin-bottom:8px}
+.qual-strip,.sprint-strip{min-height:126px;padding:0;grid-template-columns:1fr 2.2fr 1fr;border-top:3px solid var(--accent)}
+.qual-cell,.sprint-cell{height:126px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative}
+.qual-cell+.qual-cell,.sprint-cell+.sprint-cell{border-left:1px solid #29292e}
+.position-cell{box-shadow:inset 6px 0 var(--accent);background:#111114}
+.hero-position{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif;font-size:76px;font-weight:1000;font-style:italic;letter-spacing:-.07em}
+.hero-name,.name{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif;text-transform:uppercase;letter-spacing:.025em}
+.qual-delta{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:84px;font-variant-numeric:tabular-nums;font-style:italic}
+.sprint-fast-lap,.hero-lap,td:nth-last-child(-n+3){font-variant-numeric:tabular-nums}
+.inline-home-btn{border-radius:0!important;background:#1a1a1e!important;border:0!important;border-right:1px solid #333!important;border-bottom:1px solid #333!important;color:#fff!important}
+.session-status{align-items:stretch;padding:12px 20px;gap:10px}.session-status>div{display:grid;grid-template-columns:1fr auto;align-items:end;border-bottom:1px solid #34343a;padding-bottom:7px}.session-status>div:last-child{border-bottom:0}.status-label{color:var(--muted);font-size:12px;font-weight:900;letter-spacing:.11em}.session-status strong{font-family:"SFMono-Regular",Consolas,monospace;font-size:27px;font-variant-numeric:tabular-nums}
+.sprint-lower{grid-template-columns:minmax(0,3fr) minmax(210px,1fr);gap:8px}
+table{table-layout:fixed}th{background:#101014!important;color:#aaaab3!important;letter-spacing:.12em;border-bottom:2px solid #29292e}td{border-top:1px solid #222227}.clickable:hover{background:#18181c}.followed{background:#17171b!important;box-shadow:inset 6px 0 var(--accent)!important}.followed td{font-weight:950}.pos{font-style:italic;letter-spacing:-.04em}
+#qualifTable td,#sprintTable td{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif;font-size:28px;height:46px;padding:2px 10px}#qualifTable .pos,#sprintTable .pos{font-size:38px}
+#qualifTable td:nth-child(n+3),#sprintTable td:nth-child(n+3){font-family:"SFMono-Regular",Consolas,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.penalty-panel{padding:0}.penalty-panel>.label{position:sticky;top:0;z-index:3;background:#151518;padding:12px 14px;border-bottom:2px solid var(--red);font-size:14px}.penalty-row{min-height:46px;padding:2px 14px!important;border-bottom:1px solid #25252a;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;flex-direction:row!important;font-size:28px!important;text-transform:uppercase}.penalty-row span{font-size:28px!important;font-family:"SFMono-Regular",Consolas,monospace}.penalty-row b:first-child{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.green{color:var(--green)!important}.purple{color:var(--purple)!important}.yellow{color:var(--yellow)!important}.red{color:var(--red)!important}
+@keyframes timingFlashGreen{0%{background:#31e98166}100%{background:transparent}}@keyframes timingFlashPurple{0%{background:#b66cff77}100%{background:transparent}}
+.flash-green{animation:timingFlashGreen .65s ease-out}.flash-purple{animation:timingFlashPurple .75s ease-out}
+@media(max-width:680px){
+ body{background:#000}.qual-wrap,.sprint-wrap{padding:0}.qual-top,.sprint-top{margin:0}.qual-strip,.sprint-strip{min-height:91px}.qual-cell,.sprint-cell{height:91px}.hero-position{font-size:47px}.hero-name{font-size:12px}.qual-delta{font-size:43px}.session-status{padding:6px 8px;gap:4px}.status-label{font-size:8px}.session-status strong{font-size:17px}.sprint-lower{gap:2px;grid-template-columns:minmax(0,2fr) minmax(145px,1fr)}
+ #qualifTable td,#sprintTable td{font-size:20px;height:24px;padding:1px 4px}#qualifTable .pos,#sprintTable .pos{font-size:26px}
+ .penalty-panel>.label{font-size:10px;padding:4px 5px}.penalty-row{min-height:24px!important;height:24px!important;padding:1px 5px!important;font-size:20px!important;line-height:1!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important}.penalty-row span{font-size:20px!important}.penalty-row b:first-child{font-size:20px!important}
+}
+body.preview-embedded header{display:none!important}body.preview-embedded.current-qualification .qual-wrap,body.preview-embedded.current-sprint .sprint-wrap{height:100dvh;display:flex;flex-direction:column}body.preview-embedded.current-qualification .qual-table-wrap,body.preview-embedded.current-sprint .sprint-lower{flex:1;min-height:0}body.preview-embedded.current-sprint .sprint-table-wrap,body.preview-embedded.current-sprint .penalty-panel{height:100%;max-height:none!important}
+
+/* KartIQ V2.1 — typographies officielles fournies par l'utilisateur */
+@font-face{font-family:"F1 Regular";src:url("/static/fonts/f1-regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:"F1 Torque";src:url("/static/fonts/f1-torque.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
+:root{--font-time:"F1 Regular",Arial,sans-serif;--font-driver:"F1 Torque","Arial Narrow",Arial,sans-serif}
+/* Tous les temps, écarts et chiffres de classement */
+.pos,#qualifTable td:nth-child(n+3),#sprintTable td:nth-child(n+3),#enduranceTable td:nth-child(1),#enduranceTable td:nth-child(n+5),.hero-lap,.sprint-fast-lap,.remaining-time,.remaining-laps,.penalty-row span,.crossing-last,.pace-row>b,.quick-table td:nth-child(2),.quick-table td:nth-child(6),.quick-table td:nth-child(7){font-family:var(--font-time)!important;font-variant-numeric:tabular-nums}
+/* Noms, bloc P5 + pilote, et delta central */
+.name,.hero-position,.hero-name,.qual-delta,.crossing-delta,.penalty-row b:first-child,.pace-row span:nth-child(2)>b{font-family:var(--font-driver)!important}
+.qual-delta{font-weight:700!important;letter-spacing:-.025em!important;margin:0!important}
+.position-cell{font-family:var(--font-driver)}
+.status-values{display:flex!important;flex-direction:column;align-items:center!important;justify-content:center!important;gap:2px!important;padding:4px 8px!important}
+.status-values strong{display:block;border:0!important;padding:0!important;line-height:.95;white-space:nowrap}
+.remaining-time{font-size:54px!important;font-weight:400!important;letter-spacing:-.035em}
+.remaining-laps{font-size:81px!important;font-weight:400!important;letter-spacing:-.04em}
+.penalty-row{grid-template-columns:minmax(0,1fr) auto!important}
+.penalty-row b:first-child{font-weight:700!important}
+.penalty-row span{font-weight:400!important}
+@media(max-width:680px){.remaining-time{font-size:34px!important}.remaining-laps{font-size:51px!important}.qual-delta{font-size:46px!important}.status-values{padding:2px 4px!important;gap:0!important}}
+
+
+/* KartIQ V2.2 — ajustements qualification, sprint et noms pilotes */
+.driver-first{font-family:var(--font-time)!important;font-weight:400!important}
+.driver-last{font-family:var(--font-driver)!important;font-weight:700!important}
+.driver-name{display:inline-flex;align-items:baseline;gap:.22em;min-width:0;white-space:nowrap}
+.name .driver-name{width:100%;overflow:hidden;text-overflow:ellipsis}
+/* Classements : position -20 % et pilote rapproché */
+#qualifTable .pos,#sprintTable .pos{font-size:30.4px!important;width:58px!important;padding-right:2px!important;text-align:right}
+#qualifTable td:nth-child(2),#sprintTable td:nth-child(2){padding-left:5px!important}
+#qualifTable th:nth-child(1),#sprintTable th:nth-child(1){width:58px!important;padding-right:2px!important}
+#qualifTable th:nth-child(2),#sprintTable th:nth-child(2){padding-left:5px!important}
+/* Qualification : temps et tours identiques, parfaitement centrés */
+.current-qualification .status-values{display:grid!important;grid-template-rows:1fr 1fr!important;align-items:stretch!important;justify-items:stretch!important;gap:0!important;padding:0!important}
+.current-qualification .status-values strong{font-size:54px!important;width:100%;height:100%;display:flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;text-align:center}
+.current-qualification .status-values strong+strong{border-top:1px solid #29292e!important}
+/* Sprint : meilleur pilote du dernier tour */
+.fastest-last-block{gap:8px;padding:8px 12px;text-align:center}
+.fastest-last-name{font-size:25px;line-height:1.05;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.fastest-last-time{font-family:var(--font-time)!important;font-size:30px;line-height:1;color:var(--green);font-variant-numeric:tabular-nums}
+/* Pénalités : même taille que le classement et nom complet typographié */
+#penalties .penalty-row,#penalties .penalty-row b:first-child,#penalties .penalty-row span{font-size:28px!important}
+#penalties .penalty-row b:first-child{font-family:inherit!important;font-weight:400!important}
+@media(max-width:680px){
+ #qualifTable .pos,#sprintTable .pos{font-size:20.8px!important;width:34px!important;padding-right:1px!important}
+ #qualifTable th:nth-child(1),#sprintTable th:nth-child(1){width:34px!important}
+ #qualifTable td:nth-child(2),#sprintTable td:nth-child(2){padding-left:3px!important}
+ .current-qualification .status-values strong{font-size:30px!important}
+ .fastest-last-block{gap:4px;padding:3px 5px}
+ .fastest-last-name{font-size:13px}
+ .fastest-last-time{font-size:17px}
+ #penalties .penalty-row,#penalties .penalty-row b:first-child,#penalties .penalty-row span{font-size:20px!important}
+}
+body.preview-embedded{scroll-behavior:auto!important}
+body.preview-embedded.current-qualification,body.preview-embedded.current-qualification #qualification{overflow-x:hidden!important;scroll-snap-type:none!important}
+
+
+/* KartIQ V2.3 — alignement classements, tailles et leader P1 */
+/* Qualification + Sprint : position et pilote complètement à gauche, avec un espace lisible. */
+#qualifTable .pos,#sprintTable .pos{
+  width:44px!important;
+  padding-left:8px!important;
+  padding-right:0!important;
+  text-align:left!important;
+  font-size:25.84px!important;
+}
+#qualifTable td:nth-child(2),#sprintTable td:nth-child(2){
+  padding-left:8px!important;
+  font-size:23.8px!important;
+}
+#qualifTable th:nth-child(1),#sprintTable th:nth-child(1){
+  width:44px!important;
+  padding-left:8px!important;
+  padding-right:0!important;
+  text-align:left!important;
+}
+#qualifTable th:nth-child(2),#sprintTable th:nth-child(2){padding-left:8px!important}
+/* Le numéro 1 est placé dans un carré rouge : le fond est derrière la position, jamais à côté. */
+.pos.leader-pos,.pace-rank.leader-pos{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:1.35em!important;
+  min-width:1.35em!important;
+  height:1.35em!important;
+  padding:0!important;
+  margin-left:8px!important;
+  background:#e10600!important;
+  color:#fff!important;
+  border-radius:3px!important;
+  line-height:1!important;
+  text-align:center!important;
+}
+/* Dans les tableaux, le carré reste contenu dans la cellule de position. */
+td.pos.leader-pos{display:table-cell!important;width:44px!important;min-width:44px!important;height:auto!important;margin:0!important;background:#e10600!important;text-align:center!important;padding:0!important;border-radius:3px!important;background-clip:content-box!important}
+#enduranceTable td.pos.leader-pos{width:auto!important;min-width:0!important;padding:0 8px!important;background-clip:content-box!important}
+/* Qualification : temps restant et tours restants divisés par deux. */
+.current-qualification .status-values strong{font-size:27px!important}
+/* Sprint : pénalités toujours affichées sous la forme nom du pilote + pénalité. */
+#penalties .penalty-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important}
+#penalties .penalty-row b:first-child{display:block!important;min-width:0!important}
+@media(max-width:680px){
+  #qualifTable .pos,#sprintTable .pos{width:31px!important;font-size:17.68px!important;padding-left:4px!important}
+  #qualifTable td:nth-child(2),#sprintTable td:nth-child(2){padding-left:6px!important;font-size:17px!important}
+  #qualifTable th:nth-child(1),#sprintTable th:nth-child(1){width:31px!important;padding-left:4px!important}
+  #qualifTable th:nth-child(2),#sprintTable th:nth-child(2){padding-left:6px!important}
+  .current-qualification .status-values strong{font-size:15px!important}
+  td.pos.leader-pos{width:31px!important;min-width:31px!important;padding:0!important}
+}
+
+
+/* KartIQ V2.4 */
+.gap-with{margin-top:8px;font-family:var(--font-time);font-size:15px;line-height:1.15;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
+.gap-with .gap-label,.gap-with .driver-first{font-family:var(--font-time)!important;font-weight:400!important}
+.gap-with .driver-last{font-family:var(--font-driver)!important;font-weight:700!important}
+/* P1 sans fond particulier dans tous les modes */
+.pos.leader-pos,.pace-rank.leader-pos,td.pos.leader-pos{background:transparent!important;color:inherit!important;border-radius:0!important;width:auto!important;min-width:0!important;padding:inherit!important}
+/* Chronos Qualification réduits de 10 % */
+#qualifTable td:nth-child(n+3){font-size:25.2px!important}
+/* Le classement Qualification reprend exactement le calage Sprint */
+#qualifTable td:first-child,#sprintTable td:first-child{width:72px;text-align:left;padding-left:12px!important}
+#qualifTable td:nth-child(2),#sprintTable td:nth-child(2){text-align:left;padding-left:8px!important}
+/* Desktop : vraie mise en page large, plus dense et plus agréable */
+@media(min-width:1001px){
+ .qual-wrap,.sprint-wrap{padding:14px 18px;max-width:1800px;margin:0 auto}
+ .qual-strip,.sprint-strip{min-height:108px;grid-template-columns:minmax(230px,.85fr) minmax(360px,1.35fr) minmax(260px,.9fr);padding:8px 18px}
+ .hero-position{font-size:50px}.hero-name{font-size:16px;margin-top:5px}.qual-delta{font-size:66px!important}.gap-with{font-size:14px;margin-top:5px}
+ .remaining-time{font-size:27px!important}.remaining-laps{font-size:40px!important}
+ #qualifTable td,#sprintTable td{font-size:19px!important;height:40px;padding:4px 10px}#qualifTable .pos,#sprintTable .pos{font-size:25px!important}
+ #qualifTable td:nth-child(n+3){font-size:17.1px!important}
+ .sprint-lower{grid-template-columns:minmax(760px,3fr) minmax(300px,1fr);gap:12px}
+ .penalty-row,.penalty-row span{font-size:19px!important;min-height:40px}
+}
+/* iPhone SE intégré : supprimer l'outil de test et caler le premier écran */
+body.preview-embedded.current-qualification .testbar,body.preview-embedded.current-sprint .testbar{display:none!important}
+body.preview-embedded.current-qualification,body.preview-embedded.current-sprint{height:100dvh;overflow:hidden!important}
+body.preview-embedded.current-qualification #qualification,body.preview-embedded.current-sprint #sprint{height:100dvh;overflow:hidden!important}
+body.preview-embedded.current-qualification .qual-wrap{height:100%;display:flex;flex-direction:column;padding-top:0!important}
+body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0;overflow:hidden}
+@media(max-width:680px){
+ .gap-with{font-size:9px;margin-top:2px;padding:0 2px}
+ #qualifTable td:nth-child(n+3){font-size:18px!important}
+ #qualifTable td:first-child,#sprintTable td:first-child{width:34px;padding-left:4px!important}
+ #qualifTable td:nth-child(2),#sprintTable td:nth-child(2){padding-left:4px!important}
+ body.preview-embedded.current-sprint .penalty-row b:first-child{display:inline!important;visibility:visible!important;opacity:1!important;color:#fff!important;max-width:100%;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+}
+
+
+/* KartIQ V2.4.1 — correctifs desktop et iPhone SE */
+/* Desktop/tablette : Qualification et Sprint utilisent une vraie mise en page large,
+   jamais les dimensions de l’iPhone SE hors aperçu intégré. */
+@media (min-width:681px){
+  body:not(.preview-embedded).current-qualification,
+  body:not(.preview-embedded).current-sprint{overflow:auto!important;height:auto!important}
+  body:not(.preview-embedded).current-qualification #qualification,
+  body:not(.preview-embedded).current-sprint #sprint{height:auto!important;overflow:visible!important}
+  body:not(.preview-embedded) .qual-wrap,
+  body:not(.preview-embedded) .sprint-wrap{width:100%;max-width:none;margin:0;padding:16px 20px}
+  body:not(.preview-embedded) .qual-strip,
+  body:not(.preview-embedded) .sprint-strip{min-height:112px;grid-template-columns:minmax(240px,.9fr) minmax(420px,1.5fr) minmax(280px,1fr)}
+  body:not(.preview-embedded) .qual-table-wrap,
+  body:not(.preview-embedded) .sprint-table-wrap{max-height:none!important;overflow:visible!important}
+  body:not(.preview-embedded) #qualifTable td,
+  body:not(.preview-embedded) #sprintTable td{font-size:19px!important;height:40px!important;padding:4px 10px!important}
+  body:not(.preview-embedded) #qualifTable .pos,
+  body:not(.preview-embedded) #sprintTable .pos{font-size:25px!important;width:54px!important;padding-left:10px!important}
+  body:not(.preview-embedded) #qualifTable td:nth-child(2),
+  body:not(.preview-embedded) #sprintTable td:nth-child(2){font-size:19px!important;padding-left:8px!important}
+  body:not(.preview-embedded) #qualifTable td:nth-child(n+3){font-size:17px!important}
+}
+
+/* Qualification iPhone SE : position + prénom/nom identiques au Sprint. */
+@media (max-width:680px){
+  body.preview-embedded.current-qualification #qualifTable,
+  body.preview-embedded.current-sprint #sprintTable{table-layout:fixed;width:100%}
+  body.preview-embedded.current-qualification #qualifTable th:first-child,
+  body.preview-embedded.current-qualification #qualifTable td:first-child,
+  body.preview-embedded.current-sprint #sprintTable th:first-child,
+  body.preview-embedded.current-sprint #sprintTable td:first-child{width:34px!important;text-align:left!important;padding-left:4px!important;padding-right:0!important;font-size:17px!important}
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(2),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2),
+  body.preview-embedded.current-sprint #sprintTable th:nth-child(2),
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(2){width:31%!important;text-align:left!important;padding-left:4px!important;font-size:17px!important}
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2) .driver-name,
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(2) .driver-name{display:flex!important;width:100%;gap:.18em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* Sprint iPhone SE : garder le nom du pilote visible dans la colonne Pénalités. */
+  body.preview-embedded.current-sprint .sprint-lower{grid-template-columns:minmax(0,2.15fr) minmax(118px,.85fr)!important;gap:5px!important}
+  body.preview-embedded.current-sprint .penalty-panel{min-width:118px!important;padding:0!important;overflow-y:auto!important}
+  body.preview-embedded.current-sprint .penalty-panel>.label{font-size:8px!important;padding:4px!important}
+  body.preview-embedded.current-sprint #penalties{display:block!important;width:100%!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:3px!important;min-height:28px!important;height:auto!important;padding:3px 4px!important;font-size:10px!important;line-height:1!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row b:first-child{display:block!important;visibility:visible!important;opacity:1!important;min-width:0!important;max-width:none!important;color:#fff!important;font-size:9px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row span,
+  body.preview-embedded.current-sprint #penalties .penalty-row span b{font-size:10px!important;white-space:nowrap!important}
+}
+
+
+/* KartIQ V2.4.2 — Qualification iPhone SE paysage */
+/* Le bloc POS + PILOTE reprend strictement le calage du Sprint :
+   position étroite à gauche, puis prénom/nom immédiatement à côté. */
+@media (max-width:680px) and (orientation:landscape){
+  body.preview-embedded.current-qualification #qualifTable{table-layout:fixed!important;width:100%!important}
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(1),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(1){
+    width:8%!important;max-width:8%!important;text-align:left!important;
+    padding-left:4px!important;padding-right:0!important
+  }
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(2),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2){
+    width:34%!important;max-width:34%!important;text-align:left!important;
+    padding-left:2px!important;padding-right:3px!important
+  }
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(3),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(3){width:19%!important}
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(4),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(4){width:19%!important}
+  body.preview-embedded.current-qualification #qualifTable th:nth-child(5),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(5){width:20%!important}
+  body.preview-embedded.current-qualification #qualifTable td.name .driver-name{
+    display:inline-flex!important;justify-content:flex-start!important;align-items:baseline!important;
+    width:auto!important;max-width:100%!important;gap:.18em!important;
+    white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+  }
+  body.preview-embedded.current-qualification #qualifTable td.name{
+    white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+  }
+}
+
+
+/* KartIQ V2.5 — correctif définitif Qualification iPhone SE paysage
+   La règle table-layout doit viser la TABLE, et non le tbody #qualifTable.
+   Les deux premières colonnes reprennent exactement les proportions du Sprint. */
+@media (max-width:680px) and (orientation:landscape){
+  body.preview-embedded.current-qualification .qual-table-wrap table{
+    table-layout:fixed!important;
+    width:100%!important;
+  }
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(1),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(1){
+    width:9%!important;
+    max-width:9%!important;
+    text-align:left!important;
+    padding-left:4px!important;
+    padding-right:0!important;
+  }
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(2),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2){
+    width:31%!important;
+    max-width:31%!important;
+    text-align:left!important;
+    padding-left:4px!important;
+    padding-right:3px!important;
+  }
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(3),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(3){width:20%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(4),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(4){width:20%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(5),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(5){width:20%!important}
+  body.preview-embedded.current-qualification #qualifTable td.name,
+  body.preview-embedded.current-qualification #qualifTable td.name .driver-name{
+    text-align:left!important;
+    justify-content:flex-start!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+}
+
+
+/* KartIQ V2.6 — iPhone SE portrait/paysage */
+/* Qualification portrait : typographies compactes pour tenir sur 375 px. */
+@media (max-width:430px) and (orientation:portrait){
+  body.preview-embedded.current-qualification .qual-strip{
+    grid-template-columns:.75fr 1.35fr .9fr!important;
+    min-height:82px!important;
+    padding:2px 3px!important;
+  }
+  body.preview-embedded.current-qualification .qual-cell{height:82px!important}
+  body.preview-embedded.current-qualification .hero-position{font-size:37px!important}
+  body.preview-embedded.current-qualification .hero-name{font-size:9px!important;margin-top:2px!important}
+  body.preview-embedded.current-qualification .qual-delta{font-size:34px!important}
+  body.preview-embedded.current-qualification .gap-with{font-size:8px!important;margin-top:3px!important;padding:0 2px!important}
+  body.preview-embedded.current-qualification .status-values strong{font-size:12px!important}
+  body.preview-embedded.current-qualification .qual-table-wrap table{table-layout:fixed!important;width:100%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th,
+  body.preview-embedded.current-qualification #qualifTable td{font-size:10px!important;padding:2px 2px!important;height:22px!important;line-height:1!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th{font-size:8px!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(1),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(1){width:8%!important;font-size:11px!important;padding-left:3px!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(2),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(2){width:32%!important;font-size:10px!important;padding-left:2px!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(3),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(3){width:20%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(4),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(4){width:20%!important}
+  body.preview-embedded.current-qualification .qual-table-wrap th:nth-child(5),
+  body.preview-embedded.current-qualification #qualifTable td:nth-child(5){width:20%!important}
+  body.preview-embedded.current-qualification #qualifTable td.name,
+  body.preview-embedded.current-qualification #qualifTable td.name .driver-name{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;gap:.12em!important}
+}
+
+/* Sprint portrait : pénalités sous le classement général. */
+@media (max-width:430px) and (orientation:portrait){
+  body.preview-embedded.current-sprint{height:100dvh!important;overflow-y:auto!important}
+  body.preview-embedded.current-sprint #sprint{height:auto!important;min-height:100dvh!important;overflow:visible!important}
+  body.preview-embedded.current-sprint .sprint-wrap{height:auto!important;min-height:100dvh!important;display:block!important}
+  body.preview-embedded.current-sprint .sprint-lower{display:flex!important;flex-direction:column!important;gap:6px!important}
+  body.preview-embedded.current-sprint .sprint-table-wrap{height:auto!important;max-height:none!important;overflow:visible!important}
+  body.preview-embedded.current-sprint .penalty-panel{height:auto!important;max-height:none!important;min-width:0!important;overflow:visible!important;padding:6px!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row{min-height:26px!important;padding:3px 4px!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row b:first-child,
+  body.preview-embedded.current-sprint #penalties .penalty-row span,
+  body.preview-embedded.current-sprint #penalties .penalty-row span b{font-size:15px!important}
+}
+
+/* Sprint paysage : pénalités à la même taille que les noms du classement. */
+@media (max-width:680px) and (orientation:landscape){
+  body.preview-embedded.current-sprint #penalties .penalty-row{min-height:30px!important;padding:3px 4px!important;gap:4px!important}
+  body.preview-embedded.current-sprint #penalties .penalty-row b:first-child,
+  body.preview-embedded.current-sprint #penalties .penalty-row span,
+  body.preview-embedded.current-sprint #penalties .penalty-row span b{font-size:17px!important;line-height:1!important}
+}
+
+
+
+/* KartIQ V2.7 — correctifs iPhone SE et accueil compact */
+/* Qualification paysage : le classement reste entièrement défilable au-delà de P10. */
+@media (max-width:680px) and (orientation:landscape){
+  body.preview-embedded.current-qualification,
+  body.preview-embedded.current-qualification #qualification{height:100dvh!important;overflow:hidden!important}
+  body.preview-embedded.current-qualification .qual-wrap{height:100dvh!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+  body.preview-embedded.current-qualification .qual-top{flex:0 0 auto!important}
+  body.preview-embedded.current-qualification .qual-table-wrap{
+    flex:1 1 auto!important;min-height:0!important;height:auto!important;max-height:none!important;
+    overflow-x:hidden!important;overflow-y:scroll!important;-webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;touch-action:pan-y!important;
+  }
+  body.preview-embedded.current-qualification .qual-table-wrap table{height:auto!important}
+}
+
+

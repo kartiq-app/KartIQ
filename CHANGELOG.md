@@ -1,3 +1,11 @@
+## V5.2.0 — Modularisation CSS
+
+- Découpage de `static/css/kartiq.css` en six feuilles de style ordonnées.
+- Conservation stricte de la cascade : aucune règle n’a été supprimée, réécrite ou déplacée hors de son ordre historique.
+- `kartiq.css` devient le point d’entrée et importe les modules dans l’ordre attendu.
+- Ajout des feuilles CSS au cache PWA et synchronisation de toutes les références de version.
+- Ajout d’une documentation dédiée à l’architecture CSS et à sa règle de sécurité principale : ne jamais changer l’ordre des imports sans campagne de tests.
+
 ## V5.1.2 — Couleur conditionnelle du meilleur dernier tour Sprint
 
 - Le chrono de la carte avec la flamme reste vert par défaut.

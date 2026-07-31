@@ -1,0 +1,127 @@
+/* KartIQ V5.2.0 — Endurance, Quick Change et derniers correctifs.
+   Ordre de cascade conservé depuis kartiq.css V5.1.2. */
+/* KartIQ V4.9.0 — gestion visuelle des files de karts en Endurance */
+.endurance-queue-panel{grid-column:1/-1;min-width:0;padding:14px 16px 16px;border:1px solid #29384d;border-radius:12px;background:linear-gradient(180deg,#101722,#0a0f17);box-shadow:0 0 0 1px rgba(43,139,255,.08) inset}
+.endurance-queue-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.endurance-queue-title{font-size:15px;font-weight:950;letter-spacing:.05em;color:#fff}
+.queue-count-control{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
+.queue-count-control button{width:34px;height:30px;border:1px solid #33445d;border-radius:7px;background:#111927;color:#fff;font:900 12px var(--font-time);cursor:pointer}
+.queue-count-control button.active{border-color:#2c8cff;background:#173f85;box-shadow:0 0 15px rgba(44,140,255,.25)}
+.kart-queues{display:grid;grid-template-columns:repeat(var(--queue-count,1),minmax(0,1fr));gap:12px}
+.kart-queue{min-width:0;border:1px solid #2a3443;border-radius:10px;background:#0b1118;overflow:hidden}
+.kart-queue-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;border-bottom:1px solid #222d3b}
+.kart-queue-name{font-weight:950;color:#fff}.kart-queue-first-label{margin-left:7px;padding:3px 7px;border-radius:999px;background:#0c8c40;color:#d8ffe6;font-size:8px;font-weight:950}
+.queue-add-btn{border:1px solid #2c61c9;border-radius:7px;background:#10224a;color:#fff;padding:7px 10px;font-size:9px;font-weight:950;cursor:pointer}
+.queue-track{display:flex;align-items:stretch;gap:8px;padding:12px;overflow-x:auto;min-height:132px;scrollbar-width:thin}
+.queue-empty{display:flex;align-items:center;justify-content:center;width:100%;min-height:104px;border:1px dashed #465366;border-radius:8px;color:#79869a;font-size:11px}
+.queue-kart-card{position:relative;flex:0 0 112px;min-height:108px;padding:8px 7px 7px;border:1px solid #465366;border-radius:9px;background:linear-gradient(180deg,#121a25,#0a0e14);cursor:pointer;transition:.18s ease;user-select:none}
+.queue-kart-card:hover{transform:translateY(-2px);border-color:#5c81b3}.queue-kart-card.selected{border-color:#2c8cff;box-shadow:0 0 0 2px rgba(44,140,255,.24),0 0 16px rgba(44,140,255,.22)}
+.queue-kart-card.first{border-color:#10c65a;box-shadow:0 0 15px rgba(16,198,90,.2)}
+.queue-kart-image{display:block;width:100%;height:55px;object-fit:contain;filter:drop-shadow(0 4px 5px rgba(0,0,0,.55))}
+.queue-kart-number{text-align:center;font:950 26px/1 var(--font-time);color:#fff;margin-top:5px}.queue-kart-position{text-align:center;margin-top:6px;color:#8e9aad;font-size:8px;font-weight:900}
+.queue-kart-card.first .queue-kart-position{color:#38e678}.queue-arrow{display:flex;align-items:center;color:#8995a7;font-size:18px;flex:0 0 auto}
+.queue-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #243041}
+.queue-actions-label{margin-right:auto;color:#8e9aad;font-size:10px}.queue-action{border:1px solid #38506e;border-radius:8px;background:#101722;color:#fff;padding:9px 13px;font-size:10px;font-weight:950;cursor:pointer}.queue-action:disabled{opacity:.35;cursor:not-allowed}.queue-action.advance{border-color:#188c48;color:#49e787}.queue-action.back{border-color:#206dcc;color:#55a9ff}.queue-action.remove{border-color:#a92e36;color:#ff5a64}.queue-action.reset{margin-left:auto}
+@media(max-width:1000px){.kart-queues{grid-template-columns:1fr!important}.endurance-queue-header{align-items:flex-start;flex-direction:column}.queue-count-control{width:100%;justify-content:flex-end}}
+@media(max-width:680px){.endurance-queue-panel{padding:10px 8px}.queue-kart-card{flex-basis:94px;min-height:98px}.queue-kart-image{height:46px}.queue-kart-number{font-size:22px}.queue-actions{display:grid;grid-template-columns:repeat(3,1fr)}.queue-actions-label,.queue-action.reset{grid-column:1/-1;margin:0}.queue-action{padding:10px 5px}}
+body:not(.preview-embedded).current-endurance .screen.active{overflow-y:auto!important}
+body:not(.preview-embedded).current-endurance .endurance-grid{height:auto!important;min-height:100%!important;overflow:visible!important;grid-template-rows:minmax(560px,calc(100vh - 76px)) auto!important}
+body:not(.preview-embedded).current-endurance .endurance-queue-panel{margin-bottom:12px}
+
+
+
+/* KartIQ V4.9.1 — Top 8 et Quick Change adaptés à la largeur d’un smartphone */
+@media (max-width:680px){
+  body.current-endurance .right-stack,
+  body.current-endurance .right-stack > .panel,
+  body.current-endurance #paceTop8,
+  body.current-endurance .quick-change-panel{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+  }
+
+  /* Top 8 : trois zones compactes, sans débordement horizontal. */
+  body.current-endurance #paceTop8 .pace-row{
+    width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    grid-template-columns:42px minmax(0,1fr) 66px!important;
+    gap:5px!important;
+    padding:6px 2px!important;
+  }
+  body.current-endurance #paceTop8 .pace-rank{
+    min-width:0!important;
+    gap:3px!important;
+    font-size:15px!important;
+    white-space:nowrap!important;
+  }
+  body.current-endurance #paceTop8 .pace-general-pos{
+    font-size:8px!important;
+  }
+  body.current-endurance #paceTop8 .pace-row > span:nth-child(2){
+    min-width:0!important;
+    overflow:hidden!important;
+    font-size:10px!important;
+    line-height:1.1!important;
+  }
+  body.current-endurance #paceTop8 .pace-row > span:nth-child(2) > b{
+    display:block!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  body.current-endurance #paceTop8 .pace-row > span:nth-child(2) .label{
+    display:block!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:7px!important;
+  }
+  body.current-endurance #paceTop8 .pace-row > b:last-child{
+    min-width:0!important;
+    text-align:right!important;
+    white-space:nowrap!important;
+    font-size:10px!important;
+  }
+
+  /* Quick Change : les sept colonnes restent visibles sur une seule largeur d’écran. */
+  body.current-endurance .quick-table-wrap{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow-x:hidden!important;
+  }
+  body.current-endurance .quick-table{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    table-layout:fixed!important;
+  }
+  body.current-endurance .quick-table th,
+  body.current-endurance .quick-table td{
+    min-width:0!important;
+    max-width:none!important;
+    box-sizing:border-box!important;
+    padding:4px 1px!important;
+    font-size:7px!important;
+    line-height:1.05!important;
+    text-align:center!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  body.current-endurance .quick-table th:nth-child(1),body.current-endurance .quick-table td:nth-child(1){width:8%!important}
+  body.current-endurance .quick-table th:nth-child(2),body.current-endurance .quick-table td:nth-child(2){width:15%!important}
+  body.current-endurance .quick-table th:nth-child(3),body.current-endurance .quick-table td:nth-child(3){width:10%!important}
+  body.current-endurance .quick-table th:nth-child(4),body.current-endurance .quick-table td:nth-child(4){width:25%!important}
+  body.current-endurance .quick-table th:nth-child(5),body.current-endurance .quick-table td:nth-child(5){width:9%!important}
+  body.current-endurance .quick-table th:nth-child(6),body.current-endurance .quick-table td:nth-child(6){width:17%!important}
+  body.current-endurance .quick-table th:nth-child(7),body.current-endurance .quick-table td:nth-child(7){width:16%!important}
+}
+
+/* KartIQ V5.1.2 — Couleur du meilleur dernier tour Sprint
+   Vert par défaut ; violet uniquement s'il égale le meilleur temps absolu de la session. */
+body.current-sprint .fastest-last-time.fastest-lap-green{color:var(--green)!important}
+body.current-sprint .fastest-last-time.fastest-session-best{color:var(--purple)!important}

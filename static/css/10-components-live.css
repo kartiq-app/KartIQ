@@ -1,0 +1,359 @@
+/* KartIQ V5.2.0 — Composants live, accueil, diagnostics et premiers modes.
+   Ordre de cascade conservé depuis kartiq.css V5.1.2. */
+/* V4.3.4 — pénalités Sprint et Endurance, ordre antéchronologique. */
+.endurance-penalty-panel{min-height:120px;max-height:260px;overflow-y:auto}
+#endurancePenalties .penalty-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
+#endurancePenalties .penalty-row span,#endurancePenalties .penalty-row span b{color:var(--red)!important}
+#enduranceTable th:last-child,#enduranceTable td:last-child{color:var(--red);font-weight:900;text-align:center}
+
+/* Sprint portrait : temps du classement général réduits de 30 %, noms inchangés. */
+@media (max-width:430px) and (orientation:portrait){
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(3),
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(4),
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(5),
+  body.preview-embedded.current-sprint #sprintTable td:nth-child(6){font-size:14px!important}
+}
+
+/* Pénalité toujours affichée en rouge dans le bloc Sprint. */
+.current-sprint #penalties .penalty-row span,
+.current-sprint #penalties .penalty-row span b{color:var(--red)!important}
+
+/* Home iPhone SE : les trois modes sont visibles dès le premier écran. */
+@media (max-width:680px){
+  .home{padding:8px 7px!important}
+  .home-card{padding:10px!important}
+  .home-card h1{font-size:27px!important;margin:0 0 3px!important}
+  .home-card>p{display:none!important}
+  .home-grid{gap:7px!important;margin-top:7px!important}
+  .field label{font-size:9px!important;margin-bottom:3px!important}
+  .field select{padding:8px!important;font-size:11px!important}
+  .mode-cards{grid-template-columns:1fr!important;gap:6px!important}
+  .mode-card{padding:10px 12px!important;min-height:42px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important}
+  .mode-card h3{font-size:16px!important;margin:0!important}
+  .mode-card p{display:none!important}
+}
+@media (max-width:680px) and (orientation:landscape){
+  .home{padding:5px 7px!important}
+  .home-card{padding:7px 10px!important}
+  .home-card h1{font-size:22px!important}
+  .home-grid{grid-template-columns:1fr 1fr!important;gap:5px 8px!important;margin-top:4px!important}
+  .field select{padding:5px 7px!important;font-size:10px!important}
+  .mode-cards{grid-column:1/-1!important;grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
+  .mode-card{padding:7px 5px!important;min-height:36px!important}
+  .mode-card h3{font-size:14px!important}
+}
+
+
+/* KartIQ V2.9 — home racing affinée */
+body.current-home{overflow:hidden!important;background:#050608!important}
+body.current-home header{display:none!important}
+body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!important}
+.race-home-shell{position:relative;width:100%;height:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:
+  radial-gradient(circle at 50% 18%,rgba(45,49,58,.42),transparent 36%),
+  linear-gradient(145deg,#111318 0%,#050608 58%,#090a0d 100%)}
+.race-home-shell:before{content:"";position:absolute;inset:0;opacity:.22;background-image:
+  linear-gradient(135deg,rgba(255,255,255,.025) 25%,transparent 25%),
+  linear-gradient(225deg,rgba(255,255,255,.025) 25%,transparent 25%),
+  linear-gradient(45deg,rgba(255,255,255,.025) 25%,transparent 25%),
+  linear-gradient(315deg,rgba(255,255,255,.025) 25%,#090b10 25%);background-position:18px 0,18px 0,0 0,0 0;background-size:36px 36px;background-repeat:repeat}
+.race-home-shell:after{content:"";position:absolute;left:-15%;right:-15%;bottom:-7%;height:24%;transform:rotate(-7deg);background:linear-gradient(180deg,transparent,rgba(225,6,0,.12) 55%,rgba(225,6,0,.42));filter:blur(18px)}
+.race-home-glow{position:absolute;left:-20vw;bottom:-3%;width:140vw;height:3px;background:linear-gradient(90deg,rgba(225,6,0,.3) 0%,#e10600 8%,#ff2a20 50%,#e10600 92%,rgba(225,6,0,.3) 100%);transform:rotate(-15deg);transform-origin:center;box-shadow:0 0 8px #e10600,0 0 22px #e10600,0 0 50px rgba(225,6,0,.9);pointer-events:none}
+.race-home-content{position:relative;z-index:2;width:min(860px,92vw);display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 34px 24px}
+.kartiq-logo{font-family:var(--font-driver);font-style:italic;font-weight:700;font-size:clamp(58px,9vw,112px);line-height:.82;letter-spacing:-.08em;text-shadow:0 10px 30px #000}
+.kartiq-kart{color:#fff}.kartiq-iq{color:#e10600}
+.kartiq-tagline{margin-top:18px;padding:0 24px 10px;border-bottom:1px solid rgba(225,6,0,.82);font-family:var(--font-time);font-size:13px;letter-spacing:.34em;color:#f3f3f3;box-shadow:0 10px 14px -13px #e10600}
+.home-circuit{margin-top:24px;width:min(430px,100%);display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px;padding:8px 10px 8px 14px;border:1px solid #2d3138;border-radius:10px;background:rgba(8,10,14,.84);box-shadow:0 12px 35px rgba(0,0,0,.32)}
+.home-circuit label{font-size:10px;letter-spacing:.2em;color:#858b96;font-weight:900}
+.home-circuit select{min-width:0;width:100%;border:0;background:#15181e;color:#fff;padding:9px 34px 9px 12px;border-radius:7px;font-size:13px;font-weight:800;outline:none}
+.race-mode-cards{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.race-mode-card{position:relative;min-height:176px;border:1px solid #343941;border-radius:14px;background:linear-gradient(145deg,rgba(29,32,38,.98),rgba(8,10,14,.98));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;cursor:pointer;overflow:hidden;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.race-mode-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(225,6,0,.12),transparent 36%);opacity:0;transition:opacity .18s ease}
+.race-mode-card:hover,.race-mode-card:focus-visible{transform:translateY(-3px);border-color:#e10600;box-shadow:0 0 0 1px rgba(225,6,0,.22),0 18px 42px rgba(0,0,0,.38),inset 3px 0 #e10600;outline:none}
+.race-mode-card:hover:before,.race-mode-card:focus-visible:before{opacity:1}
+.race-icon{position:relative;z-index:1;width:58px;height:58px;color:#e10600;filter:drop-shadow(0 0 10px rgba(225,6,0,.28))}
+.race-icon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+.race-mode-label{position:relative;z-index:1;font-family:var(--font-driver);font-size:20px;text-transform:uppercase}
+.race-chevron{position:relative;z-index:1;color:#e10600;font-size:34px;line-height:.6}
+.powered-by{margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.powered-by span{font-size:9px;letter-spacing:.2em;color:#a3a8b0}
+.powered-by img{display:block;width:142px;height:auto;object-fit:contain}
+@media(max-width:680px){
+ .race-home-content{width:100%;height:100%;justify-content:center;padding:16px 14px 12px}
+ .kartiq-logo{font-size:60px}
+ .kartiq-tagline{margin-top:11px;padding:0 12px 7px;font-size:8px;letter-spacing:.27em}
+ .home-circuit{margin-top:13px;width:100%;max-width:345px;padding:5px 6px 5px 10px;gap:8px}
+ .home-circuit label{font-size:8px}.home-circuit select{padding:7px 28px 7px 9px;font-size:11px}
+ .race-mode-cards{grid-template-columns:1fr;gap:8px;margin-top:11px;max-width:345px}
+ .race-mode-card{min-height:70px;display:grid;grid-template-columns:46px 1fr 24px;gap:10px;padding:8px 14px;text-align:left;border-radius:11px}
+ .race-icon{width:40px;height:40px}.race-mode-label{font-size:17px}.race-chevron{font-size:30px;text-align:right}
+ .powered-by{margin-top:12px;gap:5px}.powered-by span{font-size:7px}.powered-by img{width:105px}
+}
+@media(max-width:680px) and (orientation:landscape){
+ .race-home-content{padding:8px 16px 7px;justify-content:center}
+ .kartiq-logo{font-size:48px}
+ .kartiq-tagline{margin-top:6px;padding-bottom:4px;font-size:7px}
+ .home-circuit{margin-top:7px;max-width:430px;padding:4px 6px 4px 9px}
+ .home-circuit select{padding-top:5px;padding-bottom:5px}
+ .race-mode-cards{grid-template-columns:repeat(3,1fr);max-width:650px;gap:8px;margin-top:8px}
+ .race-mode-card{min-height:116px;display:flex;flex-direction:column;gap:6px;padding:7px;text-align:center;border-radius:10px}
+ .race-icon{width:38px;height:38px}.race-mode-label{font-size:13px}.race-chevron{font-size:25px}
+ .powered-by{margin-top:7px;gap:2px}.powered-by img{width:82px}.powered-by span{font-size:6px}
+}
+
+
+/* KartIQ V2.11.1 — sélection manuelle du circuit et vues desktop 100vh */
+.screen-enter{animation:kartiqScreenIn .2s ease-out}
+@keyframes kartiqScreenIn{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.home-circuit{
+  display:block!important;
+  width:min(520px,100%)!important;
+  margin-top:24px!important;
+  padding:0!important;
+  border:1px solid #343941!important;
+  border-radius:12px!important;
+  background:linear-gradient(145deg,rgba(29,32,38,.98),rgba(8,10,14,.98))!important;
+  box-shadow:0 12px 35px rgba(0,0,0,.32)!important;
+  overflow:hidden;
+}
+.home-circuit select{
+  display:block!important;
+  width:100%!important;
+  min-height:54px!important;
+  margin:0!important;
+  padding:0 44px!important;
+  border:0!important;
+  border-radius:0!important;
+  background-color:transparent!important;
+  color:#fff!important;
+  text-align:center!important;
+  text-align-last:center!important;
+  font-family:var(--font-time)!important;
+  font-size:14px!important;
+  font-weight:400!important;
+  letter-spacing:.04em!important;
+  outline:none!important;
+  cursor:pointer;
+}
+.home-circuit:focus-within,.home-circuit:hover{border-color:#e10600!important;box-shadow:0 0 0 1px rgba(225,6,0,.18),0 14px 38px rgba(0,0,0,.38)!important}
+.home-circuit.needs-selection{animation:circuitPrompt .36s ease}
+@keyframes circuitPrompt{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.race-mode-cards{margin-top:28px!important}
+.race-mode-card.mode-locked{opacity:.44;filter:saturate(.35);cursor:not-allowed}
+.race-mode-card.mode-locked:hover{transform:none;border-color:#343941;box-shadow:none}
+
+/* Une vraie interface desktop compacte, sans modifier la composition paysage. */
+@media (min-width:1001px){
+ body:not(.preview-embedded).current-qualification,
+ body:not(.preview-embedded).current-sprint,
+ body:not(.preview-embedded).current-endurance{height:100vh!important;min-height:100vh!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-qualification header,
+ body:not(.preview-embedded).current-sprint header,
+ body:not(.preview-embedded).current-endurance header{height:56px!important;padding:0 18px!important}
+ body:not(.preview-embedded).current-qualification .brand,
+ body:not(.preview-embedded).current-sprint .brand,
+ body:not(.preview-embedded).current-endurance .brand{font-size:22px!important}
+ body:not(.preview-embedded).current-qualification .home-btn,
+ body:not(.preview-embedded).current-sprint .home-btn,
+ body:not(.preview-embedded).current-endurance .home-btn,
+ body:not(.preview-embedded).current-qualification .preview-btn,
+ body:not(.preview-embedded).current-sprint .preview-btn,
+ body:not(.preview-embedded).current-endurance .preview-btn{height:36px!important;min-height:36px!important}
+ body:not(.preview-embedded).current-qualification .screen.active,
+ body:not(.preview-embedded).current-sprint .screen.active,
+ body:not(.preview-embedded).current-endurance .screen.active{height:calc(100vh - 56px)!important;overflow:hidden!important}
+
+ body:not(.preview-embedded).current-qualification .qual-wrap,
+ body:not(.preview-embedded).current-sprint .sprint-wrap{height:100%!important;max-width:1800px!important;margin:0 auto!important;padding:10px 16px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-qualification .qual-top,
+ body:not(.preview-embedded).current-sprint .sprint-top{flex:0 0 auto!important;margin-bottom:9px!important}
+ body:not(.preview-embedded).current-qualification .qual-strip,
+ body:not(.preview-embedded).current-sprint .sprint-strip{min-height:88px!important;height:88px!important;padding:5px 16px!important;grid-template-columns:minmax(200px,.85fr) minmax(330px,1.35fr) minmax(230px,.9fr)!important}
+ body:not(.preview-embedded).current-qualification .qual-cell,
+ body:not(.preview-embedded).current-sprint .sprint-cell{height:78px!important}
+ body:not(.preview-embedded) .hero-position{font-size:42px!important}
+ body:not(.preview-embedded) .hero-name{font-size:14px!important;margin-top:3px!important}
+ body:not(.preview-embedded) .qual-delta{font-size:54px!important}
+ body:not(.preview-embedded) .gap-with{font-size:12px!important;margin-top:3px!important}
+ body:not(.preview-embedded).current-qualification .status-values strong{font-size:23px!important}
+ body:not(.preview-embedded).current-sprint .fastest-last-name{font-size:18px!important}
+ body:not(.preview-embedded).current-sprint .fastest-last-time{font-size:23px!important}
+
+ body:not(.preview-embedded).current-qualification .qual-table-wrap{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-qualification .qual-table-wrap table,
+ body:not(.preview-embedded).current-sprint .sprint-table-wrap table{height:100%!important;table-layout:fixed!important}
+ body:not(.preview-embedded).current-qualification #qualifTable td,
+ body:not(.preview-embedded).current-sprint #sprintTable td{height:calc((100vh - 205px)/15)!important;min-height:27px!important;max-height:42px!important;padding:2px 9px!important;font-size:17px!important;line-height:1!important}
+ body:not(.preview-embedded).current-qualification #qualifTable .pos,
+ body:not(.preview-embedded).current-sprint #sprintTable .pos{font-size:22px!important}
+ body:not(.preview-embedded).current-qualification #qualifTable td:nth-child(n+3),
+ body:not(.preview-embedded).current-sprint #sprintTable td:nth-child(n+3){font-size:15px!important}
+ body:not(.preview-embedded).current-qualification th,
+ body:not(.preview-embedded).current-sprint th{height:28px!important;padding:4px 9px!important;font-size:9px!important}
+
+ body:not(.preview-embedded).current-sprint .sprint-lower{flex:1 1 auto!important;min-height:0!important;grid-template-columns:minmax(0,3fr) minmax(250px,1fr)!important;gap:9px!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-sprint .sprint-table-wrap,
+ body:not(.preview-embedded).current-sprint .penalty-panel{height:100%!important;min-height:0!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-sprint .penalty-panel>.label{padding:8px 10px!important;font-size:11px!important}
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row{min-height:0!important;height:calc((100% - 30px)/4)!important;padding:3px 10px!important}
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row,
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row b:first-child,
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row span,
+ body:not(.preview-embedded).current-sprint #penalties .penalty-row span b{font-size:17px!important}
+
+ body:not(.preview-embedded).current-endurance .endurance-grid{height:100%!important;padding:10px 16px!important;gap:10px!important;grid-template-columns:minmax(520px,.95fr) minmax(620px,1.25fr)!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-endurance .endurance-grid>.panel,
+ body:not(.preview-embedded).current-endurance .right-stack{height:100%!important;min-height:0!important;overflow:hidden!important}
+ body:not(.preview-embedded).current-endurance .right-stack{gap:10px!important}
+ body:not(.preview-embedded).current-endurance .right-stack>.panel:first-child{flex:0 0 45%!important}
+ body:not(.preview-embedded).current-endurance .right-stack>.panel:last-child{flex:1 1 auto!important;min-height:0!important}
+ body:not(.preview-embedded).current-endurance .panel-title{padding:8px 11px!important;font-size:10px!important}
+ body:not(.preview-embedded).current-endurance #enduranceTable td{height:calc((100vh - 120px)/15)!important;min-height:25px!important;max-height:40px!important;padding:2px 7px!important;font-size:14px!important;line-height:1!important}
+ body:not(.preview-embedded).current-endurance #enduranceTable th{padding:4px 7px!important;font-size:8px!important}
+ body:not(.preview-embedded).current-endurance .card{padding:10px!important}
+ body:not(.preview-embedded).current-endurance .pace-row{padding:4px 0!important;font-size:12px!important}
+ body:not(.preview-embedded).current-endurance .pace-rank{font-size:17px!important}
+ body:not(.preview-embedded).current-endurance .quick-table td{padding:4px 6px!important;font-size:12px!important}
+ body:not(.preview-embedded).current-qualification~.testbar,
+ body:not(.preview-embedded).current-sprint~.testbar,
+ body:not(.preview-embedded).current-endurance~.testbar{display:none!important}
+ .testbar{display:none!important}
+}
+
+@media(max-width:680px){
+ .home-circuit{margin-top:13px!important;max-width:345px!important}
+ .home-circuit select{min-height:42px!important;padding:0 34px!important;font-size:11px!important}
+ .race-mode-cards{margin-top:16px!important}
+}
+@media(max-width:680px) and (orientation:landscape){
+ .home-circuit{margin-top:7px!important;max-width:430px!important}
+ .home-circuit select{min-height:34px!important;font-size:10px!important}
+ .race-mode-cards{margin-top:10px!important}
+}
+
+/* KartIQ V2.11.3 — correctifs iPhone */
+.endurance-main-panel{position:relative}
+.endurance-titlebar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.endurance-remaining-box{display:inline-flex;align-items:baseline;gap:8px;white-space:nowrap;color:var(--muted);letter-spacing:.08em}
+.endurance-remaining-label{font-size:9px;font-weight:900}
+.endurance-remaining-value{font-family:var(--font-time)!important;font-size:22px;font-weight:400;color:#fff;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.endurance-remaining-value.time-critical{color:var(--red)!important;text-shadow:0 0 14px rgba(255,68,68,.35)}
+.quick-table-wrap{width:100%;overflow:auto}
+
+@media(max-width:680px) and (orientation:portrait){
+  body.current-endurance .endurance-home-btn{display:block!important;top:5px!important;left:5px!important;width:28px!important;height:28px!important;font-size:15px!important}
+  body.current-endurance .endurance-main-panel>.panel-title{padding-left:39px!important}
+  body.current-endurance .quick-change-panel{width:100%!important;max-width:100%!important;min-width:0!important}
+  body.current-endurance .quick-table-wrap{width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+  body.current-endurance .quick-table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+  body.current-endurance .quick-table th,
+  body.current-endurance .quick-table td{padding:3px 1px!important;font-size:7px!important;line-height:1.05!important;text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important}
+  body.current-endurance .quick-table th:nth-child(1),body.current-endurance .quick-table td:nth-child(1){width:9%!important}
+  body.current-endurance .quick-table th:nth-child(2),body.current-endurance .quick-table td:nth-child(2){width:15%!important}
+  body.current-endurance .quick-table th:nth-child(3),body.current-endurance .quick-table td:nth-child(3){width:10%!important}
+  body.current-endurance .quick-table th:nth-child(4),body.current-endurance .quick-table td:nth-child(4){width:25%!important}
+  body.current-endurance .quick-table th:nth-child(5),body.current-endurance .quick-table td:nth-child(5){width:10%!important}
+  body.current-endurance .quick-table th:nth-child(6),body.current-endurance .quick-table td:nth-child(6){width:15%!important}
+  body.current-endurance .quick-table th:nth-child(7),body.current-endurance .quick-table td:nth-child(7){width:16%!important}
+}
+
+
+/* V2.11.4 — alerte d’entrée aux stands d’une équipe du Top 8 */
+.top8-alert-box{width:min(680px,92vw);padding:42px 34px;text-align:center;background:linear-gradient(180deg,#121923,#090d14);border:2px solid var(--yellow);border-radius:22px;box-shadow:0 24px 80px #000b}
+.top8-alert-title{font-size:20px;font-weight:1000;letter-spacing:.12em;color:var(--yellow);padding-bottom:18px;border-bottom:1px solid #424b5d}
+.top8-alert-team{font-size:46px;font-weight:1000;margin:30px 0 14px;text-transform:uppercase}
+.top8-alert-message{font-size:25px;color:#dce2ec;margin-bottom:30px}
+.top8-alert-position-label{font-size:13px;color:var(--muted);font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.top8-alert-position{font-family:var(--font-time)!important;font-size:42px;font-weight:1000;margin:8px 0 30px;color:white}
+.top8-alert-close{min-width:180px;padding:13px 24px;border:1px solid var(--yellow);border-radius:10px;background:var(--yellow);color:#090c12;font-weight:1000;font-size:15px;cursor:pointer}
+@media(max-width:600px){.top8-alert-box{padding:30px 20px}.top8-alert-team{font-size:30px}.top8-alert-message{font-size:19px}.top8-alert-position{font-size:34px}}
+
+/* V3.1 — panneau de diagnostic Apex discret */
+.live-diagnostics{padding:14px 16px!important}
+.live-diagnostics-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.live-stat{background:#0d121b;border:1px solid var(--line);border-radius:9px;padding:9px 10px;min-width:0}
+.live-stat-label{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.live-stat-value{display:block;margin-top:4px;font-family:var(--font-time)!important;font-size:17px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live-frame-preview{grid-column:1/-1}.live-frame-preview .live-stat-value{font-family:monospace!important;font-size:10px;color:#b9c3d1}
+.live-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#758096;margin-right:6px}.live-status-dot.connected{background:var(--green);box-shadow:0 0 10px color-mix(in srgb,var(--green) 70%,transparent)}
+@media(max-width:600px){.live-diagnostics-grid{grid-template-columns:1fr 1fr}.live-frame-preview{display:none}}
+
+/* KartIQ V4.0.2 — informations de session sous le delta Sprint */
+.sprint-delta-cell{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sprint-session-info{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:5px;font-family:var(--font-time)!important;font-size:23px;line-height:1;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sprint-session-separator{color:var(--muted);font-size:.8em}
+.sprint-delta-cell .gap-with{margin-top:7px}
+@media(max-width:680px){.sprint-session-info{gap:6px;margin-top:2px;font-size:12px}.sprint-delta-cell .gap-with{margin-top:3px}}
+
+/* V4.0.3 — animations live qualification */
+#qualifTable tr,#sprintTable tr,#enduranceTable tr{transition:transform .48s cubic-bezier(.22,.8,.2,1)}
+#qualifTable tr.lap-flash,#enduranceTable tr.lap-flash{animation:kartiqLapFlash 1s ease-out}
+@keyframes kartiqLapFlash{0%,100%{background:transparent}18%,58%{background:rgba(255,230,0,.30);box-shadow:inset 4px 0 0 var(--yellow),inset -4px 0 0 var(--yellow)}}
+.remaining-time.time-critical{color:var(--red)!important;text-shadow:0 0 14px rgba(255,68,68,.35)}
+@media(prefers-reduced-motion:reduce){
+  #qualifTable tr,#sprintTable tr,#enduranceTable tr{transition:none}
+  .lap-flash{animation:none!important}
+}
+
+/* KartIQ V4.1.4 — Sprint desktop : pilote au-dessus du temps et delta P1 vert */
+body:not(.preview-embedded).current-sprint .fastest-last-block{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  overflow:hidden!important;
+}
+body:not(.preview-embedded).current-sprint .fastest-last-block>.label{display:none!important}
+body:not(.preview-embedded).current-sprint .fastest-last-name{
+  position:static!important;
+  order:1!important;
+  display:block!important;
+  width:100%!important;
+  margin:0!important;
+  line-height:1.1!important;
+  flex:0 0 auto!important;
+}
+body:not(.preview-embedded).current-sprint .fastest-last-time{
+  position:static!important;
+  order:2!important;
+  display:block!important;
+  margin:0!important;
+  line-height:1!important;
+  flex:0 0 auto!important;
+}
+#sDeltaValue.sprint-leader-delta{color:var(--green)!important}
+#sDeltaValue.sprint-followed-delta{color:#ff9f1a!important}
+
+
+/* V4.2.1 — statut stands visible uniquement dans le classement Endurance. */
+#enduranceTable td.endurance-position-cell{white-space:nowrap!important;min-width:86px!important}
+.endurance-position-wrap{display:inline-flex;align-items:center;gap:7px;min-height:24px}
+.endurance-position-number{display:inline-flex;align-items:center;justify-content:center;min-width:24px;font-weight:950}
+.endurance-position-number.leader-pos{width:1.35em!important;min-width:1.35em!important;height:1.35em!important;padding:0!important;margin:0!important;background:#e10600!important;color:#fff!important;border-radius:3px!important;line-height:1!important}
+.pit-status-badge{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:22px;padding:0 7px;border-radius:4px;color:#fff;font-family:var(--font-main)!important;font-size:11px;font-weight:950;letter-spacing:.08em;line-height:1;box-shadow:0 0 10px rgba(0,0,0,.28)}
+.pit-status-badge.pit-in{background:#e10600;animation:pitBadgePulse 1.05s ease-in-out infinite}
+.pit-status-badge.pit-out{background:#16a34a}
+@keyframes pitBadgePulse{0%,100%{opacity:1}50%{opacity:.66}}
+
+/* KartIQ V4.2.1 — indicateurs IN / OUT en Endurance */
+.endurance-main-panel{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+.endurance-table-wrap{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-gutter:stable}
+.endurance-table-wrap table{width:100%;table-layout:fixed}
+.endurance-table-wrap thead th{position:sticky;top:0;z-index:4;background:#111722}
+#enduranceTable tr{will-change:transform}
+@media(min-width:1001px){
+ body:not(.preview-embedded).current-endurance .endurance-table-wrap{height:calc(100vh - 108px)!important;max-height:calc(100vh - 108px)!important}
+ body:not(.preview-embedded).current-endurance #enduranceTable td{height:calc((100vh - 132px)/20)!important;min-height:22px!important;max-height:34px!important;padding:1px 6px!important;font-size:12px!important;line-height:1!important}
+ body:not(.preview-embedded).current-endurance #enduranceTable td.name{font-size:12px!important}
+ body:not(.preview-embedded).current-endurance .endurance-table-wrap th{height:24px!important;padding:3px 6px!important;font-size:8px!important}
+}
+
+/* V4.2.2 — boîte noire Apex */
+.dev-recorder{margin-top:10px;padding:12px;border:1px solid #2a3445;border-radius:10px;background:#0d121a;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:center}
+.dev-recorder label{display:flex;gap:8px;align-items:center;font-weight:800;font-size:12px}
+.dev-recorder input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.dev-recorder .recording-on{color:#ff5b5b}
+.dev-recorder .recording-off{color:#8e98a8}
+@media(max-width:700px){.dev-recorder{grid-template-columns:1fr}}
+
