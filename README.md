@@ -1,3 +1,10 @@
+# KartIQ V5.5.13 — Synchronisation live accélérée
+
+Cette version réduit le délai d'affichage entre Apex Timing et KartIQ. L'état de course est désormais interrogé toutes les **250 ms** au lieu d'une seconde, avec une protection empêchant l'empilement de requêtes lorsque le réseau ou le serveur répond plus lentement.
+
+Les modes Qualification et Sprint conservent leur design et leurs fonctionnalités actuels.
+
+---
 
 V5.5.12: Smartphone paysage: +15% taille horloge; Sprint: couleur carte pilote le plus rapide alignée sur colonne Dernier (spécification).
 # KartIQ V5.5.11 — Rééquilibrage ligne 1 smartphone paysage

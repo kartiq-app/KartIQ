@@ -1,3 +1,10 @@
+## V5.5.13 — Synchronisation live accélérée
+
+- Rafraîchissement de l'état affiché toutes les 250 ms au lieu d'une seconde.
+- Protection contre les requêtes `/api/state` concurrentes afin d'éviter leur empilement.
+- Désactivation du cache navigateur pour la récupération de l'état live.
+- Conservation de la dernière donnée valide en cas d'erreur réseau ponctuelle.
+- Cache PWA et version applicative synchronisés en V5.5.13.
 
 V5.5.12: Smartphone paysage: +15% taille horloge; Sprint: couleur carte pilote le plus rapide alignée sur colonne Dernier (spécification).
 ## V5.5.11 — Rééquilibrage de la ligne 1 smartphone paysage

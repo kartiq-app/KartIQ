@@ -29,4 +29,4 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 
 setModeClass(currentMode);
 loadKartQueues();
-setInterval(()=>clock.textContent=new Date().toLocaleTimeString('fr-FR'),1000);setInterval(updateRemainingDisplay,100);setInterval(load,1000);load();
+setInterval(()=>clock.textContent=new Date().toLocaleTimeString('fr-FR'),1000);setInterval(updateRemainingDisplay,100);setInterval(load,250);load();

@@ -1,4 +1,5 @@
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
+let stateLoadInFlight=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
 const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
@@ -65,13 +66,26 @@ function updateRemainingDisplay(){
  renderSprintFocus();
 }
 async function load(){
- const nextState=await fetch('/api/state').then(r=>r.json());
- syncRemainingFromState(nextState);
- state=nextState;
- if(!(state.drivers||[]).length){autoBriceFollowApplied=false;manualFollowOverride=false}
- render();
- maybeAutoFollowBrice();
- ensureApexBrowserConnection();
+ // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle
+ // requête tant que la précédente n'est pas terminée, afin d'éviter une
+ // file d'attente et un retard progressif de l'affichage.
+ if(stateLoadInFlight)return;
+ stateLoadInFlight=true;
+ try{
+  const response=await fetch('/api/state',{cache:'no-store'});
+  if(!response.ok)throw new Error(`État KartIQ indisponible (${response.status})`);
+  const nextState=await response.json();
+  syncRemainingFromState(nextState);
+  state=nextState;
+  if(!(state.drivers||[]).length){autoBriceFollowApplied=false;manualFollowOverride=false}
+  render();
+  maybeAutoFollowBrice();
+  ensureApexBrowserConnection();
+ }catch(error){
+  console.warn('[KartIQ] Rafraîchissement de l’état impossible :',error);
+ }finally{
+  stateLoadInFlight=false;
+ }
 }
 let apexBrowserSocket=null;
 let apexBrowserCircuitId=null;
