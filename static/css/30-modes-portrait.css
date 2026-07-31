@@ -842,9 +842,9 @@ body.current-sprint .gap-with{
 
 
 /* KartIQ V4.6.9 — vraie colonne KART conditionnelle en Qualification et Sprint */
-#qualification .optional-kart-head,
+:is(#qualification,#endurance) .optional-kart-head,
 #sprint .optional-kart-head{display:none}
-#qualification table.has-kart-column .optional-kart-head,
+:is(#qualification,#endurance) table.has-kart-column .optional-kart-head,
 #sprint table.has-kart-column .optional-kart-head{display:table-cell}
 #qualifTable .ranking-kart-column,
 #sprintTable .ranking-kart-column{
@@ -873,31 +873,31 @@ body.current-sprint .gap-with{
   text-overflow:ellipsis!important;
 }
 @media (max-width:680px), (orientation:portrait){
-  #qualification table.has-kart-column,
+  :is(#qualification,#endurance) table.has-kart-column,
   #sprint table.has-kart-column{table-layout:fixed!important;width:100%!important}
-  #qualification table.has-kart-column th:nth-child(1),
-  #qualification table.has-kart-column td.ranking-pos,
+  :is(#qualification,#endurance) table.has-kart-column th:nth-child(1),
+  :is(#qualification,#endurance) table.has-kart-column td.ranking-pos,
   #sprint table.has-kart-column th:nth-child(1),
   #sprint table.has-kart-column td.ranking-pos{width:6%!important;padding-left:5px!important;padding-right:1px!important}
-  #qualification table.has-kart-column th:nth-child(2),
-  #qualification table.has-kart-column td.ranking-kart-column,
+  :is(#qualification,#endurance) table.has-kart-column th:nth-child(2),
+  :is(#qualification,#endurance) table.has-kart-column td.ranking-kart-column,
   #sprint table.has-kart-column th:nth-child(2),
   #sprint table.has-kart-column td.ranking-kart-column{width:9%!important;padding-left:1px!important;padding-right:1px!important;text-align:center!important}
-  #qualification table.has-kart-column th:nth-child(3),
-  #qualification table.has-kart-column td.ranking-driver-column{width:25%!important;padding-left:3px!important}
-  #qualification table.has-kart-column th:nth-child(4),
-  #qualification table.has-kart-column td.ranking-last{width:20%!important}
-  #qualification table.has-kart-column th:nth-child(5),
-  #qualification table.has-kart-column td.ranking-best{width:20%!important}
-  #qualification table.has-kart-column th:nth-child(6),
-  #qualification table.has-kart-column td.ranking-gap{width:20%!important}
+  :is(#qualification,#endurance) table.has-kart-column th:nth-child(3),
+  :is(#qualification,#endurance) table.has-kart-column td.ranking-driver-column{width:25%!important;padding-left:3px!important}
+  :is(#qualification,#endurance) table.has-kart-column th:nth-child(4),
+  :is(#qualification,#endurance) table.has-kart-column td.ranking-last{width:20%!important}
+  :is(#qualification,#endurance) table.has-kart-column th:nth-child(5),
+  :is(#qualification,#endurance) table.has-kart-column td.ranking-best{width:20%!important}
+  :is(#qualification,#endurance) table.has-kart-column th:nth-child(6),
+  :is(#qualification,#endurance) table.has-kart-column td.ranking-gap{width:20%!important}
   #sprint table.has-kart-column th:nth-child(3),
   #sprint table.has-kart-column td.ranking-driver-column{width:28%!important;padding-left:3px!important}
   #sprint table.has-kart-column th:nth-child(4),
   #sprint table.has-kart-column td.ranking-last{width:19%!important}
   #sprint table.has-kart-column th:nth-child(7),
   #sprint table.has-kart-column td.ranking-interval{width:38%!important}
-  #qualification table.has-kart-column td,
+  :is(#qualification,#endurance) table.has-kart-column td,
   #sprint table.has-kart-column td{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
 }
 

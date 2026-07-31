@@ -1,4 +1,7 @@
+let qualificationFocusSourceMode='qualification';
 async function openQualificationFocus(){
+ qualificationFocusSourceMode='qualification';
+ const title=document.querySelector('#qualificationFocus .qual-focus-header span');if(title)title.textContent='Qualifications';
  const overlay=document.getElementById('qualificationFocus');
  if(!overlay)return;
  overlay.classList.add('show');
@@ -7,6 +10,11 @@ async function openQualificationFocus(){
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
  try{if('wakeLock' in navigator)qualificationFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
+}
+async function openEnduranceFocus(){
+ qualificationFocusSourceMode='endurance';
+ const title=document.querySelector('#qualificationFocus .qual-focus-header span');if(title)title.textContent='Endurance';
+ const overlay=document.getElementById('qualificationFocus');if(!overlay)return;overlay.classList.add('show');document.body.classList.add('qualification-focus-active');renderQualificationFocus();try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}try{if('wakeLock' in navigator)qualificationFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeQualificationFocus(){
  document.getElementById('qualificationFocus')?.classList.remove('show');
@@ -18,7 +26,8 @@ async function closeQualificationFocus(){
 function qualificationPurpleBest(){
  // La cellule violette du tableau Qualification est la source de vérité visuelle :
  // elle correspond au meilleur temps absolu affiché par KartIQ/Apex pour la séance.
- const purpleCell=document.querySelector('#qualifTable tr td.purple');
+ const tableId=qualificationFocusSourceMode==='endurance'?'enduranceQualifTable':'qualifTable';
+ const purpleCell=document.querySelector('#'+tableId+' tr td.purple');
  if(purpleCell){
   const row=purpleCell.closest('tr');
   const driverKey=row?.dataset?.driver||'';

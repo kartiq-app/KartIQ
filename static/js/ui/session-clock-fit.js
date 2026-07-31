@@ -3,7 +3,7 @@
   let frame=0;
 
   function clockContainers(){
-    return document.querySelectorAll('#qualification .landscape-session-clock, #sprint .landscape-session-clock');
+    return document.querySelectorAll('#qualification .landscape-session-clock, #sprint .landscape-session-clock, #endurance .landscape-session-clock');
   }
 
   function fits(container, values, baseSize){

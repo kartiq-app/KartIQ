@@ -104,7 +104,7 @@ function connectApexBrowser(force=false){
  apexBrowserSocket.addEventListener('error',()=>sendApexStatus('error','ERREUR LIVE','Connexion WebSocket Apex impossible'));
  apexBrowserSocket.addEventListener('close',e=>{apexBrowserSocket=null;apexBrowserConnecting=false;sendApexStatus('closed','LIVE DÉCONNECTÉ',`Code ${e.code}`);setTimeout(()=>{if(state?.circuit_id===apexBrowserCircuitId)connectApexBrowser(false)},5000)});
 }
-function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance');document.body.classList.add('current-'+mode)}
+function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
 function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}
 function showMode(mode){
  if(mode!=='home'&&!state?.circuit_id){
@@ -115,7 +115,7 @@ function showMode(mode){
   document.getElementById('circuitSelect')?.focus();
   return;
  }
- currentMode=mode;setModeClass(mode);maybeAutoFollowBrice();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));const screen=document.getElementById(mode);screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home')api('/api/mode',{mode})
+ currentMode=mode;setModeClass(mode);maybeAutoFollowBrice();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));const screen=document.getElementById(mode);screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode})
 }
 
 let sprintFocusWakeLock=null;

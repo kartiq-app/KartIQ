@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "5.5.13"
-APP_RELEASE_NAME = "Rééquilibrage ligne 1 smartphone paysage"
+APP_VERSION = "6.0.0"
+APP_RELEASE_NAME = "Architecture quatre modes"
 
 
 def _circuit_sort_key(circuit):

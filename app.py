@@ -270,9 +270,9 @@ def get_state():
 @app.post("/api/mode")
 def set_mode():
     value = request.get_json(force=True).get("mode")
-    if value not in {"qualification", "sprint", "endurance"}:
+    if value not in {"qualification", "sprint", "endurance", "analyzer"}:
         return jsonify(ok=False), 400
-    STATE["mode"] = value
+    STATE["mode"] = "endurance" if value == "analyzer" else value
     return jsonify(ok=True)
 
 

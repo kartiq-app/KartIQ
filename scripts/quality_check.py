@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-EXPECTED_VERSION = "5.5.13"
+EXPECTED_VERSION = "6.0.0"
 
 
 def ok(message: str) -> None:
@@ -121,7 +121,7 @@ def main() -> int:
     check_pwa_assets()
     check_version()
     check_repository_hygiene()
-    print("\nKartIQ V5.5.13 : contrôles qualité réussis.")
+    print("\nKartIQ V6.0.0 : contrôles qualité réussis.")
     return 0
 
 

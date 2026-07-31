@@ -1,3 +1,12 @@
+## V6.0.0 — Architecture quatre modes
+
+- Accueil étendu à quatre cartes : Qualification, Sprint, Analyzer et Endurance.
+- L’ancienne carte Endurance est renommée Analyzer avec une icône histogramme rouge.
+- Nouvelle carte Endurance avec sablier rouge.
+- Nouveau mode Endurance basé à l’identique sur Qualification, y compris les vues portrait, paysage et Focus.
+- Ancien dashboard Endurance conservé sans perte sous le mode Analyzer.
+- Cache PWA et version applicative synchronisés en V6.0.0.
+
 ## V5.5.13 — Synchronisation live accélérée
 
 - Rafraîchissement de l'état affiché toutes les 250 ms au lieu d'une seconde.

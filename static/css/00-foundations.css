@@ -157,7 +157,7 @@ body.preview-embedded header{display:none!important}body.preview-embedded.curren
  #penalties .penalty-row,#penalties .penalty-row b:first-child,#penalties .penalty-row span{font-size:20px!important}
 }
 body.preview-embedded{scroll-behavior:auto!important}
-body.preview-embedded.current-qualification,body.preview-embedded.current-qualification #qualification{overflow-x:hidden!important;scroll-snap-type:none!important}
+body.preview-embedded.current-qualification,body.preview-embedded.current-qualification :is(#qualification,#endurance){overflow-x:hidden!important;scroll-snap-type:none!important}
 
 
 /* KartIQ V2.3 — alignement classements, tailles et leader P1 */
@@ -239,7 +239,7 @@ td.pos.leader-pos{display:table-cell!important;width:44px!important;min-width:44
 /* iPhone SE intégré : supprimer l'outil de test et caler le premier écran */
 body.preview-embedded.current-qualification .testbar,body.preview-embedded.current-sprint .testbar{display:none!important}
 body.preview-embedded.current-qualification,body.preview-embedded.current-sprint{height:100dvh;overflow:hidden!important}
-body.preview-embedded.current-qualification #qualification,body.preview-embedded.current-sprint #sprint{height:100dvh;overflow:hidden!important}
+body.preview-embedded.current-qualification :is(#qualification,#endurance),body.preview-embedded.current-sprint #sprint{height:100dvh;overflow:hidden!important}
 body.preview-embedded.current-qualification .qual-wrap{height:100%;display:flex;flex-direction:column;padding-top:0!important}
 body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0;overflow:hidden}
 @media(max-width:680px){
@@ -257,7 +257,7 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 @media (min-width:681px){
   body:not(.preview-embedded).current-qualification,
   body:not(.preview-embedded).current-sprint{overflow:auto!important;height:auto!important}
-  body:not(.preview-embedded).current-qualification #qualification,
+  body:not(.preview-embedded).current-qualification :is(#qualification,#endurance),
   body:not(.preview-embedded).current-sprint #sprint{height:auto!important;overflow:visible!important}
   body:not(.preview-embedded) .qual-wrap,
   body:not(.preview-embedded) .sprint-wrap{width:100%;max-width:none;margin:0;padding:16px 20px}
@@ -434,7 +434,7 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 /* Qualification paysage : le classement reste entièrement défilable au-delà de P10. */
 @media (max-width:680px) and (orientation:landscape){
   body.preview-embedded.current-qualification,
-  body.preview-embedded.current-qualification #qualification{height:100dvh!important;overflow:hidden!important}
+  body.preview-embedded.current-qualification :is(#qualification,#endurance){height:100dvh!important;overflow:hidden!important}
   body.preview-embedded.current-qualification .qual-wrap{height:100dvh!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
   body.preview-embedded.current-qualification .qual-top{flex:0 0 auto!important}
   body.preview-embedded.current-qualification .qual-table-wrap{
@@ -446,3 +446,10 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 }
 
 
+
+/* V6.0.0 — Accueil à quatre modes */
+.race-mode-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+.race-mode-card .race-icon{color:var(--red)}
+.race-mode-card .race-icon svg{stroke:currentColor;fill:none}
+.race-mode-card[data-home-mode="analyzer"] .race-icon rect{fill:none;stroke:currentColor}
+@media(max-width:760px){.race-mode-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}

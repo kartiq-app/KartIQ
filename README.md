@@ -1,4 +1,12 @@
-# KartIQ V5.5.13 — Synchronisation live accélérée
+# KartIQ V6.0.0 — Architecture quatre modes
+
+Cette version introduit les quatre accès **Qualification**, **Sprint**, **Endurance** et **Analyzer**.
+
+- Qualification et Sprint restent inchangés.
+- L’ancien dashboard Endurance devient **Analyzer**.
+- Le nouveau mode **Endurance** reprend à l’identique l’interface Qualification sur Desktop, portrait, paysage et Focus.
+- La synchronisation Apex et le countdown validé en V5.5.16 sont conservés.
+
 
 Cette version réduit le délai d'affichage entre Apex Timing et KartIQ. L'état de course est désormais interrogé toutes les **250 ms** au lieu d'une seconde, avec une protection empêchant l'empilement de requêtes lorsque le réseau ou le serveur répond plus lentement.
 
