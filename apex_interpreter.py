@@ -145,27 +145,28 @@ class ApexInterpreter:
                 row["best_lap"] = value
         elif field in {"gap", "interval"}:
             row[field] = value or None
-        elif code in {"in", "*in"}:
-            # Apex n'envoie pas toujours un événement *in explicite. Sur les
-            # configurations endurance observées, la présence d'une cellule
-            # `cX|in|MM:SS` constitue directement l'état « dans les stands ».
+        elif code in {"to", "*in"}:
+            # Sur la configuration Apex observée en endurance, `to` est le
+            # compteur dynamique actif pendant le passage aux stands. Tant que
+            # cette valeur progresse, le kart est réellement IN.
             old = row.get("status")
             row["status"] = "pit"
             row["pit_timer"] = value or row.get("pit_timer")
             row["timer"] = row.get("pit_timer")
             if not initial and old != "pit":
-                self._emit(update.row, "pit_in", "Entrée aux stands", "Décompte Apex IN", value, "pit")
-        elif code in {"to", "*out"}:
-            # Apex ne transmet généralement pas de message OUT : le premier
-            # `cX|to|...` reçu après un `cX|in|...` signifie que le kart est
-            # ressorti. La dernière durée IN reste mémorisée dans pit_timer.
+                self._emit(update.row, "pit_in", "Entrée aux stands", "Décompte Apex TO", value, "pit")
+        elif code in {"in", "*out"}:
+            # Après un compteur `to`, Apex repasse sur `in` et recommence un
+            # compteur de temps en piste (0:00, 0:01, ...). Cette transition
+            # constitue la sortie des stands. La dernière valeur `to` reste
+            # mémorisée comme durée du passage aux stands.
             old = row.get("status")
             row["status"] = "track"
-            if code == "to":
+            if code == "in":
                 row["track_timer"] = value or row.get("track_timer")
                 row["timer"] = row.get("track_timer")
             if not initial and old == "pit":
-                self._emit(update.row, "pit_out", "Sortie des stands", "Reprise du compteur Apex TO", row.get("pit_timer") or "", "track")
+                self._emit(update.row, "pit_out", "Sortie des stands", "Reprise du compteur Apex IN", row.get("pit_timer") or "", "track")
 
         if initial:
             self._initialized_rows.add(update.row)

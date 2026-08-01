@@ -1,3 +1,12 @@
+# KartIQ V6.0.31
+
+- Correction de l'interprétation des compteurs Apex observés en live.
+- `|to|` correspond au compteur actif pendant le passage aux stands : état IN.
+- `|in|` correspond au compteur de temps en piste après la sortie : état piste.
+- La transition `to` → `in` déclenche l'écran SORTIE STANDS pendant 5 secondes.
+- La dernière valeur `to` alimente la colonne STAND et la durée affichée à la sortie.
+- Le compteur `in` alimente le Temps en piste du Focus Endurance.
+
 # KartIQ V6.0.30
 
 - Détection des stands alignée sur les trames Apex réelles : `|in|` active l'état IN.
