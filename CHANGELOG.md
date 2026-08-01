@@ -1,13 +1,16 @@
-# KartIQ V6.0.27
+# KartIQ V6.0.28
 
-## Endurance — stands et delta leader
+## Correctif de restauration
 
-- Le delta du pilote suivi en P1 est affiché en vert sur la page Endurance.
-- Une colonne `STAND` visible en paysage affiche le compteur de durée de stand fourni par Apex Timing.
-- En Focus Endurance, l’état `IN` affiche le compteur bleu dans le coin inférieur droit.
-- À `OUT`, le compteur IN disparaît puis l’écran `SORTIE STANDS` affiche pendant 5 secondes la dernière durée Apex reçue dans les stands.
-- Qualifications, Sprint et leurs modes Focus restent inchangés.
+- Restauration intégrale des quatre cartes d’accueil : Qualification, Sprint, Endurance et Analyzer.
+- Restauration de la page Endurance validée et de son Focus Endurance.
+- Delta Endurance P1 affiché en vert.
+- Colonne STAND ajoutée uniquement en paysage sur la page Endurance, alimentée par `pit_timer` Apex.
+- Focus Endurance IN : chrono bleu en bas à droite.
+- Focus Endurance OUT : écran noir pendant 5 secondes avec `SORTIE STANDS` et le temps Apex.
+- Aucun remplacement de la page Endurance par l’ancien dashboard Analyzer.
 
+# KartIQ V6.0.26
 
 ## Corrections des deltas Sprint / Endurance
 
