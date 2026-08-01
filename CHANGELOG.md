@@ -1,3 +1,10 @@
+# KartIQ V6.0.16
+
+- Focus Endurance uniquement : ordre strict Position / Nom / Chrono + rang dans la carte du pilote suivi.
+- Réduction de 10 % du bloc chronomètre + rang.
+- Protection renforcée contre tout débordement horizontal ou vertical dans cette carte.
+- Aucun autre écran ni comportement modifié.
+
 # KartIQ V6.0.15
 
 ## Focus Endurance

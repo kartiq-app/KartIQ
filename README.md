@@ -1,4 +1,4 @@
-# KartIQ V6.0.15 — Focus Endurance : compacité et lisibilité
+# KartIQ V6.0.16 — Focus Endurance : ordre strict de la carte pilote suivi
 
 ## Modifications
 

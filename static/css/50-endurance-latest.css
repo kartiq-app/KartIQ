@@ -303,3 +303,68 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-focus-last-rank{margin-top:clamp(-8px,-1vh,-2px)}
   #enduranceFocus .endurance-focus-neighbour-name{font-size:clamp(22px,7.6vh,40px)}
 }
+
+/* KartIQ V6.0.16 — Focus Endurance : ordre strict dans la carte pilote suivi. */
+#enduranceFocus .endurance-focus-driver{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(1px,.22vh,4px);
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  max-height:100%;
+  overflow:hidden;
+  box-sizing:border-box;
+  padding:clamp(2px,.45vh,8px) clamp(4px,1vw,14px)
+}
+#enduranceFocus .endurance-focus-driver .sprint-focus-position{
+  order:1;
+  flex:0 1 auto;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  line-height:.84;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip
+}
+#enduranceFocus .endurance-focus-driver .sprint-focus-name{
+  order:2;
+  flex:0 1 auto;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  padding:0 .2em;
+  line-height:1;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  box-sizing:border-box
+}
+#enduranceFocus .endurance-focus-last-rank{
+  order:3;
+  flex:0 1 auto;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  padding:0;
+  font-size:clamp(68px,16.2vh,180px);
+  line-height:.88;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip;
+  box-sizing:border-box
+}
+@media(max-width:680px) and (orientation:portrait){
+  #enduranceFocus .endurance-focus-last-rank{font-size:16.2vw}
+}
+@media(max-height:500px) and (orientation:landscape){
+  #enduranceFocus .endurance-focus-last-rank{font-size:16.2vh}
+}
