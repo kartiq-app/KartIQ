@@ -1,3 +1,8 @@
+## 6.0.39
+- Pénalités Sprint alimentées par les commentaires Apex en portrait et paysage.
+- Affichage sur une ligne selon le format de chaque écran.
+- Alerte pénalité Focus Endurance pendant 15 secondes, y compris au-dessus des écrans stands.
+
 ## V6.0.38 — Pénalités Focus Sprint depuis com||
 
 - Parsing robuste des commentaires Apex dans les trames init séparées par espaces ou retours ligne.

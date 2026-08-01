@@ -13,7 +13,7 @@ async function closeSprintFocus(){
 }
 async function openEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('endurance-focus-active');renderEnduranceFocus();
+ overlay.classList.add('show');document.body.classList.add('endurance-focus-active');endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
  try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
@@ -37,6 +37,17 @@ function sprintGapBehind(driver){
  return formatRaceInterval(behind,driver,'+');
 }
 function penaltyTime(p){if(p?.time)return p.time;const at=String(p?.at||'');return at.length>=16?at.slice(11,16):'--:--'}
+function escapePenaltyHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function penaltyRawText(p){return String(p?.penalty||p?.comment||'').trim()}
+function penaltyDurationLabel(p){
+ const raw=penaltyRawText(p).replace(',', '.');
+ const matches=[...raw.matchAll(/(?:^|[^\d])([+-]?\d+(?:\.\d+)?)\s*(?:s|sec|secondes?|秒)?(?=$|[^\d])/gi)];
+ if(!matches.length)return '—';
+ const preferred=[...matches].reverse().find(m=>m[0].match(/\.|\b(?:s|sec|secondes?|秒)\b/i))||matches[matches.length-1];
+ return `${preferred[1].replace(/^\+/, '')} s`;
+}
+function compactPenaltyText(p){return `${p?.driver||'—'} • ${penaltyDurationLabel(p)}`}
+function fullPenaltyText(p){const time=penaltyTime(p);const driver=p?.driver||'—';const text=penaltyRawText(p)||'Pénalité';return `${time} • ${driver} • ${text}`}
 function lapSeconds(value){
  const raw=String(value||'').trim().replace(',', '.');if(!raw||raw==='—'||raw==='--')return null;
  const parts=raw.split(':').map(Number);if(parts.some(v=>!Number.isFinite(v)))return null;
@@ -74,7 +85,7 @@ let sprintFocusPenaltyAlert=null;
 
 function sprintFocusPenaltyKey(p){return String(p?.id||`${p?.time||''}|${p?.driver||''}|${p?.penalty||p?.comment||''}`)}
 function sprintFocusPenaltyListMarkup(list){
- return list.length?list.map(p=>`<div class="sprint-focus-penalty-row"><small class="sprint-focus-penalty-time">${penaltyTime(p)}</small><b class="sprint-focus-penalty-name">${p.driver||'—'}</b><b class="sprint-focus-penalty-value">${p.penalty||p.comment||'—'}</b></div>`).join(''):'<div class="sprint-focus-empty">Aucune pénalité</div>';
+ return list.length?list.map(p=>`<div class="sprint-focus-penalty-row sprint-focus-penalty-row-compact" title="${escapePenaltyHtml(fullPenaltyText(p))}"><span class="sprint-focus-penalty-one-line">${escapePenaltyHtml(compactPenaltyText(p))}</span></div>`).join(''):'<div class="sprint-focus-empty">Aucune pénalité</div>';
 }
 function renderSprintFocusPenalties(list){
  const cell=document.querySelector('#sprintFocus .sprint-focus-penalty-cell');
@@ -88,7 +99,7 @@ function renderSprintFocusPenalties(list){
  const alertActive=sprintFocusPenaltyAlert&&now<sprintFocusPenaltyAlertUntil;
  cell?.classList.toggle('penalty-alert-active',Boolean(alertActive));
  if(alertActive){
-  sprintFocusPenalties.innerHTML=`<div class="sprint-focus-penalty-alert"><b class="sprint-focus-penalty-alert-name">${sprintFocusPenaltyAlert.driver||'—'}</b><span class="sprint-focus-penalty-alert-text">${sprintFocusPenaltyAlert.penalty||sprintFocusPenaltyAlert.comment||'—'}</span></div>`;
+  sprintFocusPenalties.innerHTML=`<div class="sprint-focus-penalty-alert"><span class="sprint-focus-penalty-alert-one-line">${escapePenaltyHtml(compactPenaltyText(sprintFocusPenaltyAlert))}</span></div>`;
  }else{
   sprintFocusPenaltyAlert=null;
   sprintFocusPenalties.innerHTML=sprintFocusPenaltyListMarkup(list);
@@ -269,10 +280,44 @@ function enduranceLastLapColorClass(f){
  return 'endurance-last-orange';
 }
 
+let endurancePenaltyInitialized=false;
+let endurancePenaltySeen=new Set();
+let endurancePenaltyAlertUntil=0;
+let endurancePenaltyAlert=null;
+function samePenaltyTarget(p,f){
+ const pd=String(p?.driver||'').trim().toLowerCase();
+ const fd=String(f?.driver||state.followed_driver||'').trim().toLowerCase();
+ if(pd&&fd&&pd===fd)return true;
+ const pk=String(p?.kart||'').replace(/\D/g,'');
+ const fk=String(f?.apex||f?.kart||'').replace(/\D/g,'');
+ return Boolean(pk&&fk&&pk===fk);
+}
+function renderEndurancePenaltyAlert(list,f){
+ const banner=document.getElementById('endurancePenaltyBanner');
+ const nameEl=document.getElementById('endurancePenaltyBannerName');
+ const textEl=document.getElementById('endurancePenaltyBannerText');
+ if(!banner)return;
+ const relevant=list.filter(p=>samePenaltyTarget(p,f));
+ if(!endurancePenaltyInitialized){relevant.forEach(p=>endurancePenaltySeen.add(sprintFocusPenaltyKey(p)));endurancePenaltyInitialized=true}
+ const newest=relevant.find(p=>!endurancePenaltySeen.has(sprintFocusPenaltyKey(p)));
+ if(newest){
+  relevant.forEach(p=>endurancePenaltySeen.add(sprintFocusPenaltyKey(p)));
+  endurancePenaltyAlert=newest;endurancePenaltyAlertUntil=Date.now()+15000;
+ }
+ const active=endurancePenaltyAlert&&Date.now()<endurancePenaltyAlertUntil;
+ banner.classList.toggle('show',Boolean(active));
+ if(active){
+  if(nameEl)nameEl.textContent=endurancePenaltyAlert.driver||f?.driver||state.followed_driver||'—';
+  if(textEl)textEl.textContent=penaltyRawText(endurancePenaltyAlert)||'Pénalité';
+ }else endurancePenaltyAlert=null;
+}
+
 function renderEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay?.classList.contains('show'))return;
  const f=state.followed||{};
  renderEndurancePitState(f);
+ const endurancePenaltyList=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));
+ renderEndurancePenaltyAlert(endurancePenaltyList,f);
  const position=document.getElementById('enduranceFocusPosition');
  const name=document.getElementById('enduranceFocusName');
  const lastRankEl=document.getElementById('enduranceFocusLastRank');

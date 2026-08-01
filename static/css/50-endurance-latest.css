@@ -738,3 +738,91 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   align-self:center!important;
   margin:0!important;
 }
+
+/* V6.0.39 — pénalités Apex unifiées Sprint / Focus */
+.current-sprint #penalties .sprint-comment-penalty{
+  display:block!important;
+  min-width:0!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.current-sprint #penalties .penalty-portrait-full,
+.current-sprint #penalties .penalty-landscape-compact{
+  display:block;
+  min-width:0;
+  max-width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.current-sprint #penalties .penalty-landscape-compact{display:none}
+@media (orientation:landscape) and (max-height:680px){
+  .current-sprint #penalties .penalty-portrait-full{display:none}
+  .current-sprint #penalties .penalty-landscape-compact{display:block}
+}
+#sprintFocus .sprint-focus-penalty-row-compact{
+  display:block!important;
+  min-height:calc(100% / 6);
+  padding:7px 2px;
+  border-bottom:1px solid #25282e;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#sprintFocus .sprint-focus-penalty-one-line,
+#sprintFocus .sprint-focus-penalty-alert-one-line{
+  display:block;
+  width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-family:var(--font-driver);
+  font-size:clamp(18px,3.2vh,38px);
+  font-weight:850;
+  text-transform:uppercase;
+}
+#sprintFocus .sprint-focus-penalty-alert{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:0 3%;overflow:hidden;
+}
+#enduranceFocus .endurance-penalty-banner{
+  position:absolute;
+  inset:0 0 auto 0;
+  height:50%;
+  z-index:90;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(8px,2vh,24px);
+  padding:clamp(18px,4vw,56px);
+  background:#e10600;
+  color:#fff;
+  text-align:center;
+  overflow:hidden;
+}
+#enduranceFocus .endurance-penalty-banner.show{display:flex}
+#enduranceFocus .endurance-penalty-banner-label{
+  font-family:var(--font-driver);
+  font-size:clamp(24px,5vh,64px);
+  font-weight:900;
+  text-transform:uppercase;
+}
+#enduranceFocus .endurance-penalty-banner-name{
+  max-width:100%;
+  font-family:var(--font-driver);
+  font-size:clamp(22px,4.5vh,58px);
+  font-weight:850;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#enduranceFocus .endurance-penalty-banner-text{
+  max-width:100%;
+  font-family:var(--font-time);
+  font-size:clamp(20px,4vh,52px);
+  font-weight:700;
+  line-height:1.15;
+  overflow-wrap:anywhere;
+}
