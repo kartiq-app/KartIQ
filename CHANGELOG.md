@@ -1,3 +1,11 @@
+## V6.0.22 — Focus Sprint : carte pilote suivie harmonisée
+
+- Remplacement du contenu de la carte du pilote suivi par la structure du Focus Endurance.
+- Affichage strict : position, nom, puis chronomètre blanc et rang numérique (`⏱2`).
+- Suppression du suffixe ordinal et du libellé « TEMPS » dans cette carte.
+- Protection contre les débordements reprise du Focus Endurance.
+- Aucun changement sur les autres cartes du Focus Sprint ni sur les autres modes.
+
 ## V6.0.21 — Focus Endurance : stands IN / OUT
 
 - État `IN` : écran noir et chrono des stands Apex en bleu dans le coin supérieur droit.

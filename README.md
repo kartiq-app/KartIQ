@@ -1,16 +1,13 @@
-# KartIQ V6.0.21 — Focus Endurance : dernier tour et temps en piste
+# KartIQ V6.0.22 — Focus Sprint : carte pilote suivie harmonisée
 
-Cette version ajuste uniquement le Focus Endurance :
+Cette version modifie uniquement la carte du pilote ou de l’équipe suivie dans le Focus Sprint.
 
-- augmentation de 15 % du bloc chronomètre + rang dans la carte du pilote suivi ;
-- rapprochement du nom du pilote ou de l’équipe situé devant vers le filet orange de la case Delta ;
-- conservation de la protection anti-débordement.
+## Modification
 
-Les autres modes et écrans restent inchangés.
+La carte affiche désormais, dans cet ordre :
 
-- aucun espace entre l’icône chronomètre et le rang ;
-- suppression des suffixes « e » et « er » ;
-- réduction de 10 % du bloc chronomètre + rang ;
-- protection anti-débordement renforcée quelle que soit la largeur de la carte.
+1. la position ;
+2. le nom du pilote ou de l’équipe ;
+3. le chronomètre blanc suivi du rang numérique, par exemple `⏱2`.
 
-Les autres modes et écrans restent inchangés.
+La présentation, les dimensions et la protection contre les débordements reprennent celles validées dans le Focus Endurance. Les autres informations du Focus Sprint restent inchangées.
