@@ -155,6 +155,7 @@ class RaceStateService:
                 "pace5": pace5,
                 "pace5_laps": len(recent_five),
                 "status": row.get("status", "unknown"),
+                "pit_timer": row.get("timer") or None,
                 "apex_row": row.get("row"),
                 "last_improved_personal_best": bool(
                     self.last_lap_performance.get(history_key, {}).get("marker") == marker

@@ -1,3 +1,10 @@
+## V6.0.19 — Focus Endurance : stands IN / OUT
+
+- État `IN` : écran noir et chrono des stands Apex en bleu dans le coin supérieur droit.
+- État `OUT` : écran noir avec « Sortie Stands » et durée totale du passage aux stands pendant 5 secondes.
+- Ajout des commandes développeur `IN`, `OUT` et réinitialisation pour tester la séquence.
+- Aucun changement sur les Focus Qualification et Sprint.
+
 # KartIQ V6.0.18
 
 - Focus Endurance : bloc chronomètre + rang augmenté de 15 %.

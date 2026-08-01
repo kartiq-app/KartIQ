@@ -424,3 +424,64 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-focus-last-rank{font-size:min(16.767vh,34.5cqw,168px)}
   #enduranceFocus .endurance-focus-deltas{padding-top:1px}
 }
+
+
+/* KartIQ V6.0.19 — Focus Endurance : séquence stands IN / OUT. */
+#enduranceFocus{position:fixed}
+#enduranceFocus .endurance-pit-overlay{
+  position:absolute;
+  inset:0;
+  z-index:50;
+  display:none;
+  background:#000;
+  overflow:hidden;
+  pointer-events:none;
+}
+#enduranceFocus .endurance-pit-overlay.show{display:block}
+#enduranceFocus .endurance-pit-in-time{
+  display:none;
+  position:absolute;
+  top:clamp(10px,2.2vh,28px);
+  right:clamp(14px,2.4vw,34px);
+  color:#198cff;
+  font-family:var(--font-display,inherit);
+  font-size:clamp(22px,4.2vh,58px);
+  line-height:1;
+  font-weight:800;
+  letter-spacing:.03em;
+  white-space:nowrap;
+}
+#enduranceFocus .pit-in-active .endurance-pit-in-time{display:block}
+#enduranceFocus .endurance-pit-out-message{
+  display:none;
+  position:absolute;
+  inset:0;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:clamp(12px,3vh,36px);
+  padding:4vw;
+  text-align:center;
+  color:#198cff;
+  font-family:var(--font-display,inherit);
+}
+#enduranceFocus .pit-out-active .endurance-pit-out-message{display:flex}
+#enduranceFocus .endurance-pit-out-title{
+  font-size:clamp(50px,12vw,180px);
+  line-height:.92;
+  font-weight:900;
+  text-transform:uppercase;
+  white-space:nowrap;
+  max-width:100%;
+}
+#enduranceFocus .endurance-pit-out-time{
+  font-size:clamp(46px,10vw,150px);
+  line-height:1;
+  font-weight:900;
+  white-space:nowrap;
+}
+@media(max-width:680px) and (orientation:portrait){
+  #enduranceFocus .endurance-pit-out-title{font-size:clamp(44px,15vw,100px);white-space:normal}
+  #enduranceFocus .endurance-pit-out-time{font-size:clamp(42px,16vw,96px)}
+  #enduranceFocus .endurance-pit-in-time{font-size:clamp(22px,7vw,42px)}
+}

@@ -20,6 +20,7 @@ async function openEnduranceFocus(){
 }
 async function closeEnduranceFocus(){
  document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');
+ setEndurancePitOverlay(null);
  try{if(enduranceFocusWakeLock){await enduranceFocusWakeLock.release();enduranceFocusWakeLock=null}}catch(e){}
  try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
@@ -86,9 +87,100 @@ function enduranceOrdinalMarkup(rank){
  const value=Number(rank);
  return `<span class="endurance-focus-stopwatch" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9 2h6v2H9zM11 5h2v2h-2zM17.03 6.97l1.42-1.42 1.41 1.41-1.42 1.42A8 8 0 1 1 17.03 6.97ZM12 8a6 6 0 1 0 6 6 6 6 0 0 0-6-6Zm1 2v3.59l2.54 2.53-1.42 1.42L11 14.41V10Z"/></svg></span><span class="endurance-focus-rank-number">${value}</span>`;
 }
+
+let endurancePitPreviousStatus='unknown';
+let endurancePitEnteredAt=0;
+let endurancePitLastTime='—';
+let endurancePitOutUntil=0;
+let endurancePitSimulation=null;
+
+function formatEndurancePitElapsed(ms){
+ const total=Math.max(0,Math.floor(Number(ms||0)/1000));
+ const hours=Math.floor(total/3600);
+ const minutes=Math.floor((total%3600)/60);
+ const seconds=total%60;
+ const pad=n=>String(n).padStart(2,'0');
+ return hours?`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`:`${pad(minutes)}:${pad(seconds)}`;
+}
+function setEndurancePitOverlay(mode,timeValue='—'){
+ const overlay=document.getElementById('endurancePitOverlay');
+ const inTime=document.getElementById('endurancePitInTime');
+ const outMessage=document.getElementById('endurancePitOutMessage');
+ const outTime=document.getElementById('endurancePitOutTime');
+ if(!overlay)return;
+ overlay.classList.toggle('show',Boolean(mode));
+ overlay.classList.toggle('pit-in-active',mode==='in');
+ overlay.classList.toggle('pit-out-active',mode==='out');
+ if(inTime)inTime.textContent=timeValue||'—';
+ if(outTime)outTime.textContent=timeValue||'—';
+ if(outMessage)outMessage.setAttribute('aria-hidden',mode==='out'?'false':'true');
+}
+function simulateEndurancePitIn(){
+ endurancePitSimulation={mode:'in',startedAt:Date.now(),duration:'—'};
+ endurancePitOutUntil=0;
+ renderEnduranceFocus();
+}
+function simulateEndurancePitOut(){
+ const now=Date.now();
+ let duration=endurancePitLastTime;
+ if(endurancePitSimulation?.mode==='in')duration=formatEndurancePitElapsed(now-endurancePitSimulation.startedAt);
+ endurancePitLastTime=duration||'—';
+ endurancePitSimulation={mode:'out',startedAt:now,duration:endurancePitLastTime};
+ endurancePitOutUntil=now+5000;
+ renderEnduranceFocus();
+}
+function resetEndurancePitSimulation(){
+ endurancePitSimulation=null;
+ endurancePitOutUntil=0;
+ endurancePitPreviousStatus='unknown';
+ setEndurancePitOverlay(null);
+}
+function renderEndurancePitState(f){
+ const now=Date.now();
+ if(endurancePitSimulation?.mode==='in'){
+  const value=formatEndurancePitElapsed(now-endurancePitSimulation.startedAt);
+  endurancePitLastTime=value;
+  setEndurancePitOverlay('in',value);
+  return true;
+ }
+ if(endurancePitSimulation?.mode==='out'){
+  if(now<endurancePitOutUntil){
+   setEndurancePitOverlay('out',endurancePitSimulation.duration||endurancePitLastTime);
+   return true;
+  }
+  endurancePitSimulation=null;
+  endurancePitOutUntil=0;
+ }
+ const status=String(f?.status||'unknown').toLowerCase();
+ const apexPitTime=String(f?.pit_timer||'').trim();
+ if(status==='pit'){
+  if(endurancePitPreviousStatus!=='pit')endurancePitEnteredAt=now;
+  if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
+  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
+  endurancePitPreviousStatus='pit';
+  endurancePitOutUntil=0;
+  setEndurancePitOverlay('in',endurancePitLastTime);
+  return true;
+ }
+ if(status==='track'&&endurancePitPreviousStatus==='pit'){
+  if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
+  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
+  endurancePitOutUntil=now+5000;
+ }
+ endurancePitPreviousStatus=status;
+ if(endurancePitOutUntil>now){
+  setEndurancePitOverlay('out',endurancePitLastTime);
+  return true;
+ }
+ if(endurancePitOutUntil&&endurancePitOutUntil<=now)endurancePitOutUntil=0;
+ setEndurancePitOverlay(null);
+ return false;
+}
+
 function renderEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay?.classList.contains('show'))return;
  const f=state.followed||{};
+ renderEndurancePitState(f);
  const position=document.getElementById('enduranceFocusPosition');
  const name=document.getElementById('enduranceFocusName');
  const lastRankEl=document.getElementById('enduranceFocusLastRank');

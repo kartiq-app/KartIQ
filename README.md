@@ -1,4 +1,4 @@
-# KartIQ V6.0.18 — Focus Endurance : ajustements de lisibilité
+# KartIQ V6.0.19 — Focus Endurance : ajustements de lisibilité
 
 Cette version ajuste uniquement le Focus Endurance :
 
