@@ -1,3 +1,9 @@
+# KartIQ V6.0.33
+
+- L’écran de sortie des stands utilise désormais exclusivement le nombre indiqué dans la colonne STANDS d’Apex Timing.
+- La valeur reste synchronisée pendant les 5 secondes d’affichage afin de prendre en compte une mise à jour Apex reçue juste après la sortie.
+- Suppression de l’incrément local du nombre de passages.
+
 # KartIQ V6.0.32
 
 - Nouvel écran de sortie des stands avec numéro de passage, libellé « Durée de l’arrêt » et chrono au format MM:SS.

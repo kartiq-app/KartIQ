@@ -198,9 +198,11 @@ function renderEndurancePitState(f){
   return true;
  }
  if(status==='track'&&endurancePitPreviousStatus==='pit'){
+  // Le numéro affiché doit provenir exclusivement de la colonne STANDS Apex.
+  // On ne l'incrémente plus localement : la valeur peut arriver dans la trame
+  // suivant immédiatement la transition TO -> IN.
   const apexPassages=Number(f?.pit_stops);
   if(Number.isFinite(apexPassages)&&apexPassages>0)endurancePitPassageCount=apexPassages;
-  else endurancePitPassageCount=Math.max(1,endurancePitPassageCount+1);
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
   else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
   endurancePitOutUntil=now+5000;
@@ -208,6 +210,11 @@ function renderEndurancePitState(f){
  }
  endurancePitPreviousStatus=status;
  if(endurancePitOutUntil>now){
+  // Pendant les 5 secondes d'affichage, on continue à lire la colonne STANDS.
+  // Apex met parfois son compteur à jour juste après le premier message IN de
+  // sortie : le libellé se recale alors immédiatement sur la valeur officielle.
+  const apexPassages=Number(f?.pit_stops);
+  if(Number.isFinite(apexPassages)&&apexPassages>0)endurancePitPassageCount=apexPassages;
   setEndurancePitOverlay('out',endurancePitLastTime,endurancePitPassageCount);
   return true;
  }
