@@ -1,4 +1,4 @@
-# KartIQ V6.0.19 — Focus Endurance : stands IN / OUT
+# KartIQ V6.0.20 — Focus Endurance : stands IN / OUT
 
 Le Focus Endurance réagit au statut Apex de l'entité suivie :
 

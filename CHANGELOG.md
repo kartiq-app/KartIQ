@@ -1,4 +1,4 @@
-## V6.0.19 — Focus Endurance : stands IN / OUT
+## V6.0.20 — Focus Endurance : stands IN / OUT
 
 - État `IN` : écran noir et chrono des stands Apex en bleu dans le coin supérieur droit.
 - État `OUT` : écran noir avec « Sortie Stands » et durée totale du passage aux stands pendant 5 secondes.
