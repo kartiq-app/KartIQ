@@ -1,4 +1,4 @@
-# KartIQ V6.0.20 — Focus Endurance : ajustements de lisibilité
+# KartIQ V6.0.21 — Focus Endurance : dernier tour et temps en piste
 
 Cette version ajuste uniquement le Focus Endurance :
 

@@ -487,3 +487,21 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-pit-out-time{font-size:clamp(42px,16vw,96px)}
   #enduranceFocus .endurance-pit-in-time{font-size:clamp(22px,7vw,42px)}
 }
+
+
+/* KartIQ V6.0.21 — Focus Endurance : dernier tour coloré et temps en piste Apex. */
+#enduranceFocus .endurance-focus-track-session{gap:clamp(4px,.8vh,12px)}
+#enduranceFocus .endurance-focus-track-label{
+  font-family:var(--font-driver);font-size:clamp(15px,2.5vh,30px);font-weight:800;
+  line-height:1;text-transform:uppercase;color:var(--muted);text-align:center
+}
+#enduranceFocus #enduranceFocusLaps{display:none!important}
+#enduranceFocus .endurance-focus-last-lap.endurance-last-orange{color:var(--orange,#ff8a00)!important}
+#enduranceFocus .endurance-focus-last-lap.endurance-last-green{color:var(--green,#21d07a)!important}
+#enduranceFocus .endurance-focus-last-lap.endurance-last-purple{color:var(--purple,#b84dff)!important}
+@media(max-width:680px) and (orientation:portrait){
+  #enduranceFocus .endurance-focus-track-label{font-size:clamp(12px,3.4vw,18px)}
+}
+@media(max-height:500px) and (orientation:landscape){
+  #enduranceFocus .endurance-focus-track-label{font-size:clamp(12px,3.8vh,20px)}
+}

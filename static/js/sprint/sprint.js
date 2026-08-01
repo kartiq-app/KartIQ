@@ -93,6 +93,7 @@ let endurancePitEnteredAt=0;
 let endurancePitLastTime='—';
 let endurancePitOutUntil=0;
 let endurancePitSimulation=null;
+let enduranceTrackStartedAt=0;
 
 function formatEndurancePitElapsed(ms){
  const total=Math.max(0,Math.floor(Number(ms||0)/1000));
@@ -117,6 +118,7 @@ function setEndurancePitOverlay(mode,timeValue='—'){
 }
 function simulateEndurancePitIn(){
  endurancePitSimulation={mode:'in',startedAt:Date.now(),duration:'—'};
+ enduranceTrackStartedAt=0;
  endurancePitOutUntil=0;
  renderEnduranceFocus();
 }
@@ -126,6 +128,7 @@ function simulateEndurancePitOut(){
  if(endurancePitSimulation?.mode==='in')duration=formatEndurancePitElapsed(now-endurancePitSimulation.startedAt);
  endurancePitLastTime=duration||'—';
  endurancePitSimulation={mode:'out',startedAt:now,duration:endurancePitLastTime};
+ enduranceTrackStartedAt=now;
  endurancePitOutUntil=now+5000;
  renderEnduranceFocus();
 }
@@ -133,6 +136,7 @@ function resetEndurancePitSimulation(){
  endurancePitSimulation=null;
  endurancePitOutUntil=0;
  endurancePitPreviousStatus='unknown';
+ enduranceTrackStartedAt=0;
  setEndurancePitOverlay(null);
 }
 function renderEndurancePitState(f){
@@ -155,6 +159,7 @@ function renderEndurancePitState(f){
  const apexPitTime=String(f?.pit_timer||'').trim();
  if(status==='pit'){
   if(endurancePitPreviousStatus!=='pit')endurancePitEnteredAt=now;
+  enduranceTrackStartedAt=0;
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
   else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
   endurancePitPreviousStatus='pit';
@@ -166,6 +171,7 @@ function renderEndurancePitState(f){
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
   else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
   endurancePitOutUntil=now+5000;
+  enduranceTrackStartedAt=now;
  }
  endurancePitPreviousStatus=status;
  if(endurancePitOutUntil>now){
@@ -175,6 +181,26 @@ function renderEndurancePitState(f){
  if(endurancePitOutUntil&&endurancePitOutUntil<=now)endurancePitOutUntil=0;
  setEndurancePitOverlay(null);
  return false;
+}
+
+
+function enduranceTrackTimeValue(f){
+ const status=String(f?.status||'unknown').toLowerCase();
+ if(status!=='track')return '—';
+ const apexValue=String(f?.pit_timer||'').trim();
+ // Selon la configuration Apex, la colonne `to` expose directement le temps en piste.
+ if(apexValue&&apexValue!=='—')return apexValue;
+ // Repli local, ancré exclusivement sur la transition OUT reçue d'Apex.
+ if(enduranceTrackStartedAt>0)return formatEndurancePitElapsed(Date.now()-enduranceTrackStartedAt);
+ return '—';
+}
+
+function enduranceLastLapColorClass(f){
+ const lastSec=lapSeconds(f?.last);
+ const absoluteBest=absoluteSessionBestSeconds();
+ if(Number.isFinite(lastSec)&&Number.isFinite(absoluteBest)&&Math.abs(lastSec-absoluteBest)<0.0005)return 'endurance-last-purple';
+ if(f?.last_improved_personal_best)return 'endurance-last-green';
+ return 'endurance-last-orange';
 }
 
 function renderEnduranceFocus(){
@@ -200,8 +226,12 @@ function renderEnduranceFocus(){
  if(behindEl){behindEl.textContent=focusBehind;behindEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
  if(behindNameEl){behindNameEl.textContent=behindDriver?.driver||'—';behindNameEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
  const divider=overlay.querySelector('.sprint-focus-divider');if(divider)divider.style.display=(isLeader||!hasDriverBehind)?'none':'';
- const ms=liveRemainingMilliseconds();if(timeEl){timeEl.textContent=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);timeEl.classList.toggle('time-critical',Number.isFinite(ms)&&ms<=120000)}
- if(lastLapEl)lastLapEl.textContent=f.last||'—';
+ if(timeEl){timeEl.textContent=enduranceTrackTimeValue(f);timeEl.classList.remove('time-critical')}
+ if(lastLapEl){
+  lastLapEl.textContent=f.last||'—';
+  lastLapEl.classList.remove('endurance-last-orange','endurance-last-green','endurance-last-purple');
+  lastLapEl.classList.add(enduranceLastLapColorClass(f));
+ }
 }
 
 let enduranceFocusWakeLock=null;
