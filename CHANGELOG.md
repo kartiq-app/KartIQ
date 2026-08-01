@@ -1,3 +1,9 @@
+## V6.0.34 — Écarts en tours
+
+- Sprint et Endurance : prise en charge des intervalles Apex exprimés en `Lap(s)` ou `tour(s)`.
+- Focus Sprint et Focus Endurance : affichage des écarts directs en tours avec le signe correspondant à l’avance ou au retard.
+- Les écarts chronométriques conservent leur format à trois décimales.
+
 # KartIQ V6.0.33
 
 - L’écran de sortie des stands utilise désormais exclusivement le nombre indiqué dans la colonne STANDS d’Apex Timing.

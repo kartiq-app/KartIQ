@@ -30,13 +30,11 @@ function sprintDriverAhead(driver){if(!driver?.pos||Number(driver.pos)<=1)return
 function sprintDriverBehind(driver){if(!driver?.pos)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(driver.pos)+1)||null}
 function sprintGapAhead(driver){
  const ahead=sprintDriverAhead(driver);if(!ahead)return '--';
- const gap=directRaceGap(driver,ahead);
- return Number.isFinite(gap)?`-${formatRaceGap(gap)}`:'--';
+ return formatRaceInterval(driver,ahead,'-');
 }
 function sprintGapBehind(driver){
  const behind=sprintDriverBehind(driver);if(!behind)return '--';
- const gap=directRaceGap(behind,driver);
- return Number.isFinite(gap)?`+${formatRaceGap(gap)}`:'--';
+ return formatRaceInterval(behind,driver,'+');
 }
 function penaltyTime(p){if(p?.time)return p.time;const at=String(p?.at||'');return at.length>=16?at.slice(11,16):'--:--'}
 function lapSeconds(value){

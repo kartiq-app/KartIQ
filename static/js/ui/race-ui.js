@@ -147,16 +147,31 @@ function directRaceGap(behind,ahead){
  const interval=raceGapSeconds(behind.interval);
  return Number.isFinite(interval)?interval:null;
 }
+function raceLapInterval(value){
+ const raw=String(value??'').trim();
+ const match=raw.match(/(\d+(?:[.,]\d+)?)\s*(?:lap|laps|tour|tours)/i);
+ if(!match)return null;
+ const laps=Number(match[1].replace(',', '.'));
+ return Number.isFinite(laps)&&laps>0?laps:null;
+}
+function formatRaceInterval(behind,ahead,sign){
+ if(!behind||!ahead)return '--';
+ const lapCount=raceLapInterval(behind.interval);
+ if(Number.isFinite(lapCount)){
+  const normalized=Number.isInteger(lapCount)?String(lapCount):String(lapCount).replace('.', ',');
+  return `${sign}${normalized} ${lapCount===1?'tour':'tours'}`;
+ }
+ const gap=directRaceGap(behind,ahead);
+ return Number.isFinite(gap)?`${sign}${formatRaceGap(gap)}`:'--';
+}
 function sprintDeltaFor(driver){
  if(!driver||!driver.pos)return '--';
  if(Number(driver.pos)===1){
   const p2=sprintReferenceFor(driver);
-  const gap=directRaceGap(p2,driver);
-  return Number.isFinite(gap)?`+${formatRaceGap(gap)}`:'--';
+  return formatRaceInterval(p2,driver,'+');
  }
  const ahead=driverAhead(driver);
- const gap=directRaceGap(driver,ahead);
- return Number.isFinite(gap)?`-${formatRaceGap(gap)}`:'--';
+ return formatRaceInterval(driver,ahead,'-');
 }
 async function updateDeveloperSettings(){
  const developer_mode=!!document.getElementById('developerModeToggle')?.checked;
