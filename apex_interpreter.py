@@ -80,6 +80,7 @@ class ApexInterpreter:
             "row": row, "position": None, "name": None, "kart": None,
             "last_lap": None, "best_lap": None, "gap": None,
             "interval": None, "laps": None, "timer": None,
+            "pit_timer": None, "track_timer": None,
             "pit_stops": None, "penalty": None, "status": "unknown", "last_lap_kind": None,
             "updated_at": None,
         })
@@ -144,17 +145,27 @@ class ApexInterpreter:
                 row["best_lap"] = value
         elif field in {"gap", "interval"}:
             row[field] = value or None
-        elif col is None and code == "*in":
+        elif code in {"in", "*in"}:
+            # Apex n'envoie pas toujours un événement *in explicite. Sur les
+            # configurations endurance observées, la présence d'une cellule
+            # `cX|in|MM:SS` constitue directement l'état « dans les stands ».
             old = row.get("status")
             row["status"] = "pit"
-            if not initial and old != "pit": self._emit(update.row, "pit_in", "Entrée aux stands", "Décompte bleu attendu", severity="pit")
-        elif col is None and code == "*out":
+            row["pit_timer"] = value or row.get("pit_timer")
+            row["timer"] = row.get("pit_timer")
+            if not initial and old != "pit":
+                self._emit(update.row, "pit_in", "Entrée aux stands", "Décompte Apex IN", value, "pit")
+        elif code in {"to", "*out"}:
+            # Apex ne transmet généralement pas de message OUT : le premier
+            # `cX|to|...` reçu après un `cX|in|...` signifie que le kart est
+            # ressorti. La dernière durée IN reste mémorisée dans pit_timer.
             old = row.get("status")
             row["status"] = "track"
-            if not initial and old not in {"unknown", "track"}: self._emit(update.row, "pit_out", "Sortie des stands", "Nouveau relais en piste", severity="track")
-        elif col is not None and code == "to":
-            # Colonne non typée utilisée comme compteur piste/stands selon la configuration.
-            row["timer"] = value or None
+            if code == "to":
+                row["track_timer"] = value or row.get("track_timer")
+                row["timer"] = row.get("track_timer")
+            if not initial and old == "pit":
+                self._emit(update.row, "pit_out", "Sortie des stands", "Reprise du compteur Apex TO", row.get("pit_timer") or "", "track")
 
         if initial:
             self._initialized_rows.add(update.row)

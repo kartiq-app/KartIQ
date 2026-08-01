@@ -194,8 +194,8 @@ function renderEndurancePitState(f){
 function enduranceTrackTimeValue(f){
  const status=String(f?.status||'unknown').toLowerCase();
  if(status!=='track')return '—';
- const apexValue=String(f?.pit_timer||'').trim();
- // Selon la configuration Apex, la colonne `to` expose directement le temps en piste.
+ const apexValue=String(f?.track_timer||'').trim();
+ // Apex expose directement le temps en piste dans les trames `|to|`.
  if(apexValue&&apexValue!=='—')return apexValue;
  // Repli local, ancré exclusivement sur la transition OUT reçue d'Apex.
  if(enduranceTrackStartedAt>0)return formatEndurancePitElapsed(Date.now()-enduranceTrackStartedAt);

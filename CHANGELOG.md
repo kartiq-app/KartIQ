@@ -1,3 +1,10 @@
+# KartIQ V6.0.30
+
+- Détection des stands alignée sur les trames Apex réelles : `|in|` active l'état IN.
+- Le premier `|to|` reçu après `|in|` déclenche immédiatement la sortie des stands.
+- La dernière durée `|in|` reste mémorisée pour la colonne STAND et l'écran SORTIE STANDS.
+- Le temps en piste du Focus Endurance utilise désormais directement la valeur Apex `|to|`.
+
 ## 6.0.29
 - Endurance paysage : classement général repris du mode Analyzer.
 - Ordre des colonnes : POS, KART, ÉQUIPE / PILOTE, TOURS, STANDS, DERNIER, MEILLEUR, ÉCART, PÉNA.
