@@ -1,3 +1,7 @@
+## 6.0.29
+- Endurance paysage : classement général repris du mode Analyzer.
+- Ordre des colonnes : POS, KART, ÉQUIPE / PILOTE, TOURS, STANDS, DERNIER, MEILLEUR, ÉCART, PÉNA.
+
 # KartIQ V6.0.28
 
 ## Correctif de restauration
