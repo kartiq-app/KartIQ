@@ -460,12 +460,21 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   align-items:center;
   justify-content:center;
   flex-direction:column;
-  gap:clamp(12px,3vh,36px);
+  gap:clamp(8px,2vh,24px);
   padding:4vw;
   text-align:center;
-  color:#198cff;
+  color:#fff;
 }
 #enduranceFocus .pit-out-active .endurance-pit-out-message{display:flex}
+#enduranceFocus .endurance-pit-out-passage{
+  font-family:var(--font-time,"F1 Regular",Arial,sans-serif);
+  font-size:clamp(22px,4vw,64px);
+  line-height:1;
+  font-weight:400;
+  color:#fff;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
 #enduranceFocus .endurance-pit-out-title{
   font-family:var(--font-driver,"F1 Torque","Arial Narrow",Arial,sans-serif);
   font-size:clamp(50px,12vw,180px);
@@ -473,6 +482,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   font-weight:700;
   white-space:nowrap;
   max-width:100%;
+  color:#fff;
 }
 #enduranceFocus .endurance-pit-out-time{
   font-family:var(--font-time,"F1 Regular",Arial,sans-serif);
@@ -481,12 +491,15 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   font-weight:400;
   white-space:nowrap;
   font-variant-numeric:tabular-nums;
+  color:#198cff;
 }
 @media(max-width:680px) and (orientation:portrait){
-  #enduranceFocus .endurance-pit-out-title{font-size:clamp(44px,15vw,100px);white-space:normal}
+  #enduranceFocus .endurance-pit-out-passage{font-size:clamp(18px,6vw,34px);white-space:normal}
+  #enduranceFocus .endurance-pit-out-title{font-size:clamp(38px,12vw,82px);white-space:normal}
   #enduranceFocus .endurance-pit-out-time{font-size:clamp(42px,16vw,96px)}
   #enduranceFocus .endurance-pit-in-time{font-size:clamp(22px,7vw,42px)}
 }
+
 
 
 /* KartIQ V6.0.21 — Focus Endurance : dernier tour coloré et temps en piste Apex. */

@@ -101,6 +101,7 @@ let endurancePitLastTime='—';
 let endurancePitOutUntil=0;
 let endurancePitSimulation=null;
 let enduranceTrackStartedAt=0;
+let endurancePitPassageCount=0;
 
 function formatEndurancePitElapsed(ms){
  const total=Math.max(0,Math.floor(Number(ms||0)/1000));
@@ -110,17 +111,36 @@ function formatEndurancePitElapsed(ms){
  const pad=n=>String(n).padStart(2,'0');
  return hours?`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`:`${pad(minutes)}:${pad(seconds)}`;
 }
-function setEndurancePitOverlay(mode,timeValue='—'){
+function formatEndurancePitClock(value){
+ const raw=String(value??'').trim();
+ if(!raw||raw==='—')return '00:00';
+ const clean=raw.replace(/\.$/,'');
+ if(/^\d+$/.test(clean)){
+  const total=Math.max(0,Number(clean));
+  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+ }
+ const parts=clean.split(':').map(v=>Number(v));
+ if(parts.length===2&&parts.every(Number.isFinite))return `${String(parts[0]).padStart(2,'0')}:${String(Math.floor(parts[1])).padStart(2,'0')}`;
+ if(parts.length===3&&parts.every(Number.isFinite))return `${String(parts[0]*60+parts[1]).padStart(2,'0')}:${String(Math.floor(parts[2])).padStart(2,'0')}`;
+ return clean;
+}
+function endurancePitPassageLabel(count){
+ const value=Math.max(1,Number(count)||1);
+ return `${value}${value===1?'er':'e'} passage aux stands`;
+}
+function setEndurancePitOverlay(mode,timeValue='—',passageCount=endurancePitPassageCount){
  const overlay=document.getElementById('endurancePitOverlay');
  const inTime=document.getElementById('endurancePitInTime');
  const outMessage=document.getElementById('endurancePitOutMessage');
+ const outPassage=document.getElementById('endurancePitOutPassage');
  const outTime=document.getElementById('endurancePitOutTime');
  if(!overlay)return;
  overlay.classList.toggle('show',Boolean(mode));
  overlay.classList.toggle('pit-in-active',mode==='in');
  overlay.classList.toggle('pit-out-active',mode==='out');
  if(inTime)inTime.textContent=timeValue||'—';
- if(outTime)outTime.textContent=timeValue||'—';
+ if(outPassage)outPassage.textContent=endurancePitPassageLabel(passageCount);
+ if(outTime)outTime.textContent=formatEndurancePitClock(timeValue);
  if(outMessage)outMessage.setAttribute('aria-hidden',mode==='out'?'false':'true');
 }
 function simulateEndurancePitIn(){
@@ -134,7 +154,8 @@ function simulateEndurancePitOut(){
  let duration=endurancePitLastTime;
  if(endurancePitSimulation?.mode==='in')duration=formatEndurancePitElapsed(now-endurancePitSimulation.startedAt);
  endurancePitLastTime=duration||'—';
- endurancePitSimulation={mode:'out',startedAt:now,duration:endurancePitLastTime};
+ endurancePitPassageCount=Math.max(1,endurancePitPassageCount+1);
+ endurancePitSimulation={mode:'out',startedAt:now,duration:endurancePitLastTime,passageCount:endurancePitPassageCount};
  enduranceTrackStartedAt=now;
  endurancePitOutUntil=now+5000;
  renderEnduranceFocus();
@@ -156,7 +177,7 @@ function renderEndurancePitState(f){
  }
  if(endurancePitSimulation?.mode==='out'){
   if(now<endurancePitOutUntil){
-   setEndurancePitOverlay('out',endurancePitSimulation.duration||endurancePitLastTime);
+   setEndurancePitOverlay('out',endurancePitSimulation.duration||endurancePitLastTime,endurancePitSimulation.passageCount||endurancePitPassageCount);
    return true;
   }
   endurancePitSimulation=null;
@@ -165,6 +186,8 @@ function renderEndurancePitState(f){
  const status=String(f?.status||'unknown').toLowerCase();
  const apexPitTime=String(f?.pit_timer||'').trim();
  if(status==='pit'){
+  const apexPassages=Number(f?.pit_stops);
+  if(Number.isFinite(apexPassages)&&apexPassages>0)endurancePitPassageCount=apexPassages;
   if(endurancePitPreviousStatus!=='pit')endurancePitEnteredAt=now;
   enduranceTrackStartedAt=0;
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
@@ -175,6 +198,9 @@ function renderEndurancePitState(f){
   return true;
  }
  if(status==='track'&&endurancePitPreviousStatus==='pit'){
+  const apexPassages=Number(f?.pit_stops);
+  if(Number.isFinite(apexPassages)&&apexPassages>0)endurancePitPassageCount=apexPassages;
+  else endurancePitPassageCount=Math.max(1,endurancePitPassageCount+1);
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
   else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
   endurancePitOutUntil=now+5000;
@@ -182,7 +208,7 @@ function renderEndurancePitState(f){
  }
  endurancePitPreviousStatus=status;
  if(endurancePitOutUntil>now){
-  setEndurancePitOverlay('out',endurancePitLastTime);
+  setEndurancePitOverlay('out',endurancePitLastTime,endurancePitPassageCount);
   return true;
  }
  if(endurancePitOutUntil&&endurancePitOutUntil<=now)endurancePitOutUntil=0;

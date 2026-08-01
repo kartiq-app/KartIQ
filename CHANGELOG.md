@@ -1,3 +1,8 @@
+# KartIQ V6.0.32
+
+- Nouvel écran de sortie des stands avec numéro de passage, libellé « Durée de l’arrêt » et chrono au format MM:SS.
+- Police Regular blanche pour le nombre de passages, Torque blanche pour le titre et Regular bleue pour le chrono.
+
 # KartIQ V6.0.31
 
 - Correction de l'interprétation des compteurs Apex observés en live.
