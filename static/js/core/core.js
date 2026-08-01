@@ -55,9 +55,32 @@ function formatRemainingMilliseconds(ms){
  if(remainingCountdownUsesHours||hours>0)return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
  return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
 }
+function isSmartphoneLandscape(){
+ return window.matchMedia('(orientation: landscape) and (max-width: 950px)').matches;
+}
+function formatLandscapeRemainingMilliseconds(ms){
+ if(!Number.isFinite(ms))return '—';
+ const total=Math.max(0,Math.floor(ms/1000));
+ const hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60),seconds=total%60;
+ // Au-dessus d'une heure : heures:minutes. Sous une heure : minutes:secondes.
+ if(hours>0)return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
+ return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+}
+function parseRemainingTextMilliseconds(value){
+ const parts=String(value||'').trim().split(':').map(Number);
+ if(parts.some(v=>!Number.isFinite(v)))return null;
+ if(parts.length===3)return ((parts[0]*3600)+(parts[1]*60)+parts[2])*1000;
+ if(parts.length===2)return ((parts[0]*60)+parts[1])*1000;
+ return null;
+}
+function formatMainRemainingDisplay(ms,fallback='—'){
+ if(!isSmartphoneLandscape())return Number.isFinite(ms)?formatRemainingMilliseconds(ms):(fallback||'—');
+ const sourceMs=Number.isFinite(ms)?ms:parseRemainingTextMilliseconds(fallback);
+ return Number.isFinite(sourceMs)?formatLandscapeRemainingMilliseconds(sourceMs):(fallback||'—');
+}
 function updateRemainingDisplay(){
  const ms=liveRemainingMilliseconds();
- const display=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);
+ const display=formatMainRemainingDisplay(ms,state.time_remaining||'—');
  const seconds=ms===null?null:ms/1000;
  const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
  const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
@@ -66,6 +89,8 @@ function updateRemainingDisplay(){
  renderSprintFocus();
  renderEnduranceFocus();
 }
+window.addEventListener('orientationchange',()=>setTimeout(updateRemainingDisplay,80));
+window.addEventListener('resize',()=>updateRemainingDisplay());
 async function load(){
  // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle
  // requête tant que la précédente n'est pas terminée, afin d'éviter une

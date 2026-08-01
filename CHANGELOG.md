@@ -1,3 +1,9 @@
+## V6.0.36 — Temps restant dynamique en paysage smartphone
+
+- Qualifications, Sprint et Endurance : affichage `HH:MM` à partir d'une heure.
+- Sous une heure : affichage `MM:SS`.
+- Aucun changement sur desktop, portrait ou les écrans Focus.
+
 ## V6.0.34 — Écarts en tours
 
 - Sprint et Endurance : prise en charge des intervalles Apex exprimés en `Lap(s)` ou `tour(s)`.
