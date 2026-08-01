@@ -368,3 +368,39 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 @media(max-height:500px) and (orientation:landscape){
   #enduranceFocus .endurance-focus-last-rank{font-size:16.2vh}
 }
+
+
+/* KartIQ V6.0.17 — Focus Endurance : rang compact et anti-débordement renforcé. */
+#enduranceFocus .endurance-focus-driver{container-type:inline-size}
+#enduranceFocus .endurance-focus-last-rank{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:0!important;
+  font-size:min(14.58vh,30cqw,162px);
+  max-inline-size:100%;
+  overflow:hidden;
+  white-space:nowrap
+}
+#enduranceFocus .endurance-focus-stopwatch{
+  width:.78em;
+  height:.78em;
+  margin:0;
+  flex:0 0 .78em
+}
+#enduranceFocus .endurance-focus-rank-number{
+  margin:0;
+  padding:0;
+  flex:0 1 auto;
+  min-width:0;
+  max-width:calc(100% - .78em);
+  overflow:hidden;
+  line-height:1
+}
+#enduranceFocus .endurance-focus-rank-number sup{display:none!important}
+@media(max-width:680px) and (orientation:portrait){
+  #enduranceFocus .endurance-focus-last-rank{font-size:min(14.58vw,30cqw,146px)}
+}
+@media(max-height:500px) and (orientation:landscape){
+  #enduranceFocus .endurance-focus-last-rank{font-size:min(14.58vh,30cqw,146px)}
+}

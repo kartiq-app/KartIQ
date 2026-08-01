@@ -1,3 +1,12 @@
+# KartIQ V6.0.17
+
+## Focus Endurance
+
+- Suppression de l’espace entre l’icône chronomètre et le rang.
+- Suppression des suffixes ordinaux « e » et « er ».
+- Réduction de 10 % du bloc chronomètre + rang.
+- Renforcement de la protection contre les débordements.
+
 # KartIQ V6.0.16
 
 - Focus Endurance uniquement : ordre strict Position / Nom / Chrono + rang dans la carte du pilote suivi.
