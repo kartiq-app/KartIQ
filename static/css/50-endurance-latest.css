@@ -596,3 +596,38 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 @media(max-height:500px) and (orientation:landscape){
   #sprintFocus .sprint-followed-last-rank{font-size:min(16.767vh,34.5cqw,168px)}
 }
+
+
+/* KartIQ V6.0.23 — Focus Sprint : bloc rang strictement identique au rendu Endurance. */
+#sprintFocus .sprint-followed-last-rank{
+  font-family:var(--font-time)!important;
+  font-weight:400!important;
+  font-variant-numeric:tabular-nums;
+  gap:0!important
+}
+#sprintFocus .sprint-followed-last-rank .sprint-focus-stopwatch{
+  display:inline-flex;
+  width:.78em;
+  height:.78em;
+  margin:0;
+  flex:0 0 .78em
+}
+#sprintFocus .sprint-followed-last-rank .sprint-focus-stopwatch svg{
+  display:block;
+  width:100%;
+  height:100%;
+  fill:#fff
+}
+#sprintFocus .sprint-followed-last-rank .sprint-focus-rank-number{
+  display:inline-flex;
+  align-items:center;
+  margin:0;
+  padding:0;
+  flex:0 1 auto;
+  min-width:0;
+  max-width:calc(100% - .78em);
+  overflow:hidden;
+  line-height:1;
+  font-family:var(--font-time)!important;
+  font-weight:400!important
+}

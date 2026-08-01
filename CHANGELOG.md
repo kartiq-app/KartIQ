@@ -1,3 +1,10 @@
+## V6.0.23 — Focus Sprint : icône chrono et police Regular
+
+- La carte du pilote suivi affiche strictement `Position / Nom / ⏱Rang`.
+- L’icône chronomètre blanche est rendue explicitement dans le Focus Sprint.
+- Le rang utilise la police F1 Regular, sans suffixe ordinal et sans espace après l’icône.
+- Aucun autre écran n’est modifié.
+
 ## V6.0.22 — Focus Sprint : carte pilote suivie harmonisée
 
 - Remplacement du contenu de la carte du pilote suivi par la structure du Focus Endurance.

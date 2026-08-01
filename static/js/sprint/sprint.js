@@ -58,6 +58,12 @@ function sprintFastestLastLapForFollowed(followed=state.followed){
   .sort((a,b)=>a._lastSec-b._lastSec);
  return candidates[0]||null;
 }
+function sprintFocusRankMarkup(rank){
+ if(!Number.isFinite(Number(rank)))return '—';
+ const value=Number(rank);
+ return `<span class="sprint-focus-stopwatch" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9 2h6v2H9zM11 5h2v2h-2zM17.03 6.97l1.42-1.42 1.41 1.41-1.42 1.42A8 8 0 1 1 17.03 6.97ZM12 8a6 6 0 1 0 6 6 6 6 0 0 0-6-6Zm1 2v3.59l2.54 2.53-1.42 1.42L11 14.41V10Z"/></svg></span><span class="sprint-focus-rank-number">${value}</span>`;
+}
+
 function sprintLastLapRanking(driver){
  const valid=(state.drivers||[]).map(d=>({...d,_lastSec:lapSeconds(d.last)})).filter(d=>Number.isFinite(d._lastSec)).sort((a,b)=>a._lastSec-b._lastSec);
  const target=valid.find(d=>d.driver===driver?.driver);if(!target)return null;
@@ -67,7 +73,7 @@ function sprintLastLapRanking(driver){
 function renderSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay?.classList.contains('show'))return;
  const f=state.followed||{};sprintFocusPosition.textContent=f.pos?'P'+f.pos:'—';sprintFocusName.textContent=f.driver||state.followed_driver||'—';
- const lastRank=sprintLastLapRanking(f);sprintFocusLastRank.innerHTML=lastRank?enduranceOrdinalMarkup(lastRank.rank):'—';
+ const lastRank=sprintLastLapRanking(f);sprintFocusLastRank.innerHTML=lastRank?sprintFocusRankMarkup(lastRank.rank):'—';
  const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';const fastestLapSeconds=lapSeconds(fastestLap);const sessionBestSeconds=absoluteSessionBestSeconds();const isAbsoluteSessionBest=Number.isFinite(fastestLapSeconds)&&Number.isFinite(sessionBestSeconds)&&Math.abs(fastestLapSeconds-sessionBestSeconds)<0.0005;const fastestColorClass=isAbsoluteSessionBest?'fastest-session-best':(fastest.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange');sprintFocusFastestLast.innerHTML=`🔥 ${fastestDriver} <span class="sprint-focus-fastest-last-time ${fastestColorClass}">${fastestLap}</span>`;
  const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(sprintDriverBehind(f));
  sprintFocusAhead.textContent=focusAhead;sprintFocusBehind.textContent=focusBehind;

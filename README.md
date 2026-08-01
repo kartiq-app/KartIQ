@@ -1,4 +1,4 @@
-# KartIQ V6.0.22 — Focus Sprint : carte pilote suivie harmonisée
+# KartIQ V6.0.23 — Focus Sprint : icône chrono et rang corrigés
 
 Cette version modifie uniquement la carte du pilote ou de l’équipe suivie dans le Focus Sprint.
 

@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.0.22"
+APP_VERSION = "6.0.23"
 APP_RELEASE_NAME = "Focus Sprint carte pilote Endurance"
 
 
