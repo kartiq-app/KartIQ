@@ -35,7 +35,7 @@ function sprintGapAhead(driver){
 }
 function sprintGapBehind(driver){
  const behind=sprintDriverBehind(driver);if(!behind)return '--';
- const raw=String(behind.interval||behind.gap||'--').trim();
+ const raw=String(behind.interval||'--').trim();
  if(!raw||raw==='—'||raw==='--')return '--';
  return `+${raw.replace(/^[+-]/,'')}`;
 }

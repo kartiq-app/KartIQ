@@ -126,7 +126,7 @@ function sprintDeltaFor(driver){
  if(Number(driver.pos)===1){
   const p2=sprintReferenceFor(driver);
   if(!p2)return '--';
-  const raw=String(p2.gap||p2.interval||'--').trim();
+  const raw=String(p2.interval||p2.gap||'--').trim();
   if(!raw||raw==='—'||raw==='--')return '--';
   return raw.startsWith('+')?raw:`+${raw}`;
  }

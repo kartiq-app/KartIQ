@@ -1,3 +1,11 @@
+## V6.0.24 — Deltas Sprint et Focus corrigés
+
+- Mode Sprint : le pilote suivi en P1 conserve l’écart avec le P2, affiché en vert.
+- Mode Sprint : à partir de P2, la case Delta reste l’écart avec le pilote immédiatement devant, affiché en orange.
+- Focus Sprint et Focus Endurance : le delta inférieur utilise exclusivement l’intervalle Apex du pilote immédiatement derrière.
+- Suppression du repli sur l’écart au leader (`gap`) pour éviter un delta incorrect avec le pilote derrière.
+- Qualification, Analyzer et les autres éléments d’interface ne sont pas modifiés.
+
 ## V6.0.23 — Focus Sprint : icône chrono et police Regular
 
 - La carte du pilote suivi affiche strictement `Position / Nom / ⏱Rang`.
