@@ -67,11 +67,39 @@ function sprintLastLapRanking(driver){
  const rank=1+valid.filter(d=>d._lastSec<target._lastSec-0.0005).length;
  return {rank,label:`${frenchOrdinal(rank).number}${frenchOrdinal(rank).suffix} temps`,driver:target.driver,lap:target.last};
 }
+let sprintFocusPenaltyInitialized=false;
+let sprintFocusPenaltySeen=new Set();
+let sprintFocusPenaltyAlertUntil=0;
+let sprintFocusPenaltyAlert=null;
+
+function sprintFocusPenaltyKey(p){return String(p?.id||`${p?.time||''}|${p?.driver||''}|${p?.penalty||p?.comment||''}`)}
+function sprintFocusPenaltyListMarkup(list){
+ return list.length?list.map(p=>`<div class="sprint-focus-penalty-row"><small class="sprint-focus-penalty-time">${penaltyTime(p)}</small><b class="sprint-focus-penalty-name">${p.driver||'—'}</b><b class="sprint-focus-penalty-value">${p.penalty||p.comment||'—'}</b></div>`).join(''):'<div class="sprint-focus-empty">Aucune pénalité</div>';
+}
+function renderSprintFocusPenalties(list){
+ const cell=document.querySelector('#sprintFocus .sprint-focus-penalty-cell');
+ const now=Date.now();
+ if(!sprintFocusPenaltyInitialized){list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));sprintFocusPenaltyInitialized=true}
+ const newest=list.find(p=>!sprintFocusPenaltySeen.has(sprintFocusPenaltyKey(p)));
+ if(newest){
+  list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));
+  sprintFocusPenaltyAlert=newest;sprintFocusPenaltyAlertUntil=now+7000;
+ }
+ const alertActive=sprintFocusPenaltyAlert&&now<sprintFocusPenaltyAlertUntil;
+ cell?.classList.toggle('penalty-alert-active',Boolean(alertActive));
+ if(alertActive){
+  sprintFocusPenalties.innerHTML=`<div class="sprint-focus-penalty-alert"><b class="sprint-focus-penalty-alert-name">${sprintFocusPenaltyAlert.driver||'—'}</b><span class="sprint-focus-penalty-alert-text">${sprintFocusPenaltyAlert.penalty||sprintFocusPenaltyAlert.comment||'—'}</span></div>`;
+ }else{
+  sprintFocusPenaltyAlert=null;
+  sprintFocusPenalties.innerHTML=sprintFocusPenaltyListMarkup(list);
+ }
+}
+
 function renderSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay?.classList.contains('show'))return;
  const f=state.followed||{};sprintFocusPosition.textContent=f.pos?'P'+f.pos:'—';sprintFocusName.textContent=f.driver||state.followed_driver||'—';
  const lastRank=sprintLastLapRanking(f);sprintFocusLastRank.innerHTML=lastRank?sprintFocusRankMarkup(lastRank.rank):'—';
- const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';const fastestLapSeconds=lapSeconds(fastestLap);const sessionBestSeconds=absoluteSessionBestSeconds();const isAbsoluteSessionBest=Number.isFinite(fastestLapSeconds)&&Number.isFinite(sessionBestSeconds)&&Math.abs(fastestLapSeconds-sessionBestSeconds)<0.0005;const fastestColorClass=isAbsoluteSessionBest?'fastest-session-best':(fastest.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange');sprintFocusFastestLast.innerHTML=`🔥 ${fastestDriver} <span class="sprint-focus-fastest-last-time ${fastestColorClass}">${fastestLap}</span>`;
+ const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';const fastestLapSeconds=lapSeconds(fastestLap);const sessionBestSeconds=absoluteSessionBestSeconds();const isAbsoluteSessionBest=Number.isFinite(fastestLapSeconds)&&Number.isFinite(sessionBestSeconds)&&Math.abs(fastestLapSeconds-sessionBestSeconds)<0.0005;const fastestColorClass=isAbsoluteSessionBest?'fastest-session-best':(fastest.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange');sprintFocusFastestLast.innerHTML=`<span class="sprint-focus-fastest-last-icon">🔥</span><span class="sprint-focus-fastest-last-name" title="${fastestDriver}">${fastestDriver}</span><span class="sprint-focus-fastest-last-time ${fastestColorClass}">${fastestLap}</span>`;
  const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(sprintDriverBehind(f));
  sprintFocusAhead.textContent=focusAhead;sprintFocusBehind.textContent=focusBehind;
  const sprintFocusDeltas=overlay.querySelector('.sprint-focus-deltas');
@@ -82,8 +110,8 @@ function renderSprintFocus(){
  const sprintFocusDivider=overlay.querySelector('.sprint-focus-divider');if(sprintFocusDivider)sprintFocusDivider.style.display=(isLeader||!hasDriverBehind)?'none':'';
  const ms=liveRemainingMilliseconds();sprintFocusTime.textContent=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);sprintFocusTime.classList.toggle('time-critical',Number.isFinite(ms)&&ms<=120000);
  const laps=String(state.apex_laps_remaining||'—');sprintFocusLaps.textContent=(laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'—';
- const list=[...(state.penalties||[])].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
- sprintFocusPenalties.innerHTML=list.length?list.map(p=>`<div class="sprint-focus-penalty-row"><small class="sprint-focus-penalty-time">${penaltyTime(p)}</small><b class="sprint-focus-penalty-name">${p.driver||'—'}</b><b class="sprint-focus-penalty-value">${p.penalty||'—'}</b></div>`).join(''):'<div class="sprint-focus-empty">Aucune pénalité</div>';
+ const list=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));
+ renderSprintFocusPenalties(list);
 }
 
 

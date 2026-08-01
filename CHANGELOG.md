@@ -1,3 +1,10 @@
+## V6.0.37 — Focus Sprint commentaires Apex
+
+- Nom du pilote le plus rapide tronqué sans déborder.
+- Pénalités du Focus Sprint alimentées exclusivement par la zone Commentaires Apex.
+- Alerte rouge de 7 secondes pour chaque nouvelle pénalité, dédupliquée par heure.
+- Noms des concurrents recentrés dans la case Delta du Focus Endurance.
+
 ## V6.0.36 — Temps restant dynamique en paysage smartphone
 
 - Qualifications, Sprint et Endurance : affichage `HH:MM` à partir d'une heure.

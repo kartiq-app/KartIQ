@@ -32,6 +32,8 @@ class ProtocolEngine:
         self.remaining_ms: int | None = None
         self.remaining_updated_at_ms: int | None = None
         self.remaining_end_at_ms: int | None = None
+        self.comments_raw: str = ""
+        self.comments_updated_at_ms: int | None = None
 
     def observe_frame(self, frame: str, grid: Any | None, updates: list[Any]) -> None:
         self.frames += 1
@@ -42,6 +44,15 @@ class ProtocolEngine:
             self.remaining_ms = max(0, int(countdowns[-1]))
             self.remaining_updated_at_ms = received_at_ms
             self.remaining_end_at_ms = received_at_ms + self.remaining_ms
+        # La zone « Commentaires » Apex est publiée via com||... .
+        # On conserve uniquement une valeur non vide afin qu'une trame partielle
+        # ne supprime pas accidentellement la dernière information reçue.
+        comments = re.findall(r"(?:^|\n)com\|\|(.*?)(?=\n(?:[A-Za-z0-9_]+)\|(?:\||[^|]*\|)|$)", frame, re.DOTALL)
+        if comments:
+            raw_comment = comments[-1].strip()
+            if raw_comment:
+                self.comments_raw = raw_comment
+                self.comments_updated_at_ms = int(time.time() * 1000)
         if "init|" in frame:
             self.init_frames += 1
         if grid:
@@ -140,5 +151,9 @@ class ProtocolEngine:
             "remaining_ms": self.remaining_ms,
             "remaining_updated_at_ms": self.remaining_updated_at_ms,
             "remaining_end_at_ms": self.remaining_end_at_ms,
+        }
+        snap["comments"] = {
+            "raw": self.comments_raw,
+            "updated_at_ms": self.comments_updated_at_ms,
         }
         return snap

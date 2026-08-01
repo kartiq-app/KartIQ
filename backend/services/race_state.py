@@ -17,6 +17,7 @@ class RaceStateService:
         self.last_lap_marker = {}
         self.followed_crossing_marker = {}
         self.penalty_first_seen = {}
+        self.comment_penalty_history = {}
 
     def clear_session_history(self):
         self.lap_history.clear()
@@ -25,6 +26,7 @@ class RaceStateService:
         self.last_lap_marker.clear()
         self.followed_crossing_marker.clear()
         self.penalty_first_seen.clear()
+        self.comment_penalty_history.clear()
 
     def reset_state(self, circuit_id):
         self.clear_session_history()
@@ -45,6 +47,7 @@ class RaceStateService:
             "fastest_last_lap": {"driver": "—", "lap": "—"},
             "drivers": [],
             "penalties": [],
+            "comment_penalties": [],
             "quick_change": [],
             "qualif_crossing": None,
             "generic_alert": None,
@@ -146,6 +149,47 @@ class RaceStateService:
         minutes, seconds = divmod(rem, 60)
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}" if hours else f"{minutes:02d}:{seconds:02d}"
 
+
+    def _comment_penalties(self, snapshot, drivers):
+        """Construit l'historique depuis la zone Commentaires d'Apex.
+
+        La déduplication privilégie l'heure fournie dans le commentaire. À défaut,
+        la minute de première réception est utilisée. Les noms sont rapprochés
+        des pilotes/équipes actuellement présents dans la grille.
+        """
+        raw = str((snapshot.get("comments") or {}).get("raw") or "").strip()
+        if raw:
+            text = re.sub(r"<br\s*/?>", "\n", raw, flags=re.I)
+            text = re.sub(r"<[^>]+>", " ", text)
+            text = re.sub(r"\s+", " ", text).strip()
+            # Plusieurs installations Apex séparent les commentaires avec ; ou |.
+            chunks = [part.strip(" -•\t") for part in re.split(r"\s*(?:;|\u2022|\\n)\s*", text) if part.strip()]
+            names = sorted((str(d.get("driver") or "").strip() for d in drivers), key=len, reverse=True)
+            for chunk in chunks:
+                lowered = chunk.lower()
+                # Ignore les commentaires manifestement non liés à une sanction.
+                if not any(token in lowered for token in ("pen", "stop", "drive", "+", "sanction", "avert", "black", "drapeau")):
+                    continue
+                time_match = re.search(r"\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b", chunk)
+                shown_time = time_match.group(0)[:5] if time_match else datetime.now().strftime("%H:%M")
+                driver = next((name for name in names if name and name.lower() in lowered), "—")
+                penalty = chunk
+                if time_match:
+                    penalty = (chunk[:time_match.start()] + chunk[time_match.end():]).strip(" -:|")
+                if driver != "—":
+                    penalty = re.sub(re.escape(driver), "", penalty, flags=re.I).strip(" -:|") or chunk
+                key = f"{shown_time}|{chunk.lower()}"
+                self.comment_penalty_history.setdefault(key, {
+                    "id": key,
+                    "driver": driver,
+                    "penalty": penalty,
+                    "comment": chunk,
+                    "time": shown_time,
+                    "at": datetime.now().isoformat(timespec="seconds"),
+                })
+        values = list(self.comment_penalty_history.values())
+        values.sort(key=lambda item: (item.get("time", ""), item.get("at", "")), reverse=True)
+        return values
 
     def sync_state_from_race(self, snapshot, interpreted_events=None):
         """Injecte le modèle unifié Apex dans l'interface moderne KartIQ."""
@@ -249,6 +293,8 @@ class RaceStateService:
                     self.penalty_first_seen.pop(penalty_key, None)
             apex_penalties.sort(key=lambda item: item.get("at", ""), reverse=True)
             self.state["penalties"] = apex_penalties
+            # Le Focus Sprint utilise exclusivement la zone Commentaires Apex.
+            self.state["comment_penalties"] = self._comment_penalties(snapshot, live_drivers)
             # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.
             # Mode LOCK : après un clic, on conserve impérativement le même pilote,
             # même si une trame Apex intermédiaire ne contient pas sa ligne.
