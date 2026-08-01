@@ -1,9 +1,57 @@
 from copy import deepcopy
 from datetime import datetime
+from html.parser import HTMLParser
 import re
 import time
 
 from backend.config import APP_VERSION, load_circuits
+
+
+class _ApexCommentsParser(HTMLParser):
+    """Extrait les entrées <p> de la zone com|| d'Apex Timing."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.entries = []
+        self.current = None
+        self._capture_time = False
+        self._capture_kart = False
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "p":
+            self.current = {"time": "", "kart": "", "text_parts": [], "is_penalty": False}
+        elif self.current is not None and tag == "b":
+            self._capture_time = True
+        elif self.current is not None and tag == "span":
+            classes = str(attrs.get("class", "")).split()
+            if attrs.get("data-flag") == "penalty":
+                self.current["is_penalty"] = True
+            if "com_no" in classes:
+                self._capture_kart = True
+
+    def handle_endtag(self, tag):
+        if tag == "b":
+            self._capture_time = False
+        elif tag == "span":
+            self._capture_kart = False
+        elif tag == "p" and self.current is not None:
+            self.current["text"] = re.sub(r"\s+", " ", " ".join(self.current["text_parts"])).strip()
+            self.entries.append(self.current)
+            self.current = None
+
+    def handle_data(self, data):
+        if self.current is None:
+            return
+        value = data.strip()
+        if not value:
+            return
+        if self._capture_time:
+            self.current["time"] += value
+        elif self._capture_kart:
+            self.current["kart"] += value
+        else:
+            self.current["text_parts"].append(value)
 
 
 class RaceStateService:
@@ -151,42 +199,45 @@ class RaceStateService:
 
 
     def _comment_penalties(self, snapshot, drivers):
-        """Construit l'historique depuis la zone Commentaires d'Apex.
+        """Construit l'historique depuis com||, source officielle des commentaires Apex.
 
-        La déduplication privilégie l'heure fournie dans le commentaire. À défaut,
-        la minute de première réception est utilisée. Les noms sont rapprochés
-        des pilotes/équipes actuellement présents dans la grille.
+        Chaque entrée de pénalité est identifiée par son heure Apex, son kart et son
+        texte. Le numéro de kart est ensuite rapproché du pilote/équipe courant.
         """
         raw = str((snapshot.get("comments") or {}).get("raw") or "").strip()
         if raw:
-            text = re.sub(r"<br\s*/?>", "\n", raw, flags=re.I)
-            text = re.sub(r"<[^>]+>", " ", text)
-            text = re.sub(r"\s+", " ", text).strip()
-            # Plusieurs installations Apex séparent les commentaires avec ; ou |.
-            chunks = [part.strip(" -•\t") for part in re.split(r"\s*(?:;|\u2022|\\n)\s*", text) if part.strip()]
-            names = sorted((str(d.get("driver") or "").strip() for d in drivers), key=len, reverse=True)
-            for chunk in chunks:
-                lowered = chunk.lower()
-                # Ignore les commentaires manifestement non liés à une sanction.
-                if not any(token in lowered for token in ("pen", "stop", "drive", "+", "sanction", "avert", "black", "drapeau")):
+            parser = _ApexCommentsParser()
+            try:
+                parser.feed(raw)
+                parser.close()
+            except Exception:
+                parser.entries = []
+
+            drivers_by_kart = {
+                str(d.get("apex") or "").strip(): str(d.get("driver") or "—").strip()
+                for d in drivers
+                if str(d.get("apex") or "").strip() not in {"", "—"}
+            }
+            for entry in parser.entries:
+                if not entry.get("is_penalty"):
                     continue
-                time_match = re.search(r"\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b", chunk)
-                shown_time = time_match.group(0)[:5] if time_match else datetime.now().strftime("%H:%M")
-                driver = next((name for name in names if name and name.lower() in lowered), "—")
-                penalty = chunk
-                if time_match:
-                    penalty = (chunk[:time_match.start()] + chunk[time_match.end():]).strip(" -:|")
-                if driver != "—":
-                    penalty = re.sub(re.escape(driver), "", penalty, flags=re.I).strip(" -:|") or chunk
-                key = f"{shown_time}|{chunk.lower()}"
+                shown_time = str(entry.get("time") or "").strip()[:5] or datetime.now().strftime("%H:%M")
+                kart = str(entry.get("kart") or "").strip()
+                penalty = str(entry.get("text") or "").strip() or "Pénalité"
+                driver = drivers_by_kart.get(kart, f"Kart {kart}" if kart else "—")
+                # L'heure est le pivot demandé pour éviter de rejouer une pénalité.
+                # Kart et texte sécurisent le cas rare de plusieurs sanctions la même minute.
+                key = f"{shown_time}|{kart}|{penalty}"
                 self.comment_penalty_history.setdefault(key, {
                     "id": key,
                     "driver": driver,
+                    "kart": kart,
                     "penalty": penalty,
-                    "comment": chunk,
+                    "comment": penalty,
                     "time": shown_time,
                     "at": datetime.now().isoformat(timespec="seconds"),
                 })
+
         values = list(self.comment_penalty_history.values())
         values.sort(key=lambda item: (item.get("time", ""), item.get("at", "")), reverse=True)
         return values

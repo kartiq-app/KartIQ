@@ -47,9 +47,16 @@ class ProtocolEngine:
         # La zone « Commentaires » Apex est publiée via com||... .
         # On conserve uniquement une valeur non vide afin qu'une trame partielle
         # ne supprime pas accidentellement la dernière information reçue.
-        comments = re.findall(r"(?:^|\n)com\|\|(.*?)(?=\n(?:[A-Za-z0-9_]+)\|(?:\||[^|]*\|)|$)", frame, re.DOTALL)
-        if comments:
-            raw_comment = comments[-1].strip()
+        # Les trames d'initialisation Apex peuvent être séparées par des retours
+        # à la ligne OU par de simples espaces. On extrait donc la section com||
+        # jusqu'au prochain champ protocolaire (grid||, msg||, dyn1|..., r123c4|...).
+        comment_match = re.search(
+            r"(?:^|\s)com\|\|(.*?)(?=\s+(?:[A-Za-z][A-Za-z0-9_]*|r\d+(?:c\d+)?)\|(?:\||[^|]*\|)|$)",
+            frame,
+            re.DOTALL,
+        )
+        if comment_match:
+            raw_comment = comment_match.group(1).strip()
             if raw_comment:
                 self.comments_raw = raw_comment
                 self.comments_updated_at_ms = int(time.time() * 1000)

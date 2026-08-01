@@ -1,3 +1,10 @@
+## V6.0.38 — Pénalités Focus Sprint depuis com||
+
+- Parsing robuste des commentaires Apex dans les trames init séparées par espaces ou retours ligne.
+- Extraction de l’heure, du kart et du texte via le HTML com||.
+- Association automatique du numéro de kart au pilote ou à l’équipe.
+- Déduplication des alertes sur l’heure Apex, le kart et le texte.
+
 ## V6.0.37 — Focus Sprint commentaires Apex
 
 - Nom du pilote le plus rapide tronqué sans déborder.
