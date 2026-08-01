@@ -24,5 +24,18 @@ class RaceStateServiceTests(unittest.TestCase):
         self.assertEqual(self.service.fmt_delta(-0.125), "-0.125 s")
 
 
+    def test_direct_race_gap_from_apex_gap_column(self):
+        leader = {"pos": 1, "gap": "—", "interval": "—"}
+        p2 = {"pos": 2, "gap": "0.102", "interval": "—"}
+        p3 = {"pos": 3, "gap": "0.828", "interval": "—"}
+        self.assertAlmostEqual(self.service.direct_race_gap(p2, leader), 0.102)
+        self.assertAlmostEqual(self.service.direct_race_gap(p3, p2), 0.726)
+
+    def test_direct_race_gap_falls_back_to_interval(self):
+        ahead = {"pos": 2, "gap": "1 TOUR", "interval": "—"}
+        behind = {"pos": 3, "gap": "1 TOUR", "interval": "0.450"}
+        self.assertAlmostEqual(self.service.direct_race_gap(behind, ahead), 0.450)
+
+
 if __name__ == "__main__":
     unittest.main()

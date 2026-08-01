@@ -1,4 +1,11 @@
-## V6.0.24 — Deltas Sprint et Focus corrigés
+## V6.0.25 — Deltas Sprint et Focus corrigés
+
+## 6.0.25
+
+- Correction des deltas Sprint et Endurance à partir des écarts Apex cumulés.
+- Sprint/Endurance : écart direct avec le pilote devant ; pour P1, avance sur P2.
+- Focus Sprint/Endurance : écart devant en orange et écart derrière en vert.
+- Qualifications inchangées.
 
 - Mode Sprint : le pilote suivi en P1 conserve l’écart avec le P2, affiché en vert.
 - Mode Sprint : à partir de P2, la case Delta reste l’écart avec le pilote immédiatement devant, affiché en orange.

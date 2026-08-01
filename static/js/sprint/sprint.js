@@ -29,15 +29,14 @@ async function closeEnduranceFocus(){
 function sprintDriverAhead(driver){if(!driver?.pos||Number(driver.pos)<=1)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(driver.pos)-1)||null}
 function sprintDriverBehind(driver){if(!driver?.pos)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(driver.pos)+1)||null}
 function sprintGapAhead(driver){
- const raw=String(sprintDeltaFor(driver)||'--').trim();
- if(!raw||raw==='—'||raw==='--')return '--';
- return `-${raw.replace(/^[+-]/,'')}`;
+ const ahead=sprintDriverAhead(driver);if(!ahead)return '--';
+ const gap=directRaceGap(driver,ahead);
+ return Number.isFinite(gap)?`-${formatRaceGap(gap)}`:'--';
 }
 function sprintGapBehind(driver){
  const behind=sprintDriverBehind(driver);if(!behind)return '--';
- const raw=String(behind.interval||'--').trim();
- if(!raw||raw==='—'||raw==='--')return '--';
- return `+${raw.replace(/^[+-]/,'')}`;
+ const gap=directRaceGap(behind,driver);
+ return Number.isFinite(gap)?`+${formatRaceGap(gap)}`:'--';
 }
 function penaltyTime(p){if(p?.time)return p.time;const at=String(p?.at||'');return at.length>=16?at.slice(11,16):'--:--'}
 function lapSeconds(value){

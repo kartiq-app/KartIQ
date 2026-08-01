@@ -80,6 +80,36 @@ class RaceStateService:
         return f"{seconds:+.3f} s"
 
 
+    def race_gap_seconds(self, value):
+        raw = str(value or "").strip().replace(",", ".")
+        if not raw or raw in {"—", "--"}:
+            return 0.0
+        if "lap" in raw.lower() or "tour" in raw.lower():
+            return None
+        raw = raw.lstrip("+").rstrip(" s")
+        try:
+            parts = [float(part) for part in raw.split(":")]
+        except ValueError:
+            return None
+        if len(parts) == 1:
+            return parts[0]
+        if len(parts) == 2:
+            return parts[0] * 60 + parts[1]
+        if len(parts) == 3:
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+        return None
+
+    def direct_race_gap(self, behind, ahead):
+        if not behind or not ahead:
+            return None
+        behind_gap = self.race_gap_seconds(behind.get("gap"))
+        ahead_gap = 0.0 if ahead.get("pos") == 1 else self.race_gap_seconds(ahead.get("gap"))
+        if behind_gap is not None and ahead_gap is not None and behind_gap >= ahead_gap:
+            return behind_gap - ahead_gap
+        interval = self.race_gap_seconds(behind.get("interval"))
+        return interval
+
+
     def driver_by_name(self, name):
         return next((d for d in self.state["drivers"] if d["driver"] == name), None)
 
@@ -363,17 +393,18 @@ class RaceStateService:
                 data["qualif_delta"] = "--"
             if followed["pos"] == 1:
                 p2 = next((d for d in data["drivers"] if d["pos"] == 2), None)
-                gap = p2["gap"].lstrip("+") if p2 else "--"
+                direct_gap = self.direct_race_gap(p2, followed)
                 data["sprint_delta"] = {
                     "reference": "P2",
-                    "display": f"+{gap}" if gap != "--" else "--",
+                    "display": f"+{direct_gap:.3f}" if direct_gap is not None else "--",
                     "detail": "Leader sur P2",
                 }
             else:
                 ahead = next((d for d in data["drivers"] if d["pos"] == followed["pos"] - 1), None)
+                direct_gap = self.direct_race_gap(followed, ahead)
                 data["sprint_delta"] = {
                     "reference": f"P{ahead['pos']}" if ahead else "--",
-                    "display": followed["interval"] if ahead else "--",
+                    "display": f"{direct_gap:.3f}" if direct_gap is not None else "--",
                     "detail": f"Écart avec P{ahead['pos']}" if ahead else "--",
                 }
         else:

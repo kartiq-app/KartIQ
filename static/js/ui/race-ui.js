@@ -121,17 +121,42 @@ function sprintReferenceFor(driver){
  if(Number(driver.pos)===1)return (state.drivers||[]).find(d=>Number(d.pos)===2)||null;
  return driverAhead(driver);
 }
+function raceGapSeconds(value){
+ const raw=String(value??'').trim().replace(',', '.');
+ if(!raw||raw==='—'||raw==='--')return 0;
+ if(/lap|tour/i.test(raw))return null;
+ const cleaned=raw.replace(/[+\s]|s(ec)?\.?$/gi,'');
+ const parts=cleaned.split(':').map(Number);
+ if(parts.some(v=>!Number.isFinite(v)))return null;
+ if(parts.length===1)return parts[0];
+ if(parts.length===2)return parts[0]*60+parts[1];
+ if(parts.length===3)return parts[0]*3600+parts[1]*60+parts[2];
+ return null;
+}
+function formatRaceGap(seconds){
+ if(!Number.isFinite(seconds))return '--';
+ return Math.max(0,seconds).toFixed(3);
+}
+function directRaceGap(behind,ahead){
+ if(!behind||!ahead)return null;
+ const behindGap=raceGapSeconds(behind.gap);
+ const aheadGap=Number(ahead.pos)===1?0:raceGapSeconds(ahead.gap);
+ if(Number.isFinite(behindGap)&&Number.isFinite(aheadGap)&&behindGap>=aheadGap){
+  return behindGap-aheadGap;
+ }
+ const interval=raceGapSeconds(behind.interval);
+ return Number.isFinite(interval)?interval:null;
+}
 function sprintDeltaFor(driver){
  if(!driver||!driver.pos)return '--';
  if(Number(driver.pos)===1){
   const p2=sprintReferenceFor(driver);
-  if(!p2)return '--';
-  const raw=String(p2.interval||p2.gap||'--').trim();
-  if(!raw||raw==='—'||raw==='--')return '--';
-  return raw.startsWith('+')?raw:`+${raw}`;
+  const gap=directRaceGap(p2,driver);
+  return Number.isFinite(gap)?`+${formatRaceGap(gap)}`:'--';
  }
- const raw=String(driver.interval||'--').trim();
- return (!raw||raw==='—')?'--':raw;
+ const ahead=driverAhead(driver);
+ const gap=directRaceGap(driver,ahead);
+ return Number.isFinite(gap)?formatRaceGap(gap):'--';
 }
 async function updateDeveloperSettings(){
  const developer_mode=!!document.getElementById('developerModeToggle')?.checked;
@@ -159,7 +184,7 @@ function render(){
  rows('enduranceQualifTable',d=>`<td class="${positionClass(d.pos)} ranking-pos">${d.pos}</td>${showRankingKart?`<td class="ranking-kart-column">${validKartNumber(d)||'—'}</td>`:''}<td class="name ranking-driver-column">${formatRankingDriver(d)}</td><td class="ranking-last ${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="ranking-best ${lapTimeClass(d,d.best,'best')}">${d.best}</td><td class="ranking-gap">${d.gap}</td>`);
  rows('enduranceTable',d=>`<td class="pos endurance-position-cell"><span class="endurance-position-wrap"><span class="endurance-position-number${Number(d.pos)===1?' leader-pos':''}">${d.pos}</span>${endurancePitBadge(d)}</span></td><td class="name">${formatDriverName(d.driver)}</td><td>${d.apex}</td><td>${d.laps}</td><td>${d.pit_stops ?? '—'}</td><td class="${lapTimeClass(d,d.last,'last')}">${d.last}</td><td class="${lapTimeClass(d,d.best,'best')}">${d.best}</td><td>${d.gap}</td><td class="red">${d.penalty||'—'}</td>`);
  const f=state.followed||{};qPos.textContent=f.pos?'P'+f.pos:'—';setDriverName(qName,f.driver||'—');qDelta.textContent=qualificationDeltaFor(f);qDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f));updateRemainingDisplay();qLapsRemaining.textContent=state.apex_laps_remaining||'—';const qReference=qualificationReferenceFor(f);qGapWith.innerHTML=gapWithMarkup('vs',qReference?.driver||'—');
- const eQPos=document.getElementById('eQPos'),eQName=document.getElementById('eQName'),eQDelta=document.getElementById('eQDelta'),eQRemaining=document.getElementById('eQRemaining'),eQLapsRemaining=document.getElementById('eQLapsRemaining'),eQGapWith=document.getElementById('eQGapWith');if(eQPos)eQPos.textContent=f.pos?'P'+f.pos:'—';if(eQName)setDriverName(eQName,f.driver||'—');if(eQDelta){eQDelta.textContent=qualificationDeltaFor(f);eQDelta.classList.toggle('delta-good',qualificationDeltaIsLeader(f))}const enduranceRemainingMs=liveRemainingMilliseconds();if(eQRemaining){eQRemaining.textContent=enduranceRemainingMs===null?(state.time_remaining||'—'):formatRemainingMilliseconds(enduranceRemainingMs);eQRemaining.classList.toggle('time-critical',Number.isFinite(enduranceRemainingMs)&&enduranceRemainingMs<120000)}if(eQLapsRemaining)eQLapsRemaining.textContent=state.apex_laps_remaining||'—';if(eQGapWith)eQGapWith.innerHTML=gapWithMarkup('vs',qReference?.driver||'—');
+ const eQPos=document.getElementById('eQPos'),eQName=document.getElementById('eQName'),eQDelta=document.getElementById('eQDelta'),eQRemaining=document.getElementById('eQRemaining'),eQLapsRemaining=document.getElementById('eQLapsRemaining'),eQGapWith=document.getElementById('eQGapWith');if(eQPos)eQPos.textContent=f.pos?'P'+f.pos:'—';if(eQName)setDriverName(eQName,f.driver||'—');if(eQDelta){const enduranceDelta=sprintDeltaFor(f);eQDelta.textContent=enduranceDelta;eQDelta.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&enduranceDelta!=='--');eQDelta.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&enduranceDelta!=='--')}const enduranceRemainingMs=liveRemainingMilliseconds();if(eQRemaining){eQRemaining.textContent=enduranceRemainingMs===null?(state.time_remaining||'—'):formatRemainingMilliseconds(enduranceRemainingMs);eQRemaining.classList.toggle('time-critical',Number.isFinite(enduranceRemainingMs)&&enduranceRemainingMs<120000)}if(eQLapsRemaining)eQLapsRemaining.textContent=state.apex_laps_remaining||'—';if(eQGapWith)eQGapWith.innerHTML=gapWithMarkup('vs',qReference?.driver||'—');
  setDriverName(sName,f.driver||'—');sPos.textContent=f.pos?'P'+f.pos:'—';const sprintDelta=sprintDeltaFor(f);const sprintReference=sprintReferenceFor(f);sDeltaValue.textContent=sprintDelta;sDeltaValue.classList.toggle('sprint-leader-delta',Number(f.pos)===1&&sprintDelta!=='--');sDeltaValue.classList.toggle('sprint-followed-delta',Number(f.pos)>1&&sprintDelta!=='--');const sprintRemainingMs=liveRemainingMilliseconds();sRemaining.textContent=sprintRemainingMs===null?(state.time_remaining||'—'):formatRemainingMilliseconds(sprintRemainingMs);sRemaining.classList.toggle('time-critical',Number.isFinite(sprintRemainingMs)&&sprintRemainingMs<120000);sLapsRemaining.textContent=state.apex_laps_remaining||'—';sGapWith.innerHTML=gapWithMarkup('vs',sprintReference?.driver||'—');const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';sFastestName.textContent='🔥 '+fastestDriver;sFastestTime.textContent=fastestLap;const fastestLapSeconds=parseLapTime(fastestLap);const sessionBestSeconds=absoluteSessionBestSeconds();const isAbsoluteSessionBest=Number.isFinite(fastestLapSeconds)&&Number.isFinite(sessionBestSeconds)&&Math.abs(fastestLapSeconds-sessionBestSeconds)<0.0005;const improvedPersonalBest=Boolean(fastest.last_improved_personal_best);sFastestTime.classList.toggle('fastest-session-best',isAbsoluteSessionBest);sFastestTime.classList.toggle('fastest-lap-green',!isAbsoluteSessionBest&&improvedPersonalBest);sFastestTime.classList.toggle('fastest-lap-orange',!isAbsoluteSessionBest&&!improvedPersonalBest);
  const sortedPenalties=[...(state.penalties||[])].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||''))); const penaltyMarkup=sortedPenalties.length?sortedPenalties.map(p=>`<div class="penalty-row"><small class="penalty-time">${penaltyTime(p)}</small><b>${formatDriverSurname(p.driver)}</b><span class="red"><b>${p.penalty}</b></span></div>`).join(''):'<div class="empty">Aucune pénalité</div>';
  penalties.innerHTML=penaltyMarkup;
