@@ -826,3 +826,76 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   line-height:1.15;
   overflow-wrap:anywhere;
 }
+
+
+/* V6.0.40 — pénalités Sprint responsives */
+.current-sprint #penalties,
+.current-sprint #penalties .sprint-comment-penalty{
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+.current-sprint #penalties .sprint-comment-penalty{
+  display:block!important;
+  padding:5px 8px!important;
+  white-space:normal!important;
+  text-overflow:clip!important;
+}
+.current-sprint #penalties .penalty-standard-two-line{
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr) minmax(0,1fr);
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  line-height:1.12;
+}
+.current-sprint #penalties .penalty-standard-header,
+.current-sprint #penalties .penalty-standard-detail{
+  display:block;
+  min-width:0;
+  max-width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.current-sprint #penalties .penalty-standard-header{
+  font-weight:850;
+}
+.current-sprint #penalties .penalty-standard-detail{
+  opacity:.9;
+}
+.current-sprint #penalties .penalty-landscape-compact{
+  display:none!important;
+}
+@media (orientation:landscape) and (max-width:1100px) and (max-height:680px){
+  .current-sprint #penalties .penalty-standard-two-line{
+    display:none!important;
+  }
+  .current-sprint #penalties .penalty-landscape-compact{
+    display:flex!important;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+  }
+  .current-sprint #penalties .penalty-landscape-name{
+    display:block;
+    flex:1 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .current-sprint #penalties .penalty-landscape-duration{
+    display:block;
+    flex:0 0 auto;
+    margin-left:auto;
+    white-space:nowrap;
+    font-weight:900;
+  }
+}

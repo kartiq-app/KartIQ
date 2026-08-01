@@ -44,10 +44,14 @@ function penaltyDurationLabel(p){
  const matches=[...raw.matchAll(/(?:^|[^\d])([+-]?\d+(?:\.\d+)?)\s*(?:s|sec|secondes?|秒)?(?=$|[^\d])/gi)];
  if(!matches.length)return '—';
  const preferred=[...matches].reverse().find(m=>m[0].match(/\.|\b(?:s|sec|secondes?|秒)\b/i))||matches[matches.length-1];
- return `${preferred[1].replace(/^\+/, '')} s`;
+ const numeric=Number(preferred[1]);
+ const duration=Number.isFinite(numeric)?String(Number(numeric.toFixed(3))):preferred[1].replace(/^\+/, '');
+ return `${duration} s`;
 }
+function penaltyHeaderText(p){return `${penaltyTime(p)} | ${p?.driver||'—'} | ${penaltyDurationLabel(p)}`}
+function penaltyDetailText(p){return penaltyRawText(p)||'Pénalité'}
 function compactPenaltyText(p){return `${p?.driver||'—'} • ${penaltyDurationLabel(p)}`}
-function fullPenaltyText(p){const time=penaltyTime(p);const driver=p?.driver||'—';const text=penaltyRawText(p)||'Pénalité';return `${time} • ${driver} • ${text}`}
+function fullPenaltyText(p){return `${penaltyHeaderText(p)} | ${penaltyDetailText(p)}`}
 function lapSeconds(value){
  const raw=String(value||'').trim().replace(',', '.');if(!raw||raw==='—'||raw==='--')return null;
  const parts=raw.split(':').map(Number);if(parts.some(v=>!Number.isFinite(v)))return null;

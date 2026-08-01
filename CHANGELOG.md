@@ -1,3 +1,10 @@
+## 6.0.40
+
+- Sprint desktop et portrait : chaque pénalité est affichée sur deux lignes, avec heure, pilote/équipe et durée sur la première, puis le détail sur la seconde.
+- Protection stricte contre les débordements avec troncature visuelle.
+- Sprint smartphone paysage : nom tronqué si nécessaire et durée toujours visible à droite.
+- Normalisation des durées Apex : `3.000` devient `3 s`.
+
 ## 6.0.39
 - Pénalités Sprint alimentées par les commentaires Apex en portrait et paysage.
 - Affichage sur une ligne selon le format de chaque écran.
