@@ -249,3 +249,57 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-focus-main{grid-template-rows:66% 34%}
   #enduranceFocus .endurance-focus-last-rank{font-size:18vh}
 }
+
+/* KartIQ V6.0.15 — Focus Endurance : compacité et lisibilité. */
+#enduranceFocus .endurance-focus-driver{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  min-width:0;
+  overflow:hidden;
+  padding-inline:clamp(4px,1vw,14px)
+}
+#enduranceFocus .endurance-focus-driver .sprint-focus-position{
+  order:1;
+  margin:0;
+  max-width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip
+}
+#enduranceFocus .endurance-focus-last-rank{
+  order:2;
+  margin-top:clamp(-10px,-.7vh,-3px);
+  max-width:100%;
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip
+}
+#enduranceFocus .endurance-focus-driver .sprint-focus-name{
+  order:3;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin-top:clamp(2px,.45vh,7px);
+  padding-inline:.25em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+#enduranceFocus .endurance-focus-neighbour-name{
+  font-size:clamp(30px,5.2vh,60px)
+}
+#enduranceFocus .endurance-focus-main{grid-template-rows:71% 29%}
+@media(max-width:680px) and (orientation:portrait){
+  #enduranceFocus .endurance-focus-main{grid-template-rows:73% 27%}
+  #enduranceFocus .endurance-focus-last-rank{margin-top:clamp(-8px,-1vw,-2px)}
+  #enduranceFocus .endurance-focus-neighbour-name{font-size:clamp(22px,6.2vw,36px)}
+}
+@media(max-height:500px) and (orientation:landscape){
+  #enduranceFocus .endurance-focus-main{grid-template-rows:69.4% 30.6%}
+  #enduranceFocus .endurance-focus-last-rank{margin-top:clamp(-8px,-1vh,-2px)}
+  #enduranceFocus .endurance-focus-neighbour-name{font-size:clamp(22px,7.6vh,40px)}
+}

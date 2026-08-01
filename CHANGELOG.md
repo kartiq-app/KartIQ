@@ -1,3 +1,12 @@
+# KartIQ V6.0.15
+
+## Focus Endurance
+- Rapprochement visuel du rang de dernier tour et de la position du pilote suivi.
+- Protection contre tout débordement du nom, de la position et du rang dans leur case.
+- Taille des noms des concurrents devant et derrière augmentée de 100 %.
+- Hauteur des cases Temps restant et Dernier temps réduite de 10 %, sans modifier la taille des chronos.
+- Aucun changement sur les autres modes.
+
 # KartIQ V6.0.14
 
 ## Focus Endurance

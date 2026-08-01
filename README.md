@@ -1,4 +1,4 @@
-# KartIQ V6.0.14 — Focus Endurance : temps restant compact
+# KartIQ V6.0.15 — Focus Endurance : compacité et lisibilité
 
 ## Modifications
 
