@@ -76,7 +76,9 @@ function renderSprintFocus(){
  const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';const fastestLapSeconds=lapSeconds(fastestLap);const sessionBestSeconds=absoluteSessionBestSeconds();const isAbsoluteSessionBest=Number.isFinite(fastestLapSeconds)&&Number.isFinite(sessionBestSeconds)&&Math.abs(fastestLapSeconds-sessionBestSeconds)<0.0005;const fastestColorClass=isAbsoluteSessionBest?'fastest-session-best':(fastest.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange');sprintFocusFastestLast.innerHTML=`🔥 ${fastestDriver} <span class="sprint-focus-fastest-last-time ${fastestColorClass}">${fastestLap}</span>`;
  const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(sprintDriverBehind(f));
  sprintFocusAhead.textContent=focusAhead;sprintFocusBehind.textContent=focusBehind;
- // P1 : uniquement l'écart vert avec P2. Dernier : uniquement l'écart orange avec le pilote devant.
+ const sprintFocusDeltas=overlay.querySelector('.sprint-focus-deltas');
+ if(sprintFocusDeltas)sprintFocusDeltas.classList.toggle('leader-only',isLeader);
+ // P1 : uniquement l'écart vert avec P2, centré. Dernier : uniquement l'écart orange avec le pilote devant.
  sprintFocusAhead.style.display=isLeader?'none':'';
  sprintFocusBehind.style.display=(!isLeader&&!hasDriverBehind)?'none':'';
  const sprintFocusDivider=overlay.querySelector('.sprint-focus-divider');if(sprintFocusDivider)sprintFocusDivider.style.display=(isLeader||!hasDriverBehind)?'none':'';
@@ -230,6 +232,7 @@ function renderEnduranceFocus(){
  if(aheadEl){aheadEl.textContent=focusAhead;aheadEl.style.display=isLeader?'none':''}
  if(behindEl){behindEl.textContent=focusBehind;behindEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
  if(behindNameEl){behindNameEl.textContent=behindDriver?.driver||'—';behindNameEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
+ const deltasBox=overlay.querySelector('.sprint-focus-deltas');if(deltasBox)deltasBox.classList.toggle('leader-only',isLeader);
  const divider=overlay.querySelector('.sprint-focus-divider');if(divider)divider.style.display=(isLeader||!hasDriverBehind)?'none':'';
  if(timeEl){timeEl.textContent=enduranceTrackTimeValue(f);timeEl.classList.remove('time-critical')}
  if(lastLapEl){

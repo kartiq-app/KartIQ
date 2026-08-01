@@ -156,7 +156,7 @@ function sprintDeltaFor(driver){
  }
  const ahead=driverAhead(driver);
  const gap=directRaceGap(driver,ahead);
- return Number.isFinite(gap)?formatRaceGap(gap):'--';
+ return Number.isFinite(gap)?`-${formatRaceGap(gap)}`:'--';
 }
 async function updateDeveloperSettings(){
  const developer_mode=!!document.getElementById('developerModeToggle')?.checked;

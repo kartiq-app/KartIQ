@@ -1,3 +1,12 @@
+# KartIQ V6.0.26
+
+## Corrections des deltas Sprint / Endurance
+
+- Mode Sprint : le delta des pilotes P2 et suivants est maintenant préfixé par `-`.
+- Focus Sprint et Focus Endurance : pour le pilote suivi P1, l'avance sur P2 est affichée seule, en vert, au centre de la case Delta.
+- Pour P2 et suivants, le delta avec le pilote devant reste en haut en orange et le delta avec le pilote derrière en bas en vert.
+- Qualifications et Focus Qualifications restent inchangés.
+
 ## V6.0.25 — Deltas Sprint et Focus corrigés
 
 ## 6.0.25
