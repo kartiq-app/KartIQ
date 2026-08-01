@@ -631,3 +631,19 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   font-family:var(--font-time)!important;
   font-weight:400!important
 }
+
+
+/* KartIQ V6.0.27 — Endurance : delta leader, durée de stand en paysage et overlay stands. */
+#enduranceTable .endurance-delta-cell.endurance-delta-leader{color:var(--green,#21d07a)!important;font-weight:900}
+#enduranceTable .endurance-delta-cell.endurance-delta-followed{color:var(--orange,#ff8a00)!important;font-weight:900}
+#enduranceTable .endurance-stand-time-column,
+#endurance .endurance-table-wrap thead .endurance-stand-time-column{display:none}
+@media (orientation:landscape){
+  #enduranceTable .endurance-stand-time-column,
+  #endurance .endurance-table-wrap thead .endurance-stand-time-column{display:table-cell}
+}
+#enduranceFocus .endurance-pit-in-time{
+  top:auto!important;
+  bottom:clamp(10px,2.2vh,28px)!important;
+  right:clamp(14px,2.4vw,34px)!important;
+}

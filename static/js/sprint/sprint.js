@@ -175,8 +175,9 @@ function renderEndurancePitState(f){
   return true;
  }
  if(status==='track'&&endurancePitPreviousStatus==='pit'){
-  if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
-  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
+  // La durée affichée à la sortie est la dernière valeur Apex reçue pendant l'état IN.
+  // On évite d'utiliser le compteur `to` après OUT, certaines pistes le réaffectant au temps en piste.
+  if((!endurancePitLastTime||endurancePitLastTime==='—')&&endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
   endurancePitOutUntil=now+5000;
   enduranceTrackStartedAt=now;
  }

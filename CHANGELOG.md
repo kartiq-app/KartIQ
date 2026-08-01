@@ -1,4 +1,13 @@
-# KartIQ V6.0.26
+# KartIQ V6.0.27
+
+## Endurance — stands et delta leader
+
+- Le delta du pilote suivi en P1 est affiché en vert sur la page Endurance.
+- Une colonne `STAND` visible en paysage affiche le compteur de durée de stand fourni par Apex Timing.
+- En Focus Endurance, l’état `IN` affiche le compteur bleu dans le coin inférieur droit.
+- À `OUT`, le compteur IN disparaît puis l’écran `SORTIE STANDS` affiche pendant 5 secondes la dernière durée Apex reçue dans les stands.
+- Qualifications, Sprint et leurs modes Focus restent inchangés.
+
 
 ## Corrections des deltas Sprint / Endurance
 

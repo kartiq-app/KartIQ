@@ -1,18 +1,12 @@
-# KartIQ V6.0.26 — Deltas Sprint et Focus corrigés
+# KartIQ V6.0.27 — Endurance stands et delta leader
 
-Cette version modifie uniquement la carte du pilote ou de l’équipe suivie dans le Focus Sprint.
+## Évolutions V6.0.27
 
-## Modification
-
-La carte affiche désormais, dans cet ordre :
-
-1. la position ;
-2. le nom du pilote ou de l’équipe ;
-3. le chronomètre blanc suivi du rang numérique, par exemple `⏱2`.
-
-La présentation, les dimensions et la protection contre les débordements reprennent celles validées dans le Focus Endurance. Les autres informations du Focus Sprint restent inchangées.
-
-## Correctif V6.0.26
+- Page Endurance : le delta du pilote suivi en P1 est affiché en vert.
+- Page Endurance paysage : une colonne `STAND` affiche la durée de présence dans les stands transmise par Apex Timing.
+- Focus Endurance `IN` : écran noir et chrono de stand bleu en petit dans le coin inférieur droit.
+- Focus Endurance `OUT` : écran noir avec `SORTIE STANDS` et la dernière durée Apex reçue, pendant 5 secondes.
+- Qualifications et Sprint ne sont pas modifiés.
 
 - Sprint P1 : avance sur P2 en vert.
 - Sprint P2+ : intervalle avec le pilote devant en orange.
