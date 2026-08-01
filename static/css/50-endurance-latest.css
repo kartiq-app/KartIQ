@@ -228,3 +228,24 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-focus-deltas{padding:5px 10px}
   #enduranceFocus .endurance-focus-last-lap{font-size:clamp(46px,18vh,96px)}
 }
+
+
+/* KartIQ V6.0.14 — Focus Endurance : hiérarchie visuelle et hauteur du temps restant. */
+#enduranceFocus .endurance-focus-main{grid-template-rows:68% 32%}
+#enduranceFocus .endurance-focus-last-rank{
+  font-size:clamp(76px,18vh,200px);
+  margin-top:clamp(8px,1.2vh,16px);
+  padding:0;
+  border-top:0;
+  border-bottom:0
+}
+#enduranceFocus .sprint-focus-row-two .sprint-focus-cell{height:100%}
+#enduranceFocus .sprint-focus-session{height:100%;width:100%}
+@media(max-width:680px) and (orientation:portrait){
+  #enduranceFocus .endurance-focus-main{grid-template-rows:70% 30%}
+  #enduranceFocus .endurance-focus-last-rank{font-size:18vw}
+}
+@media(max-height:500px) and (orientation:landscape){
+  #enduranceFocus .endurance-focus-main{grid-template-rows:66% 34%}
+  #enduranceFocus .endurance-focus-last-rank{font-size:18vh}
+}

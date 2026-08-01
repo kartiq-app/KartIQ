@@ -1,3 +1,12 @@
+# KartIQ V6.0.14
+
+## Focus Endurance
+
+- Agrandissement de l’icône chronomètre et du rang du dernier tour pour les aligner visuellement sur la position.
+- Suppression du nombre de tours dans la carte Temps restant.
+- Réduction de la hauteur de la ligne inférieure sans modifier la taille du temps restant.
+- Hauteur identique pour les cartes Temps restant et Dernier tour.
+
 # KartIQ V6.0.13
 
 ## Focus Endurance

@@ -1,4 +1,13 @@
-# KartIQ V6.0.13 — Focus Endurance métier
+# KartIQ V6.0.14 — Focus Endurance : temps restant compact
+
+## Modifications
+
+- Dans la carte du pilote ou de l’équipe suivie, l’icône chronomètre et le rang du dernier tour utilisent désormais la même taille visuelle que la position affichée au-dessus.
+- Le nombre de tours est supprimé de la carte Temps restant du Focus Endurance.
+- La taille du temps restant est conservée.
+- La ligne inférieure est moins haute.
+- Les cartes Temps restant et Dernier tour ont exactement la même hauteur.
+- Aucun changement sur les Focus Qualification et Sprint.
 
 Cette version conserve les deux filets horizontaux orange du mode Endurance et remet le séparateur vertical de la case Menu en gris, comme en Qualification et Sprint.
 

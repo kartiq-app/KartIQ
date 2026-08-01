@@ -97,7 +97,6 @@ function renderEnduranceFocus(){
  const aheadNameEl=document.getElementById('enduranceFocusAheadName');
  const behindNameEl=document.getElementById('enduranceFocusBehindName');
  const timeEl=document.getElementById('enduranceFocusTime');
- const lapsEl=document.getElementById('enduranceFocusLaps');
  const lastLapEl=document.getElementById('enduranceFocusLastLap');
  if(position)position.textContent=f.pos?'P'+f.pos:'—';
  if(name)name.textContent=f.driver||state.followed_driver||'—';
@@ -110,7 +109,6 @@ function renderEnduranceFocus(){
  if(behindNameEl){behindNameEl.textContent=behindDriver?.driver||'—';behindNameEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
  const divider=overlay.querySelector('.sprint-focus-divider');if(divider)divider.style.display=(isLeader||!hasDriverBehind)?'none':'';
  const ms=liveRemainingMilliseconds();if(timeEl){timeEl.textContent=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);timeEl.classList.toggle('time-critical',Number.isFinite(ms)&&ms<=120000)}
- const laps=String(state.apex_laps_remaining||'—');if(lapsEl)lapsEl.textContent=(laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'—';
  if(lastLapEl)lastLapEl.textContent=f.last||'—';
 }
 
