@@ -1,3 +1,9 @@
+# KartIQ V6.0.18
+
+- Focus Endurance : bloc chronomètre + rang augmenté de 15 %.
+- Case Delta : nom du pilote ou de l’équipe devant rapproché du filet orange.
+- Aucun changement sur les autres modes.
+
 # KartIQ V6.0.17
 
 ## Focus Endurance

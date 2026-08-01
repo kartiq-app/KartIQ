@@ -1,6 +1,12 @@
-# KartIQ V6.0.17 — Focus Endurance : rang compact
+# KartIQ V6.0.18 — Focus Endurance : ajustements de lisibilité
 
-Cette version ajuste uniquement la troisième ligne de la carte du pilote suivi dans le Focus Endurance :
+Cette version ajuste uniquement le Focus Endurance :
+
+- augmentation de 15 % du bloc chronomètre + rang dans la carte du pilote suivi ;
+- rapprochement du nom du pilote ou de l’équipe situé devant vers le filet orange de la case Delta ;
+- conservation de la protection anti-débordement.
+
+Les autres modes et écrans restent inchangés.
 
 - aucun espace entre l’icône chronomètre et le rang ;
 - suppression des suffixes « e » et « er » ;

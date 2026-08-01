@@ -404,3 +404,23 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 @media(max-height:500px) and (orientation:landscape){
   #enduranceFocus .endurance-focus-last-rank{font-size:min(14.58vh,30cqw,146px)}
 }
+
+/* KartIQ V6.0.18 — Focus Endurance : rang +15 % et nom du pilote devant rapproché du filet. */
+#enduranceFocus .endurance-focus-last-rank{
+  font-size:min(16.767vh,34.5cqw,186px)
+}
+#enduranceFocus .endurance-focus-deltas{
+  padding-top:clamp(1px,.2vh,3px)
+}
+#enduranceFocus .endurance-focus-neighbour-name:first-child{
+  align-self:start;
+  margin-top:0
+}
+@media(max-width:680px) and (orientation:portrait){
+  #enduranceFocus .endurance-focus-last-rank{font-size:min(16.767vw,34.5cqw,168px)}
+  #enduranceFocus .endurance-focus-deltas{padding-top:1px}
+}
+@media(max-height:500px) and (orientation:landscape){
+  #enduranceFocus .endurance-focus-last-rank{font-size:min(16.767vh,34.5cqw,168px)}
+  #enduranceFocus .endurance-focus-deltas{padding-top:1px}
+}
