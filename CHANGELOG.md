@@ -1,3 +1,12 @@
+# V6.10.0 — Prévisions météo MET Norway
+
+- Remplacement complet du moteur de prévisions Open-Meteo par MET Norway Locationforecast 2.0.
+- Six créneaux horaires locaux issus directement du service MET Norway.
+- Température, vent, état du ciel et précipitations prévues par créneau.
+- Affichage des millimètres de précipitations lorsque la probabilité n’est pas fournie.
+- Conservation des coordonnées GPS et fuseaux horaires des circuits.
+- Cache PWA mis à jour.
+
 # V6.9.7 — Requête horaire météo séparée
 
 - Sépare la météo actuelle des prévisions horaires Open-Meteo.

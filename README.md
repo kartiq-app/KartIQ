@@ -1,3 +1,8 @@
+
+## Météo
+
+Les prévisions sont fournies par **MET Norway Locationforecast 2.0** à partir des coordonnées GPS du circuit. Le service exige un User-Agent identifiable. Pour un déploiement public, vous pouvez définir la variable d’environnement `MET_NO_USER_AGENT` avec un contact valide, par exemple `KartIQ/6.10.0 contact@example.com`.
+
 # KartIQ V6.9.3
 
 ## Prévisions météo horaires locales

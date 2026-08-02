@@ -45,11 +45,13 @@ function renderAnalyzerWeatherTimeline(timeline){
   const temperature=Number(slot.temperature),probability=Number(slot.probability),precipitation=Number(slot.precipitation||slot.rain||0);
   const time=slot.display_time||analyzerWeatherFormatHour(slot.time);
   const icon=slot.icon||'cloudy';
-  const risk=analyzerWeatherRiskClass(probability,precipitation);
+  const hasProbability=slot.probability!==null&&slot.probability!==undefined&&Number.isFinite(probability);
+  const risk=analyzerWeatherRiskClass(hasProbability?probability:NaN,precipitation);
+  const rainText=hasProbability?`💧 ${Math.round(probability)}%`:`💧 ${Number.isFinite(precipitation)?precipitation.toFixed(1):'—'} mm`;
   return `<div class="weather-slot ${risk}" title="${escapeHtml(slot.label||'Conditions météo')}">
    <div class="weather-slot-time">${escapeHtml(time)}</div>
    <img class="weather-slot-icon" src="/static/assets/weather/${escapeHtml(icon)}.svg" alt="${escapeHtml(slot.label||'Météo')}">
-   <div class="weather-slot-rain">💧 ${Number.isFinite(probability)?Math.round(probability):0}%</div>
+   <div class="weather-slot-rain">${rainText}</div>
    <div class="weather-slot-temp">${Number.isFinite(temperature)?Math.round(temperature)+'°':'—'}</div>
   </div>`;
  }).join('');

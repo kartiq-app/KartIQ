@@ -9,6 +9,7 @@ import threading
 import webbrowser
 import urllib.parse
 import urllib.request
+import os
 
 try:
     import websocket
@@ -150,46 +151,137 @@ def _weather_location(circuit):
     return location
 
 
-def _weather_icon_key(code, is_day=True):
-    try:
-        code = int(code)
-    except Exception:
-        code = -1
-    if code == 0:
+def _met_symbol_parts(symbol_code):
+    symbol = str(symbol_code or "cloudy").strip().lower()
+    is_day = not symbol.endswith("_night")
+    base = re.sub(r"_(day|night|polartwilight)$", "", symbol)
+    return base, is_day
+
+
+def _weather_icon_from_met_symbol(symbol_code):
+    base, is_day = _met_symbol_parts(symbol_code)
+    if base in {"clearsky", "fair"}:
         return "clear-day" if is_day else "clear-night"
-    if code in (1, 2):
+    if base in {"partlycloudy"}:
         return "partly-cloudy-day" if is_day else "partly-cloudy-night"
-    if code == 3:
+    if base in {"cloudy"}:
         return "cloudy"
-    if code in (45, 48):
+    if "fog" in base:
         return "fog"
-    if code in (51, 53, 55, 56, 57):
-        return "drizzle"
-    if code in (61, 63, 66, 80, 81):
-        return "rain"
-    if code in (65, 67, 82):
-        return "rain-heavy"
-    if code in (71, 73, 75, 77, 85, 86):
-        return "snow"
-    if code in (95, 96, 99):
+    if "thunder" in base:
         return "thunderstorm"
+    if "snow" in base or "sleet" in base:
+        return "snow"
+    if "heavyrain" in base:
+        return "rain-heavy"
+    if "rain" in base or "showers" in base:
+        return "rain"
+    if "drizzle" in base:
+        return "drizzle"
     return "cloudy"
 
 
-def _weather_label(code):
+def _weather_label_from_met_symbol(symbol_code):
+    base, _ = _met_symbol_parts(symbol_code)
     labels = {
-        0:"Ciel dégagé",1:"Peu nuageux",2:"Partiellement nuageux",3:"Couvert",
-        45:"Brouillard",48:"Brouillard givrant",51:"Bruine faible",53:"Bruine",55:"Bruine forte",
-        56:"Bruine verglaçante",57:"Forte bruine verglaçante",61:"Pluie faible",63:"Pluie modérée",
-        65:"Forte pluie",66:"Pluie verglaçante",67:"Forte pluie verglaçante",71:"Neige faible",
-        73:"Neige",75:"Forte neige",77:"Grains de neige",80:"Averses faibles",81:"Averses",
-        82:"Fortes averses",85:"Averses de neige",86:"Fortes averses de neige",95:"Orage",
-        96:"Orage avec grêle",99:"Orage violent avec grêle"
+        "clearsky": "Ciel dégagé",
+        "fair": "Peu nuageux",
+        "partlycloudy": "Partiellement nuageux",
+        "cloudy": "Couvert",
+        "fog": "Brouillard",
+        "lightrain": "Pluie faible",
+        "rain": "Pluie",
+        "heavyrain": "Forte pluie",
+        "lightrainshowers": "Averses faibles",
+        "rainshowers": "Averses",
+        "heavyrainshowers": "Fortes averses",
+        "lightsnow": "Neige faible",
+        "snow": "Neige",
+        "heavysnow": "Forte neige",
+        "lightsnowshowers": "Averses de neige faibles",
+        "snowshowers": "Averses de neige",
+        "heavysnowshowers": "Fortes averses de neige",
+        "lightsleet": "Faible neige fondue",
+        "sleet": "Neige fondue",
+        "heavysleet": "Forte neige fondue",
     }
+    if base in labels:
+        return labels[base]
+    if "thunder" in base:
+        return "Orage"
+    if "snow" in base:
+        return "Neige"
+    if "sleet" in base:
+        return "Neige fondue"
+    if "rain" in base or "showers" in base:
+        return "Pluie"
+    return "Conditions variables"
+
+
+def _met_request(location):
+    params = {
+        "lat": f"{float(location['latitude']):.5f}",
+        "lon": f"{float(location['longitude']):.5f}",
+    }
+    altitude = location.get("altitude")
+    if altitude is not None:
+        params["altitude"] = int(round(float(altitude)))
+    url = "https://api.met.no/weatherapi/locationforecast/2.0/complete?" + urllib.parse.urlencode(params)
+    user_agent = os.environ.get(
+        "MET_NO_USER_AGENT",
+        f"KartIQ/{APP_VERSION} (weather client; contact via application owner)",
+    )
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": user_agent,
+            "Accept": "application/json",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8", errors="replace"))
+
+
+def _met_period(entry):
+    data = entry.get("data") or {}
+    for key in ("next_1_hours", "next_6_hours", "next_12_hours"):
+        period = data.get(key)
+        if isinstance(period, dict):
+            return period, key
+    return {}, None
+
+
+def _met_row(entry, local_zone):
+    raw_time = entry.get("time")
+    if not raw_time:
+        return None
     try:
-        return labels.get(int(code), "Conditions variables")
+        dt = datetime.fromisoformat(str(raw_time).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        dt_local = dt.astimezone(local_zone)
     except Exception:
-        return "Conditions variables"
+        return None
+    data = entry.get("data") or {}
+    instant = ((data.get("instant") or {}).get("details") or {})
+    period, period_key = _met_period(entry)
+    summary = period.get("summary") or {}
+    details = period.get("details") or {}
+    symbol = summary.get("symbol_code") or "cloudy"
+    probability = details.get("probability_of_precipitation")
+    precipitation = details.get("precipitation_amount")
+    return {
+        "dt": dt_local,
+        "temperature": instant.get("air_temperature"),
+        "wind_speed": instant.get("wind_speed"),
+        "wind_gusts": instant.get("wind_speed_of_gust"),
+        "humidity": instant.get("relative_humidity"),
+        "cloud_fraction": instant.get("cloud_area_fraction"),
+        "probability": probability,
+        "precipitation": precipitation,
+        "symbol": symbol,
+        "period": period_key,
+    }
 
 
 def _weather_for_circuit(circuit):
@@ -207,135 +299,91 @@ def _weather_for_circuit(circuit):
         local_zone = timezone.utc
         circuit_timezone = "UTC"
 
-    # Deux appels séparés : la météo actuelle et les prévisions horaires.
-    # Cela évite qu'une option propre au bloc current neutralise ou tronque
-    # silencieusement le bloc hourly selon le modèle choisi par Open-Meteo.
-    current_params = {
-        "latitude": location["latitude"],
-        "longitude": location["longitude"],
-        "current": "temperature_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m,is_day",
-        "timezone": circuit_timezone,
-    }
-    current_data = _json_urlopen(
-        "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(current_params)
-    )
-    current = current_data.get("current") or {}
-
-    hourly_params = {
-        "latitude": location["latitude"],
-        "longitude": location["longitude"],
-        "hourly": "temperature_2m,precipitation_probability,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m,is_day",
-        "forecast_days": 2,
-        "timezone": circuit_timezone,
-        "timeformat": "iso8601",
-    }
-    hourly_data = _json_urlopen(
-        "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(hourly_params)
-    )
-    hourly = hourly_data.get("hourly") or {}
-
-    times = hourly.get("time") or []
-    temperatures = hourly.get("temperature_2m") or []
-    probabilities = hourly.get("precipitation_probability") or []
-    precipitations = hourly.get("precipitation") or []
-    rain_values = hourly.get("rain") or []
-    codes = hourly.get("weather_code") or []
-    winds = hourly.get("wind_speed_10m") or []
-    gusts = hourly.get("wind_gusts_10m") or []
-    day_values = hourly.get("is_day") or []
+    met_data = _met_request(location)
+    entries = (((met_data.get("properties") or {}).get("timeseries")) or [])
+    rows = [row for row in (_met_row(entry, local_zone) for entry in entries) if row]
+    rows.sort(key=lambda row: row["dt"])
+    if not rows:
+        raise ValueError("MET Norway n'a renvoyé aucune prévision exploitable")
 
     now_local = datetime.now(timezone.utc).astimezone(local_zone)
     first_slot_local = now_local.replace(minute=0, second=0, microsecond=0)
     if now_local.minute >= 30:
         first_slot_local += timedelta(hours=1)
 
-    rows = []
-    for idx, raw_time in enumerate(times):
-        try:
-            parsed = datetime.fromisoformat(str(raw_time).replace("Z", "+00:00"))
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=local_zone)
-            else:
-                parsed = parsed.astimezone(local_zone)
-            rows.append((parsed, idx))
-        except Exception:
-            continue
-    rows.sort(key=lambda item: item[0])
-
-    selected = [(dt, idx) for dt, idx in rows if dt >= first_slot_local][:6]
+    selected = [row for row in rows if row["dt"] >= first_slot_local][:6]
     if len(selected) < 6:
-        selected = [(dt, idx) for dt, idx in rows if dt >= now_local][:6]
+        selected = [row for row in rows if row["dt"] >= now_local - timedelta(hours=1)][:6]
     if len(selected) < 6:
         selected = rows[:6]
 
     timeline = []
-    for local_dt, idx in selected:
-        code_value = codes[idx] if idx < len(codes) else None
-        day_value = bool(day_values[idx]) if idx < len(day_values) else True
+    for row in selected:
+        local_dt = row["dt"]
         timeline.append({
             "timestamp": int(local_dt.astimezone(timezone.utc).timestamp()),
             "time": local_dt.isoformat(timespec="minutes"),
             "display_time": local_dt.strftime("%H:%M"),
-            "temperature": temperatures[idx] if idx < len(temperatures) else None,
-            "probability": probabilities[idx] if idx < len(probabilities) else None,
-            "precipitation": precipitations[idx] if idx < len(precipitations) else None,
-            "rain": rain_values[idx] if idx < len(rain_values) else None,
-            "weather_code": code_value,
-            "label": _weather_label(code_value),
-            "icon": _weather_icon_key(code_value, day_value),
-            "wind_speed": winds[idx] if idx < len(winds) else None,
-            "wind_gusts": gusts[idx] if idx < len(gusts) else None,
+            "temperature": row.get("temperature"),
+            "probability": row.get("probability"),
+            "precipitation": row.get("precipitation"),
+            "rain": row.get("precipitation"),
+            "weather_code": row.get("symbol"),
+            "label": _weather_label_from_met_symbol(row.get("symbol")),
+            "icon": _weather_icon_from_met_symbol(row.get("symbol")),
+            "wind_speed": row.get("wind_speed"),
+            "wind_gusts": row.get("wind_gusts"),
+            "period": row.get("period"),
         })
 
+    current_row = min(rows, key=lambda row: abs((row["dt"] - now_local).total_seconds()))
     next_rain = None
-    for local_dt, idx in rows:
-        if local_dt < now_local:
+    for row in rows:
+        if row["dt"] < now_local:
             continue
-        probability = probabilities[idx] if idx < len(probabilities) else None
-        precipitation = precipitations[idx] if idx < len(precipitations) else 0
-        code_value = codes[idx] if idx < len(codes) else None
-        if ((probability is not None and float(probability) >= 45)
-                or float(precipitation or 0) >= 0.1
-                or code_value in (51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99)):
+        precipitation = float(row.get("precipitation") or 0)
+        probability = row.get("probability")
+        symbol = str(row.get("symbol") or "")
+        if precipitation >= 0.1 or (probability is not None and float(probability) >= 45) or any(token in symbol for token in ("rain", "sleet", "snow", "thunder")):
             next_rain = {
-                "timestamp": int(local_dt.astimezone(timezone.utc).timestamp()),
-                "time": local_dt.isoformat(timespec="minutes"),
-                "display_time": local_dt.strftime("%H:%M"),
+                "timestamp": int(row["dt"].astimezone(timezone.utc).timestamp()),
+                "time": row["dt"].isoformat(timespec="minutes"),
+                "display_time": row["dt"].strftime("%H:%M"),
                 "probability": probability,
-                "precipitation": precipitation,
-                "weather_code": code_value,
-                "label": _weather_label(code_value),
+                "precipitation": row.get("precipitation"),
+                "weather_code": symbol,
+                "label": _weather_label_from_met_symbol(symbol),
             }
             break
 
-    code = current.get("weather_code")
-    is_day = bool(current.get("is_day", 1))
+    current_symbol = current_row.get("symbol") or "cloudy"
     payload_data = {
         "circuit_id": circuit_id,
         "circuit_name": circuit.get("name"),
         "location": location,
         "timezone": circuit_timezone,
         "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source": "MET Norway Locationforecast 2.0",
         "current": {
-            "temperature": current.get("temperature_2m"),
-            "apparent_temperature": current.get("apparent_temperature"),
-            "precipitation": current.get("precipitation"),
-            "rain": current.get("rain"),
-            "weather_code": code,
-            "label": _weather_label(code),
-            "icon": _weather_icon_key(code, is_day),
-            "wind_speed": current.get("wind_speed_10m"),
-            "wind_gusts": current.get("wind_gusts_10m"),
-            "is_day": is_day,
-            "time": current.get("time"),
+            "temperature": current_row.get("temperature"),
+            "apparent_temperature": None,
+            "precipitation": current_row.get("precipitation"),
+            "rain": current_row.get("precipitation"),
+            "weather_code": current_symbol,
+            "label": _weather_label_from_met_symbol(current_symbol),
+            "icon": _weather_icon_from_met_symbol(current_symbol),
+            "wind_speed": current_row.get("wind_speed"),
+            "wind_gusts": current_row.get("wind_gusts"),
+            "is_day": not str(current_symbol).endswith("_night"),
+            "time": current_row["dt"].isoformat(timespec="minutes"),
         },
         "next_rain": next_rain,
         "timeline": timeline,
         "hourly_debug": {
-            "times_received": len(times),
+            "times_received": len(rows),
             "slots_built": len(timeline),
             "first_slot_local": first_slot_local.isoformat(timespec="minutes"),
-            "source": "separate_hourly_request",
+            "source": "met_no_locationforecast_complete",
         },
     }
     WEATHER_CACHE[circuit_id] = {"cached_at": now_ts, "payload": payload_data}
