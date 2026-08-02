@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.4.4"
-APP_RELEASE_NAME = "Colonnes ÉQUIPE et CHRONOS ajustées"
+APP_VERSION = "6.4.5"
+APP_RELEASE_NAME = "Barre de classement et tri T.MOYEN"
 
 
 def _circuit_sort_key(circuit):

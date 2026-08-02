@@ -191,3 +191,16 @@
   overflow:visible;
   text-overflow:clip;
 }
+
+
+/* V6.4.5 — commandes de classement alignées à gauche */
+.analyzer-ranking-title{justify-content:flex-start}
+.analyzer-ranking-heading{width:100%}
+.analyzer-ranking-toolbar-left{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap}
+.analyzer-ranking-heading>small{text-align:left}
+.analyzer-table-controls{margin:0}
+.analyzer-table-controls label{white-space:nowrap}
+@media(max-width:700px){
+  .analyzer-ranking-toolbar-left{gap:6px}
+  .analyzer-table-controls select{max-width:118px}
+}

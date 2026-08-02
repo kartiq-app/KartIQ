@@ -1,4 +1,4 @@
-/* KartIQ V6.4.2 — Noms complets sur une ligne dans les classements Analyzer */
+/* KartIQ V6.4.5 — Barre de classement à gauche et tri T.MOYEN */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -41,7 +41,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.4.2',
+  appVersion:'6.4.5',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -98,7 +98,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.4.2',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.4.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -316,16 +316,24 @@ function analyzerScoreClass(score){return score>=82?'high':score>=65?'mid':'low'
 function analyzerRows(){
  return (state.drivers||[]).map(d=>{const f=analyzerForecastFor(d);return {driver:d,forecast:f,score:analyzerKartScore(d),confidence:analyzerConfidence(d),history:analyzerTeamHistory(d)}});
 }
-function analyzerSortedRows(){
- const list=analyzerRows();
+function analyzerAverageSortValue(row){
+ const value=analyzerCurrentStintAverage(row?.driver);
+ return Number.isFinite(value)&&value>0?value:Number.POSITIVE_INFINITY;
+}
+function analyzerSortComparator(sort=analyzerSort){
+ const position=(a,b)=>analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999);
  const sorters={
-  position:(a,b)=>analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999),
-  track_desc:(a,b)=>(b.forecast.track??-1)-(a.forecast.track??-1),
-  forecast:(a,b)=>(a.forecast.seconds??999999)-(b.forecast.seconds??999999),
-  score:(a,b)=>b.score-a.score,
-  stops:(a,b)=>analyzerNumeric(b.driver.pit_stops,-1)-analyzerNumeric(a.driver.pit_stops,-1)
+  position,
+  average:(a,b)=>analyzerAverageSortValue(a)-analyzerAverageSortValue(b)||position(a,b),
+  track_desc:(a,b)=>(b.forecast.track??-1)-(a.forecast.track??-1)||position(a,b),
+  forecast:(a,b)=>(a.forecast.seconds??999999)-(b.forecast.seconds??999999)||position(a,b),
+  score:(a,b)=>b.score-a.score||position(a,b),
+  stops:(a,b)=>analyzerNumeric(b.driver.pit_stops,-1)-analyzerNumeric(a.driver.pit_stops,-1)||position(a,b)
  };
- return list.sort(sorters[analyzerSort]||sorters.position);
+ return sorters[sort]||position;
+}
+function analyzerSortedRows(){
+ return analyzerRows().sort(analyzerSortComparator());
 }
 function analyzerRemainingSeconds(){const ms=typeof liveRemainingMilliseconds==='function'?liveRemainingMilliseconds():null;return Number.isFinite(ms)?ms/1000:analyzerParseDuration(state.time_remaining)}
 function analyzerStopsInfo(followed){
@@ -366,7 +374,7 @@ function renderAnalyzer(){
  if(!document.getElementById('analyzerTable'))return;
  analyzerEnsureSession();
  analyzerLearnFromState();
- const all=analyzerRows();const generalSorted=analyzerSortedRows();const sorted=analyzerRankingMode==='virtual'?analyzerVirtualMetrics(all):generalSorted;
+ const all=analyzerRows();const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
  const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
  if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');
  const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');}

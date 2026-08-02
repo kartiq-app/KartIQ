@@ -1,3 +1,11 @@
+# V6.4.5 — Barre de classement et tri T.MOYEN
+
+- Les commandes sont désormais alignées à gauche dans l’ordre **Classement général | Classement virtuel | Trier par**.
+- Ajout du critère **T.MOYEN** dans le menu de tri.
+- Le tri **T.MOYEN** classe les équipes du temps moyen le plus faible au plus élevé.
+- Les équipes sans temps moyen disponible sont placées en fin de liste.
+- Le tri est disponible dans les classements général et virtuel.
+
 # V6.4.4 — Colonnes ÉQUIPE et CHRONOS ajustées
 
 - La largeur de la colonne **ÉQUIPE / PILOTE** correspond désormais automatiquement au nom le plus long affiché.

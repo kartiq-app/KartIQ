@@ -142,17 +142,23 @@
 
     <section class="panel analyzer-ranking-panel">
       <div class="analyzer-panel-title analyzer-ranking-title">
-        <div class="analyzer-ranking-heading"><div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT GÉNÉRAL</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button></div><small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par KartIQ</small></div>
-        <div class="analyzer-table-controls">
-          <label>TRIER PAR
-            <select id="analyzerSort" onchange="setAnalyzerSort(this.value)">
-              <option value="position">Position</option>
-              <option value="track_desc">Temps en piste</option>
-              <option value="forecast">Arrêt prévu</option>
-              <option value="score">Note du kart</option>
-              <option value="stops">Passages</option>
-            </select>
-          </label>
+        <div class="analyzer-ranking-heading">
+          <div class="analyzer-ranking-toolbar-left">
+            <div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT GÉNÉRAL</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button></div>
+            <div class="analyzer-table-controls">
+              <label>TRIER PAR
+                <select id="analyzerSort" onchange="setAnalyzerSort(this.value)">
+                  <option value="position">Position</option>
+                  <option value="average">T.MOYEN</option>
+                  <option value="track_desc">Temps en piste</option>
+                  <option value="forecast">Arrêt prévu</option>
+                  <option value="score">Note du kart</option>
+                  <option value="stops">Passages</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par KartIQ</small>
         </div>
       </div>
       <div class="analyzer-ranking-wrap">
