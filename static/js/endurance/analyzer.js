@@ -1,4 +1,4 @@
-/* KartIQ V6.4.5 — Barre de classement à gauche et tri T.MOYEN */
+/* KartIQ V6.5.0 — Nouveau modèle d’analyse des relais-karts */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -41,7 +41,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.4.5',
+  appVersion:'6.5.0',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -98,7 +98,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.4.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.5.0',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -170,46 +170,101 @@ function analyzerLoad(){
  try{analyzerLearning={teams:{},startedAt:Date.now(),...JSON.parse(localStorage.getItem(ANALYZER_LEARNING_KEY)||'{}')}}catch(_){analyzerLearning={teams:{},startedAt:Date.now()}}
 }
 function analyzerSaveLearning(){try{localStorage.setItem(ANALYZER_LEARNING_KEY,JSON.stringify(analyzerLearning))}catch(_){}}
+function analyzerMedian(values){
+ const sorted=(values||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b);
+ if(!sorted.length)return null;
+ const middle=Math.floor(sorted.length/2);
+ return sorted.length%2?sorted[middle]:(sorted[middle-1]+sorted[middle])/2;
+}
+function analyzerStdDev(values){
+ const clean=(values||[]).filter(Number.isFinite);if(clean.length<2)return null;
+ const mean=clean.reduce((a,b)=>a+b,0)/clean.length;
+ return Math.sqrt(clean.reduce((sum,value)=>sum+(value-mean)**2,0)/clean.length);
+}
+function analyzerLiveGridReference(){
+ const relayValues=Object.values(analyzerLearning.teams||{}).map(item=>{
+  const relay=item.currentRelay;
+  return relay&&relay.lapCount>0?relay.lapSum/relay.lapCount:null;
+ }).filter(Number.isFinite);
+ if(relayValues.length>=3)return analyzerMedian(relayValues);
+ return analyzerMedian(analyzerGridPace());
+}
+function analyzerNewRelay(item,driver,now,gridReference){
+ const completed=Array.isArray(item.relays)?item.relays.length:0;
+ return {index:completed+1,startAt:now,lapSum:0,lapCount:0,laps:[],bestLaps:[],warmupSkipped:false,gridStartPace:gridReference,gridEndPace:gridReference,status:'active'};
+}
+function analyzerFinalizeRelay(item,now,gridReference){
+ const relay=item.currentRelay;if(!relay||relay.status==='complete')return;
+ relay.status='complete';relay.endAt=now;relay.gridEndPace=Number.isFinite(gridReference)?gridReference:relay.gridEndPace;
+ relay.average=relay.lapCount>0?relay.lapSum/relay.lapCount:null;
+ const best=(relay.laps||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b).slice(0,3);
+ relay.best3Average=best.length?best.reduce((a,b)=>a+b,0)/best.length:null;
+ relay.consistency=analyzerStdDev(relay.laps||[]);
+ if(Number.isFinite(relay.average)&&relay.lapCount>0){
+  item.relays=Array.isArray(item.relays)?item.relays:[];
+  const duplicate=item.relays[item.relays.length-1];
+  if(!duplicate||duplicate.index!==relay.index)item.relays.push({...relay});
+  item.relays=item.relays.slice(-20);
+ }
+}
 function analyzerLearnFromState(){
  const now=Date.now();
+ const gridReference=analyzerLiveGridReference();
  (state.drivers||[]).forEach(driver=>{
   const key=analyzerTeamKey(driver);
-  const item=analyzerLearning.teams[key]||{name:driver.driver,stints:[],lastStatus:null,lastTrackSeconds:null,lastStops:null,lastLapCount:null,currentStintLapSum:0,currentStintLapCount:0,virtualKart:`V-${String(driver.apex||driver.pos||key).replace(/\D/g,'').padStart(2,'0')}`,updatedAt:now};
+  const item=analyzerLearning.teams[key]||{name:driver.driver,stints:[],relays:[],lastStatus:null,lastTrackSeconds:null,lastStops:null,lastLapCount:null,currentStintLapSum:0,currentStintLapCount:0,virtualKart:`V-${String(driver.apex||driver.pos||key).replace(/\D/g,'').padStart(2,'0')}`,updatedAt:now};
+  item.relays=Array.isArray(item.relays)?item.relays:[];
   const track=analyzerParseDuration(driver.track_timer);
   const stops=analyzerNumeric(driver.pit_stops,null);
   const status=driver.status||'unknown';
   const lapCount=analyzerNumeric(driver.laps,null);
   const lastLapSeconds=parseLapTime(driver.last);
-  // Une sortie des stands ouvre un nouveau relais : la moyenne repart de zéro.
-  if(item.lastStatus==='pit'&&status==='track'){
+  const exitedPit=item.lastStatus==='pit'&&status==='track';
+  const stopIncrement=Number.isFinite(stops)&&Number.isFinite(item.lastStops)&&stops>item.lastStops;
+  const enteredPit=item.lastStatus==='track'&&status==='pit';
+
+  if(!item.currentRelay&&status==='track')item.currentRelay=analyzerNewRelay(item,driver,now,gridReference);
+  if(enteredPit||stopIncrement){
+   analyzerFinalizeRelay(item,now,gridReference);
+   if(Number.isFinite(item.lastTrackSeconds)&&item.lastTrackSeconds>=30){
+    if(!item.stints.length||Math.abs(item.stints[item.stints.length-1]-item.lastTrackSeconds)>2)item.stints.push(item.lastTrackSeconds);
+    item.stints=item.stints.slice(-12);
+   }
+  }
+  if((exitedPit||stopIncrement)&&status==='track'){
+   item.currentRelay=analyzerNewRelay(item,driver,now,gridReference);
    item.currentStintLapSum=0;item.currentStintLapCount=0;item.lastLapCount=lapCount;
   }
-  // Fallback lorsque le flux n'expose pas clairement la transition OUT mais incrémente les arrêts.
-  if(Number.isFinite(stops)&&Number.isFinite(item.lastStops)&&stops>item.lastStops&&status==='track'){
-   item.currentStintLapSum=0;item.currentStintLapCount=0;item.lastLapCount=lapCount;
-  }
-  // Ajoute chaque nouveau tour terminé une seule fois au calcul du relais courant.
+  if(status==='track'&&!item.currentRelay)item.currentRelay=analyzerNewRelay(item,driver,now,gridReference);
+
   if(status==='track'&&Number.isFinite(lapCount)&&Number.isFinite(item.lastLapCount)&&lapCount>item.lastLapCount&&Number.isFinite(lastLapSeconds)){
-   const added=Math.max(1,lapCount-item.lastLapCount);
-   // Le live ne fournit qu'un dernier chrono : en cas de saut de plusieurs tours, on ne compte que le dernier reçu.
-   if(added>=1){item.currentStintLapSum=(Number(item.currentStintLapSum)||0)+lastLapSeconds;item.currentStintLapCount=(Number(item.currentStintLapCount)||0)+1}
-  }
-  if(item.lastStatus==='track'&&status==='pit'&&Number.isFinite(item.lastTrackSeconds)&&item.lastTrackSeconds>=30){
-   if(!item.stints.length||Math.abs(item.stints[item.stints.length-1]-item.lastTrackSeconds)>2)item.stints.push(item.lastTrackSeconds);
-   item.stints=item.stints.slice(-12);
-  }
-  // Some Apex feeds only update the stand counter. Use it as a fallback relay boundary.
-  if(Number.isFinite(stops)&&Number.isFinite(item.lastStops)&&stops>item.lastStops&&Number.isFinite(item.lastTrackSeconds)&&item.lastTrackSeconds>=30){
-   if(!item.stints.length||Math.abs(item.stints[item.stints.length-1]-item.lastTrackSeconds)>2)item.stints.push(item.lastTrackSeconds);
-   item.stints=item.stints.slice(-12);
+   const relay=item.currentRelay;
+   if(relay){
+    // Le premier tour observé de chaque relais est ignoré : départ ou tour de sortie des stands.
+    if(!relay.warmupSkipped)relay.warmupSkipped=true;
+    else{
+     relay.lapSum=(Number(relay.lapSum)||0)+lastLapSeconds;
+     relay.lapCount=(Number(relay.lapCount)||0)+1;
+     relay.laps=[...(relay.laps||[]),lastLapSeconds].slice(-60);
+     relay.bestLaps=(relay.laps||[]).slice().sort((a,b)=>a-b).slice(0,3);
+     relay.gridEndPace=gridReference;
+     item.currentStintLapSum=relay.lapSum;item.currentStintLapCount=relay.lapCount;
+    }
+   }
   }
   item.name=driver.driver;item.lastStatus=status;item.lastTrackSeconds=track;item.lastStops=stops;item.lastLapCount=lapCount;item.updatedAt=now;
   analyzerLearning.teams[key]=item;
  });
  analyzerSaveLearning();
 }
-function analyzerTeamHistory(driver){return analyzerLearning.teams[analyzerTeamKey(driver)]||{stints:[],virtualKart:`V-${String(driver?.apex||driver?.pos||'--')}`}}
+function analyzerTeamHistory(driver){return analyzerLearning.teams[analyzerTeamKey(driver)]||{stints:[],relays:[],virtualKart:`V-${String(driver?.apex||driver?.pos||'--')}`}}
+function analyzerCurrentRelay(driver){
+ const history=analyzerTeamHistory(driver);
+ return history.currentRelay||null;
+}
 function analyzerCurrentStintAverage(driver){
+ const relay=analyzerCurrentRelay(driver);
+ if(relay&&Number(relay.lapCount)>0)return Number(relay.lapSum)/Number(relay.lapCount);
  const history=analyzerTeamHistory(driver),sum=Number(history.currentStintLapSum),count=Number(history.currentStintLapCount);
  return Number.isFinite(sum)&&Number.isFinite(count)&&count>0?sum/count:null;
 }
@@ -270,20 +325,47 @@ function setAnalyzerRankingMode(mode){
  renderAnalyzer();
  if(analyzerRankingMode==='virtual')analyzerLoadVirtualPitData();
 }
-function analyzerKartScore(driver){
- const values=analyzerGridPace();const pace=analyzerPaceSeconds(driver);
- if(!Number.isFinite(pace)||!values.length)return 50;
- const best=values[0],worst=values[values.length-1];
- if(worst-best<.001)return 75;
- const percentile=1-(pace-best)/(worst-best);
- const stability=Math.min(1,(driver.pace5_laps||0)/5);
- return Math.round(Math.max(0,Math.min(100,45+percentile*45+stability*10)));
+function analyzerRelayPopulation(){
+ return (state.drivers||[]).map(driver=>{
+  const relay=analyzerCurrentRelay(driver),average=analyzerCurrentStintAverage(driver);
+  const best=(relay?.bestLaps||[]).filter(Number.isFinite);
+  return {driver,relay,average,best3:best.length?best.reduce((a,b)=>a+b,0)/best.length:null};
+ }).filter(item=>Number.isFinite(item.average)&&Number(item.relay?.lapCount)>0);
 }
-function analyzerConfidence(driver){
- const history=analyzerTeamHistory(driver);
- const sample=(driver.pace5_laps||0)+history.stints.length*5;
- return Math.max(15,Math.min(96,Math.round(20+sample*6)));
+function analyzerPercentileScore(value,values,{lowerIsBetter=true}={}){
+ const clean=(values||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b);if(!Number.isFinite(value)||!clean.length)return 50;
+ if(clean.length===1)return 75;
+ let rank=clean.findIndex(v=>value<=v);if(rank<0)rank=clean.length-1;
+ const percentile=rank/(clean.length-1);
+ return Math.round((lowerIsBetter?1-percentile:percentile)*100);
 }
+function analyzerRelayMetrics(driver){
+ const history=analyzerTeamHistory(driver),relay=history.currentRelay,average=analyzerCurrentStintAverage(driver);
+ const population=analyzerRelayPopulation();
+ const averages=population.map(item=>item.average),bestValues=population.map(item=>item.best3).filter(Number.isFinite);
+ const bestLaps=(relay?.bestLaps||[]).filter(Number.isFinite);
+ const best3=bestLaps.length?bestLaps.reduce((a,b)=>a+b,0)/bestLaps.length:null;
+ const consistency=analyzerStdDev(relay?.laps||[]);
+ const previous=(history.relays||[]).slice().reverse().find(item=>Number.isFinite(item.average));
+ const gridNow=analyzerMedian(averages)||analyzerMedian(analyzerGridPace());
+ const previousGrid=Number(previous?.gridEndPace)||Number(previous?.gridStartPace);
+ const rawGain=Number.isFinite(previous?.average)&&Number.isFinite(average)?previous.average-average:null;
+ const gridGain=Number.isFinite(previousGrid)&&Number.isFinite(gridNow)?previousGrid-gridNow:0;
+ const correctedGain=Number.isFinite(rawGain)?rawGain-gridGain:null;
+ const paceScore=analyzerPercentileScore(average,averages);
+ const potentialScore=Number.isFinite(best3)?analyzerPercentileScore(best3,bestValues):paceScore;
+ const transitionScore=Number.isFinite(correctedGain)?Math.max(0,Math.min(100,50+correctedGain*50)):50;
+ const consistencyScore=Number.isFinite(consistency)?Math.max(0,Math.min(100,100-(consistency-.12)/1.38*100)):50;
+ const score=Math.round(paceScore*.55+transitionScore*.20+potentialScore*.15+consistencyScore*.10);
+ const laps=Number(relay?.lapCount)||0;
+ let confidence=laps<3?20:laps<5?40:laps<8?65:85;
+ if(Number.isFinite(correctedGain)&&Number.isFinite(gridNow))confidence+=5;
+ if(population.length>=6)confidence+=5;
+ confidence=Math.min(95,confidence);
+ return {score:Math.max(0,Math.min(100,score)),confidence,relayIndex:Number(relay?.index)||((history.relays||[]).length+1),laps,average,best3,consistency,correctedGain,gridNow,previousAverage:previous?.average??null,status:laps<3?'learning':'rated'};
+}
+function analyzerKartScore(driver){return analyzerRelayMetrics(driver).score}
+function analyzerConfidence(driver){return analyzerRelayMetrics(driver).confidence}
 function analyzerExpectedStint(driver){
  const h=analyzerTeamHistory(driver);const max=analyzerRules.maxStintMinutes*60;
  const valid=(h.stints||[]).filter(v=>v>=analyzerRules.minStintMinutes*60&&v<=max+180);
@@ -401,8 +483,8 @@ function renderAnalyzer(){
  document.getElementById('analyzerOpportunityScore').textContent=opportunity.score;document.getElementById('analyzerAdvice').textContent=opportunity.advice;document.getElementById('analyzerAdviceDetail').textContent=opportunity.detail;
  const forecastRows=all.filter(x=>x.driver.status==='pit'||(Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=900)).sort((a,b)=>(a.forecast.seconds??999999)-(b.forecast.seconds??999999)).slice(0,10);
  document.getElementById('analyzerForecast').innerHTML=forecastRows.length?forecastRows.map(x=>`<div class="analyzer-forecast-row"><span class="analyzer-forecast-time">${x.driver.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</span><span><span class="analyzer-forecast-team">${analyzerEscape(x.driver.driver)}</span><span class="analyzer-forecast-meta">Kart virtuel ${analyzerEscape(x.history.virtualKart)}</span></span><span class="analyzer-score-pill ${analyzerScoreClass(x.score)}">${x.score}/100</span><span class="analyzer-confidence">${x.forecast.confidence}%</span></div>`).join(''):'<div class="analyzer-empty">Aucun arrêt attendu dans les 15 prochaines minutes.</div>';
- const market=all.slice().sort((a,b)=>b.score-a.score).slice(0,8);
- document.getElementById('analyzerKartMarket').innerHTML=market.length?market.map((x,i)=>`<div class="analyzer-market-row"><b>${i+1}</b><span><span class="analyzer-market-team">${analyzerEscape(x.history.virtualKart)} — ${analyzerEscape(x.driver.driver)}</span><span class="analyzer-market-meta">${x.history.stints.length} relais observé(s)</span></span><span class="analyzer-score-pill ${analyzerScoreClass(x.score)}">${x.score}</span><span class="analyzer-confidence">${x.confidence}%</span></div>`).join(''):'<div class="analyzer-empty">Apprentissage en cours.</div>';
+ const market=all.map(x=>({...x,relayMetrics:analyzerRelayMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).slice(0,8);
+ document.getElementById('analyzerKartMarket').innerHTML=market.length?market.map((x,i)=>{const m=x.relayMetrics;const gain=Number.isFinite(m.correctedGain)?`${m.correctedGain>=0?'+':''}${m.correctedGain.toFixed(3)} s corrigé`:'référence en construction';return `<div class="analyzer-market-row"><b>${i+1}</b><span><span class="analyzer-market-team">Relais ${m.relayIndex} — ${analyzerEscape(x.driver.driver)}</span><span class="analyzer-market-meta">T.MOYEN ${Number.isFinite(m.average)?analyzerEscape(formatApexMilliseconds(m.average*1000)):'—'} · ${m.laps} tours · ${analyzerEscape(gain)}</span></span><span class="analyzer-score-pill ${analyzerScoreClass(m.score)}">${m.score}</span><span class="analyzer-confidence">${m.confidence}%</span></div>`}).join(''):'<div class="analyzer-empty">Au moins 3 tours propres sont nécessaires pour évaluer un relais.</div>';
  const wave=all.filter(x=>Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=600&&x.driver.status!=='pit');
  document.getElementById('analyzerWaveCount').textContent=wave.length;document.getElementById('analyzerWaveStatus').textContent=wave.length>=6?'GROSSE VAGUE IMMINENTE':wave.length>=3?'VAGUE EN FORMATION':wave.length?'MOUVEMENTS ISOLÉS':'AUCUNE VAGUE DÉTECTÉE';document.getElementById('analyzerWaveMeter').style.width=`${Math.min(100,wave.length/Math.max(1,(state.drivers||[]).length)*250)}%`;
  document.getElementById('analyzerTable').innerHTML=sorted.map(x=>{

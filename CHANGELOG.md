@@ -1,3 +1,14 @@
+# V6.5.0 — Nouveau modèle « Meilleurs karts identifiés »
+
+- Analyse remise à zéro à chaque nouveau relais / changement de kart.
+- Le premier tour du départ ou de sortie des stands est exclu.
+- Le T.MOYEN propre du relais est recalculé à chaque tour.
+- La note combine rythme moyen relatif, gain corrigé de l’évolution du plateau, potentiel des 3 meilleurs tours et régularité.
+- Comparaison avant/après changement de kart corrigée par l’évolution générale de la piste.
+- Indice de confiance progressif selon le nombre de tours propres et la taille du plateau observé.
+- La case affiche désormais l’équipe, le numéro de relais, le T.MOYEN, le nombre de tours et le gain corrigé.
+- Un relais n’est classé qu’à partir de 3 tours propres.
+
 # V6.4.5 — Barre de classement et tri T.MOYEN
 
 - Les commandes sont désormais alignées à gauche dans l’ordre **Classement général | Classement virtuel | Trier par**.

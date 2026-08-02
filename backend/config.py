@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.4.5"
+APP_VERSION = "6.5.0"
 APP_RELEASE_NAME = "Barre de classement et tri T.MOYEN"
 
 

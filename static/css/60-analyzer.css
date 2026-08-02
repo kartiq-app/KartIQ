@@ -204,3 +204,8 @@
   .analyzer-ranking-toolbar-left{gap:6px}
   .analyzer-table-controls select{max-width:118px}
 }
+
+
+/* V6.5.0 — modèle de relais-karts */
+.analyzer-market-meta{font-variant-numeric:tabular-nums}
+.analyzer-market-row{grid-template-columns:38px minmax(180px,1fr) 65px 70px}
