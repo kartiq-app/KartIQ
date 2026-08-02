@@ -1,3 +1,16 @@
+# V6.6.4 — Équipe suivie en vert dans les deux classements
+
+- Le nom de l’équipe suivie reste affiché en vert dans le Classement général.
+- Le même surlignage vert est maintenant appliqué dans le Classement virtuel.
+- Aucun autre style, couleur ou comportement de classement n’est modifié.
+- Cache PWA et version applicative mis à jour.
+
+# V6.6.3 — Alignement des lignes et équipe suivie
+
+- Hauteur de l’en-tête et des lignes KartIQ alignée sur le classement général en desktop.
+- La ligne TOP du tableau KartIQ est strictement calée avec la ligne POS du classement principal.
+- Le nom de l’équipe suivie apparaît en vert dans le classement général.
+
 # V6.6.2 — Alignement des classements desktop
 
 - Titre **KartIQ** affiché à la même taille et exactement à la même hauteur que les boutons Classement général et Classement virtuel.

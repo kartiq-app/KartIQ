@@ -352,3 +352,36 @@
   .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(11),
   .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(11){width:58px;padding-left:3px;padding-right:3px}
 }
+
+/* KartIQ V6.6.4 — équipe suivie en vert dans les classements général et virtuel */
+@media(min-width:1400px){
+  /* En-têtes POS et TOP strictement de même hauteur. */
+  .analyzer-ranking-table thead tr,
+  .analyzer-kartiq-table thead tr{
+    height:36px;
+  }
+  .analyzer-ranking-table th,
+  .analyzer-kartiq-table th{
+    box-sizing:border-box;
+    height:36px;
+    line-height:1;
+    vertical-align:middle;
+  }
+
+  /* Les lignes KartIQ reprennent la hauteur du classement principal. */
+  .analyzer-ranking-table tbody tr,
+  .analyzer-kartiq-table tbody tr{
+    height:38px;
+  }
+  .analyzer-ranking-table td,
+  .analyzer-kartiq-table td{
+    box-sizing:border-box;
+    height:38px;
+    vertical-align:middle;
+  }
+}
+
+/* Le nom de l'équipe suivie reste vert dans les classements général et virtuel. */
+.analyzer-ranking-table tr.followed .a-team{
+  color:#38dc88!important;
+}
