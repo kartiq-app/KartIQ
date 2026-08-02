@@ -598,7 +598,7 @@
 @media(max-width:1050px){.analyzer-pit-simulator-body{grid-template-columns:1fr}.pit-simulator-track{min-height:230px}}
 
 
-/* KartIQ V6.9.4 — prévisions météo horaires locales sur 6 créneaux */
+/* KartIQ V6.9.5 — prévisions météo horaires locales sur 6 créneaux */
 .weather-card{position:relative;overflow:hidden}
 .weather-card.weather-alert{border-color:#f59e0b;box-shadow:inset 0 0 0 1px rgba(245,158,11,.18)}
 .weather-card.weather-wet{border-color:#3388d8;background:linear-gradient(145deg,#0b1420,#0b1017)}

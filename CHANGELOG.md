@@ -1,3 +1,10 @@
+# V6.9.5 — Frise météo horaire robuste
+
+- Reconstruction indépendante de `current.time`.
+- Repli sur l’offset local Open-Meteo puis sur les premiers créneaux disponibles.
+- La frise ne reste plus vide lorsque les données horaires sont présentes.
+- Cache PWA mis à jour.
+
 # V6.9.4 — Correction des prévisions horaires
 
 - Corrige la détection des six créneaux horaires Open-Meteo lorsque le format ISO contient des secondes, un suffixe `Z` ou un décalage horaire.

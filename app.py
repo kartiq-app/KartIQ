@@ -230,63 +230,83 @@ def _weather_for_circuit(circuit):
                 "label": _weather_label(code),
             }
             break
-    # Frise météo : 6 créneaux horaires issus directement de l’API.
-    # Avant HH:30, le premier créneau est l’heure en cours ; à partir de HH:30,
-    # le premier créneau est l’heure suivante. Les horaires sont locaux au circuit.
+    # Frise météo : six créneaux horaires réellement fournis par Open-Meteo.
+    # Le calcul ne dépend pas d'une égalité de chaînes entre current.time et hourly.time.
+    # Avant HH:30, on garde l'heure en cours ; à partir de HH:30, on commence à l'heure suivante.
     timeline = []
-    current_dt = None
-    try:
-        current_dt = datetime.fromisoformat(current_time)
-    except Exception:
-        current_dt = None
-    if current_dt is not None:
-        first_slot = current_dt.replace(minute=0, second=0, microsecond=0)
-        if current_dt.minute >= 30:
-            first_slot += timedelta(hours=1)
+    temperatures = hourly.get("temperature_2m") or []
+    rain_values = hourly.get("rain") or []
+    winds = hourly.get("wind_speed_10m") or []
+    gusts = hourly.get("wind_gusts_10m") or []
+    day_values = hourly.get("is_day") or []
 
-        temperatures = hourly.get("temperature_2m") or []
-        rain_values = hourly.get("rain") or []
-        winds = hourly.get("wind_speed_10m") or []
-        gusts = hourly.get("wind_gusts_10m") or []
-        day_values = hourly.get("is_day") or []
-
-        # Open-Meteo peut faire varier légèrement le format ISO (secondes, offset, Z).
-        # On parse donc les heures puis on prend les six créneaux consécutifs à partir
-        # de l'heure cible, au lieu d'exiger une égalité exacte de chaînes.
-        parsed_times = []
-        for candidate_idx, value in enumerate(times):
+    def parse_weather_datetime(value):
+        text = str(value or "").strip()
+        if not text:
+            return None
+        # Open-Meteo renvoie le plus souvent YYYY-MM-DDTHH:MM, mais on accepte
+        # aussi les secondes, les offsets et le suffixe Z.
+        try:
+            return datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except Exception:
+            pass
+        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M"):
             try:
-                parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-                if parsed.tzinfo is not None and first_slot.tzinfo is None:
-                    parsed = parsed.replace(tzinfo=None)
-                elif parsed.tzinfo is None and first_slot.tzinfo is not None:
-                    parsed = parsed.replace(tzinfo=first_slot.tzinfo)
-                parsed_times.append((parsed, candidate_idx))
+                return datetime.strptime(text, fmt)
             except Exception:
                 continue
+        return None
 
-        start_position = None
-        for position, (parsed, _) in enumerate(parsed_times):
-            if parsed >= first_slot:
-                start_position = position
-                break
+    current_dt = parse_weather_datetime(current_time)
+    if current_dt is None:
+        # Repli fiable : Open-Meteo fournit l'offset local du lieu interrogé.
+        try:
+            offset_seconds = int(data.get("utc_offset_seconds") or 0)
+        except Exception:
+            offset_seconds = 0
+        current_dt = (datetime.now(timezone.utc) + timedelta(seconds=offset_seconds)).replace(tzinfo=None)
 
-        if start_position is not None:
-            for parsed, idx in parsed_times[start_position:start_position + 6]:
-                code_value = codes[idx] if idx < len(codes) else None
-                day_value = bool(day_values[idx]) if idx < len(day_values) else True
-                timeline.append({
-                    "time": parsed.isoformat(timespec="minutes"),
-                    "temperature": temperatures[idx] if idx < len(temperatures) else None,
-                    "probability": probabilities[idx] if idx < len(probabilities) else None,
-                    "precipitation": precipitations[idx] if idx < len(precipitations) else None,
-                    "rain": rain_values[idx] if idx < len(rain_values) else None,
-                    "weather_code": code_value,
-                    "label": _weather_label(code_value),
-                    "icon": _weather_icon_key(code_value, day_value),
-                    "wind_speed": winds[idx] if idx < len(winds) else None,
-                    "wind_gusts": gusts[idx] if idx < len(gusts) else None,
-                })
+    first_slot = current_dt.replace(minute=0, second=0, microsecond=0)
+    if current_dt.minute >= 30:
+        first_slot += timedelta(hours=1)
+
+    parsed_times = []
+    for candidate_idx, value in enumerate(times):
+        parsed = parse_weather_datetime(value)
+        if parsed is None:
+            continue
+        # Comparaison homogène : les valeurs hourly de timezone=auto sont locales
+        # et généralement sans offset. Si un offset est présent, on compare en naïf
+        # sur l'heure locale annoncée par l'API.
+        if parsed.tzinfo is not None:
+            parsed = parsed.replace(tzinfo=None)
+        comparable_first_slot = first_slot.replace(tzinfo=None) if first_slot.tzinfo is not None else first_slot
+        parsed_times.append((parsed, candidate_idx))
+
+    parsed_times.sort(key=lambda item: item[0])
+    selected = [(parsed, idx) for parsed, idx in parsed_times if parsed >= comparable_first_slot][:6]
+
+    # Repli ultime : si l'heure courante et les dates de prévision utilisent des
+    # conventions différentes, on renvoie tout de même les six premiers créneaux
+    # disponibles au lieu d'afficher une frise vide.
+    if not selected and parsed_times:
+        selected = parsed_times[:6]
+
+    for parsed, idx in selected:
+        code_value = codes[idx] if idx < len(codes) else None
+        day_value = bool(day_values[idx]) if idx < len(day_values) else True
+        timeline.append({
+            "time": parsed.isoformat(timespec="minutes"),
+            "temperature": temperatures[idx] if idx < len(temperatures) else None,
+            "probability": probabilities[idx] if idx < len(probabilities) else None,
+            "precipitation": precipitations[idx] if idx < len(precipitations) else None,
+            "rain": rain_values[idx] if idx < len(rain_values) else None,
+            "weather_code": code_value,
+            "label": _weather_label(code_value),
+            "icon": _weather_icon_key(code_value, day_value),
+            "wind_speed": winds[idx] if idx < len(winds) else None,
+            "wind_gusts": gusts[idx] if idx < len(gusts) else None,
+        })
 
     code = current.get("weather_code")
     is_day = bool(current.get("is_day", 1))
