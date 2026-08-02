@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.9.6"
-APP_RELEASE_NAME = "Simulateur d’arrêt et fenêtre de trafic"
+APP_VERSION = "6.9.7"
+APP_RELEASE_NAME = "Prévisions météo horaires séparées"
 
 
 def _circuit_sort_key(circuit):

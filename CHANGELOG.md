@@ -1,3 +1,11 @@
+# V6.9.7 — Requête horaire météo séparée
+
+- Sépare la météo actuelle des prévisions horaires Open-Meteo.
+- Utilise une requête horaire dédiée sur deux jours.
+- Construit les six créneaux depuis les heures locales ISO du circuit.
+- Supprime la dépendance aux paramètres `forecast_hours`, `past_hours` et aux horodatages Unix.
+- Met à jour le cache PWA.
+
 # V6.9.6 — Frise météo horaire robuste
 
 - Reconstruction indépendante de `current.time`.
