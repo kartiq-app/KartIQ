@@ -1,3 +1,13 @@
+# V6.6.1 — Dashboard desktop côte à côte
+
+- Affichage desktop du classement général ou virtuel complet à gauche et du panneau stratégique à droite.
+- Passage de KartIQ du TOP 8 au **TOP 10**.
+- Empilement à droite de **KartIQ**, **Quick Change — Files de karts** et **Opportunités de Quick Change**.
+- Conservation de la première ligne : Équipe suivie, Opportunité de Quick Change et Conformité réglementaire.
+- Retour automatique à une disposition verticale sur les écrans plus étroits.
+- Conservation des défilements internes pour ne pas réduire excessivement les textes.
+- Mise à jour de la version et du cache PWA.
+
 # V6.6.0 — Nouveau tableau KartIQ
 
 - Remplacement de la case « Meilleurs karts identifiés » par un tableau compact nommé **KartIQ**.

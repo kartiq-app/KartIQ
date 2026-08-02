@@ -237,3 +237,35 @@
 .analyzer-kartiq-table .kartiq-analysis{font-weight:900;color:#66b7ff}
 @media(max-width:1050px){.analyzer-forecast-panel{grid-column:1}.analyzer-wave-panel{grid-column:2}.analyzer-market-panel{grid-column:1/-1}}
 @media(max-width:700px){.analyzer-forecast-panel,.analyzer-wave-panel,.analyzer-market-panel{grid-column:auto}.analyzer-market-panel{grid-column:1}.analyzer-kartiq-wrap{max-height:300px}.analyzer-kartiq-table{min-width:930px;font-size:10px}.analyzer-kartiq-table th,.analyzer-kartiq-table td{padding:7px 6px}.analyzer-kartiq-table .kartiq-team{max-width:220px}}
+
+/* KartIQ V6.6.1 — dashboard desktop en deux colonnes */
+.analyzer-desktop-dashboard{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(430px,1fr);gap:14px;align-items:start}
+.analyzer-desktop-dashboard>.analyzer-ranking-panel{min-width:0;height:100%}
+.analyzer-strategy-column{display:flex;flex-direction:column;gap:14px;min-width:0}
+.analyzer-strategy-column>.analyzer-panel,.analyzer-strategy-column>.analyzer-queue-panel{min-width:0}
+.analyzer-strategy-column .analyzer-market-panel{padding:0;overflow:hidden}
+.analyzer-strategy-column .analyzer-kartiq-wrap{max-height:390px}
+.analyzer-strategy-column .analyzer-kartiq-table{min-width:900px;font-size:10px}
+.analyzer-strategy-column .analyzer-kartiq-table th,.analyzer-strategy-column .analyzer-kartiq-table td{padding:7px 6px}
+.analyzer-strategy-column .analyzer-kartiq-table .kartiq-team{max-width:210px}
+.analyzer-ranking-panel .analyzer-ranking-wrap{max-height:none}
+.analyzer-queue-panel-compact{padding:12px}
+.analyzer-queue-panel-compact .endurance-queue-header{gap:8px}
+.analyzer-queue-panel-compact .endurance-queue-title{font-size:13px}
+.analyzer-queue-panel-compact .analyzer-queue-subtitle{font-size:9px}
+.analyzer-queue-panel-compact .queue-actions{gap:5px}
+.analyzer-queue-panel-compact .queue-action{padding:7px 8px;font-size:9px}
+.analyzer-queue-panel-compact .queue-actions-label{flex-basis:100%;font-size:9px}
+.analyzer-queue-panel-compact .queue-recommendation{margin-top:8px}
+.analyzer-strategy-column .analyzer-forecast-panel{padding:0}
+.analyzer-strategy-column .analyzer-forecast-list{max-height:300px;overflow:auto}
+.analyzer-wave-panel{min-height:0}
+@media(max-width:1399px){
+  .analyzer-desktop-dashboard{grid-template-columns:1fr}
+  .analyzer-strategy-column{display:grid;grid-template-columns:1fr 1fr;align-items:start}
+  .analyzer-strategy-column .analyzer-market-panel{grid-column:1/-1}
+}
+@media(max-width:800px){
+  .analyzer-strategy-column{display:flex}
+  .analyzer-strategy-column .analyzer-kartiq-wrap{max-height:320px}
+}

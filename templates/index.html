@@ -123,60 +123,64 @@
       </article>
     </section>
 
-    <div class="analyzer-top-grid">
-      <section class="panel analyzer-panel analyzer-forecast-panel">
-        <div class="analyzer-panel-title"><span>PROCHAINS QUICK CHANGES ATTENDUS</span><small>Prévision selon temps en piste, habitudes et limite réglementaire</small></div>
-        <div id="analyzerForecast" class="analyzer-forecast-list"><div class="analyzer-empty">En attente de données…</div></div>
+    <div class="analyzer-desktop-dashboard">
+      <section class="panel analyzer-ranking-panel">
+        <div class="analyzer-panel-title analyzer-ranking-title">
+          <div class="analyzer-ranking-heading">
+            <div class="analyzer-ranking-toolbar-left">
+              <div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT GÉNÉRAL</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button></div>
+              <div class="analyzer-table-controls">
+                <label>TRIER PAR
+                  <select id="analyzerSort" onchange="setAnalyzerSort(this.value)">
+                    <option value="position">Position</option>
+                    <option value="average">T.MOYEN</option>
+                    <option value="track_desc">Temps en piste</option>
+                    <option value="forecast">Arrêt prévu</option>
+                    <option value="score">Note du kart</option>
+                    <option value="stops">Passages</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par KartIQ</small>
+          </div>
+        </div>
+        <div class="analyzer-ranking-wrap">
+          <table class="analyzer-ranking-table">
+            <thead><tr><th>POS</th><th>IN</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>CHRONOS</th><th>TOURS</th><th>EN PISTE</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>T.MOYEN</th><th>ÉCART</th><th>PÉNA.</th><th>ARRÊT PRÉVU</th><th>KART V.</th><th>NOTE</th></tr></thead>
+            <tbody id="analyzerTable"></tbody>
+          </table>
+        </div>
       </section>
-      <section class="panel analyzer-panel analyzer-market-panel">
-        <div class="analyzer-panel-title analyzer-kartiq-title"><span>KartIQ</span></div>
-        <div id="analyzerKartMarket" class="analyzer-kartiq-wrap"><div class="analyzer-empty">Apprentissage en cours…</div></div>
-      </section>
-      <section class="panel analyzer-panel analyzer-wave-panel">
-        <div class="analyzer-panel-title"><span>VAGUE DE QUICK CHANGE</span><small>Équipes susceptibles de rentrer dans les 10 prochaines minutes</small></div>
-        <div class="wave-big"><strong id="analyzerWaveCount">0</strong><span>équipes attendues</span></div>
-        <div id="analyzerWaveStatus" class="wave-status">Aucune vague détectée</div>
-        <div class="wave-meter"><i id="analyzerWaveMeter"></i></div>
-      </section>
+
+      <aside class="analyzer-strategy-column" aria-label="Outils stratégiques">
+        <section class="panel analyzer-panel analyzer-market-panel">
+          <div class="analyzer-panel-title analyzer-kartiq-title"><span>KartIQ</span></div>
+          <div id="analyzerKartMarket" class="analyzer-kartiq-wrap"><div class="analyzer-empty">Apprentissage en cours…</div></div>
+        </section>
+
+        <section class="panel analyzer-queue-panel analyzer-queue-panel-compact" aria-labelledby="kartQueuesTitle">
+          <div class="endurance-queue-header">
+            <div><div id="kartQueuesTitle" class="endurance-queue-title">QUICK CHANGE — FILES DE KARTS</div><div class="analyzer-queue-subtitle">Le premier kart de chaque file est le choix immédiatement disponible.</div></div>
+            <div class="queue-count-control"><span>Files</span><button type="button" data-queue-count="1" onclick="setKartQueueCount(1)">1</button><button type="button" data-queue-count="2" onclick="setKartQueueCount(2)">2</button><button type="button" data-queue-count="3" onclick="setKartQueueCount(3)">3</button></div>
+          </div>
+          <div id="kartQueues" class="kart-queues"></div>
+          <div class="queue-actions"><div id="queueSelectionLabel" class="queue-actions-label">Cliquez sur un kart pour le déplacer ou le retirer.</div><button id="queueAdvanceBtn" class="queue-action advance" type="button" onclick="moveSelectedQueueKart(-1)" disabled>← AVANCER</button><button id="queueBackBtn" class="queue-action back" type="button" onclick="moveSelectedQueueKart(1)" disabled>RECULER →</button><button id="queueRemoveBtn" class="queue-action remove" type="button" onclick="removeSelectedQueueKart()" disabled>✕ RETIRER</button><button class="queue-action reset" type="button" onclick="resetKartQueues()">RÉINITIALISER</button></div>
+          <div class="queue-recommendation"><span>CHOIX CONSEILLÉ</span><strong id="analyzerQueueAdvice">Ajoutez les karts présents dans les files</strong></div>
+        </section>
+
+        <section class="panel analyzer-panel analyzer-forecast-panel">
+          <div class="analyzer-panel-title"><span>OPPORTUNITÉS DE QUICK CHANGE</span><small>Arrêts attendus selon le temps en piste et le règlement</small></div>
+          <div id="analyzerForecast" class="analyzer-forecast-list"><div class="analyzer-empty">En attente de données…</div></div>
+        </section>
+      </aside>
     </div>
 
-    <section class="panel analyzer-ranking-panel">
-      <div class="analyzer-panel-title analyzer-ranking-title">
-        <div class="analyzer-ranking-heading">
-          <div class="analyzer-ranking-toolbar-left">
-            <div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT GÉNÉRAL</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button></div>
-            <div class="analyzer-table-controls">
-              <label>TRIER PAR
-                <select id="analyzerSort" onchange="setAnalyzerSort(this.value)">
-                  <option value="position">Position</option>
-                  <option value="average">T.MOYEN</option>
-                  <option value="track_desc">Temps en piste</option>
-                  <option value="forecast">Arrêt prévu</option>
-                  <option value="score">Note du kart</option>
-                  <option value="stops">Passages</option>
-                </select>
-              </label>
-            </div>
-          </div>
-          <small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par KartIQ</small>
-        </div>
-      </div>
-      <div class="analyzer-ranking-wrap">
-        <table class="analyzer-ranking-table">
-          <thead><tr><th>POS</th><th>IN</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>CHRONOS</th><th>TOURS</th><th>EN PISTE</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>T.MOYEN</th><th>ÉCART</th><th>PÉNA.</th><th>ARRÊT PRÉVU</th><th>KART V.</th><th>NOTE</th></tr></thead>
-          <tbody id="analyzerTable"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="panel analyzer-queue-panel" aria-labelledby="kartQueuesTitle">
-      <div class="endurance-queue-header">
-        <div><div id="kartQueuesTitle" class="endurance-queue-title">QUICK CHANGE — FILES DE KARTS</div><div class="analyzer-queue-subtitle">Le premier kart de chaque file est le choix immédiatement disponible.</div></div>
-        <div class="queue-count-control"><span>Nombre de files</span><button type="button" data-queue-count="1" onclick="setKartQueueCount(1)">1</button><button type="button" data-queue-count="2" onclick="setKartQueueCount(2)">2</button><button type="button" data-queue-count="3" onclick="setKartQueueCount(3)">3</button></div>
-      </div>
-      <div id="kartQueues" class="kart-queues"></div>
-      <div class="queue-actions"><div id="queueSelectionLabel" class="queue-actions-label">Cliquez sur un kart pour le déplacer ou le retirer.</div><button id="queueAdvanceBtn" class="queue-action advance" type="button" onclick="moveSelectedQueueKart(-1)" disabled>← AVANCER</button><button id="queueBackBtn" class="queue-action back" type="button" onclick="moveSelectedQueueKart(1)" disabled>RECULER →</button><button id="queueRemoveBtn" class="queue-action remove" type="button" onclick="removeSelectedQueueKart()" disabled>✕ RETIRER</button><button class="queue-action reset" type="button" onclick="resetKartQueues()">RÉINITIALISER</button></div>
-      <div class="queue-recommendation"><span>CHOIX CONSEILLÉ</span><strong id="analyzerQueueAdvice">Ajoutez les karts présents dans les files</strong></div>
+    <section class="panel analyzer-panel analyzer-wave-panel">
+      <div class="analyzer-panel-title"><span>VAGUE DE QUICK CHANGE</span><small>Équipes susceptibles de rentrer dans les 10 prochaines minutes</small></div>
+      <div class="wave-big"><strong id="analyzerWaveCount">0</strong><span>équipes attendues</span></div>
+      <div id="analyzerWaveStatus" class="wave-status">Aucune vague détectée</div>
+      <div class="wave-meter"><i id="analyzerWaveMeter"></i></div>
     </section>
   </div>
 
