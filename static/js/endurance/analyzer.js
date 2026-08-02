@@ -1,4 +1,4 @@
-/* KartIQ V6.3.1 — Correction du chargement des tours Apex */
+/* KartIQ V6.3.2 — Compteurs de relais et temps moyen Analyzer */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -41,7 +41,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.3.0',
+  appVersion:'6.3.2',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -98,7 +98,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.3.0',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.3.2',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -170,10 +170,26 @@ function analyzerLearnFromState(){
  const now=Date.now();
  (state.drivers||[]).forEach(driver=>{
   const key=analyzerTeamKey(driver);
-  const item=analyzerLearning.teams[key]||{name:driver.driver,stints:[],lastStatus:null,lastTrackSeconds:null,lastStops:null,virtualKart:`V-${String(driver.apex||driver.pos||key).replace(/\D/g,'').padStart(2,'0')}`,updatedAt:now};
+  const item=analyzerLearning.teams[key]||{name:driver.driver,stints:[],lastStatus:null,lastTrackSeconds:null,lastStops:null,lastLapCount:null,currentStintLapSum:0,currentStintLapCount:0,virtualKart:`V-${String(driver.apex||driver.pos||key).replace(/\D/g,'').padStart(2,'0')}`,updatedAt:now};
   const track=analyzerParseDuration(driver.track_timer);
   const stops=analyzerNumeric(driver.pit_stops,null);
   const status=driver.status||'unknown';
+  const lapCount=analyzerNumeric(driver.laps,null);
+  const lastLapSeconds=parseLapTime(driver.last);
+  // Une sortie des stands ouvre un nouveau relais : la moyenne repart de zéro.
+  if(item.lastStatus==='pit'&&status==='track'){
+   item.currentStintLapSum=0;item.currentStintLapCount=0;item.lastLapCount=lapCount;
+  }
+  // Fallback lorsque le flux n'expose pas clairement la transition OUT mais incrémente les arrêts.
+  if(Number.isFinite(stops)&&Number.isFinite(item.lastStops)&&stops>item.lastStops&&status==='track'){
+   item.currentStintLapSum=0;item.currentStintLapCount=0;item.lastLapCount=lapCount;
+  }
+  // Ajoute chaque nouveau tour terminé une seule fois au calcul du relais courant.
+  if(status==='track'&&Number.isFinite(lapCount)&&Number.isFinite(item.lastLapCount)&&lapCount>item.lastLapCount&&Number.isFinite(lastLapSeconds)){
+   const added=Math.max(1,lapCount-item.lastLapCount);
+   // Le live ne fournit qu'un dernier chrono : en cas de saut de plusieurs tours, on ne compte que le dernier reçu.
+   if(added>=1){item.currentStintLapSum=(Number(item.currentStintLapSum)||0)+lastLapSeconds;item.currentStintLapCount=(Number(item.currentStintLapCount)||0)+1}
+  }
   if(item.lastStatus==='track'&&status==='pit'&&Number.isFinite(item.lastTrackSeconds)&&item.lastTrackSeconds>=30){
    if(!item.stints.length||Math.abs(item.stints[item.stints.length-1]-item.lastTrackSeconds)>2)item.stints.push(item.lastTrackSeconds);
    item.stints=item.stints.slice(-12);
@@ -183,12 +199,22 @@ function analyzerLearnFromState(){
    if(!item.stints.length||Math.abs(item.stints[item.stints.length-1]-item.lastTrackSeconds)>2)item.stints.push(item.lastTrackSeconds);
    item.stints=item.stints.slice(-12);
   }
-  item.name=driver.driver;item.lastStatus=status;item.lastTrackSeconds=track;item.lastStops=stops;item.updatedAt=now;
+  item.name=driver.driver;item.lastStatus=status;item.lastTrackSeconds=track;item.lastStops=stops;item.lastLapCount=lapCount;item.updatedAt=now;
   analyzerLearning.teams[key]=item;
  });
  analyzerSaveLearning();
 }
 function analyzerTeamHistory(driver){return analyzerLearning.teams[analyzerTeamKey(driver)]||{stints:[],virtualKart:`V-${String(driver?.apex||driver?.pos||'--')}`}}
+function analyzerCurrentStintAverage(driver){
+ const history=analyzerTeamHistory(driver),sum=Number(history.currentStintLapSum),count=Number(history.currentStintLapCount);
+ return Number.isFinite(sum)&&Number.isFinite(count)&&count>0?sum/count:null;
+}
+function analyzerRelayTimer(driver){
+ const inPit=driver?.status==='pit';
+ const value=inPit?(String(driver?.pit_timer||driver?.timer||'').trim()||'00:00'):(String(driver?.track_timer||driver?.timer||'').trim()||'—');
+ return {inPit,value};
+}
+function analyzerPitIndicator(driver){return driver?.status==='pit'?'<span class="pit-status-badge pit-in analyzer-pit-in">IN</span>':''}
 function analyzerPaceSeconds(driver){return parseLapTime(driver?.pace5||driver?.best)}
 function analyzerGridPace(){return (state.drivers||[]).map(analyzerPaceSeconds).filter(Number.isFinite).sort((a,b)=>a-b)}
 function analyzerKartScore(driver){
@@ -316,7 +342,8 @@ function renderAnalyzer(){
  document.getElementById('analyzerWaveCount').textContent=wave.length;document.getElementById('analyzerWaveStatus').textContent=wave.length>=6?'GROSSE VAGUE IMMINENTE':wave.length>=3?'VAGUE EN FORMATION':wave.length?'MOUVEMENTS ISOLÉS':'AUCUNE VAGUE DÉTECTÉE';document.getElementById('analyzerWaveMeter').style.width=`${Math.min(100,wave.length/Math.max(1,(state.drivers||[]).length)*250)}%`;
  document.getElementById('analyzerTable').innerHTML=sorted.map(x=>{
   const d=x.driver;const isFollowed=d.driver===state.followed_driver;const trackSec=x.forecast.track;const penalty=d.penalty||'—';
-  return `<tr class="${isFollowed?'followed':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(d.pos)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">TOURS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track ${analyzerTrackClass(trackSec)}">${analyzerEscape(d.track_timer||'—')}</td><td>${analyzerEscape(d.pit_stops??'—')}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td>${analyzerEscape(d.gap)}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td>${analyzerEscape(x.history.virtualKart)}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
+  const relayTimer=analyzerRelayTimer(d),stintAverage=analyzerCurrentStintAverage(d);
+  return `<tr class="${isFollowed?'followed':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(d.pos)}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">TOURS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track ${relayTimer.inPit?'pit-time-blue':analyzerTrackClass(trackSec)}">${analyzerEscape(relayTimer.value)}</td><td>${analyzerEscape(d.pit_stops??'—')}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td>${analyzerEscape(d.gap)}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td>${analyzerEscape(x.history.virtualKart)}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
  }).join('');
  renderAnalyzerQueueAdvice();
 }

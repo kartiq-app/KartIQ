@@ -1,3 +1,11 @@
+# V6.3.2 — Analyzer Relais
+
+- Ajout de l’indicateur IN entre POS et KART.
+- La colonne PISTE devient EN PISTE et affiche le compteur Apex du relais courant.
+- Pendant un arrêt, EN PISTE affiche le compteur de stand en bleu.
+- Ajout de T.MOYEN, recalculé à chaque tour du relais courant et remis à zéro à chaque sortie des stands.
+- Mise à jour du cache PWA et de la version.
+
 # V6.3.1 — Correction Tours Analyzer
 
 - Correction du parseur des lignes Apex au format `D<id>.L<numéro>#S1|S2|S3|temps`.

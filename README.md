@@ -1,4 +1,4 @@
-# KartIQ V6.3.1 — Correction Tours Analyzer
+# KartIQ V6.3.2 — Analyzer Relais
 
 Cette version corrige le décodage des tours Apex et conserve la page Analyzer avec deux nouvelles fonctions :
 
