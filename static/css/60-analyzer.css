@@ -158,3 +158,35 @@
   overflow-wrap:normal;
   line-height:1.2;
 }
+
+/* V6.4.3 — colonne IN compacte et colonne ÉQUIPE élargie sans chevauchement */
+.analyzer-ranking-table{
+  table-layout:auto;
+  width:max-content;
+  min-width:100%;
+}
+.analyzer-ranking-table th:nth-child(2),
+.analyzer-ranking-table td:nth-child(2),
+.analyzer-ranking-table .a-pit-indicator{
+  width:24px;
+  min-width:24px;
+  max-width:24px;
+  padding-left:1px;
+  padding-right:1px;
+  box-sizing:border-box;
+}
+.analyzer-ranking-table .analyzer-pit-in{
+  min-width:0;
+  width:100%;
+}
+.analyzer-ranking-table th:nth-child(4),
+.analyzer-ranking-table td:nth-child(4),
+.analyzer-ranking-table.general-ranking-mode .a-team,
+.analyzer-ranking-table.virtual-ranking-mode .a-team{
+  width:max-content;
+  min-width:360px;
+  max-width:none;
+  white-space:nowrap;
+  overflow:visible;
+  text-overflow:clip;
+}

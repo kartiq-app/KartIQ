@@ -1,3 +1,10 @@
+# V6.4.3 — Colonne IN compacte et équipe élargie
+
+- Réduction de la colonne **IN** à la largeur minimale utile.
+- Réattribution de l’espace disponible à la colonne **ÉQUIPE / PILOTE**.
+- Conservation des noms complets sur une seule ligne dans les classements général et virtuel.
+- Le tableau s’élargit et utilise le défilement horizontal au lieu de laisser un nom chevaucher une autre colonne.
+
 # V6.4.2 — Noms complets sur une seule ligne dans Analyzer
 
 - Le nom de l’équipe ou du pilote reste intégralement affiché sur une seule ligne.

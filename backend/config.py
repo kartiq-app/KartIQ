@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.4.2"
-APP_RELEASE_NAME = "Correction des temps PITS Apex"
+APP_VERSION = "6.4.3"
+APP_RELEASE_NAME = "Colonne IN compacte et équipe élargie"
 
 
 def _circuit_sort_key(circuit):
