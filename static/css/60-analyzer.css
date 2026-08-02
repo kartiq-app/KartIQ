@@ -446,3 +446,13 @@
     line-height:1.05;
   }
 }
+
+/* KartIQ V6.6.6 — TOP 10 visible sans défilement vertical sur desktop */
+@media(min-width:1400px){
+  .analyzer-strategy-column .analyzer-kartiq-wrap{
+    max-height:none!important;
+    height:auto!important;
+    overflow-y:visible!important;
+    overflow-x:auto!important;
+  }
+}

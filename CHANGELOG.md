@@ -1,3 +1,10 @@
+# V6.6.6 — TOP 10 KartIQ visible sans défilement
+
+- Suppression du défilement vertical interne du tableau KartIQ sur desktop.
+- Affichage direct des dix premières lignes KartIQ.
+- Conservation du défilement horizontal si la largeur disponible est insuffisante.
+- Comportement responsive mobile et tablette inchangé.
+
 # V6.6.5 — Hauteurs de lignes synchronisées
 
 - Hauteur strictement identique pour les en-têtes Classement et KartIQ sur desktop.
