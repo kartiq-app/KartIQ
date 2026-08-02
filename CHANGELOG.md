@@ -1,3 +1,12 @@
+# V6.9.3 — Prévisions météo horaires locales
+
+- Remplacement des créneaux de 30 minutes par 6 prévisions horaires fournies directement par Open-Meteo.
+- Suppression de toute interpolation ou interprétation météo par KartIQ.
+- Avant `HH:30`, la frise commence à l’heure en cours.
+- À partir de `HH:30`, la frise commence à l’heure suivante.
+- Conservation de l’heure locale propre à chaque circuit.
+- Correction du message « Prévisions à 30 minutes indisponibles ».
+
 # V6.9.2 — Frise météo locale sur 6 heures
 
 - Remplacement du texte de prochaine pluie par une frise horizontale.

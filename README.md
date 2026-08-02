@@ -1,3 +1,9 @@
+# KartIQ V6.9.3
+
+## Prévisions météo horaires locales
+
+La carte météo affiche 6 créneaux horaires issus directement de l’API Open-Meteo, sans interpolation. Avant la demi-heure, le premier créneau est l’heure locale en cours ; à partir de la demi-heure, le premier créneau est l’heure suivante.
+
 
 ### Frise météo locale sur 6 heures (V6.9.2)
 

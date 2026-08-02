@@ -1,4 +1,4 @@
-# Coordonnées météo des circuits — V6.9.2
+# Coordonnées météo des circuits — V6.9.3
 
 29 circuits disposent désormais de coordonnées GPS locales utilisées en priorité par le module météo.
 
