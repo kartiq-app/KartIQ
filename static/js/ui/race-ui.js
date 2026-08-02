@@ -211,6 +211,7 @@ function render(){
  if(state.qualif_crossing&&state.qualif_crossing.event_id!==lastCrossEvent){lastCrossEvent=state.qualif_crossing.event_id;const isBest=Boolean(state.qualif_crossing.is_session_best);crossPos.textContent='P'+state.qualif_crossing.position;crossBest.classList.toggle('show',isBest);crossDelta.textContent=state.qualif_crossing.delta;crossDelta.classList.toggle('delta-first',isBest);crossDelta.classList.toggle('delta-behind',!isBest);crossReference.textContent=state.qualif_crossing.reference_driver||'—';crossingOverlay.classList.add('show');clearTimeout(crossTimer);crossTimer=setTimeout(async()=>{crossingOverlay.classList.remove('show');await api('/api/clear-crossing')},6000)}
  if(currentMode!=='analyzer')top8PitOverlay.classList.remove('show');if(state.generic_alert&&state.generic_alert.event_id!==lastGenericEvent){lastGenericEvent=state.generic_alert.event_id;if(state.generic_alert.kind==='top8_pit_entry'&&currentMode==='analyzer'){top8AlertTeam.textContent=state.generic_alert.team||'—';top8AlertPosition.textContent='P'+(state.generic_alert.position||'—')+' / Top 8';top8PitOverlay.classList.add('show')}else if(state.generic_alert.kind!=='top8_pit_entry'){alertTitle.textContent=state.generic_alert.title;alertLine1.textContent=state.generic_alert.line1;alertLine2.textContent=state.generic_alert.line2;genericOverlay.classList.add('show')}}
  renderQualificationFocus();
+ if(typeof renderAnalyzer==='function')renderAnalyzer();
 }
 function reconnectLive(){connectApexBrowser(true)}
 async function changeCircuit(){

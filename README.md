@@ -1,3 +1,20 @@
+# KartIQ V6.1.0 — Analyzer stratégique Endurance
+
+Cette version remplace entièrement la page Analyzer et ajoute :
+
+- classement général Apex enrichi avec **temps en piste** ;
+- prévision des prochains arrêts et détection des vagues de Quick Change ;
+- réglage du règlement de course ;
+- suivi des passages obligatoires et de la limite de relais ;
+- apprentissage local des durées de relais ;
+- classement et notation progressive des karts virtuels ;
+- indice d’opportunité et recommandation rentrer / attendre ;
+- files de Quick Change intégrées.
+
+Les prédictions deviennent plus précises au fil des relais. Les informations qu’Apex ne transmet pas — notamment la file réellement choisie et l’identité physique du kart — nécessitent toujours une validation manuelle dans les files.
+
+---
+
 # KartIQ V6.0.28 — Restauration Endurance et Analyzer
 
 Cette version repart strictement de la V6.0.26 validée et conserve les quatre modes ainsi que les pages Endurance et Focus Endurance.

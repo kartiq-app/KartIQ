@@ -1,4 +1,4 @@
-const CACHE = 'kartiq-v6-0-40';
+const CACHE = 'kartiq-v6-1-0';
 
 const ASSETS = [
   '/',
@@ -9,11 +9,13 @@ const ASSETS = [
   '/static/css/30-modes-portrait.css',
   '/static/css/40-landscape-overrides.css',
   '/static/css/50-endurance-latest.css',
+  '/static/css/60-analyzer.css',
   '/static/js/core/core.js',
   '/static/js/sprint/sprint.js',
   '/static/js/qualification/qualification.js',
   '/static/js/ui/race-ui.js',
   '/static/js/endurance/queues.js',
+  '/static/js/endurance/analyzer.js',
   '/static/js/core/bootstrap.js',
   '/static/manifest.json',
   '/static/fonts/f1-regular.woff2',

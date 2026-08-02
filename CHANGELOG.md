@@ -1,3 +1,13 @@
+# V6.1.0 — Analyzer stratégique Endurance
+
+- Remplacement complet de l’ancienne page Analyzer.
+- Classement général Apex enrichi : position, kart, équipe, tours, temps en piste, stands, dernier, meilleur, écart, pénalité, arrêt prévu, kart virtuel et note.
+- Menu Règlement configurable : durée, passages obligatoires, relais minimum/maximum, temps minimum dans les stands, fermeture des stands, marge de sécurité et temps minimum par pilote.
+- Prévision des prochains Quick Changes à partir du temps en piste, de la limite réglementaire et de l’historique appris.
+- Timeline des arrêts attendus, détection de vagues, classement des karts et indice d’opportunité.
+- Gestion des files de Quick Change conservée et intégrée à la recommandation.
+- Apprentissage local persistant des durées de relais.
+
 ## 6.0.40
 
 - Sprint desktop et portrait : chaque pénalité est affichée sur deux lignes, avec heure, pilote/équipe et durée sur la première, puis le détail sur la seconde.

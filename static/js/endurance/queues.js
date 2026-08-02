@@ -34,5 +34,6 @@ function renderKartQueues(){
  const label=document.getElementById('queueSelectionLabel');if(label)label.textContent=selected?`Kart ${selected} sélectionné — File ${queueLetter(s.queue)}, position ${s.index+1}`:'Cliquez sur un kart pour le déplacer ou le retirer.';
  const advance=document.getElementById('queueAdvanceBtn'),back=document.getElementById('queueBackBtn'),remove=document.getElementById('queueRemoveBtn');
  if(advance)advance.disabled=!s||s.index<=0;if(back)back.disabled=!s||s.index>=kartQueueState.queues[s.queue].length-1;if(remove)remove.disabled=!s;
+ if(typeof renderAnalyzerQueueAdvice==='function')renderAnalyzerQueueAdvice();
 }
 
