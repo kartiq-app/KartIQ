@@ -1,3 +1,11 @@
+# V6.3.3 — Correction compteur EN PISTE Analyzer
+
+- La colonne **EN PISTE** utilise désormais exclusivement la colonne Apex de type `otr`.
+- Les classes génériques `in` et `to` des autres colonnes ne peuvent plus écraser le compteur du relais.
+- Quand une équipe roule, KartIQ affiche le temps transmis par Apex depuis sa dernière sortie des stands.
+- Quand elle rentre, le compteur de stand Apex reste affiché en bleu jusqu'à la sortie.
+- Mise à jour de la version et du cache PWA.
+
 # V6.3.2 — Analyzer Relais
 
 - Ajout de l’indicateur IN entre POS et KART.

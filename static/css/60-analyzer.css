@@ -119,7 +119,7 @@
 .apex-history-teams-list{margin:0 0 12px}.apex-history-teams-title{color:#8d96a5;font-size:9px;font-weight:900;letter-spacing:.12em;margin-bottom:7px}.apex-history-team-buttons{display:flex;gap:6px;overflow-x:auto;padding-bottom:5px}.apex-history-team-buttons button{flex:0 0 auto;max-width:230px;display:flex;align-items:center;gap:8px;background:#0a0d12;color:#fff;border:1px solid #2d3440;border-radius:7px;padding:8px 10px;cursor:pointer}.apex-history-team-buttons button:hover{border-color:#ff7a00}.apex-history-team-buttons b{color:#ff8a1f}.apex-history-team-buttons span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:800}
 
 
-/* V6.3.2 — état IN, compteur de relais et temps moyen */
+/* V6.3.3 — état IN, compteur de relais et temps moyen */
 .analyzer-ranking-table .a-pit-indicator{width:42px;min-width:42px;text-align:center;padding-left:3px;padding-right:3px}
 .analyzer-ranking-table .analyzer-pit-in{display:inline-flex;align-items:center;justify-content:center;min-width:28px}
 .analyzer-ranking-table .pit-time-blue{color:#33a9ff!important;font-weight:900}

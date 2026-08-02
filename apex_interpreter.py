@@ -18,6 +18,12 @@ FIELD_BY_APEX_TYPE = {
     "int": "interval",
     "blp": "best_lap",
     "tlp": "laps",
+    # Compteur dynamique Apex « On track / En piste ». La classe CSS de la
+    # cellule (`in` ou `to`) indique ensuite si le concurrent roule ou se trouve
+    # dans les stands. Il est essentiel de limiter cette logique à la colonne
+    # `otr`, car de nombreuses autres cellules Apex utilisent aussi la classe
+    # générique `in`.
+    "otr": "on_track_timer",
     # Types fréquemment employés par les configurations Apex pour le nombre d'arrêts.
     "pit": "pit_stops",
     "pst": "pit_stops",
@@ -145,28 +151,30 @@ class ApexInterpreter:
                 row["best_lap"] = value
         elif field in {"gap", "interval"}:
             row[field] = value or None
-        elif code in {"to", "*in"}:
-            # Sur la configuration Apex observée en endurance, `to` est le
-            # compteur dynamique actif pendant le passage aux stands. Tant que
-            # cette valeur progresse, le kart est réellement IN.
+        elif field == "on_track_timer":
+            # La colonne Apex `otr` porte le compteur du relais en cours.
+            # Sa classe `to` correspond au compteur de stand, tandis que `in`
+            # correspond au temps écoulé depuis la dernière sortie des stands.
+            # On ne doit surtout pas interpréter les classes `in`/`to` d'autres
+            # colonnes, sous peine de remplacer le compteur de relais par un
+            # écart, un meilleur tour ou une autre valeur du tableau.
             old = row.get("status")
-            row["status"] = "pit"
-            row["pit_timer"] = value or row.get("pit_timer")
-            row["timer"] = row.get("pit_timer")
-            if not initial and old != "pit":
-                self._emit(update.row, "pit_in", "Entrée aux stands", "Décompte Apex TO", value, "pit")
-        elif code in {"in", "*out"}:
-            # Après un compteur `to`, Apex repasse sur `in` et recommence un
-            # compteur de temps en piste (0:00, 0:01, ...). Cette transition
-            # constitue la sortie des stands. La dernière valeur `to` reste
-            # mémorisée comme durée du passage aux stands.
-            old = row.get("status")
-            row["status"] = "track"
-            if code == "in":
+            if code in {"to", "*in"}:
+                row["status"] = "pit"
+                row["pit_timer"] = value or row.get("pit_timer")
+                row["timer"] = row.get("pit_timer")
+                if not initial and old != "pit":
+                    self._emit(update.row, "pit_in", "Entrée aux stands", "Décompte Apex TO", value, "pit")
+            else:
+                # Apex utilise normalement `in` lorsque le kart est en piste.
+                # Le fallback accepte aussi les variantes de classe rencontrées
+                # sur certains habillages, puisque le type de colonne `otr` est
+                # désormais la source de vérité.
+                row["status"] = "track"
                 row["track_timer"] = value or row.get("track_timer")
                 row["timer"] = row.get("track_timer")
-            if not initial and old == "pit":
-                self._emit(update.row, "pit_out", "Sortie des stands", "Reprise du compteur Apex IN", row.get("pit_timer") or "", "track")
+                if not initial and old == "pit":
+                    self._emit(update.row, "pit_out", "Sortie des stands", "Reprise du compteur Apex EN PISTE", row.get("pit_timer") or "", "track")
 
         if initial:
             self._initialized_rows.add(update.row)
