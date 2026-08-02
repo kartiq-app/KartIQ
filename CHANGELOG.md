@@ -1,3 +1,11 @@
+# V6.7.1 — Tableau KartIQ complet sans scroll horizontal
+
+- Toutes les colonnes du tableau KartIQ tiennent désormais dans la carte sur desktop.
+- Suppression du défilement horizontal interne du panneau KartIQ.
+- Colonnes compactées et largeur prioritaire conservée pour ÉQUIPE / PILOTE.
+- Alignement vertical de « Trier par » avec le titre KartIQ, comme dans le classement principal.
+- Le TOP 10 reste affiché directement sans défilement vertical.
+
 # V6.7.0 — Fin de relais et tri stratégique KartIQ
 
 - Ajout de la colonne **FIN RELAIS** après la colonne **R** dans le tableau KartIQ.

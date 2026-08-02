@@ -475,3 +475,93 @@
   .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(12){width:58px;padding-left:3px;padding-right:3px}
 }
 @media(max-width:700px){.analyzer-kartiq-sort{font-size:9px}.analyzer-kartiq-sort select{height:26px;font-size:10px}}
+
+/* KartIQ V6.7.1 — tableau complet sans scroll horizontal et barre de tri alignée */
+@media(min-width:1400px){
+  /* Le titre et le tri occupent toute la hauteur du bandeau, comme la barre du classement principal. */
+  .analyzer-strategy-column .analyzer-kartiq-title{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:8px!important;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-title>span,
+  .analyzer-strategy-column .analyzer-kartiq-sort{
+    height:100%!important;
+    min-height:0!important;
+    display:flex!important;
+    align-items:center!important;
+    margin:0!important;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-sort select{
+    flex:0 0 auto;
+  }
+
+  /* Toutes les colonnes KartIQ tiennent dans la carte : aucun défilement horizontal. */
+  .analyzer-strategy-column .analyzer-kartiq-wrap{
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:hidden!important;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-table{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    table-layout:fixed!important;
+    font-size:8.5px!important;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-table th{
+    padding-left:2px!important;
+    padding-right:2px!important;
+    font-size:7.5px!important;
+    letter-spacing:0!important;
+    overflow:hidden;
+    text-overflow:clip;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-table td{
+    padding-left:2px!important;
+    padding-right:2px!important;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* Colonnes compactes ; l'espace restant revient au nom de l'équipe. */
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(1),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(1){width:4.2%!important;min-width:0!important;max-width:none!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(2),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(2){width:4.4%!important;min-width:0!important;max-width:none!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(3),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(3){width:5.6%!important;min-width:0!important;max-width:none!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(4),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(4){width:22.5%!important;min-width:0!important;max-width:none!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(5),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(5){width:6.3%!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(6),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(6){width:7.0%!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(7),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(7){width:9.2%!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(8),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(8){width:6.0%!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(9),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(9){width:3.8%!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(10),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(10){width:10.5%!important;min-width:0!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(11),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(11){width:7.0%!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(12),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(12){width:13.5%!important}
+
+  .analyzer-strategy-column .analyzer-kartiq-table .kartiq-team{
+    width:auto!important;
+    min-width:0!important;
+    max-width:none!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-table .kartiq-top,
+  .analyzer-strategy-column .analyzer-kartiq-table .kartiq-kart,
+  .analyzer-strategy-column .analyzer-kartiq-table .kartiq-score{
+    font-size:12px!important;
+  }
+}
