@@ -456,3 +456,22 @@
     overflow-x:auto!important;
   }
 }
+
+
+/* KartIQ V6.7.0 — colonne FIN RELAIS et tri stratégique */
+.analyzer-kartiq-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.analyzer-kartiq-sort{display:flex;align-items:center;gap:7px;color:#aab2bf;font-size:10px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
+.analyzer-kartiq-sort select{height:28px;border:1px solid #323945;border-radius:6px;background:#0d1117;color:#fff;padding:0 24px 0 8px;font-size:11px;font-weight:800}
+.analyzer-kartiq-table .kartiq-relay-end{font-weight:900;color:#fff}
+.analyzer-kartiq-table .kartiq-relay-end.warning{color:#ff9b32}
+.analyzer-kartiq-table .kartiq-relay-end.danger{color:#ff5c5c}
+@media(min-width:1400px){
+  .analyzer-strategy-column .analyzer-kartiq-table{min-width:990px!important}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(10),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(10){width:66px;min-width:66px;padding-left:3px;padding-right:3px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(11),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(11){width:42px;padding-left:2px;padding-right:2px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(12),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(12){width:58px;padding-left:3px;padding-right:3px}
+}
+@media(max-width:700px){.analyzer-kartiq-sort{font-size:9px}.analyzer-kartiq-sort select{height:26px;font-size:10px}}

@@ -1,3 +1,13 @@
+# V6.7.0 — Fin de relais et tri stratégique KartIQ
+
+- Ajout de la colonne **FIN RELAIS** après la colonne **R** dans le tableau KartIQ.
+- Compte à rebours calculé depuis la durée maximale de relais définie dans le règlement.
+- Affichage `HH:MM` au-dessus d’une heure et `MM:SS` sous une heure.
+- Décompte des secondes en temps réel.
+- Mise en orange sous 10 minutes et en rouge sous 5 minutes.
+- Ajout du tri KartIQ **Aucun / Fin relais**.
+- Le tri Fin relais place en tête les équipes qui doivent rentrer en premier, tout en conservant leur véritable rang TOP KartIQ.
+
 # V6.6.6 — TOP 10 KartIQ visible sans défilement
 
 - Suppression du défilement vertical interne du tableau KartIQ sur desktop.
