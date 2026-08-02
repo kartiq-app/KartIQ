@@ -1,3 +1,11 @@
+# V6.4.2 — Noms complets sur une seule ligne dans Analyzer
+
+- Le nom de l’équipe ou du pilote reste intégralement affiché sur une seule ligne.
+- La règle s’applique au Classement général et au Classement virtuel.
+- Suppression des retours à la ligne et de la troncature par points de suspension.
+- Élargissement automatique de la colonne ÉQUIPE / PILOTE ; le tableau reste défilable horizontalement sur les petits écrans.
+- Mise à jour de la version applicative et du cache PWA.
+
 # V6.4.1 — Noms complets dans le classement général
 
 - Le nom de l’équipe ou du pilote n’est plus tronqué dans le **Classement général** de l’Analyzer.
