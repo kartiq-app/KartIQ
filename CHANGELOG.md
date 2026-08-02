@@ -1,3 +1,10 @@
+# V6.6.5 — Hauteurs de lignes synchronisées
+
+- Hauteur strictement identique pour les en-têtes Classement et KartIQ sur desktop.
+- Hauteur strictement identique pour toutes les lignes des deux tableaux.
+- Padding, line-height et alignement vertical harmonisés.
+- Les boutons STATS et indicateurs IN ne modifient plus la hauteur des lignes du classement principal.
+
 # V6.6.4 — Équipe suivie en vert dans les deux classements
 
 - Le nom de l’équipe suivie reste affiché en vert dans le Classement général.

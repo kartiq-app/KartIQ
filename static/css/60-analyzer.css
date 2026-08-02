@@ -385,3 +385,64 @@
 .analyzer-ranking-table tr.followed .a-team{
   color:#38dc88!important;
 }
+
+/* KartIQ V6.6.5 — synchronisation stricte des hauteurs du double classement */
+@media(min-width:1400px){
+  /* Une seule géométrie pour les deux tableaux côte à côte. */
+  .analyzer-ranking-table thead tr,
+  .analyzer-kartiq-table thead tr{
+    height:38px!important;
+    min-height:38px!important;
+  }
+  .analyzer-ranking-table thead th,
+  .analyzer-kartiq-table thead th{
+    box-sizing:border-box!important;
+    height:38px!important;
+    min-height:38px!important;
+    padding-top:0!important;
+    padding-bottom:0!important;
+    line-height:38px!important;
+    vertical-align:middle!important;
+  }
+
+  .analyzer-ranking-table tbody tr,
+  .analyzer-kartiq-table tbody tr{
+    height:42px!important;
+    min-height:42px!important;
+  }
+  .analyzer-ranking-table tbody td,
+  .analyzer-kartiq-table tbody td{
+    box-sizing:border-box!important;
+    height:42px!important;
+    min-height:42px!important;
+    padding-top:0!important;
+    padding-bottom:0!important;
+    line-height:42px!important;
+    vertical-align:middle!important;
+  }
+
+  /* Les éléments internes ne doivent plus modifier la hauteur de ligne. */
+  .analyzer-ranking-table tbody td>* ,
+  .analyzer-kartiq-table tbody td>*{
+    vertical-align:middle;
+  }
+  .analyzer-ranking-table .analyzer-laps-btn{
+    box-sizing:border-box;
+    height:28px;
+    min-height:28px;
+    padding-top:0;
+    padding-bottom:0;
+    line-height:26px;
+    vertical-align:middle;
+  }
+  .analyzer-ranking-table .analyzer-pit-in{
+    height:28px;
+    line-height:28px;
+    vertical-align:middle;
+  }
+  .analyzer-ranking-table .virtual-stop-add,
+  .analyzer-ranking-table .virtual-time-add,
+  .analyzer-ranking-table .virtual-real-pos{
+    line-height:1.05;
+  }
+}
