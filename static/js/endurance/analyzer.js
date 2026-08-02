@@ -1,4 +1,4 @@
-/* KartIQ V6.9.6 — Prévisions météo horaires locales */
+/* KartIQ V6.10.1 — Rendu frontend MET Norway */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -85,7 +85,18 @@ async function loadAnalyzerWeather(force=false){
  if(!force&&analyzerWeatherLoading)return;
  if(!force&&analyzerWeatherCircuitId===circuitId&&analyzerWeatherData&&now-analyzerWeatherLastFetch<ANALYZER_WEATHER_REFRESH_MS)return;
  analyzerWeatherLoading=true;analyzerWeatherCircuitId=circuitId;renderAnalyzerWeather();
- try{const response=await fetch(`/api/weather?circuit_id=${encodeURIComponent(circuitId)}`,{cache:'no-store'});const payload=await response.json();if(!response.ok||!payload.ok)throw new Error(payload.error||'Météo indisponible');if(analyzerWeatherCircuitId!==circuitId)return;analyzerWeatherData=payload.weather;analyzerWeatherLastFetch=Date.now();}
+ try{
+  const response=await fetch(`/api/weather?circuit_id=${encodeURIComponent(circuitId)}&_=${Date.now()}`,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+  const payload=await response.json();
+  if(!response.ok||payload?.ok===false)throw new Error(payload?.error||'Météo indisponible');
+  if(analyzerWeatherCircuitId!==circuitId)return;
+  const weather=payload?.weather&&typeof payload.weather==='object'?payload.weather:payload;
+  const timelineCandidates=[weather?.timeline,weather?.hourly,weather?.forecast,payload?.timeline,payload?.hourly,payload?.forecast];
+  const timeline=timelineCandidates.find(value=>Array.isArray(value)&&value.length)||[];
+  analyzerWeatherData={...(weather||{}),timeline};
+  console.info('[KartIQ météo]',{source:analyzerWeatherData.source,timeline:timeline.length,debug:analyzerWeatherData.hourly_debug});
+  analyzerWeatherLastFetch=Date.now();
+ }
  catch(error){console.warn('[KartIQ météo]',error);if(analyzerWeatherCircuitId===circuitId)analyzerWeatherData=null;}
  finally{if(analyzerWeatherCircuitId===circuitId){analyzerWeatherLoading=false;renderAnalyzerWeather();}}
 }

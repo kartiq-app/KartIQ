@@ -1,3 +1,11 @@
+# V6.10.1 — Correction affichage de la frise MET Norway
+
+- Lecture explicite de `response.weather.timeline` côté Analyzer.
+- Compatibilité de repli avec `timeline`, `hourly` et `forecast`.
+- Requête météo sans cache avec identifiant temporel.
+- Purge unique des anciens caches PWA et réinscription du service worker.
+- Diagnostic de la quantité de créneaux reçus dans la console navigateur.
+
 # V6.10.0 — Prévisions météo MET Norway
 
 - Remplacement complet du moteur de prévisions Open-Meteo par MET Norway Locationforecast 2.0.
