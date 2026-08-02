@@ -1,4 +1,4 @@
-/* KartIQ V6.5.3 — Ajout Karting des Fagnes Mariembourg */
+/* KartIQ V6.6.0 — Tableau KartIQ et évolution des scores */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -41,7 +41,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.5.3',
+  appVersion:'6.6.0',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -98,7 +98,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.5.3',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.6.0',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -147,6 +147,28 @@ let analyzerRelayHydrationLoading=false;
 let analyzerRelayHydrationToken=0;
 let analyzerRelayHydrationScheduled=null;
 let analyzerLearning={teams:{},startedAt:Date.now()};
+const analyzerKartEvolutionHistory=new Map();
+
+function analyzerKartEvolution(driver,metrics){
+ const key=`${analyzerActiveSessionId||analyzerSessionCircuit()}:${analyzerTeamKey(driver)}:${metrics.relayIndex}`;
+ let history=analyzerKartEvolutionHistory.get(key)||[];
+ const laps=Number(metrics.laps)||0,score=Number(metrics.score);
+ if(Number.isFinite(score)&&laps>0&&(!history.length||history[history.length-1].laps!==laps)){
+  history.push({laps,score});
+  history=history.slice(-16);
+  analyzerKartEvolutionHistory.set(key,history);
+ }
+ const reference=[...history].reverse().find(point=>point.laps<=laps-3);
+ if(!reference)return {delta:0,label:'●',className:'stable',title:'Évolution disponible après 3 nouveaux tours'};
+ const delta=Math.round(score-reference.score);
+ if(delta>=2)return {delta,label:`▲ +${delta}`,className:'up',title:`+${delta} points sur les 3 derniers tours`};
+ if(delta<=-2)return {delta,label:`▼ ${delta}`,className:'down',title:`${delta} points sur les 3 derniers tours`};
+ return {delta,label:'●',className:'stable',title:'Score stable sur les 3 derniers tours'};
+}
+function analyzerKartDeltaLabel(value){
+ if(!Number.isFinite(value))return '—';
+ return `${value>=0?'+':''}${value.toFixed(3)}`;
+}
 
 function analyzerEscape(value){return String(value??'—').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
 function analyzerParseDuration(value){
@@ -503,7 +525,7 @@ function renderAnalyzer(){
  const forecastRows=all.filter(x=>x.driver.status==='pit'||(Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=900)).sort((a,b)=>(a.forecast.seconds??999999)-(b.forecast.seconds??999999)).slice(0,10);
  document.getElementById('analyzerForecast').innerHTML=forecastRows.length?forecastRows.map(x=>`<div class="analyzer-forecast-row"><span class="analyzer-forecast-time">${x.driver.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</span><span><span class="analyzer-forecast-team">${analyzerEscape(x.driver.driver)}</span><span class="analyzer-forecast-meta">Kart virtuel ${analyzerEscape(x.history.virtualKart)}</span></span><span class="analyzer-score-pill ${analyzerScoreClass(x.score)}">${x.score}/100</span><span class="analyzer-confidence">${x.forecast.confidence}%</span></div>`).join(''):'<div class="analyzer-empty">Aucun arrêt attendu dans les 15 prochaines minutes.</div>';
  const market=all.map(x=>({...x,relayMetrics:analyzerRelayMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).slice(0,8);
- document.getElementById('analyzerKartMarket').innerHTML=market.length?market.map((x,i)=>{const m=x.relayMetrics;const gain=Number.isFinite(m.correctedGain)?`${m.correctedGain>=0?'+':''}${m.correctedGain.toFixed(3)} s corrigé`:'référence en construction';return `<div class="analyzer-market-row"><b>${i+1}</b><span><span class="analyzer-market-team">Relais ${m.relayIndex} — ${analyzerEscape(x.driver.driver)}</span><span class="analyzer-market-meta">T.MOYEN ${Number.isFinite(m.average)?analyzerEscape(formatApexMilliseconds(m.average*1000)):'—'} · ${m.laps} tours · ${analyzerEscape(gain)}</span></span><span class="analyzer-score-pill ${analyzerScoreClass(m.score)}">${m.score}</span><span class="analyzer-confidence">${m.confidence}%</span></div>`}).join(''):`<div class="analyzer-empty">${analyzerRelayHydrationLoading?'Reconstitution des relais en cours depuis STATS…':'Au moins 3 tours propres sont nécessaires pour évaluer un relais.'}</div>`;
+ document.getElementById('analyzerKartMarket').innerHTML=market.length?`<table class="analyzer-kartiq-table"><thead><tr><th>TOP</th><th>POS</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>SCORE</th><th>ÉVOL.</th><th>T.MOYEN</th><th>Δ</th><th>R</th><th>TOURS</th><th>ANALYSE</th></tr></thead><tbody>${market.map((x,i)=>{const d=x.driver,m=x.relayMetrics,evolution=analyzerKartEvolution(d,m),kart=validKartNumber(d)||d.apex||'—',deltaClass=Number.isFinite(m.correctedGain)?(m.correctedGain>0?'positive':m.correctedGain<0?'negative':'neutral'):'neutral';return `<tr onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="kartiq-top">${i+1}</td><td class="kartiq-pos">${analyzerEscape(d.pos||'—')}</td><td class="kartiq-kart">${analyzerEscape(kart)}</td><td class="kartiq-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</td><td class="kartiq-score ${analyzerScoreClass(m.score)}">${m.score}</td><td class="kartiq-evolution ${evolution.className}" title="${analyzerEscape(evolution.title)}">${analyzerEscape(evolution.label)}</td><td class="kartiq-average">${Number.isFinite(m.average)?analyzerEscape(formatApexMilliseconds(m.average*1000)):'—'}</td><td class="kartiq-delta ${deltaClass}" title="Gain corrigé par l'évolution du plateau">${analyzerEscape(analyzerKartDeltaLabel(m.correctedGain))}</td><td>${m.relayIndex}</td><td>${m.laps}</td><td class="kartiq-analysis">${m.confidence}%</td></tr>`}).join('')}</tbody></table>`:`<div class="analyzer-empty">${analyzerRelayHydrationLoading?'Reconstitution des relais en cours depuis STATS…':'Au moins 3 tours propres sont nécessaires pour évaluer un relais.'}</div>`;
  const wave=all.filter(x=>Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=600&&x.driver.status!=='pit');
  document.getElementById('analyzerWaveCount').textContent=wave.length;document.getElementById('analyzerWaveStatus').textContent=wave.length>=6?'GROSSE VAGUE IMMINENTE':wave.length>=3?'VAGUE EN FORMATION':wave.length?'MOUVEMENTS ISOLÉS':'AUCUNE VAGUE DÉTECTÉE';document.getElementById('analyzerWaveMeter').style.width=`${Math.min(100,wave.length/Math.max(1,(state.drivers||[]).length)*250)}%`;
  document.getElementById('analyzerTable').innerHTML=sorted.map(x=>{

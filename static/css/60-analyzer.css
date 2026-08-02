@@ -209,3 +209,31 @@
 /* V6.5.0 — modèle de relais-karts */
 .analyzer-market-meta{font-variant-numeric:tabular-nums}
 .analyzer-market-row{grid-template-columns:38px minmax(180px,1fr) 65px 70px}
+
+
+/* KartIQ V6.6.0 — tableau stratégique KartIQ */
+.analyzer-forecast-panel{grid-column:1/3}
+.analyzer-wave-panel{grid-column:3}
+.analyzer-market-panel{grid-column:1/-1;padding:0;overflow:hidden}
+.analyzer-kartiq-title{padding:13px 14px;margin:0}
+.analyzer-kartiq-title>span{font-size:18px}
+.analyzer-kartiq-wrap{overflow-x:auto;max-height:310px;overflow-y:auto}
+.analyzer-kartiq-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1040px;font-size:11px;font-variant-numeric:tabular-nums}
+.analyzer-kartiq-table thead{position:sticky;top:0;z-index:3}
+.analyzer-kartiq-table th{background:#151a23;color:#aab2bf;font-size:9px;letter-spacing:.05em;padding:9px 8px;border-bottom:1px solid #323945;white-space:nowrap;text-align:center}
+.analyzer-kartiq-table td{padding:8px;border-bottom:1px solid #1b2029;text-align:center;white-space:nowrap}
+.analyzer-kartiq-table tbody tr{background:#0a0d12;cursor:pointer}
+.analyzer-kartiq-table tbody tr:nth-child(even){background:#0d1117}
+.analyzer-kartiq-table tbody tr:hover{background:#171d27}
+.analyzer-kartiq-table .kartiq-top{font-family:var(--font-torque,Arial,sans-serif);font-size:15px;color:#ff8a1f;font-weight:900}
+.analyzer-kartiq-table .kartiq-pos{font-weight:900}
+.analyzer-kartiq-table .kartiq-kart{font-family:var(--font-torque,Arial,sans-serif);font-size:14px;font-weight:900;color:#fff}
+.analyzer-kartiq-table .kartiq-team{text-align:left;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+.analyzer-kartiq-table .kartiq-score{font-family:var(--font-torque,Arial,sans-serif);font-size:15px;font-weight:900}
+.analyzer-kartiq-table .kartiq-score.high{color:#38dc88}.analyzer-kartiq-table .kartiq-score.mid{color:#ff9b32}.analyzer-kartiq-table .kartiq-score.low{color:#ff5c5c}
+.analyzer-kartiq-table .kartiq-evolution{font-weight:900}.analyzer-kartiq-table .kartiq-evolution.up{color:#38dc88}.analyzer-kartiq-table .kartiq-evolution.down{color:#ff5c5c}.analyzer-kartiq-table .kartiq-evolution.stable{color:#8e98a8}
+.analyzer-kartiq-table .kartiq-average{font-weight:900;color:#fff}
+.analyzer-kartiq-table .kartiq-delta{font-weight:900}.analyzer-kartiq-table .kartiq-delta.positive{color:#38dc88}.analyzer-kartiq-table .kartiq-delta.negative{color:#ff5c5c}.analyzer-kartiq-table .kartiq-delta.neutral{color:#8e98a8}
+.analyzer-kartiq-table .kartiq-analysis{font-weight:900;color:#66b7ff}
+@media(max-width:1050px){.analyzer-forecast-panel{grid-column:1}.analyzer-wave-panel{grid-column:2}.analyzer-market-panel{grid-column:1/-1}}
+@media(max-width:700px){.analyzer-forecast-panel,.analyzer-wave-panel,.analyzer-market-panel{grid-column:auto}.analyzer-market-panel{grid-column:1}.analyzer-kartiq-wrap{max-height:300px}.analyzer-kartiq-table{min-width:930px;font-size:10px}.analyzer-kartiq-table th,.analyzer-kartiq-table td{padding:7px 6px}.analyzer-kartiq-table .kartiq-team{max-width:220px}}

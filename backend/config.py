@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.5.3"
-APP_RELEASE_NAME = "Ajout Karting des Fagnes Mariembourg"
+APP_VERSION = "6.6.0"
+APP_RELEASE_NAME = "Nouveau tableau KartIQ"
 
 
 def _circuit_sort_key(circuit):

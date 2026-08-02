@@ -1,3 +1,15 @@
+# V6.6.0 — Nouveau tableau KartIQ
+
+- Remplacement de la case « Meilleurs karts identifiés » par un tableau compact nommé **KartIQ**.
+- Ajout des colonnes **TOP, POS, KART, ÉQUIPE / PILOTE, SCORE, ÉVOL., T.MOYEN, Δ, R, TOURS et ANALYSE**.
+- **TOP** classe les karts selon leur score relatif à la grille, tandis que **POS** conserve la position réelle de l’équipe.
+- Le numéro du kart actuellement utilisé est affiché dans une colonne dédiée.
+- Ajout de l’évolution du score sur trois tours : hausse, baisse ou stabilité.
+- Le delta affiche le gain ou la perte du relais, corrigé de l’évolution du plateau.
+- Suppression des textes techniques et de la mention « référence en construction ».
+- Tableau défilable horizontalement sur les petits écrans et lisible sans texte miniature.
+- Mise à jour de la version et du cache PWA.
+
 # V6.5.3 — Ajout Karting des Fagnes Mariembourg
 
 - Ajout du circuit **Karting des Fagnes Mariembourg** dans la liste des pistes.
