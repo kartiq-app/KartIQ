@@ -260,6 +260,16 @@
     "notes": "Configuration fournie ; à valider pendant un live actif."
   },
   {
+    "id": "south-garda-karting",
+    "name": "South Garda Karting",
+    "country": "Italie",
+    "live_url": "https://www.apex-timing.com/live-timing/southgardakarting/index.html",
+    "websocket_url": "wss://live-data.apex-timing.com:7443/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 02/08/2026 ; à valider pendant un live actif."
+  },
+  {
     "id": "top-gun-evasion",
     "name": "Top Gun Évasion",
     "country": "France",

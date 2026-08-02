@@ -1,3 +1,10 @@
+# V6.2.1 — South Garda Karting
+
+- Ajout de South Garda Karting (Italie).
+- Live Timing : `https://www.apex-timing.com/live-timing/southgardakarting/index.html`.
+- WebSocket Apex : `wss://live-data.apex-timing.com:7443/`.
+- Nouveau cache PWA afin de forcer le chargement de la version mise à jour.
+
 # V6.2.0 — Sessions Analyzer persistantes
 
 - Sauvegarde automatique toutes les 5 secondes.

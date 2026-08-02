@@ -1,4 +1,4 @@
-/* KartIQ V6.2.0 — files de karts Endurance persistantes */
+/* KartIQ V6.2.1 — files de karts Endurance persistantes */
 const KART_QUEUE_STORAGE='kartiq-endurance-kart-queues-v1';
 let kartQueueState={count:1,queues:[[]],selected:null};
 function normalizeKartQueueState(value){

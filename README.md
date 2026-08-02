@@ -1,6 +1,6 @@
-# KartIQ V6.2.0 — Sessions Analyzer persistantes
+# KartIQ V6.2.1 — South Garda Karting
 
-Cette version ajoute la sauvegarde automatique de l’Analyzer toutes les 5 secondes, la reprise après fermeture ou redémarrage, des sessions distinctes par circuit, ainsi que l’export/import JSON.
+Cette version ajoute South Garda Karting au catalogue des circuits compatibles, tout en conservant les sessions Analyzer persistantes de la V6.2.0.
 
 ## Déploiement
 

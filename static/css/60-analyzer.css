@@ -1,4 +1,4 @@
-/* KartIQ V6.2.0 — Analyzer stratégique Endurance */
+/* KartIQ V6.2.1 — Analyzer stratégique Endurance */
 .analyzer-screen{overflow:auto;background:#05070b;color:#f7f8fb;padding:0 0 32px}
 .analyzer-shell{min-height:100%;padding:16px;display:flex;flex-direction:column;gap:14px}
 .analyzer-compat-hidden{display:none!important}
@@ -89,7 +89,7 @@
 @media(max-width:1050px){.analyzer-hero{grid-template-columns:1fr 1fr}.rules-card{grid-column:1/-1}.analyzer-top-grid{grid-template-columns:1fr 1fr}.analyzer-wave-panel{grid-column:1/-1}.analyzer-rules-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.analyzer-shell{padding:9px;gap:9px}.analyzer-toolbar{padding-top:max(8px,env(safe-area-inset-top));align-items:flex-start}.analyzer-toolbar-actions{gap:4px}.analyzer-action-btn{font-size:8px;padding:8px}.analyzer-heading{display:none}.analyzer-hero,.analyzer-top-grid{grid-template-columns:1fr}.rules-card,.analyzer-wave-panel{grid-column:auto}.analyzer-hero-card{min-height:0;padding:12px}.analyzer-followed-grid,.rules-mini-grid{grid-template-columns:repeat(2,1fr);gap:6px}.opportunity-score strong{font-size:46px}.analyzer-panel{padding:10px}.analyzer-panel-title{flex-direction:column}.analyzer-panel-title small{text-align:left}.analyzer-forecast-row{grid-template-columns:54px minmax(90px,1fr) 58px}.analyzer-forecast-row .analyzer-confidence{display:none}.analyzer-market-row{grid-template-columns:30px minmax(90px,1fr) 52px}.analyzer-market-row .analyzer-confidence{display:none}.analyzer-ranking-wrap{max-height:55vh}.analyzer-ranking-table{min-width:1120px;font-size:10px}.analyzer-ranking-table th,.analyzer-ranking-table td{padding:7px 6px}.analyzer-rules-grid{grid-template-columns:1fr}.queue-count-control span{display:none}.analyzer-queue-panel .queue-actions{overflow:auto;flex-wrap:nowrap}.analyzer-queue-panel .queue-action{white-space:nowrap}}
 
-/* V6.2.0 — sessions persistantes */
+/* V6.2.1 — sessions persistantes */
 .analyzer-session-status{display:inline-flex;align-items:center;min-height:34px;padding:0 10px;border:1px solid #394250;border-radius:8px;background:#090c11;color:#9aa4b4;font-size:9px;font-weight:900;white-space:nowrap}
 .analyzer-session-status.saved{color:#35d889;border-color:#216c4b}.analyzer-session-status.restored{color:#64b8ff;border-color:#285d85}.analyzer-session-status.error{color:#ff6262;border-color:#8b3030}
 .analyzer-sessions-card{width:min(900px,100%)}
