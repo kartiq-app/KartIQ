@@ -120,6 +120,16 @@
     "notes": "Configuration fournie ; à valider pendant un live actif."
   },
   {
+    "id": "karting-des-fagnes-mariembourg",
+    "name": "Karting des Fagnes Mariembourg",
+    "country": "Belgique",
+    "live_url": "https://www.apex-timing.com/live-timing/karting-mariembourg/index.html",
+    "websocket_url": "wss://live-data.apex-timing.com:8313/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 02/08/2026 ; à valider pendant un live actif."
+  },
+  {
     "id": "kln",
     "name": "Karting Loisirs Neuilly",
     "country": "France",

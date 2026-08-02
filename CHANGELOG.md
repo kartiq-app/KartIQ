@@ -1,3 +1,11 @@
+# V6.5.3 — Ajout Karting des Fagnes Mariembourg
+
+- Ajout du circuit **Karting des Fagnes Mariembourg** dans la liste des pistes.
+- URL Apex : `https://www.apex-timing.com/live-timing/karting-mariembourg/index.html`.
+- WebSocket Apex : `wss://live-data.apex-timing.com:8313/`.
+- Circuit classé en Belgique et intégré dans l’ordre alphabétique.
+- Mise à jour de la version applicative et du cache PWA.
+
 # V6.5.2 — Notation relative à la grille
 
 - La note des meilleurs karts est désormais calculée relativement à tous les relais actifs évaluables de la grille.
