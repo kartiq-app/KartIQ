@@ -269,3 +269,86 @@
   .analyzer-strategy-column{display:flex}
   .analyzer-strategy-column .analyzer-kartiq-wrap{max-height:320px}
 }
+
+/* KartIQ V6.6.2 — alignement et compacité du double classement desktop */
+@media(min-width:1400px){
+  .analyzer-desktop-dashboard{
+    grid-template-columns:minmax(0,1.42fr) minmax(620px,1fr);
+    gap:8px;
+  }
+
+  /* Les deux bandeaux ont exactement la même hauteur : les en-têtes POS et TOP s'alignent. */
+  .analyzer-ranking-panel .analyzer-ranking-title,
+  .analyzer-strategy-column .analyzer-kartiq-title{
+    box-sizing:border-box;
+    min-height:74px;
+    height:74px;
+    margin:0;
+    padding:14px;
+    border-bottom:1px solid #242a34;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-title{
+    display:flex;
+    align-items:flex-start;
+    justify-content:flex-start;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-title>span{
+    display:inline-flex;
+    align-items:center;
+    min-height:34px;
+    font-family:var(--font-torque,Arial,sans-serif);
+    font-size:11px;
+    line-height:1;
+    letter-spacing:.025em;
+    text-transform:uppercase;
+  }
+
+  /* Le TOP 10 tient dans le panneau sans faire disparaître R, TOURS et ANALYSE. */
+  .analyzer-strategy-column .analyzer-kartiq-wrap{
+    max-height:390px;
+    overflow-x:auto;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-table{
+    width:100%;
+    min-width:610px;
+    table-layout:auto;
+    font-size:9.5px;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-table th{
+    padding:10px 4px;
+    font-size:8px;
+    letter-spacing:.025em;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-table td{
+    padding:8px 4px;
+  }
+
+  /* TOP, POS et KART sont serrés pour réserver un maximum de place à l'équipe. */
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(1),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(1){width:28px;min-width:28px;max-width:28px;padding-left:3px;padding-right:3px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(2),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(2){width:30px;min-width:30px;max-width:30px;padding-left:3px;padding-right:3px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(3),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(3){width:38px;min-width:38px;max-width:38px;padding-left:3px;padding-right:3px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(4),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(4){width:auto;min-width:132px}
+  .analyzer-strategy-column .analyzer-kartiq-table .kartiq-team{
+    max-width:none;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(5),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(5){width:42px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(6),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(6){width:48px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(7),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(7){width:64px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(8),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(8){width:46px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(9),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(9){width:24px;padding-left:2px;padding-right:2px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(10),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(10){width:42px;padding-left:2px;padding-right:2px}
+  .analyzer-strategy-column .analyzer-kartiq-table th:nth-child(11),
+  .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(11){width:58px;padding-left:3px;padding-right:3px}
+}

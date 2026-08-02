@@ -1,3 +1,12 @@
+# V6.6.2 — Alignement des classements desktop
+
+- Titre **KartIQ** affiché à la même taille et exactement à la même hauteur que les boutons Classement général et Classement virtuel.
+- Alignement vertical de l’en-tête **TOP** de KartIQ avec l’en-tête **POS** du classement principal.
+- Panneau KartIQ rapproché et élargi afin de conserver visibles les colonnes **R, TOURS et ANALYSE**.
+- Colonnes **TOP, POS et KART** compactées au minimum utile.
+- Espace supplémentaire attribué à **ÉQUIPE / PILOTE**, sans chevauchement avec les autres colonnes.
+- Mise à jour de la version et du cache PWA.
+
 # V6.6.1 — Dashboard desktop côte à côte
 
 - Affichage desktop du classement général ou virtuel complet à gauche et du panneau stratégique à droite.
