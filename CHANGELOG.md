@@ -1,3 +1,10 @@
+# V6.9.4 — Correction des prévisions horaires
+
+- Corrige la détection des six créneaux horaires Open-Meteo lorsque le format ISO contient des secondes, un suffixe `Z` ou un décalage horaire.
+- Les horaires sont désormais sélectionnés par ordre chronologique plutôt que par égalité exacte de chaînes.
+- Conserve la règle : heure en cours avant `HH:30`, heure suivante à partir de `HH:30`.
+- Met à jour le cache PWA.
+
 # V6.9.3 — Prévisions météo horaires locales
 
 - Remplacement des créneaux de 30 minutes par 6 prévisions horaires fournies directement par Open-Meteo.

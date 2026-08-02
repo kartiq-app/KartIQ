@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.9.3"
+APP_VERSION = "6.9.4"
 APP_RELEASE_NAME = "Simulateur d’arrêt et fenêtre de trafic"
 
 

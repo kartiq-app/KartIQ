@@ -243,43 +243,50 @@ def _weather_for_circuit(circuit):
         first_slot = current_dt.replace(minute=0, second=0, microsecond=0)
         if current_dt.minute >= 30:
             first_slot += timedelta(hours=1)
-        index_by_time = {str(value): idx for idx, value in enumerate(times)}
+
         temperatures = hourly.get("temperature_2m") or []
         rain_values = hourly.get("rain") or []
         winds = hourly.get("wind_speed_10m") or []
         gusts = hourly.get("wind_gusts_10m") or []
         day_values = hourly.get("is_day") or []
-        for step in range(6):
-            slot = first_slot + timedelta(hours=step)
-            key = slot.isoformat(timespec="minutes")
-            idx = index_by_time.get(key)
-            if idx is None:
-                # Tolérance aux réponses qui incluent les secondes.
-                best = None
-                for candidate_idx, value in enumerate(times):
-                    try:
-                        delta = abs((datetime.fromisoformat(str(value)) - slot).total_seconds())
-                    except Exception:
-                        continue
-                    if best is None or delta < best[0]:
-                        best = (delta, candidate_idx)
-                idx = best[1] if best and best[0] <= 60 else None
-            if idx is None:
+
+        # Open-Meteo peut faire varier légèrement le format ISO (secondes, offset, Z).
+        # On parse donc les heures puis on prend les six créneaux consécutifs à partir
+        # de l'heure cible, au lieu d'exiger une égalité exacte de chaînes.
+        parsed_times = []
+        for candidate_idx, value in enumerate(times):
+            try:
+                parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+                if parsed.tzinfo is not None and first_slot.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=None)
+                elif parsed.tzinfo is None and first_slot.tzinfo is not None:
+                    parsed = parsed.replace(tzinfo=first_slot.tzinfo)
+                parsed_times.append((parsed, candidate_idx))
+            except Exception:
                 continue
-            code_value = codes[idx] if idx < len(codes) else None
-            day_value = bool(day_values[idx]) if idx < len(day_values) else True
-            timeline.append({
-                "time": key,
-                "temperature": temperatures[idx] if idx < len(temperatures) else None,
-                "probability": probabilities[idx] if idx < len(probabilities) else None,
-                "precipitation": precipitations[idx] if idx < len(precipitations) else None,
-                "rain": rain_values[idx] if idx < len(rain_values) else None,
-                "weather_code": code_value,
-                "label": _weather_label(code_value),
-                "icon": _weather_icon_key(code_value, day_value),
-                "wind_speed": winds[idx] if idx < len(winds) else None,
-                "wind_gusts": gusts[idx] if idx < len(gusts) else None,
-            })
+
+        start_position = None
+        for position, (parsed, _) in enumerate(parsed_times):
+            if parsed >= first_slot:
+                start_position = position
+                break
+
+        if start_position is not None:
+            for parsed, idx in parsed_times[start_position:start_position + 6]:
+                code_value = codes[idx] if idx < len(codes) else None
+                day_value = bool(day_values[idx]) if idx < len(day_values) else True
+                timeline.append({
+                    "time": parsed.isoformat(timespec="minutes"),
+                    "temperature": temperatures[idx] if idx < len(temperatures) else None,
+                    "probability": probabilities[idx] if idx < len(probabilities) else None,
+                    "precipitation": precipitations[idx] if idx < len(precipitations) else None,
+                    "rain": rain_values[idx] if idx < len(rain_values) else None,
+                    "weather_code": code_value,
+                    "label": _weather_label(code_value),
+                    "icon": _weather_icon_key(code_value, day_value),
+                    "wind_speed": winds[idx] if idx < len(winds) else None,
+                    "wind_gusts": gusts[idx] if idx < len(gusts) else None,
+                })
 
     code = current.get("weather_code")
     is_day = bool(current.get("is_day", 1))
