@@ -144,3 +144,15 @@
 .virtual-stop-add{color:#ff9b32}.virtual-time-add{color:#69b7ff}.virtual-real-pos{color:#818b99}.virtual-gap{color:#ff9b32;font-weight:900}
 .virtual-ranking-row .a-pos{color:#70b9ff}
 @media(max-width:700px){.analyzer-ranking-switch button{font-size:9px;padding:7px 8px}.analyzer-ranking-heading{width:100%}}
+
+
+/* V6.4.1 — nom complet de l’équipe/pilote dans le classement général */
+.analyzer-ranking-table.general-ranking-mode .a-team{
+  max-width:none;
+  min-width:260px;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  overflow-wrap:anywhere;
+  line-height:1.25;
+}

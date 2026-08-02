@@ -1,3 +1,9 @@
+# V6.4.1 — Noms complets dans le classement général
+
+- Le nom de l’équipe ou du pilote n’est plus tronqué dans le **Classement général** de l’Analyzer.
+- La cellule peut désormais s’étendre sur plusieurs lignes afin d’afficher le nom intégral.
+- Le **Classement virtuel** et les écrans Focus conservent leur comportement actuel.
+
 # V6.4.0 — Classement virtuel
 
 - Ajout des boutons **CLASSEMENT GÉNÉRAL** et **CLASSEMENT VIRTUEL** dans Analyzer.
