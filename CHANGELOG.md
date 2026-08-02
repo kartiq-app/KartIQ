@@ -1,3 +1,10 @@
+# V6.10.3 — Velocity, heure locale et temps restant
+
+- Renommage de l’application et du module KartIQ en Velocity.
+- SIMULATEUR D’ARRÊT devient MAP avec titre orange.
+- Heure locale du circuit dans la météo.
+- Temps restant de course dans l’en-tête du classement.
+
 # V6.10.2 — Frise météo et cercle animé en temps réel
 
 - Correction du rendu de la frise météo : remplacement d'un appel JavaScript inexistant qui interrompait la création des six créneaux.

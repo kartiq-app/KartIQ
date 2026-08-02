@@ -6,14 +6,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="KartIQ">
+<meta name="apple-mobile-web-app-title" content="Velocity">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>KartIQ V{{ app_version }} — Architecture 4 modes</title>
+<title>Velocity V{{ app_version }} — Architecture 4 modes</title>
 <link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Kart<i>IQ</i> <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="analyzer" onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="analyzer" onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span id="circuitName">—</span><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -21,8 +21,8 @@
   <div class="race-home-shell">
     <div class="race-home-glow"></div>
     <div class="race-home-content">
-      <div class="kartiq-logo" aria-label="KartIQ">
-        <span class="kartiq-kart">KART</span><span class="kartiq-iq">IQ</span>
+      <div class="kartiq-logo" aria-label="Velocity">
+        <span class="kartiq-kart">VELOC</span><span class="kartiq-iq">ITY</span>
       </div>
       <div class="kartiq-tagline">PROFESSIONAL LIVE TIMING</div>
 
@@ -67,7 +67,7 @@
         <span>POWERED BY</span>
         <img src="/static/assets/apex-timing-logo.png" alt="Apex Timing">
       </div>
-      <div class="home-version" aria-label="Version de KartIQ">KartIQ v{{ app_version }}</div>
+      <div class="home-version" aria-label="Version de Velocity">Velocity v{{ app_version }}</div>
     </div>
   </div>
 </section>
@@ -118,7 +118,7 @@
       <article class="analyzer-hero-card weather-card" id="analyzerWeatherCard">
         <span class="analyzer-card-label">MÉTÉO</span>
         <div class="weather-main">
-          <img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo">
+          <div class="weather-icon-clock"><img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo"><span id="analyzerWeatherLocalTime" class="weather-local-time">--:--</span></div>
           <div class="weather-current"><strong id="analyzerWeatherTemperature">—</strong><span id="analyzerWeatherCondition">En attente…</span></div>
         </div>
         <div class="weather-stats">
@@ -152,7 +152,8 @@
                 </label>
               </div>
             </div>
-            <small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par KartIQ</small>
+            <div class="analyzer-race-remaining"><span>TEMPS RESTANT</span><strong id="analyzerRaceRemaining">—</strong></div>
+            <small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par Velocity</small>
           </div>
         </div>
         <div class="analyzer-ranking-wrap">
@@ -165,12 +166,12 @@
 
       <aside class="analyzer-strategy-column" aria-label="Outils stratégiques">
         <section class="panel analyzer-panel analyzer-market-panel">
-          <div class="analyzer-panel-title analyzer-kartiq-title"><span>KartIQ</span><label class="analyzer-kartiq-sort">Trier par <select id="analyzerKartSort" onchange="setAnalyzerKartSort(this.value)"><option value="none">Aucun</option><option value="relay-end">Fin relais</option></select></label></div>
+          <div class="analyzer-panel-title analyzer-kartiq-title"><span>VELOCITY</span><label class="analyzer-kartiq-sort">Trier par <select id="analyzerKartSort" onchange="setAnalyzerKartSort(this.value)"><option value="none">Aucun</option><option value="relay-end">Fin relais</option></select></label></div>
           <div id="analyzerKartMarket" class="analyzer-kartiq-wrap"><div class="analyzer-empty">Apprentissage en cours…</div></div>
         </section>
 
         <section class="panel analyzer-panel analyzer-pit-simulator-panel" aria-labelledby="pitSimulatorTitle">
-          <div class="analyzer-panel-title analyzer-pit-simulator-title"><span id="pitSimulatorTitle">SIMULATEUR D’ARRÊT</span><button id="pitSimulatorButton" type="button" onclick="simulateAnalyzerPitStop()">SIMULER UN ARRÊT</button></div>
+          <div class="analyzer-panel-title analyzer-pit-simulator-title"><span id="pitSimulatorTitle">MAP</span><button id="pitSimulatorButton" type="button" onclick="simulateAnalyzerPitStop()">SIMULER UN ARRÊT</button></div>
           <div class="analyzer-pit-simulator-body">
             <div id="pitSimulatorTrack" class="pit-simulator-track" aria-label="Position estimée des karts sur la piste"><div class="analyzer-empty">Sélectionnez une équipe puis lancez la simulation.</div></div>
             <div class="pit-simulator-summary">

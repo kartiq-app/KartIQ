@@ -634,3 +634,22 @@
 @media(max-width:900px){.weather-icon{width:56px;height:56px}.weather-current strong{font-size:27px}.analyzer-opportunity-body{grid-template-columns:1fr}.analyzer-opportunity-panel .opportunity-score{min-width:0}}
 
 .weather-source{font-size:8px;color:#87919f;font-weight:700;letter-spacing:.04em;text-transform:none;margin-left:6px;vertical-align:middle}
+
+/* Velocity V6.10.3 — titres orange, horloge locale et temps restant */
+.weather-icon-clock{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.weather-local-time{font-family:var(--font-time,monospace);font-size:20px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.analyzer-ranking-heading{position:relative}
+.analyzer-race-remaining{margin-left:auto;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.analyzer-race-remaining span{font-size:9px;color:#929cab;font-weight:800;letter-spacing:.06em}
+.analyzer-race-remaining strong{font-family:var(--font-time,monospace);font-size:16px;color:#fff;font-variant-numeric:tabular-nums}
+.analyzer-race-remaining strong.warning{color:#ff9b32}.analyzer-race-remaining strong.critical{color:#ff5a5a}
+.analyzer-kartiq-title,.analyzer-pit-simulator-title{min-height:54px;padding:0 14px!important;border-bottom:1px solid #323945!important;background:#151a23;align-items:center!important;margin:0!important}
+.analyzer-kartiq-title>span,.analyzer-pit-simulator-title>span{font-family:var(--font-torque,Arial,sans-serif)!important;font-size:14px!important;color:#ff8a1f!important;font-weight:900;letter-spacing:.04em}
+.analyzer-pit-simulator-title button{align-self:center;margin:auto 0}
+.analyzer-market-panel{padding:0;overflow:hidden}.analyzer-kartiq-wrap{padding:0}
+@media(max-width:700px){.analyzer-race-remaining{width:100%;justify-content:flex-start}.weather-icon-clock{gap:6px}.weather-local-time{font-size:16px}}
+
+@media(min-width:701px){
+ .analyzer-ranking-heading{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:16px;row-gap:5px}
+ .analyzer-ranking-toolbar-left{grid-column:1}.analyzer-race-remaining{grid-column:2;grid-row:1}.analyzer-ranking-heading>small{grid-column:1/-1}
+}

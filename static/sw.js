@@ -1,4 +1,4 @@
-const CACHE = 'kartiq-v6-10-2-weather-track';
+const CACHE = 'velocity-v6-10-3-ui';
 
 const ASSETS = [
   '/',

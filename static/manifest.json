@@ -1,6 +1,6 @@
 {
-  "name": "KartIQ — Analyse karting en direct",
-  "short_name": "KartIQ",
+  "name": "Velocity — Analyse karting en direct",
+  "short_name": "Velocity",
   "description": "Analyse en direct des sessions Apex Timing",
   "start_url": "/",
   "scope": "/",

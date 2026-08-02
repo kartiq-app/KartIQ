@@ -1,4 +1,16 @@
-/* KartIQ V6.10.2 — Frise météo et animation temps réel du cercle */
+
+function analyzerFormatLocalClock(){
+ const el=document.getElementById('analyzerWeatherLocalTime');if(!el)return;
+ const tz=analyzerWeatherData?.timezone||analyzerWeatherData?.location?.timezone||'Europe/Paris';
+ try{el.textContent=new Intl.DateTimeFormat('fr-FR',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date()).replace(' h ',':')}catch(_){el.textContent=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+}
+function analyzerUpdateRaceRemaining(){
+ const el=document.getElementById('analyzerRaceRemaining');if(!el)return;
+ const ms=typeof liveRemainingMilliseconds==='function'?liveRemainingMilliseconds():null;
+ if(Number.isFinite(ms)){const total=Math.max(0,Math.floor(ms/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;el.classList.toggle('warning',total<=3600&&total>600);el.classList.toggle('critical',total<=600);return}
+ el.textContent=state?.time_remaining||'—';
+}
+/* Velocity V6.10.3 — météo, temps restant et MAP */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -56,7 +68,7 @@ function renderAnalyzerWeatherTimeline(timeline){
   </div>`;
  }).join('');
 }
-function renderAnalyzerWeather(){
+function renderAnalyzerWeather(){analyzerFormatLocalClock();
  const card=document.getElementById('analyzerWeatherCard');if(!card)return;
  const icon=document.getElementById('analyzerWeatherIcon');
  const temp=document.getElementById('analyzerWeatherTemperature');
@@ -135,7 +147,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.10.2',
+  appVersion:'6.10.3',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -192,7 +204,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.10.2',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.10.3',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -1180,3 +1192,5 @@ async function loadApexTeamPits(rowId,sessionId=''){
 }
 
 document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSessionAutosaveStart();document.getElementById('analyzerRulesModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerRulesModal')closeAnalyzerRules()});document.getElementById('analyzerSessionsModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerSessionsModal')closeAnalyzerSessions()});document.getElementById('apexHistoryModal')?.addEventListener('click',event=>{if(event.target.id==='apexHistoryModal')closeApexHistory()})});window.addEventListener('beforeunload',()=>analyzerSaveSession('beforeunload'));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')analyzerSaveSession('hidden')});
+
+setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
