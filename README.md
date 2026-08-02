@@ -1,6 +1,6 @@
-# KartIQ V6.3.0 — Historique Apex
+# KartIQ V6.3.1 — Correction Tours Analyzer
 
-Cette version enrichit la page Analyzer avec deux nouvelles fonctions :
+Cette version corrige le décodage des tours Apex et conserve la page Analyzer avec deux nouvelles fonctions :
 
 - un bouton **TOURS** sur chaque équipe pour consulter ses chronos depuis le début de la session ;
 - un menu **HISTORIQUE APEX** pour afficher les anciennes sessions et consulter les tours d’une équipe dans celles-ci.

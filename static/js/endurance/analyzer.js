@@ -1,4 +1,4 @@
-/* KartIQ V6.3.0 — Analyzer stratégique + chronos équipes et historique Apex */
+/* KartIQ V6.3.1 — Correction du chargement des tours Apex */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -345,7 +345,7 @@ function resetAnalyzerLearning(){if(!window.confirm('Effacer l’historique des 
 
 
 
-/* V6.3.0 — Consultation des tours et anciennes sessions Apex */
+/* V6.3.1 — Consultation des tours et anciennes sessions Apex */
 let apexPreviousSessions=[];
 let apexHistorySelectedRowId=null;
 let apexHistorySelectedSession='';
@@ -443,29 +443,64 @@ function renderApexHistoricalTeams(){
 function setApexHistoryTeamHeader(team){document.getElementById('apexHistoryTeamName').textContent=team?.name||'Équipe';document.getElementById('apexHistoryTeamKart').textContent=`KART ${team?.kart||'—'}`}
 function openApexHistoricalTeam(rowId,name,kart){apexHistorySelectedRowId=Number(rowId);setApexHistoryTeamHeader({name:decodeURIComponent(name),kart:decodeURIComponent(kart)});reloadApexTeamLaps()}
 
-function apexProtocolNumber(value){const n=parseInt(String(value||'').replace(/[a-zA-Z]/g,''),10);return Number.isFinite(n)?n:0}
+function apexProtocolNumber(value){
+ const n=parseInt(String(value??'').replace(/[a-zA-Z]/g,''),10);
+ return Number.isFinite(n)?n:0;
+}
 function parseApexLapLine(line,rowId){
- const marker=`D${rowId}.L`;if(!line.startsWith(marker))return null;
- const after=line.split('#')[1]||'',parts=after.split('|');
- const lap=apexProtocolNumber(parts[0]?.replace('L',''));
- return {lap,sector1:apexProtocolNumber(parts[1]),sector2:apexProtocolNumber(parts[2]),sector3:apexProtocolNumber(parts[3]),lapTime:apexProtocolNumber(parts[4]??parts[3])};
+ // Format Apex officiel : D<id>.L<numéro>#<S1>|<S2>|<S3>|<tour>
+ const value=String(line||'').trim();
+ const marker=`D${rowId}.L`;
+ if(!value.startsWith(marker))return null;
+ const dot=value.indexOf('.');
+ const hash=value.indexOf('#',dot+1);
+ if(dot<0||hash<0)return null;
+ const lapToken=value.slice(dot+1,hash); // ex. L203
+ const fields=value.slice(hash+1).split('|');
+ if(fields.length<4)return null;
+ return {
+  lap:apexProtocolNumber(lapToken.replace(/^L/i,'')),
+  sector1:apexProtocolNumber(fields[0]),
+  sector2:apexProtocolNumber(fields[1]),
+  sector3:apexProtocolNumber(fields[2]),
+  lapTime:apexProtocolNumber(fields[3])
+ };
 }
 function parseApexTeamData(raw,rowId){
- const laps=[];for(const line of String(raw||'').split(/\r?\n/)){const lap=parseApexLapLine(line.trim(),rowId);if(lap&&lap.lap)laps.push(lap)}
- laps.sort((a,b)=>b.lap-a.lap);return {laps};
+ const byLap=new Map();
+ for(const line of String(raw||'').split(/\r?\n/)){
+  const lap=parseApexLapLine(line,rowId);
+  if(lap&&lap.lap)byLap.set(lap.lap,lap);
+ }
+ const laps=[...byLap.values()].sort((a,b)=>b.lap-a.lap);
+ return {laps};
 }
 function formatApexMilliseconds(ms){
  const value=Number(ms);if(!Number.isFinite(value)||value<=0)return '—';
  const minutes=Math.floor(value/60000),seconds=Math.floor((value%60000)/1000),millis=Math.floor(value%1000);
  return minutes?`${minutes}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`:`${seconds}.${String(millis).padStart(3,'0')}`;
 }
+async function fetchAllApexTeamLaps(rowId,sessionId,status){
+ const prefix=sessionId?`S#${sessionId}#`:'';
+ // Apex charge d'abord 30 tours, puis élargit la fenêtre. On reproduit ce mécanisme
+ // plutôt que d'envoyer une valeur hors protocole comme -9999.
+ const windows=[30,100,300,750,1500,3000];
+ let latest=[];
+ for(const count of windows){
+  if(status)status.textContent=`Chargement des tours Apex… fenêtre ${count}`;
+  const command=`${prefix}D#-${count}#D${rowId}.L#-999#D${rowId}.P#2#D${rowId}.B#1#D${rowId}.INF`;
+  const parsed=parseApexTeamData(await apexHistoryRequest(command),rowId).laps;
+  if(parsed.length)latest=parsed;
+  // Moins de lignes que la fenêtre demandée, ou présence du tour 1 : historique complet.
+  if(parsed.some(l=>l.lap===1)||parsed.length<count)return parsed;
+ }
+ return latest;
+}
 async function loadApexTeamLaps(rowId,sessionId=''){
  const status=document.getElementById('apexHistoryLapsStatus'),tbody=document.getElementById('apexHistoryLapsTable'),summary=document.getElementById('apexHistorySummary');
  if(status)status.textContent='Chargement de tous les tours depuis Apex…';if(tbody)tbody.innerHTML='';if(summary)summary.innerHTML='';
- const prefix=sessionId?`S#${sessionId}#`:'';
- const command=`${prefix}D#-9999#D${rowId}.L#-999#D${rowId}.P#2#D${rowId}.B#1#D${rowId}.INF`;
  try{
-  const data=parseApexTeamData(await apexHistoryRequest(command),rowId),valid=data.laps.filter(l=>l.lapTime>0),best=valid.length?Math.min(...valid.map(l=>l.lapTime)):0;
+  const laps=await fetchAllApexTeamLaps(rowId,sessionId,status),valid=laps.filter(l=>l.lapTime>0),best=valid.length?Math.min(...valid.map(l=>l.lapTime)):0;
   const sessionName=sessionId?(apexPreviousSessions.find(s=>s.id===sessionId)?.name||`Session ${sessionId}`):'Course en direct';
   if(status)status.textContent=`${valid.length} tour(s) chargé(s) — ${sessionName}`;
   if(summary)summary.innerHTML=`<div><span>SESSION</span><b>${analyzerEscape(sessionName)}</b></div><div><span>MEILLEUR TOUR</span><b>${formatApexMilliseconds(best)}</b></div><div><span>TOURS CHARGÉS</span><b>${valid.length}</b></div>`;

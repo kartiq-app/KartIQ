@@ -1,3 +1,11 @@
+# V6.3.1 — Correction Tours Analyzer
+
+- Correction du parseur des lignes Apex au format `D<id>.L<numéro>#S1|S2|S3|temps`.
+- Le numéro de tour est désormais lu entre `.L` et `#`, comme dans le JavaScript officiel Apex.
+- Chargement progressif de l’historique avec les fenêtres Apex 30, 100, 300, 750, 1500 et 3000 tours.
+- Suppression de la requête non standard `D#-9999`, remplacée par le comportement natif d’Apex.
+- Mise à jour du cache PWA et de la version en 6.3.1.
+
 # V6.3.0 — Historique Apex dans Analyzer
 
 - Ajout d’un bouton **TOURS** sur chaque équipe du classement Analyzer.
