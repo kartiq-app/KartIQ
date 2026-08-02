@@ -1,3 +1,13 @@
+# V6.5.1 — Reconstitution automatique des relais actifs
+
+- Chargement automatique des tours et des arrêts Apex au lancement de l’Analyzer.
+- Reconstitution immédiate du relais en cours de chaque équipe à partir du dernier arrêt terminé.
+- Exclusion du tour de départ ou de sortie des stands et des tours IN.
+- Utilisation du même T.MOYEN de relais dans Meilleurs karts identifiés, le Classement général, le Classement virtuel et le tri T.MOYEN.
+- Fusion avec le flux live sans doublonner les tours déjà chargés depuis STATS.
+- Actualisation automatique après un changement de relais ou toutes les 60 secondes.
+- Mise à jour de la version et du cache PWA.
+
 # V6.5.0 — Nouveau modèle « Meilleurs karts identifiés »
 
 - Analyse remise à zéro à chaque nouveau relais / changement de kart.
