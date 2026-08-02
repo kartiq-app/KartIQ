@@ -1,3 +1,10 @@
+# V6.3.6 — Temps EN PISTE en blanc
+
+- Le temps du relais dans la colonne **EN PISTE** de l’Analyzer est désormais forcé en blanc.
+- Suppression des classes vert/orange/rouge appliquées à cette valeur.
+- La couleur bleue reste réservée à l’indication d’une équipe actuellement aux stands.
+- Mise à jour du cache PWA et de la version applicative.
+
 # V6.3.5 — Correction des temps PITS Apex
 
 - Correction du mapping des champs du protocole PITS Apex.

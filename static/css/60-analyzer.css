@@ -68,7 +68,7 @@
 .analyzer-ranking-table tr.followed{background:#30220e;box-shadow:inset 4px 0 #ff7a00}
 .analyzer-ranking-table .a-pos{font-family:var(--font-torque,Arial,sans-serif);color:#ff8a1f;font-size:16px}
 .analyzer-ranking-table .a-team{text-align:left;max-width:230px;overflow:hidden;text-overflow:ellipsis;font-weight:800}
-.analyzer-ranking-table .a-track{font-weight:900}.analyzer-ranking-table .a-track.orange{color:#ff9b32}.analyzer-ranking-table .a-track.red{color:#ff4f4f}.analyzer-ranking-table .a-track.green{color:#36d883}
+.analyzer-ranking-table .a-track{color:#fff!important;font-weight:900}.analyzer-ranking-table .a-track.pit-time-blue{color:#58a6ff!important}
 .analyzer-ranking-table .a-forecast{font-weight:900;color:#66b7ff}.analyzer-ranking-table .a-note{font-weight:900}
 .analyzer-ranking-table .a-note.high{color:#34d985}.analyzer-ranking-table .a-note.mid{color:#ff9b32}.analyzer-ranking-table .a-note.low{color:#ff5a5a}
 .analyzer-queue-panel{padding:14px}
