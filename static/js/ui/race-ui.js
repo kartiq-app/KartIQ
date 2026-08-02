@@ -216,6 +216,7 @@ function render(){
 function reconnectLive(){connectApexBrowser(true)}
 async function changeCircuit(){
  if(!circuitSelectElement?.value)return;
+ if(typeof analyzerBeforeCircuitChange==='function')analyzerBeforeCircuitChange();
  const nextCircuitId=circuitSelectElement.value;
  document.getElementById('homeCircuit')?.classList.remove('needs-selection');
  // Coupe d'abord l'ancienne piste afin qu'aucune trame tardive ne puisse être envoyée.
@@ -229,6 +230,7 @@ async function changeCircuit(){
  state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
  render();
  await api('/api/circuit',{circuit_id:nextCircuitId});
+ if(typeof analyzerAfterCircuitChange==='function')analyzerAfterCircuitChange();
 }function followSelected(){api('/api/follow',{driver:driverSelect.value})}function testCrossing(){api('/api/test-crossing',{lap:lapValue.value})}function addPenalty(){api('/api/add-penalty',{driver:driverSelect.value,penalty:penaltyValue.value})}function moveDriver(){api('/api/move',{driver:driverSelect.value,pos:movePos.value})}function addQuickChange(){api('/api/add-quick-change',{previous_team:qcTeam.value,pace_rank:qcRank.value,kart:qcKart.value,avg5:qcAvg.value,kart_delta:'--'})}function popQuickChange(){api('/api/pop-quick-change')}function testTop8PitEntry(){api('/api/test-top8-pit-entry')}function clearAlert(){genericOverlay.classList.remove('show');api('/api/clear-alert')}function clearTop8Alert(){top8PitOverlay.classList.remove('show');api('/api/clear-alert')}
 document.getElementById('iphoneFrame').addEventListener('load',resetPreviewViewport);
 document.getElementById('iphonePreview').addEventListener('click',e=>{if(e.target.id==='iphonePreview')toggleIphonePreview(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('sprintFocus')?.classList.contains('show'))closeSprintFocus();else if(document.getElementById('qualificationFocus')?.classList.contains('show'))closeQualificationFocus();else toggleIphonePreview(false)}});

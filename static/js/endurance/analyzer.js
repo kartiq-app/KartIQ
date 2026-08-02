@@ -1,7 +1,141 @@
-/* KartIQ V6.1.0 — Analyzer stratégique Endurance */
+/* KartIQ V6.2.0 — Analyzer stratégique Endurance + sessions persistantes */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
+
+const ANALYZER_SESSIONS_INDEX_KEY='kartiq-analyzer-sessions-index-v1';
+const ANALYZER_ACTIVE_SESSION_KEY='kartiq-analyzer-active-session-v1';
+const ANALYZER_SESSION_PREFIX='kartiq-analyzer-session-v1:';
+const ANALYZER_AUTOSAVE_MS=5000;
+let analyzerActiveSessionId=null;
+let analyzerSessionCircuitId=null;
+let analyzerLastSessionSaveAt=0;
+let analyzerSessionAutosaveTimer=null;
+let analyzerSessionRestoreLock=false;
+
+function analyzerSessionSafeId(value){return String(value||'circuit').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase()||'circuit'}
+function analyzerSessionCircuit(){return String(state?.circuit_id||'').trim()}
+function analyzerSessionCircuitName(circuitId=analyzerSessionCircuit()){
+ const circuit=(state?.circuits||[]).find(item=>String(item.id)===String(circuitId));
+ return circuit?.name||circuitId||'Circuit inconnu';
+}
+function analyzerSessionReadIndex(){
+ try{const value=JSON.parse(localStorage.getItem(ANALYZER_SESSIONS_INDEX_KEY)||'[]');return Array.isArray(value)?value:[]}catch(_){return []}
+}
+function analyzerSessionWriteIndex(index){try{localStorage.setItem(ANALYZER_SESSIONS_INDEX_KEY,JSON.stringify(index))}catch(_){}}
+function analyzerSessionRead(id){if(!id)return null;try{return JSON.parse(localStorage.getItem(ANALYZER_SESSION_PREFIX+id)||'null')}catch(_){return null}}
+function analyzerSessionMetadata(session){return {id:session.id,name:session.name,circuitId:session.circuitId,circuitName:session.circuitName,createdAt:session.createdAt,updatedAt:session.updatedAt,status:session.status||'active',version:session.version||1}}
+function analyzerSessionUpdateIndex(session){
+ const index=analyzerSessionReadIndex().filter(item=>item.id!==session.id);
+ index.unshift(analyzerSessionMetadata(session));
+ analyzerSessionWriteIndex(index.slice(0,30));
+}
+function analyzerSessionDefaultName(circuitId){
+ const date=new Date();
+ return `${analyzerSessionCircuitName(circuitId)} — ${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+}
+function analyzerSessionSnapshot(reason='autosave'){
+ const circuitId=analyzerSessionCircuit()||analyzerSessionCircuitId;
+ if(!circuitId||!analyzerActiveSessionId)return null;
+ const previous=analyzerSessionRead(analyzerActiveSessionId)||{};
+ return {
+  ...previous,
+  version:2,
+  appVersion:'6.2.0',
+  id:analyzerActiveSessionId,
+  name:previous.name||analyzerSessionDefaultName(circuitId),
+  circuitId,
+  circuitName:analyzerSessionCircuitName(circuitId),
+  createdAt:previous.createdAt||Date.now(),
+  updatedAt:Date.now(),
+  status:previous.status||'active',
+  saveReason:reason,
+  rules:{...analyzerRules},
+  learning:JSON.parse(JSON.stringify(analyzerLearning||{teams:{},startedAt:Date.now()})),
+  queues:{count:kartQueueState?.count||1,queues:(kartQueueState?.queues||[[]]).map(queue=>[...queue])},
+  followedDriver:state?.followed_driver||'',
+  analyzerSort,
+  raceSummary:{timeRemaining:state?.time_remaining||'—',lapsRemaining:state?.apex_laps_remaining||'—',driverCount:(state?.drivers||[]).length}
+ };
+}
+function analyzerUpdateSessionBadge(text,className=''){
+ const badge=document.getElementById('analyzerSessionStatus');if(!badge)return;
+ badge.textContent=text;badge.className='analyzer-session-status'+(className?' '+className:'');
+}
+function analyzerSaveSession(reason='autosave'){
+ const snapshot=analyzerSessionSnapshot(reason);if(!snapshot)return false;
+ try{
+  localStorage.setItem(ANALYZER_SESSION_PREFIX+snapshot.id,JSON.stringify(snapshot));
+  localStorage.setItem(ANALYZER_ACTIVE_SESSION_KEY,snapshot.id);
+  analyzerSessionUpdateIndex(snapshot);
+  analyzerLastSessionSaveAt=snapshot.updatedAt;
+  const time=new Date(snapshot.updatedAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  analyzerUpdateSessionBadge(`SAUVEGARDÉ ${time}`,'saved');
+  return true;
+ }catch(error){console.warn('[KartIQ Analyzer] Sauvegarde impossible',error);analyzerUpdateSessionBadge('SAUVEGARDE IMPOSSIBLE','error');return false}
+}
+function analyzerApplySession(session,{notify=true}={}){
+ if(!session)return false;
+ analyzerSessionRestoreLock=true;
+ analyzerActiveSessionId=session.id;
+ analyzerSessionCircuitId=session.circuitId;
+ analyzerRules={...ANALYZER_DEFAULT_RULES,...(session.rules||{})};
+ analyzerLearning={teams:{},startedAt:Date.now(),...(session.learning||{})};
+ analyzerSort=session.analyzerSort||'position';
+ if(session.queues&&typeof normalizeKartQueueState==='function'){
+  kartQueueState=normalizeKartQueueState(session.queues);
+  saveKartQueues();renderKartQueues();
+ }
+ try{localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));localStorage.setItem(ANALYZER_LEARNING_KEY,JSON.stringify(analyzerLearning));localStorage.setItem(ANALYZER_ACTIVE_SESSION_KEY,session.id)}catch(_){}
+ analyzerSessionRestoreLock=false;
+ if(notify)analyzerUpdateSessionBadge('SESSION RESTAURÉE','restored');
+ const sort=document.getElementById('analyzerSort');if(sort)sort.value=analyzerSort;
+ renderAnalyzer();
+ return true;
+}
+function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
+ const cid=String(circuitId||analyzerSessionCircuit()).trim();if(!cid)return null;
+ if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
+ const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
+ const now=Date.now();
+ const session={version:2,appVersion:'6.2.0',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
+}
+function analyzerEnsureSession(){
+ if(analyzerSessionRestoreLock)return;
+ const cid=analyzerSessionCircuit();if(!cid)return;
+ if(analyzerActiveSessionId&&analyzerSessionCircuitId===cid)return;
+ if(analyzerActiveSessionId)analyzerSaveSession('circuit-switch');
+ const activeId=localStorage.getItem(ANALYZER_ACTIVE_SESSION_KEY);
+ const active=analyzerSessionRead(activeId);
+ let candidate=active&&active.circuitId===cid&&active.status!=='archived'?active:null;
+ if(!candidate){const item=analyzerSessionReadIndex().find(meta=>meta.circuitId===cid&&meta.status!=='archived');candidate=analyzerSessionRead(item?.id)}
+ if(candidate)analyzerApplySession(candidate);
+ else analyzerCreateSession({circuitId:cid,reset:false});
+}
+function analyzerBeforeCircuitChange(){analyzerSaveSession('before-circuit-change')}
+function analyzerAfterCircuitChange(){analyzerActiveSessionId=null;analyzerSessionCircuitId=null;setTimeout(analyzerEnsureSession,100)}
+function analyzerSessionAutosaveStart(){
+ clearInterval(analyzerSessionAutosaveTimer);
+ analyzerSessionAutosaveTimer=setInterval(()=>{if(analyzerActiveSessionId)analyzerSaveSession('autosave')},ANALYZER_AUTOSAVE_MS);
+}
+function openAnalyzerSessions(){renderAnalyzerSessions();document.getElementById('analyzerSessionsModal')?.classList.add('show')}
+function closeAnalyzerSessions(){document.getElementById('analyzerSessionsModal')?.classList.remove('show')}
+function renderAnalyzerSessions(){
+ const host=document.getElementById('analyzerSessionsList');if(!host)return;
+ const sessions=analyzerSessionReadIndex();
+ host.innerHTML=sessions.length?sessions.map(meta=>`<article class="analyzer-session-row ${meta.id===analyzerActiveSessionId?'active':''} ${meta.status==='archived'?'archived':''}"><div><strong>${analyzerEscape(meta.name||'Session sans nom')}</strong><span>${analyzerEscape(meta.circuitName||meta.circuitId)} · ${new Date(meta.updatedAt||meta.createdAt).toLocaleString('fr-FR')}</span></div><div class="analyzer-session-row-actions"><button type="button" onclick="resumeAnalyzerSession('${analyzerEscape(meta.id)}')">REPRENDRE</button><button type="button" onclick="archiveAnalyzerSession('${analyzerEscape(meta.id)}')">${meta.status==='archived'?'RÉACTIVER':'ARCHIVER'}</button><button type="button" class="danger" onclick="deleteAnalyzerSession('${analyzerEscape(meta.id)}')">SUPPRIMER</button></div></article>`).join(''):'<div class="analyzer-empty">Aucune session sauvegardée.</div>';
+}
+function newAnalyzerSession(){const name=window.prompt('Nom de la nouvelle session :',analyzerSessionDefaultName(analyzerSessionCircuit()));if(name===null)return;analyzerCreateSession({name:String(name).trim()||null,reset:true});renderAnalyzerSessions();closeAnalyzerSessions()}
+function resumeAnalyzerSession(id){const session=analyzerSessionRead(id);if(!session)return;if(session.circuitId!==analyzerSessionCircuit()){window.alert(`Cette session appartient au circuit « ${session.circuitName} ». Sélectionnez d’abord ce circuit sur la page d’accueil.`);return}if(analyzerActiveSessionId)analyzerSaveSession('before-resume');session.status='active';analyzerApplySession(session);analyzerSaveSession('resume');renderAnalyzerSessions();closeAnalyzerSessions()}
+function archiveAnalyzerSession(id){const session=analyzerSessionRead(id);if(!session)return;session.status=session.status==='archived'?'active':'archived';session.updatedAt=Date.now();localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);renderAnalyzerSessions()}
+function deleteAnalyzerSession(id){if(!window.confirm('Supprimer définitivement cette session Analyzer ?'))return;localStorage.removeItem(ANALYZER_SESSION_PREFIX+id);analyzerSessionWriteIndex(analyzerSessionReadIndex().filter(meta=>meta.id!==id));if(id===analyzerActiveSessionId){analyzerActiveSessionId=null;analyzerSessionCircuitId=null;localStorage.removeItem(ANALYZER_ACTIVE_SESSION_KEY);analyzerCreateSession({reset:true})}renderAnalyzerSessions()}
+function exportAnalyzerSession(){analyzerSaveSession('export');const session=analyzerSessionRead(analyzerActiveSessionId);if(!session)return;const blob=new Blob([JSON.stringify(session,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`KartIQ_Session_${analyzerSessionSafeId(session.name)}_${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function triggerAnalyzerSessionImport(){document.getElementById('analyzerSessionImport')?.click()}
+async function importAnalyzerSession(event){
+ const file=event?.target?.files?.[0];if(!file)return;
+ try{const session=JSON.parse(await file.text());if(!session?.id||!session?.circuitId||!session?.learning)throw new Error('Format de session invalide');session.id=`${analyzerSessionSafeId(session.circuitId)}-${Date.now().toString(36)}`;session.name=(session.name||'Session importée')+' — import';session.createdAt=Date.now();session.updatedAt=Date.now();session.status='active';localStorage.setItem(ANALYZER_SESSION_PREFIX+session.id,JSON.stringify(session));analyzerSessionUpdateIndex(session);if(session.circuitId===analyzerSessionCircuit())analyzerApplySession(session);renderAnalyzerSessions();window.alert('Session importée avec succès.')}catch(error){window.alert('Import impossible : '+error.message)}finally{event.target.value=''}
+}
 let analyzerRules={...ANALYZER_DEFAULT_RULES};
 let analyzerSort='position';
 let analyzerLearning={teams:{},startedAt:Date.now()};
@@ -151,6 +285,7 @@ function analyzerOpportunity(followed,forecasts){
 }
 function renderAnalyzer(){
  if(!document.getElementById('analyzerTable'))return;
+ analyzerEnsureSession();
  analyzerLearnFromState();
  const all=analyzerRows();const sorted=analyzerSortedRows();
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver)||state.followed||(state.drivers||[])[0]||null;
@@ -203,9 +338,9 @@ function closeAnalyzerRules(){document.getElementById('analyzerRulesModal')?.cla
 function saveAnalyzerRules(event){
  event?.preventDefault();
  analyzerRules={raceHours:analyzerNumeric(document.getElementById('ruleRaceHours')?.value,24),requiredStops:analyzerNumeric(document.getElementById('ruleRequiredStops')?.value,28),minStintMinutes:analyzerNumeric(document.getElementById('ruleMinStint')?.value,10),maxStintMinutes:analyzerNumeric(document.getElementById('ruleMaxStint')?.value,60),minPitSeconds:analyzerNumeric(document.getElementById('ruleMinPit')?.value,150),pitCloseMinutes:analyzerNumeric(document.getElementById('rulePitClose')?.value,30),safetyMarginMinutes:analyzerNumeric(document.getElementById('ruleSafetyMargin')?.value,2),driversCount:analyzerNumeric(document.getElementById('ruleDriversCount')?.value,6),driverMinimumMinutes:analyzerNumeric(document.getElementById('ruleDriverMinimum')?.value,210)};
- localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));closeAnalyzerRules();renderAnalyzer();
+ localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-update');closeAnalyzerRules();renderAnalyzer();
 }
-function resetAnalyzerRules(){analyzerRules={...ANALYZER_DEFAULT_RULES};localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));openAnalyzerRules();renderAnalyzer()}
-function resetAnalyzerLearning(){if(!window.confirm('Effacer l’historique des relais et les karts virtuels appris par Analyzer ?'))return;analyzerLearning={teams:{},startedAt:Date.now()};analyzerSaveLearning();renderAnalyzer()}
+function resetAnalyzerRules(){analyzerRules={...ANALYZER_DEFAULT_RULES};localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-reset');openAnalyzerRules();renderAnalyzer()}
+function resetAnalyzerLearning(){if(!window.confirm('Effacer l’historique des relais et les karts virtuels appris par Analyzer ?'))return;analyzerLearning={teams:{},startedAt:Date.now()};analyzerSaveLearning();analyzerSaveSession('learning-reset');renderAnalyzer()}
 
-document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();document.getElementById('analyzerRulesModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerRulesModal')closeAnalyzerRules()})});
+document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSessionAutosaveStart();document.getElementById('analyzerRulesModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerRulesModal')closeAnalyzerRules()});document.getElementById('analyzerSessionsModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerSessionsModal')closeAnalyzerSessions()})});window.addEventListener('beforeunload',()=>analyzerSaveSession('beforeunload'));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')analyzerSaveSession('hidden')});

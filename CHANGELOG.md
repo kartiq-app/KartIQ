@@ -1,3 +1,14 @@
+# V6.2.0 — Sessions Analyzer persistantes
+
+- Sauvegarde automatique toutes les 5 secondes.
+- Reprise automatique après fermeture, plantage ou redémarrage.
+- Sessions distinctes par circuit.
+- Sauvegarde avant changement de circuit et restauration de la dernière session du circuit sélectionné.
+- Gestionnaire de sessions : créer, reprendre, archiver et supprimer.
+- Export et import JSON.
+- Persistance des règles, apprentissages, karts virtuels, files de Quick Change et tri du classement.
+- Indicateur visuel de dernière sauvegarde.
+
 # V6.1.0 — Analyzer stratégique Endurance
 
 - Remplacement complet de l’ancienne page Analyzer.

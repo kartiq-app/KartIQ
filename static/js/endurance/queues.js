@@ -1,4 +1,4 @@
-/* KartIQ V4.9.0 — files de karts Endurance */
+/* KartIQ V6.2.0 — files de karts Endurance persistantes */
 const KART_QUEUE_STORAGE='kartiq-endurance-kart-queues-v1';
 let kartQueueState={count:1,queues:[[]],selected:null};
 function normalizeKartQueueState(value){
@@ -7,7 +7,7 @@ function normalizeKartQueueState(value){
  return {count,queues,selected:null};
 }
 function loadKartQueues(){try{kartQueueState=normalizeKartQueueState(JSON.parse(localStorage.getItem(KART_QUEUE_STORAGE)||'null'))}catch(_){kartQueueState=normalizeKartQueueState(null)}renderKartQueues()}
-function saveKartQueues(){localStorage.setItem(KART_QUEUE_STORAGE,JSON.stringify({count:kartQueueState.count,queues:kartQueueState.queues}))}
+function saveKartQueues(){localStorage.setItem(KART_QUEUE_STORAGE,JSON.stringify({count:kartQueueState.count,queues:kartQueueState.queues}));if(typeof analyzerSaveSession==='function'&&!analyzerSessionRestoreLock)analyzerSaveSession('queues-update')}
 function queueLetter(i){return String.fromCharCode(65+i)}
 function setKartQueueCount(count){
  count=Math.max(1,Math.min(3,Number(count)||1));

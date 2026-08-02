@@ -84,6 +84,11 @@
       <button class="inline-home-btn analyzer-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button>
       <div class="analyzer-heading"><span class="analyzer-kicker">ENDURANCE</span><strong>ANALYZER</strong></div>
       <div class="analyzer-toolbar-actions">
+        <span id="analyzerSessionStatus" class="analyzer-session-status">SESSION EN ATTENTE</span>
+        <button type="button" class="analyzer-action-btn" onclick="openAnalyzerSessions()">💾 SESSIONS</button>
+        <button type="button" class="analyzer-action-btn" onclick="exportAnalyzerSession()">⇩ EXPORTER</button>
+        <button type="button" class="analyzer-action-btn" onclick="triggerAnalyzerSessionImport()">⇧ IMPORTER</button>
+        <input id="analyzerSessionImport" type="file" accept="application/json,.json" hidden onchange="importAnalyzerSession(event)">
         <button type="button" class="analyzer-action-btn" onclick="openAnalyzerRules()">⚙ RÈGLEMENT</button>
         <button type="button" class="analyzer-action-btn" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
       </div>
@@ -188,6 +193,15 @@
       <div class="analyzer-rules-note">Paramètres préremplis pour la catégorie RACE des 24 Heures Fun & Race 2026 : 28 passages, relais de 10 à 60 minutes, passage dans les stands de 2 min 30 et fermeture des stands dans les 30 dernières minutes.</div>
       <div class="analyzer-rules-actions"><button type="button" onclick="resetAnalyzerRules()">VALEURS FUN & RACE</button><button type="submit" class="primary">ENREGISTRER</button></div>
     </form>
+  </div>
+
+  <div class="analyzer-rules-modal" id="analyzerSessionsModal" role="dialog" aria-modal="true" aria-labelledby="analyzerSessionsTitle">
+    <div class="analyzer-rules-card analyzer-sessions-card">
+      <div class="analyzer-rules-head"><div><span>SAUVEGARDE AUTOMATIQUE TOUTES LES 5 SECONDES</span><h2 id="analyzerSessionsTitle">Sessions Analyzer</h2></div><button type="button" onclick="closeAnalyzerSessions()" aria-label="Fermer">×</button></div>
+      <div class="analyzer-sessions-toolbar"><button type="button" class="primary" onclick="newAnalyzerSession()">＋ NOUVELLE SESSION</button><button type="button" onclick="exportAnalyzerSession()">⇩ EXPORTER LA SESSION ACTIVE</button><button type="button" onclick="triggerAnalyzerSessionImport()">⇧ IMPORTER</button></div>
+      <div id="analyzerSessionsList" class="analyzer-sessions-list"></div>
+      <div class="analyzer-rules-note">Chaque circuit possède ses propres sessions. Changer de circuit sauvegarde automatiquement la session en cours, puis restaure la dernière session du circuit sélectionné. Les données restent disponibles après fermeture du navigateur ou redémarrage de l’appareil.</div>
+    </div>
   </div>
 </section>
 
