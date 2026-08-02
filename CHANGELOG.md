@@ -1,3 +1,13 @@
+# V6.3.5 — Correction des temps PITS Apex
+
+- Correction du mapping des champs du protocole PITS Apex.
+- La colonne **TOUR** reprend désormais le vrai numéro de tour.
+- La colonne **HEURE** affiche l’heure de course au format `HH:MM:SS`.
+- La colonne **EN PISTE** calcule la durée entre la sortie du stand précédent et l’entrée actuelle.
+- La colonne **TEMPS AUX STANDS** calcule uniquement la durée de l’arrêt, au format `M:SS.mmm`.
+- Un arrêt encore en cours affiche `—` dans **TEMPS AUX STANDS**.
+- Mise à jour du cache PWA et de la version applicative.
+
 # V6.3.4 — STATS et historique PITS
 
 - Le temps de relais de la colonne **EN PISTE** est affiché en blanc.

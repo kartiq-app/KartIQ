@@ -538,25 +538,63 @@ async function loadApexTeamLaps(rowId,sessionId=''){
 }
 
 
+function apexPitProtocolMilliseconds(value){
+ const text=String(value??'').trim();
+ if(!text||text==='—')return 0;
+ // Les durées Apex sont transmises sous forme de secondes décimales
+ // (ex. 12693.327) ou parfois déjà en millisecondes entières.
+ if(/^[-+]?\d+\.\d+$/.test(text)){
+  const seconds=Number(text);return Number.isFinite(seconds)&&seconds>0?Math.round(seconds*1000):0;
+ }
+ const numeric=Number(text.replace(/[^0-9-]/g,''));
+ return Number.isFinite(numeric)&&numeric>0?numeric:0;
+}
+function apexPitProtocolLap(value){
+ const text=String(value??'').trim();if(!text)return 0;
+ // Apex encode le tour comme une petite valeur décimale : 0.174 = tour 174.
+ if(/^[-+]?0?\.\d+$/.test(text)){
+  const lap=Math.round(Number(text)*1000);return Number.isFinite(lap)&&lap>0?lap:0;
+ }
+ return apexProtocolNumber(text);
+}
+function formatApexPitClock(ms){
+ const value=Math.max(0,Math.floor(Number(ms)||0));if(!value)return '—';
+ const totalSeconds=Math.floor(value/1000),hours=Math.floor(totalSeconds/3600),minutes=Math.floor((totalSeconds%3600)/60),seconds=totalSeconds%60;
+ return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+}
+function formatApexPitDuration(ms){
+ const value=Math.max(0,Math.floor(Number(ms)||0));if(!value)return '—';
+ const minutes=Math.floor(value/60000),seconds=Math.floor((value%60000)/1000),millis=value%1000;
+ return `${minutes}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`;
+}
 function parseApexPitLine(line,rowId){
  const value=String(line||'').trim(),marker=`D${rowId}.P`;
  if(!value.startsWith(marker))return null;
  const hash=value.indexOf('#',marker.length);if(hash<0)return null;
- const stop=apexProtocolNumber(value.slice(marker.length,hash));
+ const markerStop=apexProtocolNumber(value.slice(marker.length,hash));
  const fields=value.slice(hash+1).split('|').map(item=>String(item||'').trim());
- if(!stop||fields.length<4)return null;
- // Format Apex : D<équipe>.P<arrêt>#<tour>|<heure>|<temps en piste>|<temps aux stands>
- return {stop,lap:apexProtocolNumber(fields[0]),hour:fields[1]||'—',onTrack:fields[2]||'—',pitTime:fields[3]||'—'};
+ if(!markerStop||fields.length<4)return null;
+ // Format réellement livré par Apex :
+ // D<équipe>.P<index>#<arrêt>|<tour encodé>|<entrée stands absolue>|<sortie stands absolue>
+ const stop=apexProtocolNumber(fields[0])||markerStop;
+ return {
+  stop,
+  lap:apexPitProtocolLap(fields[1]),
+  pitInMs:apexPitProtocolMilliseconds(fields[2]),
+  pitOutMs:apexPitProtocolMilliseconds(fields[3])
+ };
 }
 function parseApexPitData(raw,rowId){
  const byStop=new Map();
  for(const line of String(raw||'').split(/\r?\n/)){const pit=parseApexPitLine(line,rowId);if(pit)byStop.set(pit.stop,pit)}
- return [...byStop.values()].sort((a,b)=>b.stop-a.stop);
-}
-function formatApexPitField(value){
- const text=String(value??'').trim();if(!text||text==='0')return '—';
- if(text.includes(':')||text.includes('.'))return text;
- const numeric=Number(text.replace(/[^0-9-]/g,''));return Number.isFinite(numeric)&&numeric>0?formatApexMilliseconds(numeric):text;
+ const chronological=[...byStop.values()].sort((a,b)=>a.stop-b.stop);
+ chronological.forEach((pit,index)=>{
+  const previous=chronological[index-1];
+  pit.hour=formatApexPitClock(pit.pitInMs);
+  pit.onTrack=formatApexPitClock(Math.max(0,pit.pitInMs-(previous?.pitOutMs||0)));
+  pit.pitTime=pit.pitOutMs>pit.pitInMs?formatApexPitDuration(pit.pitOutMs-pit.pitInMs):'—';
+ });
+ return chronological.sort((a,b)=>b.stop-a.stop);
 }
 async function fetchAllApexTeamPits(rowId,sessionId,status){
  const prefix=sessionId?`S#${sessionId}#`:'';
@@ -581,7 +619,7 @@ async function loadApexTeamPits(rowId,sessionId=''){
  try{
   const pits=await fetchAllApexTeamPits(rowId,sessionId,status),sessionName=sessionId?(apexPreviousSessions.find(s=>s.id===sessionId)?.name||`Session ${sessionId}`):'Course en direct';
   if(status)status.textContent=`${pits.length} arrêt(s) chargé(s) — ${sessionName}`;
-  if(tbody)tbody.innerHTML=pits.length?pits.map(p=>`<tr><td>${p.stop}</td><td>${p.lap||'—'}</td><td>${analyzerEscape(formatApexPitField(p.hour))}</td><td>${analyzerEscape(formatApexPitField(p.onTrack))}</td><td class="pit-main">${analyzerEscape(formatApexPitField(p.pitTime))}</td></tr>`).join(''):'<tr><td colspan="5">Aucun arrêt aux stands disponible pour cette équipe dans cette session.</td></tr>';
+  if(tbody)tbody.innerHTML=pits.length?pits.map(p=>`<tr><td>${p.stop}</td><td>${p.lap||'—'}</td><td>${analyzerEscape(p.hour||'—')}</td><td>${analyzerEscape(p.onTrack||'—')}</td><td class="pit-main">${analyzerEscape(p.pitTime||'—')}</td></tr>`).join(''):'<tr><td colspan="5">Aucun arrêt aux stands disponible pour cette équipe dans cette session.</td></tr>';
  }catch(error){if(status)status.textContent=`Erreur : ${error.message}`;if(tbody)tbody.innerHTML='<tr><td colspan="5">Impossible de charger les arrêts aux stands.</td></tr>'}
 }
 
