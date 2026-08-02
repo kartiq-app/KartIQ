@@ -159,6 +159,18 @@
           <div id="analyzerKartMarket" class="analyzer-kartiq-wrap"><div class="analyzer-empty">Apprentissage en cours…</div></div>
         </section>
 
+        <section class="panel analyzer-panel analyzer-pit-simulator-panel" aria-labelledby="pitSimulatorTitle">
+          <div class="analyzer-panel-title analyzer-pit-simulator-title"><span id="pitSimulatorTitle">SIMULATEUR D’ARRÊT</span><button id="pitSimulatorButton" type="button" onclick="simulateAnalyzerPitStop()">SIMULER UN ARRÊT</button></div>
+          <div class="analyzer-pit-simulator-body">
+            <div id="pitSimulatorTrack" class="pit-simulator-track" aria-label="Position estimée des karts sur la piste"><div class="analyzer-empty">Sélectionnez une équipe puis lancez la simulation.</div></div>
+            <div class="pit-simulator-summary">
+              <div id="pitSimulatorStatus" class="pit-simulator-status">Projection disponible à partir des tours et arrêts Apex.</div>
+              <div id="pitSimulatorBreakdown" class="pit-simulator-breakdown"></div>
+              <div id="pitSimulatorResult" class="pit-simulator-result"></div>
+            </div>
+          </div>
+        </section>
+
         <section class="panel analyzer-queue-panel analyzer-queue-panel-compact" aria-labelledby="kartQueuesTitle">
           <div class="endurance-queue-header">
             <div><div id="kartQueuesTitle" class="endurance-queue-title">QUICK CHANGE — FILES DE KARTS</div><div class="analyzer-queue-subtitle">Le premier kart de chaque file est le choix immédiatement disponible.</div></div>

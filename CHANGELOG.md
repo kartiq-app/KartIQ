@@ -1,3 +1,14 @@
+# V6.8.0 — Simulateur d’arrêt et fenêtre de trafic
+
+- Ajout d’un cercle représentant la progression estimée des karts sur un tour.
+- Ajout du bouton **SIMULER UN ARRÊT** dans la page Analyzer.
+- Calcul au clic du temps moyen nécessaire pour rejoindre les stands.
+- Estimation du différentiel de la voie des stands à partir des tours IN et des arrêts précédents.
+- Calcul de la durée moyenne des arrêts précédents de l’équipe suivie.
+- Projection de tous les karts jusqu’à l’instant estimé de ressortie.
+- Identification de l’équipe immédiatement devant et derrière avec les écarts estimés.
+- Mise en évidence de l’équipe suivie et de la position projetée de ressortie.
+
 # V6.7.1 — Tableau KartIQ complet sans scroll horizontal
 
 - Toutes les colonnes du tableau KartIQ tiennent désormais dans la carte sur desktop.

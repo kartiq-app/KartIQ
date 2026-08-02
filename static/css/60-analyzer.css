@@ -565,3 +565,34 @@
     font-size:12px!important;
   }
 }
+
+
+/* KartIQ V6.8.0 — simulateur d’arrêt et cercle de trafic */
+.analyzer-pit-simulator-panel{padding:0;overflow:hidden}
+.analyzer-pit-simulator-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0}
+.analyzer-pit-simulator-title>span{font-size:15px}
+.analyzer-pit-simulator-title button{border:1px solid #2f80ed;border-radius:7px;background:#13243b;color:#78b7ff;font-size:10px;font-weight:900;letter-spacing:.04em;padding:7px 10px;cursor:pointer;white-space:nowrap}
+.analyzer-pit-simulator-title button:hover{background:#183151}
+.analyzer-pit-simulator-title button:disabled{opacity:.55;cursor:wait}
+.analyzer-pit-simulator-body{display:grid;grid-template-columns:minmax(210px,42%) minmax(0,58%);gap:12px;padding:12px;align-items:center}
+.pit-simulator-track{position:relative;min-height:250px;display:flex;align-items:center;justify-content:center;border:1px solid #252c37;border-radius:10px;background:#080b10;overflow:hidden}
+.pit-simulator-track svg{display:block;width:100%;height:auto;max-height:280px}
+.pit-simulator-ring{fill:none;stroke:#343d4a;stroke-width:12}
+.pit-simulator-line{stroke:#f5f7fa;stroke-width:3;stroke-dasharray:5 4}
+.pit-simulator-dot circle{fill:#2878c8;stroke:#d5eaff;stroke-width:1.5}
+.pit-simulator-dot.followed circle{fill:#24b86a;stroke:#b9ffd7;stroke-width:2.5}
+.pit-simulator-dot.pit circle{fill:#555f6d;stroke:#a7afb9}
+.pit-simulator-dot text{fill:#fff;font-size:8px;font-weight:900;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.pit-simulator-projected{fill:#ff9b32;stroke:#fff;stroke-width:2.5}
+.pit-simulator-center-title{fill:#aab2bf;font-size:9px;text-anchor:middle;font-weight:800}
+.pit-simulator-center-value{fill:#fff;font-size:15px;text-anchor:middle;font-weight:900}
+.pit-simulator-summary{min-width:0}
+.pit-simulator-status{color:#aab2bf;font-size:11px;line-height:1.45;margin-bottom:10px}
+.pit-simulator-breakdown{display:grid;gap:5px;margin-bottom:10px}
+.pit-simulator-breakdown div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #202630;padding:5px 0;color:#aab2bf;font-size:11px}
+.pit-simulator-breakdown b{color:#fff;font-variant-numeric:tabular-nums}
+.pit-simulator-result{border-left:3px solid #2f80ed;background:#0d1520;border-radius:0 8px 8px 0;padding:10px 12px;color:#eef5ff;font-size:12px;line-height:1.55}
+.pit-simulator-result strong{color:#fff}
+.pit-simulator-result.good{border-color:#38dc88;background:#0c1c16}
+.pit-simulator-result.dense{border-color:#ff5c5c;background:#211013}
+@media(max-width:1050px){.analyzer-pit-simulator-body{grid-template-columns:1fr}.pit-simulator-track{min-height:230px}}

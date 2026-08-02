@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.7.1"
-APP_RELEASE_NAME = "Tableau KartIQ complet sans scroll horizontal"
+APP_VERSION = "6.8.0"
+APP_RELEASE_NAME = "Simulateur d’arrêt et fenêtre de trafic"
 
 
 def _circuit_sort_key(circuit):

@@ -1,4 +1,4 @@
-/* KartIQ V6.7.1 — Tableau complet sans scroll horizontal */
+/* KartIQ V6.8.0 — Simulateur d’arrêt et cercle de trafic */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -42,7 +42,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.7.1',
+  appVersion:'6.8.0',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -99,7 +99,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.7.1',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.8.0',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -149,6 +149,111 @@ let analyzerRelayHydrationToken=0;
 let analyzerRelayHydrationScheduled=null;
 let analyzerLearning={teams:{},startedAt:Date.now()};
 const analyzerKartEvolutionHistory=new Map();
+let analyzerPitSimulation=null;
+let analyzerPitSimulationBusy=false;
+
+function analyzerMean(values){
+ const clean=(values||[]).filter(Number.isFinite);return clean.length?clean.reduce((a,b)=>a+b,0)/clean.length:null;
+}
+function analyzerDriverPace(driver){
+ const metrics=analyzerRelayMetrics(driver);
+ if(Number.isFinite(metrics.average)&&metrics.average>0)return metrics.average;
+ const best=analyzerParseDuration(driver?.best),last=analyzerParseDuration(driver?.last);
+ if(Number.isFinite(last)&&last>20)return last;
+ if(Number.isFinite(best)&&best>20)return best;
+ return analyzerLiveGridReference()||60;
+}
+function analyzerDriverPhase(driver){
+ const pace=analyzerDriverPace(driver);if(!Number.isFinite(pace)||pace<=0)return 0;
+ const track=analyzerParseDuration(driver?.track_timer);
+ if(Number.isFinite(track)&&track>=0)return ((track%pace)+pace)%pace/pace;
+ const laps=analyzerNumeric(driver?.laps,0);return ((laps%1)+1)%1;
+}
+function analyzerTrackPoint(phase,radius=86,cx=110,cy=110){
+ const angle=(Number(phase)||0)*Math.PI*2-Math.PI/2;
+ return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius};
+}
+function analyzerSimulationKartLabel(driver){return String(validKartNumber(driver)||driver?.apex||driver?.pos||'—').slice(0,3)}
+function analyzerRenderPitSimulator(){
+ const host=document.getElementById('pitSimulatorTrack');if(!host)return;
+ const drivers=(state.drivers||[]).filter(d=>d&&d.driver);
+ if(!drivers.length){host.innerHTML='<div class="analyzer-empty">En attente des données Apex…</div>';return}
+ const followed=drivers.find(d=>d.driver===state.followed_driver)||null;
+ const simulation=analyzerPitSimulation;
+ const horizon=simulation?.horizonSeconds||0;
+ const dots=drivers.map(driver=>{
+  const pace=analyzerDriverPace(driver);
+  let phase=analyzerDriverPhase(driver);
+  if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')phase=(phase+horizon/Math.max(1,pace))%1;
+  if(simulation&&driver.driver===simulation.followedName)phase=0;
+  const p=analyzerTrackPoint(phase);
+  const classes=['pit-simulator-dot'];if(driver.driver===state.followed_driver)classes.push('followed');if(driver.status==='pit')classes.push('pit');
+  return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><circle r="9"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`;
+ }).join('');
+ const projected=simulation?'<circle class="pit-simulator-projected" cx="110" cy="24" r="12"></circle>':'';
+ const centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE';
+ const centerValue=simulation?analyzerFormatDuration(simulation.horizonSeconds):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
+ host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Progression estimée des karts sur un tour"><circle class="pit-simulator-ring" cx="110" cy="110" r="86"></circle><line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line>${dots}${projected}<text class="pit-simulator-center-title" x="110" y="103">${centerTitle}</text><text class="pit-simulator-center-value" x="110" y="124">${centerValue}</text></svg>`;
+}
+function analyzerPitReferenceLap(laps,pits){
+ const pitLaps=new Set((pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite));
+ const clean=(laps||[]).filter(l=>Number(l.lapTime)>0&&!pitLaps.has(Number(l.lap))).map(l=>Number(l.lapTime)/1000);
+ return analyzerMedian(clean)||analyzerMean(clean)||null;
+}
+function analyzerPitLaneDifferential(laps,pits,pitAverage){
+ const reference=analyzerPitReferenceLap(laps,pits);if(!Number.isFinite(reference))return 0;
+ const lapByNumber=new Map((laps||[]).map(l=>[Number(l.lap),Number(l.lapTime)/1000]));
+ const values=(pits||[]).filter(p=>Number(p.pitOutMs)>Number(p.pitInMs)).map(p=>{
+  const inLap=lapByNumber.get(Number(p.lap));const stop=(p.pitOutMs-p.pitInMs)/1000;
+  return Number.isFinite(inLap)?Math.max(0,inLap-reference-stop):null;
+ }).filter(Number.isFinite);
+ return analyzerMedian(values)??0;
+}
+function analyzerProjectedTraffic(followed,horizon){
+ const others=(state.drivers||[]).filter(d=>d.driver&&d.driver!==followed.driver&&d.status!=='pit').map(driver=>{
+  const pace=analyzerDriverPace(driver);const phase=(analyzerDriverPhase(driver)+horizon/Math.max(1,pace))%1;
+  return {driver,pace,phase};
+ });
+ if(!others.length)return {ahead:null,behind:null};
+ const ahead=others.slice().sort((a,b)=>a.phase-b.phase)[0];
+ const behind=others.slice().sort((a,b)=>b.phase-a.phase)[0];
+ return {
+  ahead:{...ahead,gap:Math.max(0,ahead.phase*ahead.pace)},
+  behind:{...behind,gap:Math.max(0,(1-behind.phase)*behind.pace)}
+ };
+}
+async function simulateAnalyzerPitStop(){
+ const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver);
+ const button=document.getElementById('pitSimulatorButton'),status=document.getElementById('pitSimulatorStatus');
+ if(!followed){window.alert('Sélectionnez d’abord une équipe dans le classement.');return}
+ if(!Number(followed.apex_row)){window.alert('Identifiant Apex de cette équipe indisponible.');return}
+ if(analyzerPitSimulationBusy)return;
+ analyzerPitSimulationBusy=true;if(button){button.disabled=true;button.textContent='CALCUL…'}if(status)status.textContent='Chargement des tours et des arrêts précédents depuis Apex…';
+ try{
+  const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(Number(followed.apex_row),'',null),fetchAllApexTeamPits(Number(followed.apex_row),'',null)]);
+  const completed=(pits||[]).filter(p=>Number(p.pitOutMs)>Number(p.pitInMs));
+  const pitDurations=completed.map(p=>(p.pitOutMs-p.pitInMs)/1000).filter(v=>Number.isFinite(v)&&v>0);
+  const pitAverage=analyzerMean(pitDurations)??analyzerRules.minPitSeconds;
+  const pace=analyzerDriverPace(followed),phase=analyzerDriverPhase(followed);
+  const timeToPit=Math.max(0,(1-phase)*pace);
+  const laneDifferential=analyzerPitLaneDifferential(laps,completed,pitAverage);
+  const horizon=timeToPit+laneDifferential+pitAverage;
+  const traffic=analyzerProjectedTraffic(followed,horizon);
+  analyzerPitSimulation={followedName:followed.driver,createdAt:Date.now(),timeToPit,laneDifferential,pitAverage,horizon,traffic,samples:pitDurations.length};
+  const breakdown=document.getElementById('pitSimulatorBreakdown'),result=document.getElementById('pitSimulatorResult');
+  if(status)status.textContent=`Projection figée au clic pour ${followed.driver}. Relancez la simulation pour actualiser.`;
+  if(breakdown)breakdown.innerHTML=`<div><span>Temps moyen pour rallier les stands</span><b>${analyzerFormatDuration(timeToPit)}</b></div><div><span>Différentiel estimé de la voie des stands</span><b>${analyzerFormatDuration(laneDifferential)}</b></div><div><span>Arrêt moyen de l’équipe (${pitDurations.length||0})</span><b>${analyzerFormatDuration(pitAverage)}</b></div><div><span>Ressortie estimée dans</span><b>${analyzerFormatDuration(horizon)}</b></div>`;
+  if(result){
+   const ahead=traffic.ahead,behind=traffic.behind;
+   const front=ahead?`Vous ressortirez <strong>derrière ${analyzerEscape(ahead.driver.driver)}</strong> avec <strong>${ahead.gap.toFixed(1)} s</strong> de retard.`:'Aucune équipe détectée immédiatement devant.';
+   const rear=behind?`Vous ressortirez <strong>devant ${analyzerEscape(behind.driver.driver)}</strong> avec <strong>${behind.gap.toFixed(1)} s</strong> d’avance.`:'Aucune équipe détectée immédiatement derrière.';
+   const nearest=Math.min(ahead?.gap??999,behind?.gap??999);result.className='pit-simulator-result '+(nearest<3?'dense':nearest>5?'good':'');result.innerHTML=`${front}<br>${rear}`;
+  }
+  analyzerRenderPitSimulator();
+ }catch(error){if(status)status.textContent=`Simulation impossible : ${error.message}`;console.warn('[KartIQ] Simulation arrêt',error)}
+ finally{analyzerPitSimulationBusy=false;if(button){button.disabled=false;button.textContent='SIMULER UN ARRÊT'}}
+}
+if(!window.__kartiqPitTrackTimer){window.__kartiqPitTrackTimer=setInterval(analyzerRenderPitSimulator,750)}
 
 function analyzerKartEvolution(driver,metrics){
  const key=`${analyzerActiveSessionId||analyzerSessionCircuit()}:${analyzerTeamKey(driver)}:${metrics.relayIndex}`;
@@ -582,6 +687,7 @@ function renderAnalyzer(){
   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Moyenne ${virtual.pitAverage.samples||0} arrêt(s)">+${analyzerFormatDuration(virtual.extra)}${virtual.pitAverage.estimated?' estimé':''}</small>`:'';
   return `<tr class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td>${analyzerEscape(x.history.virtualKart)}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
  }).join('');
+ analyzerRenderPitSimulator();
  renderAnalyzerQueueAdvice();
 }
 function renderAnalyzerQueueAdvice(){
