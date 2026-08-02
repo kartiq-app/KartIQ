@@ -1,5 +1,6 @@
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import json
 import re
 import io
@@ -197,106 +198,72 @@ def _weather_for_circuit(circuit):
     cached = WEATHER_CACHE.get(circuit_id)
     if cached and now_ts - cached.get("cached_at", 0) < WEATHER_TTL_SECONDS:
         return cached["payload"]
+
     location = _weather_location(circuit)
+    circuit_timezone = str(circuit.get("timezone") or location.get("timezone") or "UTC")
+    try:
+        local_zone = ZoneInfo(circuit_timezone)
+    except Exception:
+        local_zone = timezone.utc
+        circuit_timezone = "UTC"
+
+    # Les horodatages Unix évitent tout problème de parsing ISO entre les
+    # différentes réponses d'Open-Meteo. forecast_hours limite aussi la réponse
+    # aux données réellement utiles à l'Analyzer.
     params = {
         "latitude": location["latitude"],
         "longitude": location["longitude"],
         "current": "temperature_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m,is_day",
         "hourly": "temperature_2m,precipitation_probability,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m,is_day",
-        "forecast_days": 2,
-        "timezone": "auto",
+        "forecast_hours": 12,
+        "past_hours": 1,
+        "timeformat": "unixtime",
+        "timezone": "UTC",
     }
     data = _json_urlopen("https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params))
     current = data.get("current") or {}
     hourly = data.get("hourly") or {}
-    current_time = str(current.get("time") or "")
-    next_rain = None
+
     times = hourly.get("time") or []
+    temperatures = hourly.get("temperature_2m") or []
     probabilities = hourly.get("precipitation_probability") or []
     precipitations = hourly.get("precipitation") or []
-    codes = hourly.get("weather_code") or []
-    for idx, time_value in enumerate(times):
-        if current_time and str(time_value) < current_time:
-            continue
-        probability = probabilities[idx] if idx < len(probabilities) else None
-        precipitation = precipitations[idx] if idx < len(precipitations) else 0
-        code = codes[idx] if idx < len(codes) else None
-        if (probability is not None and float(probability) >= 45) or float(precipitation or 0) >= 0.1 or code in (51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99):
-            next_rain = {
-                "time": time_value,
-                "probability": probability,
-                "precipitation": precipitation,
-                "weather_code": code,
-                "label": _weather_label(code),
-            }
-            break
-    # Frise météo : six créneaux horaires réellement fournis par Open-Meteo.
-    # Le calcul ne dépend pas d'une égalité de chaînes entre current.time et hourly.time.
-    # Avant HH:30, on garde l'heure en cours ; à partir de HH:30, on commence à l'heure suivante.
-    timeline = []
-    temperatures = hourly.get("temperature_2m") or []
     rain_values = hourly.get("rain") or []
+    codes = hourly.get("weather_code") or []
     winds = hourly.get("wind_speed_10m") or []
     gusts = hourly.get("wind_gusts_10m") or []
     day_values = hourly.get("is_day") or []
 
-    def parse_weather_datetime(value):
-        text = str(value or "").strip()
-        if not text:
-            return None
-        # Open-Meteo renvoie le plus souvent YYYY-MM-DDTHH:MM, mais on accepte
-        # aussi les secondes, les offsets et le suffixe Z.
+    now_local = datetime.now(timezone.utc).astimezone(local_zone)
+    first_slot_local = now_local.replace(minute=0, second=0, microsecond=0)
+    if now_local.minute >= 30:
+        first_slot_local += timedelta(hours=1)
+    first_slot_epoch = int(first_slot_local.astimezone(timezone.utc).timestamp())
+
+    rows = []
+    for idx, raw_time in enumerate(times):
         try:
-            return datetime.fromisoformat(text.replace("Z", "+00:00"))
+            epoch = int(raw_time)
         except Exception:
-            pass
-        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M"):
-            try:
-                return datetime.strptime(text, fmt)
-            except Exception:
-                continue
-        return None
-
-    current_dt = parse_weather_datetime(current_time)
-    if current_dt is None:
-        # Repli fiable : Open-Meteo fournit l'offset local du lieu interrogé.
-        try:
-            offset_seconds = int(data.get("utc_offset_seconds") or 0)
-        except Exception:
-            offset_seconds = 0
-        current_dt = (datetime.now(timezone.utc) + timedelta(seconds=offset_seconds)).replace(tzinfo=None)
-
-    first_slot = current_dt.replace(minute=0, second=0, microsecond=0)
-    if current_dt.minute >= 30:
-        first_slot += timedelta(hours=1)
-
-    parsed_times = []
-    for candidate_idx, value in enumerate(times):
-        parsed = parse_weather_datetime(value)
-        if parsed is None:
             continue
-        # Comparaison homogène : les valeurs hourly de timezone=auto sont locales
-        # et généralement sans offset. Si un offset est présent, on compare en naïf
-        # sur l'heure locale annoncée par l'API.
-        if parsed.tzinfo is not None:
-            parsed = parsed.replace(tzinfo=None)
-        comparable_first_slot = first_slot.replace(tzinfo=None) if first_slot.tzinfo is not None else first_slot
-        parsed_times.append((parsed, candidate_idx))
+        rows.append((epoch, idx))
+    rows.sort(key=lambda item: item[0])
 
-    parsed_times.sort(key=lambda item: item[0])
-    selected = [(parsed, idx) for parsed, idx in parsed_times if parsed >= comparable_first_slot][:6]
+    selected = [(epoch, idx) for epoch, idx in rows if epoch >= first_slot_epoch][:6]
+    if len(selected) < 6:
+        # Repli : prendre les six heures les plus proches disponibles.
+        future = [(epoch, idx) for epoch, idx in rows if epoch >= int(now_ts)]
+        selected = future[:6] or rows[:6]
 
-    # Repli ultime : si l'heure courante et les dates de prévision utilisent des
-    # conventions différentes, on renvoie tout de même les six premiers créneaux
-    # disponibles au lieu d'afficher une frise vide.
-    if not selected and parsed_times:
-        selected = parsed_times[:6]
-
-    for parsed, idx in selected:
+    timeline = []
+    for epoch, idx in selected:
+        local_dt = datetime.fromtimestamp(epoch, timezone.utc).astimezone(local_zone)
         code_value = codes[idx] if idx < len(codes) else None
         day_value = bool(day_values[idx]) if idx < len(day_values) else True
         timeline.append({
-            "time": parsed.isoformat(timespec="minutes"),
+            "timestamp": epoch,
+            "time": local_dt.isoformat(timespec="minutes"),
+            "display_time": local_dt.strftime("%H:%M"),
             "temperature": temperatures[idx] if idx < len(temperatures) else None,
             "probability": probabilities[idx] if idx < len(probabilities) else None,
             "precipitation": precipitations[idx] if idx < len(precipitations) else None,
@@ -308,13 +275,35 @@ def _weather_for_circuit(circuit):
             "wind_gusts": gusts[idx] if idx < len(gusts) else None,
         })
 
+    next_rain = None
+    for epoch, idx in rows:
+        if epoch < int(now_ts):
+            continue
+        probability = probabilities[idx] if idx < len(probabilities) else None
+        precipitation = precipitations[idx] if idx < len(precipitations) else 0
+        code_value = codes[idx] if idx < len(codes) else None
+        if ((probability is not None and float(probability) >= 45)
+                or float(precipitation or 0) >= 0.1
+                or code_value in (51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99)):
+            rain_dt = datetime.fromtimestamp(epoch, timezone.utc).astimezone(local_zone)
+            next_rain = {
+                "timestamp": epoch,
+                "time": rain_dt.isoformat(timespec="minutes"),
+                "display_time": rain_dt.strftime("%H:%M"),
+                "probability": probability,
+                "precipitation": precipitation,
+                "weather_code": code_value,
+                "label": _weather_label(code_value),
+            }
+            break
+
     code = current.get("weather_code")
     is_day = bool(current.get("is_day", 1))
     payload_data = {
         "circuit_id": circuit_id,
         "circuit_name": circuit.get("name"),
         "location": location,
-        "timezone": data.get("timezone"),
+        "timezone": circuit_timezone,
         "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "current": {
             "temperature": current.get("temperature_2m"),
@@ -331,6 +320,11 @@ def _weather_for_circuit(circuit):
         },
         "next_rain": next_rain,
         "timeline": timeline,
+        "hourly_debug": {
+            "times_received": len(times),
+            "slots_built": len(timeline),
+            "first_slot_local": first_slot_local.isoformat(timespec="minutes"),
+        },
     }
     WEATHER_CACHE[circuit_id] = {"cached_at": now_ts, "payload": payload_data}
     return payload_data

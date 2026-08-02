@@ -1,4 +1,4 @@
-/* KartIQ V6.9.5 — Prévisions météo horaires locales */
+/* KartIQ V6.9.6 — Prévisions météo horaires locales */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -43,7 +43,7 @@ function renderAnalyzerWeatherTimeline(timeline){
  if(!Array.isArray(timeline)||!timeline.length){container.innerHTML='<div class="weather-timeline-empty">Prévisions horaires indisponibles.</div>';return}
  container.innerHTML=timeline.slice(0,6).map(slot=>{
   const temperature=Number(slot.temperature),probability=Number(slot.probability),precipitation=Number(slot.precipitation||slot.rain||0);
-  const time=analyzerWeatherFormatHour(slot.time);
+  const time=slot.display_time||analyzerWeatherFormatHour(slot.time);
   const icon=slot.icon||'cloudy';
   const risk=analyzerWeatherRiskClass(probability,precipitation);
   return `<div class="weather-slot ${risk}" title="${escapeHtml(slot.label||'Conditions météo')}">

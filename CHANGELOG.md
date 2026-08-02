@@ -1,4 +1,4 @@
-# V6.9.5 — Frise météo horaire robuste
+# V6.9.6 — Frise météo horaire robuste
 
 - Reconstruction indépendante de `current.time`.
 - Repli sur l’offset local Open-Meteo puis sur les premiers créneaux disponibles.
