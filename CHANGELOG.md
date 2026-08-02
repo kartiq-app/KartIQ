@@ -1,3 +1,11 @@
+# V6.5.2 — Notation relative à la grille
+
+- La note des meilleurs karts est désormais calculée relativement à tous les relais actifs évaluables de la grille.
+- Chaque critère est normalisé séparément par rapport au plateau : T.MOYEN, gain corrigé, potentiel, régularité et quantité de données.
+- Pondération : T.MOYEN 50 %, gain corrigé 20 %, potentiel 15 %, régularité 10 %, confiance 5 %.
+- Les égalités utilisent un rang moyen afin de ne pas avantager arbitrairement une équipe.
+- La confiance affichée reste distincte de la note et indique la fiabilité de l'observation.
+
 # V6.5.1 — Reconstitution automatique des relais actifs
 
 - Chargement automatique des tours et des arrêts Apex au lancement de l’Analyzer.

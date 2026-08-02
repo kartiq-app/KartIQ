@@ -1,4 +1,4 @@
-/* KartIQ V6.5.1 — Reconstitution automatique des relais actifs */
+/* KartIQ V6.5.2 — Notation relative à la grille */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -41,7 +41,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.5.1',
+  appVersion:'6.5.2',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -98,7 +98,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.5.1',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.5.2',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -333,44 +333,54 @@ function setAnalyzerRankingMode(mode){
  renderAnalyzer();
  if(analyzerRankingMode==='virtual')analyzerLoadVirtualPitData();
 }
-function analyzerRelayPopulation(){
- return (state.drivers||[]).map(driver=>{
-  const relay=analyzerCurrentRelay(driver),average=analyzerCurrentStintAverage(driver);
-  const best=(relay?.bestLaps||[]).filter(Number.isFinite);
-  return {driver,relay,average,best3:best.length?best.reduce((a,b)=>a+b,0)/best.length:null};
- }).filter(item=>Number.isFinite(item.average)&&Number(item.relay?.lapCount)>0);
-}
-function analyzerPercentileScore(value,values,{lowerIsBetter=true}={}){
- const clean=(values||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b);if(!Number.isFinite(value)||!clean.length)return 50;
- if(clean.length===1)return 75;
- let rank=clean.findIndex(v=>value<=v);if(rank<0)rank=clean.length-1;
- const percentile=rank/(clean.length-1);
- return Math.round((lowerIsBetter?1-percentile:percentile)*100);
-}
-function analyzerRelayMetrics(driver){
+function analyzerRelayRawMetrics(driver,gridNow=null){
  const history=analyzerTeamHistory(driver),relay=history.currentRelay,average=analyzerCurrentStintAverage(driver);
- const population=analyzerRelayPopulation();
- const averages=population.map(item=>item.average),bestValues=population.map(item=>item.best3).filter(Number.isFinite);
  const bestLaps=(relay?.bestLaps||[]).filter(Number.isFinite);
  const best3=bestLaps.length?bestLaps.reduce((a,b)=>a+b,0)/bestLaps.length:null;
  const consistency=analyzerStdDev(relay?.laps||[]);
  const previous=(history.relays||[]).slice().reverse().find(item=>Number.isFinite(item.average));
- const gridNow=analyzerMedian(averages)||analyzerMedian(analyzerGridPace());
+ const currentGrid=Number.isFinite(gridNow)?gridNow:(analyzerMedian(analyzerGridPace())||null);
  const previousGrid=Number(previous?.gridEndPace)||Number(previous?.gridStartPace);
  const rawGain=Number.isFinite(previous?.average)&&Number.isFinite(average)?previous.average-average:null;
- const gridGain=Number.isFinite(previousGrid)&&Number.isFinite(gridNow)?previousGrid-gridNow:0;
+ const gridGain=Number.isFinite(previousGrid)&&Number.isFinite(currentGrid)?previousGrid-currentGrid:0;
  const correctedGain=Number.isFinite(rawGain)?rawGain-gridGain:null;
- const paceScore=analyzerPercentileScore(average,averages);
- const potentialScore=Number.isFinite(best3)?analyzerPercentileScore(best3,bestValues):paceScore;
- const transitionScore=Number.isFinite(correctedGain)?Math.max(0,Math.min(100,50+correctedGain*50)):50;
- const consistencyScore=Number.isFinite(consistency)?Math.max(0,Math.min(100,100-(consistency-.12)/1.38*100)):50;
- const score=Math.round(paceScore*.55+transitionScore*.20+potentialScore*.15+consistencyScore*.10);
  const laps=Number(relay?.lapCount)||0;
- let confidence=laps<3?20:laps<5?40:laps<8?65:85;
- if(Number.isFinite(correctedGain)&&Number.isFinite(gridNow))confidence+=5;
+ return {driver,history,relay,average,best3,consistency,correctedGain,gridNow:currentGrid,previousAverage:previous?.average??null,laps,relayIndex:Number(relay?.index)||((history.relays||[]).length+1)};
+}
+function analyzerRelayPopulation(){
+ const provisional=(state.drivers||[]).map(driver=>analyzerRelayRawMetrics(driver)).filter(item=>Number.isFinite(item.average)&&item.laps>=3);
+ const gridNow=analyzerMedian(provisional.map(item=>item.average))||analyzerMedian(analyzerGridPace());
+ return provisional.map(item=>analyzerRelayRawMetrics(item.driver,gridNow));
+}
+function analyzerPercentileScore(value,values,{lowerIsBetter=true}={}){
+ const clean=(values||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b);if(!Number.isFinite(value)||!clean.length)return 50;
+ if(clean.length===1)return 100;
+ const lower=clean.filter(v=>v<value).length;
+ const equal=clean.filter(v=>v===value).length;
+ const midRank=lower+(equal-1)/2;
+ const percentile=midRank/Math.max(1,clean.length-1);
+ return Math.round((lowerIsBetter?1-percentile:percentile)*100);
+}
+function analyzerRelayMetrics(driver){
+ const population=analyzerRelayPopulation();
+ const sharedGrid=population[0]?.gridNow??analyzerMedian(analyzerGridPace());
+ const raw=analyzerRelayRawMetrics(driver,sharedGrid);
+ const eligible=population.length?population:[raw].filter(item=>Number.isFinite(item.average)&&item.laps>=3);
+ const paceScore=analyzerPercentileScore(raw.average,eligible.map(item=>item.average));
+ const transitionValues=eligible.map(item=>item.correctedGain).filter(Number.isFinite);
+ const transitionScore=Number.isFinite(raw.correctedGain)&&transitionValues.length?analyzerPercentileScore(raw.correctedGain,transitionValues,{lowerIsBetter:false}):50;
+ const potentialValues=eligible.map(item=>item.best3).filter(Number.isFinite);
+ const potentialScore=Number.isFinite(raw.best3)&&potentialValues.length?analyzerPercentileScore(raw.best3,potentialValues):paceScore;
+ const consistencyValues=eligible.map(item=>item.consistency).filter(Number.isFinite);
+ const consistencyScore=Number.isFinite(raw.consistency)&&consistencyValues.length?analyzerPercentileScore(raw.consistency,consistencyValues):50;
+ const lapValues=eligible.map(item=>item.laps).filter(Number.isFinite);
+ const confidenceScore=lapValues.length?analyzerPercentileScore(raw.laps,lapValues,{lowerIsBetter:false}):50;
+ const score=Math.round(paceScore*.50+transitionScore*.20+potentialScore*.15+consistencyScore*.10+confidenceScore*.05);
+ let confidence=raw.laps<3?20:raw.laps<5?40:raw.laps<8?65:85;
+ if(Number.isFinite(raw.correctedGain)&&Number.isFinite(raw.gridNow))confidence+=5;
  if(population.length>=6)confidence+=5;
  confidence=Math.min(95,confidence);
- return {score:Math.max(0,Math.min(100,score)),confidence,relayIndex:Number(relay?.index)||((history.relays||[]).length+1),laps,average,best3,consistency,correctedGain,gridNow,previousAverage:previous?.average??null,status:laps<3?'learning':'rated'};
+ return {...raw,score:Math.max(0,Math.min(100,score)),confidence,criteria:{pace:paceScore,transition:transitionScore,potential:potentialScore,consistency:consistencyScore,sample:confidenceScore},populationSize:eligible.length,status:raw.laps<3?'learning':'rated'};
 }
 function analyzerKartScore(driver){return analyzerRelayMetrics(driver).score}
 function analyzerConfidence(driver){return analyzerRelayMetrics(driver).confidence}

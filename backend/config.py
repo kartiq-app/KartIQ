@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.5.1"
+APP_VERSION = "6.5.2"
 APP_RELEASE_NAME = "Reconstitution automatique des relais actifs"
 
 
