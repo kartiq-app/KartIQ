@@ -125,3 +125,6 @@
 .analyzer-ranking-table .pit-time-blue{color:#33a9ff!important;font-weight:900}
 .analyzer-ranking-table .a-track:not(.pit-time-blue){color:#fff;font-weight:800}
 .analyzer-ranking-table .a-average{color:#fff;font-weight:900;font-variant-numeric:tabular-nums}
+/* V6.3.4 — STATS / PITS */
+.apex-history-pits-table .pit-main{color:#33a9ff;font-weight:900}
+.apex-history-pits-table th:nth-child(1),.apex-history-pits-table td:nth-child(1),.apex-history-pits-table th:nth-child(2),.apex-history-pits-table td:nth-child(2){text-align:center}

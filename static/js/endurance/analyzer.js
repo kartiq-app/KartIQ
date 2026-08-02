@@ -343,7 +343,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerTable').innerHTML=sorted.map(x=>{
   const d=x.driver;const isFollowed=d.driver===state.followed_driver;const trackSec=x.forecast.track;const penalty=d.penalty||'—';
   const relayTimer=analyzerRelayTimer(d),stintAverage=analyzerCurrentStintAverage(d);
-  return `<tr class="${isFollowed?'followed':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(d.pos)}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">TOURS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track ${relayTimer.inPit?'pit-time-blue':analyzerTrackClass(trackSec)}">${analyzerEscape(relayTimer.value)}</td><td>${analyzerEscape(d.pit_stops??'—')}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td>${analyzerEscape(d.gap)}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td>${analyzerEscape(x.history.virtualKart)}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
+  return `<tr class="${isFollowed?'followed':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(d.pos)}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track ${relayTimer.inPit?'pit-time-blue':analyzerTrackClass(trackSec)}">${analyzerEscape(relayTimer.value)}</td><td>${analyzerEscape(d.pit_stops??'—')}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td>${analyzerEscape(d.gap)}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td>${analyzerEscape(x.history.virtualKart)}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
  }).join('');
  renderAnalyzerQueueAdvice();
 }
@@ -392,11 +392,14 @@ function openApexHistory(){
 }
 function closeApexHistory(){document.getElementById('apexHistoryModal')?.classList.remove('show')}
 function showApexHistoryPanel(panel){
- const sessions=panel==='sessions';
+ const sessions=panel==='sessions',laps=panel==='laps',pits=panel==='pits';
  document.getElementById('apexHistorySessionsPanel')?.classList.toggle('active',sessions);
- document.getElementById('apexHistoryLapsPanel')?.classList.toggle('active',!sessions);
+ document.getElementById('apexHistoryLapsPanel')?.classList.toggle('active',laps);
+ document.getElementById('apexHistoryPitsPanel')?.classList.toggle('active',pits);
  document.getElementById('apexHistorySessionsTab')?.classList.toggle('active',sessions);
- document.getElementById('apexHistoryLapsTab')?.classList.toggle('active',!sessions);
+ document.getElementById('apexHistoryLapsTab')?.classList.toggle('active',laps);
+ document.getElementById('apexHistoryPitsTab')?.classList.toggle('active',pits);
+ if(pits&&apexHistorySelectedRowId)reloadApexTeamPits();
 }
 function parseApexPreviousSessions(raw){
  return String(raw||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{
@@ -414,10 +417,8 @@ async function loadApexPreviousSessions(){
  }catch(error){if(status)status.textContent='Historique indisponible';if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(error.message)}</div>`}
 }
 function refreshApexHistorySessionSelect(){
- const select=document.getElementById('apexHistorySessionSelect');if(!select)return;
- const current=select.value;
- select.innerHTML='<option value="">Course en direct</option>'+apexPreviousSessions.map(s=>`<option value="${analyzerEscape(s.id)}">${analyzerEscape(s.name)}</option>`).join('');
- select.value=apexPreviousSessions.some(s=>s.id===current)?current:'';
+ const selects=[document.getElementById('apexHistorySessionSelect'),document.getElementById('apexHistoryPitsSessionSelect')].filter(Boolean);if(!selects.length)return;
+ for(const select of selects){const current=select.value;select.innerHTML='<option value="">Course en direct</option>'+apexPreviousSessions.map(s=>`<option value="${analyzerEscape(s.id)}">${analyzerEscape(s.name)}</option>`).join('');select.value=apexPreviousSessions.some(s=>s.id===current)?current:'';}
 }
 async function selectApexPreviousSession(id){
  apexHistorySelectedSession=String(id||'');
@@ -435,8 +436,9 @@ function openApexTeamLaps(rowId){
  apexHistorySelectedRowId=Number(rowId);
  const driver=(state.drivers||[]).find(d=>Number(d.apex_row)===apexHistorySelectedRowId);
  document.getElementById('apexHistoryModal')?.classList.add('show');showApexHistoryPanel('laps');refreshApexHistorySessionSelect();
- document.getElementById('apexHistoryTeamName').textContent=driver?.driver||`Équipe ${rowId}`;
- document.getElementById('apexHistoryTeamKart').textContent=`KART ${validKartNumber(driver)||driver?.apex||'—'}`;
+ const teamName=driver?.driver||`Équipe ${rowId}`,teamKart=`KART ${validKartNumber(driver)||driver?.apex||'—'}`;
+ document.getElementById('apexHistoryTeamName').textContent=teamName;document.getElementById('apexHistoryTeamKart').textContent=teamKart;
+ document.getElementById('apexHistoryPitsTeamName').textContent=teamName;document.getElementById('apexHistoryPitsTeamKart').textContent=teamKart;
  reloadApexTeamLaps();
 }
 async function reloadApexTeamLaps(){
@@ -467,7 +469,7 @@ function renderApexHistoricalTeams(){
  if(!apexHistorySelectedSession){host.innerHTML='';return}
  host.innerHTML=apexHistoricalTeams.length?`<div class="apex-history-teams-title">ÉQUIPES DE LA SESSION</div><div class="apex-history-team-buttons">${apexHistoricalTeams.map(team=>`<button type="button" onclick="openApexHistoricalTeam(${team.rowId},'${encodeURIComponent(team.name)}','${encodeURIComponent(team.kart)}')"><b>${analyzerEscape(team.kart||'—')}</b><span>${analyzerEscape(team.name)}</span></button>`).join('')}</div>`:'<div class="analyzer-empty">Classement historique indisponible.</div>';
 }
-function setApexHistoryTeamHeader(team){document.getElementById('apexHistoryTeamName').textContent=team?.name||'Équipe';document.getElementById('apexHistoryTeamKart').textContent=`KART ${team?.kart||'—'}`}
+function setApexHistoryTeamHeader(team){const name=team?.name||'Équipe',kart=`KART ${team?.kart||'—'}`;document.getElementById('apexHistoryTeamName').textContent=name;document.getElementById('apexHistoryTeamKart').textContent=kart;document.getElementById('apexHistoryPitsTeamName').textContent=name;document.getElementById('apexHistoryPitsTeamKart').textContent=kart}
 function openApexHistoricalTeam(rowId,name,kart){apexHistorySelectedRowId=Number(rowId);setApexHistoryTeamHeader({name:decodeURIComponent(name),kart:decodeURIComponent(kart)});reloadApexTeamLaps()}
 
 function apexProtocolNumber(value){
@@ -533,6 +535,54 @@ async function loadApexTeamLaps(rowId,sessionId=''){
   if(summary)summary.innerHTML=`<div><span>SESSION</span><b>${analyzerEscape(sessionName)}</b></div><div><span>MEILLEUR TOUR</span><b>${formatApexMilliseconds(best)}</b></div><div><span>TOURS CHARGÉS</span><b>${valid.length}</b></div>`;
   if(tbody)tbody.innerHTML=valid.length?valid.map(l=>`<tr><td>${l.lap}</td><td>${formatApexMilliseconds(l.sector1)}</td><td>${formatApexMilliseconds(l.sector2)}</td><td>${formatApexMilliseconds(l.sector3)}</td><td class="lap-main">${formatApexMilliseconds(l.lapTime)}</td><td class="lap-delta">${best&&l.lapTime?`+${formatApexMilliseconds(l.lapTime-best)}`:'—'}</td></tr>`).join(''):'<tr><td colspan="6">Aucun tour disponible pour cette équipe dans cette session.</td></tr>';
  }catch(error){if(status)status.textContent=`Erreur : ${error.message}`;if(tbody)tbody.innerHTML='<tr><td colspan="6">Impossible de charger les tours.</td></tr>'}
+}
+
+
+function parseApexPitLine(line,rowId){
+ const value=String(line||'').trim(),marker=`D${rowId}.P`;
+ if(!value.startsWith(marker))return null;
+ const hash=value.indexOf('#',marker.length);if(hash<0)return null;
+ const stop=apexProtocolNumber(value.slice(marker.length,hash));
+ const fields=value.slice(hash+1).split('|').map(item=>String(item||'').trim());
+ if(!stop||fields.length<4)return null;
+ // Format Apex : D<équipe>.P<arrêt>#<tour>|<heure>|<temps en piste>|<temps aux stands>
+ return {stop,lap:apexProtocolNumber(fields[0]),hour:fields[1]||'—',onTrack:fields[2]||'—',pitTime:fields[3]||'—'};
+}
+function parseApexPitData(raw,rowId){
+ const byStop=new Map();
+ for(const line of String(raw||'').split(/\r?\n/)){const pit=parseApexPitLine(line,rowId);if(pit)byStop.set(pit.stop,pit)}
+ return [...byStop.values()].sort((a,b)=>b.stop-a.stop);
+}
+function formatApexPitField(value){
+ const text=String(value??'').trim();if(!text||text==='0')return '—';
+ if(text.includes(':')||text.includes('.'))return text;
+ const numeric=Number(text.replace(/[^0-9-]/g,''));return Number.isFinite(numeric)&&numeric>0?formatApexMilliseconds(numeric):text;
+}
+async function fetchAllApexTeamPits(rowId,sessionId,status){
+ const prefix=sessionId?`S#${sessionId}#`:'';
+ const windows=[30,100,300,750];let latest=[];
+ for(const count of windows){
+  if(status)status.textContent=`Chargement des arrêts Apex… fenêtre ${count}`;
+  const command=`${prefix}D#-${count}#D${rowId}.P#-${count}#D${rowId}.INF`;
+  const parsed=parseApexPitData(await apexHistoryRequest(command),rowId);if(parsed.length)latest=parsed;
+  if(parsed.some(p=>p.stop===1)||parsed.length<count)return parsed;
+ }
+ return latest;
+}
+async function reloadApexTeamPits(){
+ const select=document.getElementById('apexHistoryPitsSessionSelect'),nextSession=String(select?.value||apexHistorySelectedSession||'');
+ apexHistorySelectedSession=nextSession;
+ const lapsSelect=document.getElementById('apexHistorySessionSelect');if(lapsSelect)lapsSelect.value=nextSession;
+ if(apexHistorySelectedRowId)loadApexTeamPits(apexHistorySelectedRowId,nextSession);
+}
+async function loadApexTeamPits(rowId,sessionId=''){
+ const status=document.getElementById('apexHistoryPitsStatus'),tbody=document.getElementById('apexHistoryPitsTable');
+ if(status)status.textContent='Chargement de tous les arrêts depuis Apex…';if(tbody)tbody.innerHTML='';
+ try{
+  const pits=await fetchAllApexTeamPits(rowId,sessionId,status),sessionName=sessionId?(apexPreviousSessions.find(s=>s.id===sessionId)?.name||`Session ${sessionId}`):'Course en direct';
+  if(status)status.textContent=`${pits.length} arrêt(s) chargé(s) — ${sessionName}`;
+  if(tbody)tbody.innerHTML=pits.length?pits.map(p=>`<tr><td>${p.stop}</td><td>${p.lap||'—'}</td><td>${analyzerEscape(formatApexPitField(p.hour))}</td><td>${analyzerEscape(formatApexPitField(p.onTrack))}</td><td class="pit-main">${analyzerEscape(formatApexPitField(p.pitTime))}</td></tr>`).join(''):'<tr><td colspan="5">Aucun arrêt aux stands disponible pour cette équipe dans cette session.</td></tr>';
+ }catch(error){if(status)status.textContent=`Erreur : ${error.message}`;if(tbody)tbody.innerHTML='<tr><td colspan="5">Impossible de charger les arrêts aux stands.</td></tr>'}
 }
 
 document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSessionAutosaveStart();document.getElementById('analyzerRulesModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerRulesModal')closeAnalyzerRules()});document.getElementById('analyzerSessionsModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerSessionsModal')closeAnalyzerSessions()});document.getElementById('apexHistoryModal')?.addEventListener('click',event=>{if(event.target.id==='apexHistoryModal')closeApexHistory()})});window.addEventListener('beforeunload',()=>analyzerSaveSession('beforeunload'));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')analyzerSaveSession('hidden')});

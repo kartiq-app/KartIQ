@@ -1,3 +1,11 @@
+# V6.3.4 — STATS et historique PITS
+
+- Le temps de relais de la colonne **EN PISTE** est affiché en blanc.
+- Le bouton **TOURS** de la colonne CHRONOS devient **STATS**.
+- La fenêtre STATS comprend désormais trois onglets : **ANCIENNES SESSIONS**, **TOURS DE L’ÉQUIPE** et **PITS**.
+- L’onglet **PITS** charge directement depuis Apex l’historique des arrêts de l’équipe : numéro d’arrêt, tour, heure, temps en piste et temps aux stands.
+- Les arrêts sont classés du plus récent au plus ancien et restent consultables dans les anciennes sessions.
+
 # V6.3.3 — Correction compteur EN PISTE Analyzer
 
 - La colonne **EN PISTE** utilise désormais exclusivement la colonne Apex de type `otr`.
