@@ -1,3 +1,13 @@
+# V6.3.0 — Historique Apex dans Analyzer
+
+- Ajout d’un bouton **TOURS** sur chaque équipe du classement Analyzer.
+- Consultation de tous les tours disponibles depuis le début de la course : numéro du tour, secteurs, chrono et delta au meilleur tour.
+- Ajout du bouton **HISTORIQUE APEX** dans la barre d’outils Analyzer.
+- Détection et affichage des anciennes sessions Apex via la commande `S#`.
+- Possibilité de consulter les tours d’une équipe dans la course en direct ou dans une ancienne session sélectionnée.
+- Connexion en lecture seule à `request.php` via un proxy serveur KartIQ, sans interrompre le WebSocket de la course.
+- Mise à jour du cache PWA et de la version en 6.3.0.
+
 # V6.2.1 — South Garda Karting
 
 - Ajout de South Garda Karting (Italie).

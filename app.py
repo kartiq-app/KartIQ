@@ -6,6 +6,8 @@ import io
 import zipfile
 import threading
 import webbrowser
+import urllib.parse
+import urllib.request
 
 try:
     import websocket
@@ -260,6 +262,57 @@ def payload():
 @app.get("/")
 def index():
     return render_template("index.html", app_version=APP_VERSION)
+
+
+
+
+def _apex_request_port(circuit):
+    """Déduit le port HTTP Apex du port WebSocket (port WS = port requête + 3)."""
+    match = re.search(r":(\d+)(?:/|$)", str(circuit.get("websocket_url") or ""))
+    if not match:
+        return None
+    port = int(match.group(1)) - 3
+    return port if port > 0 else None
+
+
+def _apex_http_request(circuit, command):
+    port = _apex_request_port(circuit)
+    if not port:
+        raise ValueError("Port Apex introuvable pour ce circuit")
+    encoded = urllib.parse.urlencode({"port": port, "request": command}).encode("utf-8")
+    req = urllib.request.Request(
+        "https://live-data.apex-timing.com/live-timing/commonv2/functions/request.php",
+        data=encoded,
+        headers={
+            "User-Agent": "Mozilla/5.0 KartIQ/6.3",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Origin": circuit.get("live_url") or "https://www.apex-timing.com",
+            "Referer": circuit.get("live_url") or "https://www.apex-timing.com/",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=20) as response:
+        return response.read().decode("utf-8", errors="replace"), port
+
+
+@app.post("/api/apex/history")
+def apex_history():
+    """Proxy limité aux commandes de consultation Apex utilisées par Analyzer."""
+    body = request.get_json(force=True) or {}
+    circuit_id = str(body.get("circuit_id") or STATE.get("circuit_id") or "")
+    command = str(body.get("request") or "").strip()
+    circuit = next((c for c in load_circuits() if c["id"] == circuit_id), None)
+    if not circuit:
+        return jsonify(ok=False, error="Circuit inconnu"), 400
+    # Lecture seule : liste/snapshot et données L/P/B/INF uniquement.
+    if not command or len(command) > 1000 or not re.fullmatch(r"[SDBINFPL#\-.0-9]+", command):
+        return jsonify(ok=False, error="Commande Apex non autorisée"), 400
+    try:
+        raw, port = _apex_http_request(circuit, command)
+        return jsonify(ok=True, raw=raw, port=port, request=command)
+    except Exception as exc:
+        write_live_log(f"HISTORIQUE APEX ERREUR {exc}")
+        return jsonify(ok=False, error=str(exc)), 502
 
 
 @app.get("/api/state")

@@ -1,6 +1,11 @@
-# KartIQ V6.2.1 — South Garda Karting
+# KartIQ V6.3.0 — Historique Apex
 
-Cette version ajoute South Garda Karting au catalogue des circuits compatibles, tout en conservant les sessions Analyzer persistantes de la V6.2.0.
+Cette version enrichit la page Analyzer avec deux nouvelles fonctions :
+
+- un bouton **TOURS** sur chaque équipe pour consulter ses chronos depuis le début de la session ;
+- un menu **HISTORIQUE APEX** pour afficher les anciennes sessions et consulter les tours d’une équipe dans celles-ci.
+
+La consultation des anciennes sessions fonctionne en lecture seule et ne coupe pas la connexion live de la course.
 
 ## Déploiement
 

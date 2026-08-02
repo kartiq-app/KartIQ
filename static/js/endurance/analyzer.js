@@ -1,4 +1,4 @@
-/* KartIQ V6.2.1 — Analyzer stratégique Endurance + sessions persistantes */
+/* KartIQ V6.3.0 — Analyzer stratégique + chronos équipes et historique Apex */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -41,7 +41,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.2.1',
+  appVersion:'6.3.0',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -98,7 +98,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.2.1',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.3.0',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -316,7 +316,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerWaveCount').textContent=wave.length;document.getElementById('analyzerWaveStatus').textContent=wave.length>=6?'GROSSE VAGUE IMMINENTE':wave.length>=3?'VAGUE EN FORMATION':wave.length?'MOUVEMENTS ISOLÉS':'AUCUNE VAGUE DÉTECTÉE';document.getElementById('analyzerWaveMeter').style.width=`${Math.min(100,wave.length/Math.max(1,(state.drivers||[]).length)*250)}%`;
  document.getElementById('analyzerTable').innerHTML=sorted.map(x=>{
   const d=x.driver;const isFollowed=d.driver===state.followed_driver;const trackSec=x.forecast.track;const penalty=d.penalty||'—';
-  return `<tr class="${isFollowed?'followed':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(d.pos)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</td><td>${analyzerEscape(d.laps)}</td><td class="a-track ${analyzerTrackClass(trackSec)}">${analyzerEscape(d.track_timer||'—')}</td><td>${analyzerEscape(d.pit_stops??'—')}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td>${analyzerEscape(d.gap)}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td>${analyzerEscape(x.history.virtualKart)}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
+  return `<tr class="${isFollowed?'followed':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(d.pos)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">TOURS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track ${analyzerTrackClass(trackSec)}">${analyzerEscape(d.track_timer||'—')}</td><td>${analyzerEscape(d.pit_stops??'—')}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td>${analyzerEscape(d.gap)}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td>${analyzerEscape(x.history.virtualKart)}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
  }).join('');
  renderAnalyzerQueueAdvice();
 }
@@ -343,4 +343,134 @@ function saveAnalyzerRules(event){
 function resetAnalyzerRules(){analyzerRules={...ANALYZER_DEFAULT_RULES};localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-reset');openAnalyzerRules();renderAnalyzer()}
 function resetAnalyzerLearning(){if(!window.confirm('Effacer l’historique des relais et les karts virtuels appris par Analyzer ?'))return;analyzerLearning={teams:{},startedAt:Date.now()};analyzerSaveLearning();analyzerSaveSession('learning-reset');renderAnalyzer()}
 
-document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSessionAutosaveStart();document.getElementById('analyzerRulesModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerRulesModal')closeAnalyzerRules()});document.getElementById('analyzerSessionsModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerSessionsModal')closeAnalyzerSessions()})});window.addEventListener('beforeunload',()=>analyzerSaveSession('beforeunload'));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')analyzerSaveSession('hidden')});
+
+
+/* V6.3.0 — Consultation des tours et anciennes sessions Apex */
+let apexPreviousSessions=[];
+let apexHistorySelectedRowId=null;
+let apexHistorySelectedSession='';
+let apexHistoricalTeams=[];
+
+function apexHistoryCircuitId(){return String(state?.circuit_id||'')}
+async function apexHistoryRequest(command){
+ const response=await fetch('/api/apex/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({circuit_id:apexHistoryCircuitId(),request:command})});
+ const data=await response.json().catch(()=>({ok:false,error:'Réponse Apex illisible'}));
+ if(!response.ok||!data.ok)throw new Error(data.error||`Erreur Apex ${response.status}`);
+ return String(data.raw||'');
+}
+function openApexHistory(){
+ document.getElementById('apexHistoryModal')?.classList.add('show');
+ showApexHistoryPanel('sessions');
+ if(!apexPreviousSessions.length)loadApexPreviousSessions();
+}
+function closeApexHistory(){document.getElementById('apexHistoryModal')?.classList.remove('show')}
+function showApexHistoryPanel(panel){
+ const sessions=panel==='sessions';
+ document.getElementById('apexHistorySessionsPanel')?.classList.toggle('active',sessions);
+ document.getElementById('apexHistoryLapsPanel')?.classList.toggle('active',!sessions);
+ document.getElementById('apexHistorySessionsTab')?.classList.toggle('active',sessions);
+ document.getElementById('apexHistoryLapsTab')?.classList.toggle('active',!sessions);
+}
+function parseApexPreviousSessions(raw){
+ return String(raw||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{
+  const parts=line.split('#');return {id:String(parts.shift()||'').trim(),name:parts.join('#').trim()};
+ }).filter(item=>item.id&&item.name&&!/^error$/i.test(item.id));
+}
+async function loadApexPreviousSessions(){
+ const status=document.getElementById('apexHistorySessionsStatus'),host=document.getElementById('apexHistorySessionsList');
+ if(status)status.textContent='Interrogation d’Apex…';if(host)host.innerHTML='<div class="analyzer-empty">Chargement…</div>';
+ try{
+  apexPreviousSessions=parseApexPreviousSessions(await apexHistoryRequest('S#'));
+  if(status)status.textContent=apexPreviousSessions.length?`${apexPreviousSessions.length} session(s) disponible(s).`:'Aucune ancienne session disponible.';
+  if(host)host.innerHTML=apexPreviousSessions.length?apexPreviousSessions.map(session=>`<button type="button" class="apex-history-session-row" onclick="selectApexPreviousSession('${analyzerEscape(session.id)}')"><span>${analyzerEscape(session.name)}</span><small>ID ${analyzerEscape(session.id)}</small><b>CONSULTER</b></button>`).join(''):'<div class="analyzer-empty">Aucun historique Apex pour le moment.</div>';
+  refreshApexHistorySessionSelect();
+ }catch(error){if(status)status.textContent='Historique indisponible';if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(error.message)}</div>`}
+}
+function refreshApexHistorySessionSelect(){
+ const select=document.getElementById('apexHistorySessionSelect');if(!select)return;
+ const current=select.value;
+ select.innerHTML='<option value="">Course en direct</option>'+apexPreviousSessions.map(s=>`<option value="${analyzerEscape(s.id)}">${analyzerEscape(s.name)}</option>`).join('');
+ select.value=apexPreviousSessions.some(s=>s.id===current)?current:'';
+}
+async function selectApexPreviousSession(id){
+ apexHistorySelectedSession=String(id||'');
+ showApexHistoryPanel('laps');
+ refreshApexHistorySessionSelect();
+ const select=document.getElementById('apexHistorySessionSelect');if(select)select.value=apexHistorySelectedSession;
+ await loadApexHistoricalTeams(apexHistorySelectedSession);
+ const currentName=document.getElementById('apexHistoryTeamName')?.textContent||'';
+ const matched=apexHistoricalTeams.find(team=>normalizeApexTeamName(team.name)===normalizeApexTeamName(currentName));
+ if(matched){apexHistorySelectedRowId=matched.rowId;setApexHistoryTeamHeader(matched);reloadApexTeamLaps()}
+ else document.getElementById('apexHistoryLapsStatus').textContent='Sélectionnez une équipe de cette session ci-dessus.';
+}
+function openApexTeamLaps(rowId){
+ if(!rowId){window.alert('Identifiant Apex de cette équipe indisponible.');return}
+ apexHistorySelectedRowId=Number(rowId);
+ const driver=(state.drivers||[]).find(d=>Number(d.apex_row)===apexHistorySelectedRowId);
+ document.getElementById('apexHistoryModal')?.classList.add('show');showApexHistoryPanel('laps');refreshApexHistorySessionSelect();
+ document.getElementById('apexHistoryTeamName').textContent=driver?.driver||`Équipe ${rowId}`;
+ document.getElementById('apexHistoryTeamKart').textContent=`KART ${validKartNumber(driver)||driver?.apex||'—'}`;
+ reloadApexTeamLaps();
+}
+async function reloadApexTeamLaps(){
+ const select=document.getElementById('apexHistorySessionSelect'),nextSession=String(select?.value||'');
+ if(nextSession!==apexHistorySelectedSession){apexHistorySelectedSession=nextSession;if(nextSession)await loadApexHistoricalTeams(nextSession);else{apexHistoricalTeams=[];renderApexHistoricalTeams()}}
+ if(apexHistorySelectedRowId)loadApexTeamLaps(apexHistorySelectedRowId,apexHistorySelectedSession);
+}
+
+function normalizeApexTeamName(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'').toLowerCase()}
+function parseApexSnapshotTeams(raw){
+ const line=String(raw||'').split(/\r?\n/).find(item=>item.startsWith('grid||'));if(!line)return [];
+ const html=line.slice(6),doc=new DOMParser().parseFromString(`<table>${html}</table>`,'text/html'),teams=[];
+ doc.querySelectorAll('tr[data-id]').forEach(row=>{
+  const rawId=row.getAttribute('data-id')||'';if(!/^r\d+$/.test(rawId))return;
+  const name=(row.querySelector('[data-type="dr"],td.dr')?.textContent||'').trim();if(!name)return;
+  const kart=(row.querySelector('[data-type="no"],td.no')?.textContent||'').trim();
+  teams.push({rowId:Number(rawId.replace('r','')),name,kart});
+ });
+ return teams;
+}
+async function loadApexHistoricalTeams(sessionId){
+ const host=document.getElementById('apexHistoryTeamsList');if(host)host.innerHTML='<div class="analyzer-empty">Chargement du classement de la session…</div>';
+ try{apexHistoricalTeams=parseApexSnapshotTeams(await apexHistoryRequest(`S#${sessionId}`));renderApexHistoricalTeams()}
+ catch(error){apexHistoricalTeams=[];if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(error.message)}</div>`}
+}
+function renderApexHistoricalTeams(){
+ const host=document.getElementById('apexHistoryTeamsList');if(!host)return;
+ if(!apexHistorySelectedSession){host.innerHTML='';return}
+ host.innerHTML=apexHistoricalTeams.length?`<div class="apex-history-teams-title">ÉQUIPES DE LA SESSION</div><div class="apex-history-team-buttons">${apexHistoricalTeams.map(team=>`<button type="button" onclick="openApexHistoricalTeam(${team.rowId},'${encodeURIComponent(team.name)}','${encodeURIComponent(team.kart)}')"><b>${analyzerEscape(team.kart||'—')}</b><span>${analyzerEscape(team.name)}</span></button>`).join('')}</div>`:'<div class="analyzer-empty">Classement historique indisponible.</div>';
+}
+function setApexHistoryTeamHeader(team){document.getElementById('apexHistoryTeamName').textContent=team?.name||'Équipe';document.getElementById('apexHistoryTeamKart').textContent=`KART ${team?.kart||'—'}`}
+function openApexHistoricalTeam(rowId,name,kart){apexHistorySelectedRowId=Number(rowId);setApexHistoryTeamHeader({name:decodeURIComponent(name),kart:decodeURIComponent(kart)});reloadApexTeamLaps()}
+
+function apexProtocolNumber(value){const n=parseInt(String(value||'').replace(/[a-zA-Z]/g,''),10);return Number.isFinite(n)?n:0}
+function parseApexLapLine(line,rowId){
+ const marker=`D${rowId}.L`;if(!line.startsWith(marker))return null;
+ const after=line.split('#')[1]||'',parts=after.split('|');
+ const lap=apexProtocolNumber(parts[0]?.replace('L',''));
+ return {lap,sector1:apexProtocolNumber(parts[1]),sector2:apexProtocolNumber(parts[2]),sector3:apexProtocolNumber(parts[3]),lapTime:apexProtocolNumber(parts[4]??parts[3])};
+}
+function parseApexTeamData(raw,rowId){
+ const laps=[];for(const line of String(raw||'').split(/\r?\n/)){const lap=parseApexLapLine(line.trim(),rowId);if(lap&&lap.lap)laps.push(lap)}
+ laps.sort((a,b)=>b.lap-a.lap);return {laps};
+}
+function formatApexMilliseconds(ms){
+ const value=Number(ms);if(!Number.isFinite(value)||value<=0)return '—';
+ const minutes=Math.floor(value/60000),seconds=Math.floor((value%60000)/1000),millis=Math.floor(value%1000);
+ return minutes?`${minutes}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`:`${seconds}.${String(millis).padStart(3,'0')}`;
+}
+async function loadApexTeamLaps(rowId,sessionId=''){
+ const status=document.getElementById('apexHistoryLapsStatus'),tbody=document.getElementById('apexHistoryLapsTable'),summary=document.getElementById('apexHistorySummary');
+ if(status)status.textContent='Chargement de tous les tours depuis Apex…';if(tbody)tbody.innerHTML='';if(summary)summary.innerHTML='';
+ const prefix=sessionId?`S#${sessionId}#`:'';
+ const command=`${prefix}D#-9999#D${rowId}.L#-999#D${rowId}.P#2#D${rowId}.B#1#D${rowId}.INF`;
+ try{
+  const data=parseApexTeamData(await apexHistoryRequest(command),rowId),valid=data.laps.filter(l=>l.lapTime>0),best=valid.length?Math.min(...valid.map(l=>l.lapTime)):0;
+  const sessionName=sessionId?(apexPreviousSessions.find(s=>s.id===sessionId)?.name||`Session ${sessionId}`):'Course en direct';
+  if(status)status.textContent=`${valid.length} tour(s) chargé(s) — ${sessionName}`;
+  if(summary)summary.innerHTML=`<div><span>SESSION</span><b>${analyzerEscape(sessionName)}</b></div><div><span>MEILLEUR TOUR</span><b>${formatApexMilliseconds(best)}</b></div><div><span>TOURS CHARGÉS</span><b>${valid.length}</b></div>`;
+  if(tbody)tbody.innerHTML=valid.length?valid.map(l=>`<tr><td>${l.lap}</td><td>${formatApexMilliseconds(l.sector1)}</td><td>${formatApexMilliseconds(l.sector2)}</td><td>${formatApexMilliseconds(l.sector3)}</td><td class="lap-main">${formatApexMilliseconds(l.lapTime)}</td><td class="lap-delta">${best&&l.lapTime?`+${formatApexMilliseconds(l.lapTime-best)}`:'—'}</td></tr>`).join(''):'<tr><td colspan="6">Aucun tour disponible pour cette équipe dans cette session.</td></tr>';
+ }catch(error){if(status)status.textContent=`Erreur : ${error.message}`;if(tbody)tbody.innerHTML='<tr><td colspan="6">Impossible de charger les tours.</td></tr>'}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSessionAutosaveStart();document.getElementById('analyzerRulesModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerRulesModal')closeAnalyzerRules()});document.getElementById('analyzerSessionsModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerSessionsModal')closeAnalyzerSessions()});document.getElementById('apexHistoryModal')?.addEventListener('click',event=>{if(event.target.id==='apexHistoryModal')closeApexHistory()})});window.addEventListener('beforeunload',()=>analyzerSaveSession('beforeunload'));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')analyzerSaveSession('hidden')});
