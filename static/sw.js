@@ -1,4 +1,4 @@
-const CACHE = 'kartiq-v6-8-0';
+const CACHE = 'kartiq-v6-9-0';
 
 const ASSETS = [
   '/',
@@ -23,7 +23,18 @@ const ASSETS = [
   '/static/icons/kartiq-180.png',
   '/static/icons/kartiq-192.png',
   '/static/icons/kartiq-512.png',
-  '/static/assets/RT10_main.png'
+  '/static/assets/RT10_main.png',
+  '/static/assets/weather/clear-day.svg',
+  '/static/assets/weather/clear-night.svg',
+  '/static/assets/weather/partly-cloudy-day.svg',
+  '/static/assets/weather/partly-cloudy-night.svg',
+  '/static/assets/weather/cloudy.svg',
+  '/static/assets/weather/fog.svg',
+  '/static/assets/weather/drizzle.svg',
+  '/static/assets/weather/rain.svg',
+  '/static/assets/weather/rain-heavy.svg',
+  '/static/assets/weather/thunderstorm.svg',
+  '/static/assets/weather/snow.svg'
 ];
 
 self.addEventListener('install', event => {

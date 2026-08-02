@@ -1,3 +1,20 @@
+# V6.9.1 — Coordonnées GPS de tous les circuits
+
+- Ajout des coordonnées latitude / longitude pour les 29 circuits configurés.
+- Ajout du fuseau horaire et d’un libellé de localisation pour chaque circuit.
+- Le module météo utilise désormais directement ces coordonnées avant tout géocodage de secours.
+- Ajout du fichier `COORDONNEES_CIRCUITS.md` pour contrôler facilement la base.
+
+# V6.9.0 — Météo dynamique stratégique
+
+- Remplacement de la carte haute « Opportunité de Quick Change » par une carte météo dynamique.
+- Déplacement de l’opportunité de Quick Change sous le simulateur d’arrêt.
+- Localisation automatique du circuit via Open-Meteo Geocoding lorsqu’aucune coordonnée n’est enregistrée.
+- Actualisation météo toutes les 5 minutes.
+- Affichage de la température, du vent, des précipitations, de la prochaine pluie et de sa probabilité.
+- Ajout d’un jeu local d’icônes SVG pour les principaux états météo.
+- Mise en évidence visuelle d’une pluie en cours ou attendue dans les 30 prochaines minutes.
+
 # V6.8.0 — Simulateur d’arrêt et fenêtre de trafic
 
 - Ajout d’un cercle représentant la progression estimée des karts sur un tour.

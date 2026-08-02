@@ -1,5 +1,5 @@
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import json
 import re
 import io
@@ -69,6 +69,192 @@ STATE = {
 
 
 RACE_STATE = RaceStateService(STATE)
+
+
+WEATHER_CACHE = {}
+WEATHER_LOCATION_CACHE = {}
+WEATHER_LOCK = threading.Lock()
+WEATHER_TTL_SECONDS = 300
+WEATHER_LOCATION_TTL_SECONDS = 86400
+
+
+def _json_urlopen(url, timeout=15):
+    req = urllib.request.Request(url, headers={"User-Agent": f"KartIQ/{APP_VERSION}"})
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8", errors="replace"))
+
+
+def _weather_location(circuit):
+    now = datetime.now(timezone.utc).timestamp()
+    circuit_id = str(circuit.get("id") or "")
+    latitude = circuit.get("latitude")
+    longitude = circuit.get("longitude")
+    if latitude is not None and longitude is not None:
+        return {
+            "latitude": float(latitude),
+            "longitude": float(longitude),
+            "name": circuit.get("name") or circuit_id,
+            "timezone": circuit.get("timezone") or "auto",
+            "source": "circuit",
+        }
+    cached = WEATHER_LOCATION_CACHE.get(circuit_id)
+    if cached and now - cached.get("cached_at", 0) < WEATHER_LOCATION_TTL_SECONDS:
+        return cached
+    query = str(circuit.get("name") or circuit_id).strip()
+    country = str(circuit.get("country") or "").strip()
+    params = {"name": query, "count": 10, "language": "fr", "format": "json"}
+    url = "https://geocoding-api.open-meteo.com/v1/search?" + urllib.parse.urlencode(params)
+    data = _json_urlopen(url)
+    results = data.get("results") or []
+    if not results and query:
+        simplified = re.sub(r"\b(karting|circuit|racing|indoor|outdoor|loisir|concept|club|rko|rkc|pks|brk)\b", " ", query, flags=re.I)
+        simplified = re.sub(r"\s+", " ", simplified).strip(" -")
+        candidates = [simplified]
+        words = re.findall(r"[A-Za-zÀ-ÿ0-9'-]+", simplified or query)
+        if words:
+            candidates.extend([words[-1], " ".join(words[-2:])])
+        for candidate in dict.fromkeys(item for item in candidates if item):
+            if candidate.lower() == query.lower():
+                continue
+            params["name"] = candidate
+            data = _json_urlopen("https://geocoding-api.open-meteo.com/v1/search?" + urllib.parse.urlencode(params))
+            results = data.get("results") or []
+            if results:
+                break
+    if not results:
+        raise ValueError(f"Localisation météo introuvable pour {query}")
+    country_lower = country.lower()
+    def score(item):
+        value = 0
+        if country_lower and str(item.get("country") or "").lower() == country_lower:
+            value += 20
+        label = " ".join(str(item.get(k) or "") for k in ("name", "admin1", "admin2", "admin3")).lower()
+        for token in re.findall(r"[a-zà-ÿ0-9]+", query.lower()):
+            if len(token) >= 4 and token in label:
+                value += 3
+        value += min(float(item.get("population") or 0) / 1_000_000, 5)
+        return value
+    best = max(results, key=score)
+    location = {
+        "latitude": float(best["latitude"]),
+        "longitude": float(best["longitude"]),
+        "name": best.get("name") or query,
+        "admin1": best.get("admin1"),
+        "country": best.get("country") or country,
+        "timezone": best.get("timezone") or "auto",
+        "source": "geocoding",
+        "cached_at": now,
+    }
+    WEATHER_LOCATION_CACHE[circuit_id] = location
+    return location
+
+
+def _weather_icon_key(code, is_day=True):
+    try:
+        code = int(code)
+    except Exception:
+        code = -1
+    if code == 0:
+        return "clear-day" if is_day else "clear-night"
+    if code in (1, 2):
+        return "partly-cloudy-day" if is_day else "partly-cloudy-night"
+    if code == 3:
+        return "cloudy"
+    if code in (45, 48):
+        return "fog"
+    if code in (51, 53, 55, 56, 57):
+        return "drizzle"
+    if code in (61, 63, 66, 80, 81):
+        return "rain"
+    if code in (65, 67, 82):
+        return "rain-heavy"
+    if code in (71, 73, 75, 77, 85, 86):
+        return "snow"
+    if code in (95, 96, 99):
+        return "thunderstorm"
+    return "cloudy"
+
+
+def _weather_label(code):
+    labels = {
+        0:"Ciel dégagé",1:"Peu nuageux",2:"Partiellement nuageux",3:"Couvert",
+        45:"Brouillard",48:"Brouillard givrant",51:"Bruine faible",53:"Bruine",55:"Bruine forte",
+        56:"Bruine verglaçante",57:"Forte bruine verglaçante",61:"Pluie faible",63:"Pluie modérée",
+        65:"Forte pluie",66:"Pluie verglaçante",67:"Forte pluie verglaçante",71:"Neige faible",
+        73:"Neige",75:"Forte neige",77:"Grains de neige",80:"Averses faibles",81:"Averses",
+        82:"Fortes averses",85:"Averses de neige",86:"Fortes averses de neige",95:"Orage",
+        96:"Orage avec grêle",99:"Orage violent avec grêle"
+    }
+    try:
+        return labels.get(int(code), "Conditions variables")
+    except Exception:
+        return "Conditions variables"
+
+
+def _weather_for_circuit(circuit):
+    circuit_id = str(circuit.get("id") or "")
+    now_ts = datetime.now(timezone.utc).timestamp()
+    cached = WEATHER_CACHE.get(circuit_id)
+    if cached and now_ts - cached.get("cached_at", 0) < WEATHER_TTL_SECONDS:
+        return cached["payload"]
+    location = _weather_location(circuit)
+    params = {
+        "latitude": location["latitude"],
+        "longitude": location["longitude"],
+        "current": "temperature_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m,is_day",
+        "hourly": "temperature_2m,precipitation_probability,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m",
+        "forecast_days": 2,
+        "timezone": "auto",
+    }
+    data = _json_urlopen("https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params))
+    current = data.get("current") or {}
+    hourly = data.get("hourly") or {}
+    current_time = str(current.get("time") or "")
+    next_rain = None
+    times = hourly.get("time") or []
+    probabilities = hourly.get("precipitation_probability") or []
+    precipitations = hourly.get("precipitation") or []
+    codes = hourly.get("weather_code") or []
+    for idx, time_value in enumerate(times):
+        if current_time and str(time_value) < current_time:
+            continue
+        probability = probabilities[idx] if idx < len(probabilities) else None
+        precipitation = precipitations[idx] if idx < len(precipitations) else 0
+        code = codes[idx] if idx < len(codes) else None
+        if (probability is not None and float(probability) >= 45) or float(precipitation or 0) >= 0.1 or code in (51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99):
+            next_rain = {
+                "time": time_value,
+                "probability": probability,
+                "precipitation": precipitation,
+                "weather_code": code,
+                "label": _weather_label(code),
+            }
+            break
+    code = current.get("weather_code")
+    is_day = bool(current.get("is_day", 1))
+    payload_data = {
+        "circuit_id": circuit_id,
+        "circuit_name": circuit.get("name"),
+        "location": location,
+        "timezone": data.get("timezone"),
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "current": {
+            "temperature": current.get("temperature_2m"),
+            "apparent_temperature": current.get("apparent_temperature"),
+            "precipitation": current.get("precipitation"),
+            "rain": current.get("rain"),
+            "weather_code": code,
+            "label": _weather_label(code),
+            "icon": _weather_icon_key(code, is_day),
+            "wind_speed": current.get("wind_speed_10m"),
+            "wind_gusts": current.get("wind_gusts_10m"),
+            "is_day": is_day,
+            "time": current.get("time"),
+        },
+        "next_rain": next_rain,
+    }
+    WEATHER_CACHE[circuit_id] = {"cached_at": now_ts, "payload": payload_data}
+    return payload_data
 
 
 LIVE_LOCK = threading.Lock()
@@ -284,7 +470,7 @@ def _apex_http_request(circuit, command):
         "https://live-data.apex-timing.com/live-timing/commonv2/functions/request.php",
         data=encoded,
         headers={
-            "User-Agent": "Mozilla/5.0 KartIQ/6.6.3",
+            "User-Agent": "Mozilla/5.0 KartIQ/6.9.1",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": circuit.get("live_url") or "https://www.apex-timing.com",
             "Referer": circuit.get("live_url") or "https://www.apex-timing.com/",
@@ -312,6 +498,19 @@ def apex_history():
         return jsonify(ok=True, raw=raw, port=port, request=command)
     except Exception as exc:
         write_live_log(f"HISTORIQUE APEX ERREUR {exc}")
+        return jsonify(ok=False, error=str(exc)), 502
+
+
+@app.get("/api/weather")
+def weather():
+    circuit_id = str(request.args.get("circuit_id") or STATE.get("circuit_id") or "")
+    circuit = next((c for c in load_circuits() if c["id"] == circuit_id), None)
+    if not circuit:
+        return jsonify(ok=False, error="Circuit inconnu"), 400
+    try:
+        return jsonify(ok=True, weather=_weather_for_circuit(circuit))
+    except Exception as exc:
+        write_live_log(f"MÉTÉO ERREUR {exc}")
         return jsonify(ok=False, error=str(exc)), 502
 
 

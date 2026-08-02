@@ -7,7 +7,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:8603/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif.",
+    "latitude": 43.3998,
+    "longitude": 6.0948,
+    "timezone": "Europe/Paris",
+    "location_label": "Brignoles / Camps-la-Source",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "brk",
@@ -17,7 +22,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:9143/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 48.7766,
+    "longitude": 1.9976,
+    "timezone": "Europe/Paris",
+    "location_label": "26 avenue des Frères Lumière, Trappes",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "cap-karting",
@@ -27,7 +37,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7953/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 47.6997,
+    "longitude": 1.5072,
+    "timezone": "Europe/Paris",
+    "location_label": "Route de Talcy, Mer",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "circuit-de-bresse",
@@ -37,7 +52,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7853/",
     "session_request": "",
     "status": "validated",
-    "notes": "WebSocket relevé dans Chrome DevTools le 23/07/2026."
+    "notes": "WebSocket relevé dans Chrome DevTools le 23/07/2026.",
+    "latitude": 46.5518,
+    "longitude": 5.2945,
+    "timezone": "Europe/Paris",
+    "location_label": "Frontenaud",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "circuit-de-leurope",
@@ -47,7 +67,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:8203/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration corrigée le 24/07/2026. Live actif pour le test."
+    "notes": "Configuration corrigée le 24/07/2026. Live actif pour le test.",
+    "latitude": 49.319,
+    "longitude": 1.1218,
+    "timezone": "Europe/Paris",
+    "location_label": "40 rue du Village, Sotteville-sous-le-Val",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "circuit-de-lindre",
@@ -57,7 +82,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:10363/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif.",
+    "latitude": 46.9348,
+    "longitude": 1.2352,
+    "timezone": "Europe/Paris",
+    "location_label": "Champ du Breuil, RD943, Clion",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "circuito-internazionale-triscina",
@@ -67,7 +97,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:10293/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif.",
+    "latitude": 37.5798,
+    "longitude": 12.7956,
+    "timezone": "Europe/Rome",
+    "location_label": "Triscina, Castelvetrano",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "dunois-kart",
@@ -77,7 +112,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:8543/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 48.0568,
+    "longitude": 1.4722,
+    "timezone": "Europe/Paris",
+    "location_label": "RD955, Lutz-en-Dunois / Villemaury",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "gp-kart-concept",
@@ -87,7 +127,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:9113/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif.",
+    "latitude": 47.6506,
+    "longitude": 1.1837,
+    "timezone": "Europe/Paris",
+    "location_label": "La Fosse aux Bœufs, Landes-le-Gaulois",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "harbor-circuit-makuhari",
@@ -97,7 +142,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:9283/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif.",
+    "latitude": 35.6539,
+    "longitude": 140.0347,
+    "timezone": "Asia/Tokyo",
+    "location_label": "Makuhari, Chiba",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "karting-45-saint-benoit",
@@ -107,7 +157,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:8373/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 47.8055,
+    "longitude": 2.3076,
+    "timezone": "Europe/Paris",
+    "location_label": "Saint-Benoît-sur-Loire",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "karting-loudun",
@@ -117,7 +172,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:9173/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 47.0078,
+    "longitude": 0.0834,
+    "timezone": "Europe/Paris",
+    "location_label": "Loudun",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "karting-des-fagnes-mariembourg",
@@ -127,7 +187,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:8313/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 02/08/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 02/08/2026 ; à valider pendant un live actif.",
+    "latitude": 50.0949,
+    "longitude": 4.5069,
+    "timezone": "Europe/Brussels",
+    "location_label": "Mariembourg / Couvin",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "kln",
@@ -137,7 +202,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:10053/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 49.3398,
+    "longitude": 2.4095,
+    "timezone": "Europe/Paris",
+    "location_label": "1300 rue de Cambronne, Neuilly-sous-Clermont",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "karting-nevers-magny-cours",
@@ -147,7 +217,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:9003/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 46.8633,
+    "longitude": 3.1648,
+    "timezone": "Europe/Paris",
+    "location_label": "Magny-Cours",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "kartland",
@@ -157,7 +232,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7733/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 24/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 24/07/2026 ; à valider pendant un live actif.",
+    "latitude": 48.6148,
+    "longitude": 2.5802,
+    "timezone": "Europe/Paris",
+    "location_label": "Moissy-Cramayel",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "la-briqueterie-les-etards",
@@ -167,7 +247,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:9733/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 48.734,
+    "longitude": 2.621,
+    "timezone": "Europe/Paris",
+    "location_label": "Les Étards / région de Brie-Comte-Robert",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "lemans-alain-prost-a",
@@ -177,7 +262,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7963/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 47.9566,
+    "longitude": 0.2085,
+    "timezone": "Europe/Paris",
+    "location_label": "Circuit Alain Prost, Le Mans",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "lemans-alain-prost-b",
@@ -187,7 +277,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:8013/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 47.9566,
+    "longitude": 0.2085,
+    "timezone": "Europe/Paris",
+    "location_label": "Circuit Alain Prost, Le Mans",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "lignano-circuit",
@@ -197,7 +292,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:8183/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif.",
+    "latitude": 45.7909,
+    "longitude": 13.0707,
+    "timezone": "Europe/Rome",
+    "location_label": "Lignano Sabbiadoro / Precenicco",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "ouest-karting-essay",
@@ -207,7 +307,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7983/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 48.5413,
+    "longitude": 0.2458,
+    "timezone": "Europe/Paris",
+    "location_label": "Essay",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "pks-circuit-du-val-dargenton",
@@ -217,7 +322,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:9253/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif.",
+    "latitude": 46.956,
+    "longitude": -0.454,
+    "timezone": "Europe/Paris",
+    "location_label": "Saint-Aubin-du-Plain / Val d'Argenton",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "racing-kart-jpr-ostricourt",
@@ -227,7 +337,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:9053/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif.",
+    "latitude": 50.4548,
+    "longitude": 3.0317,
+    "timezone": "Europe/Paris",
+    "location_label": "Ostricourt",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "rkc-karting-paris",
@@ -237,7 +352,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7913/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 30/07/2026 ; à valider pendant un live actif.",
+    "latitude": 49.0953,
+    "longitude": 2.0174,
+    "timezone": "Europe/Paris",
+    "location_label": "Cormeilles-en-Vexin",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "rko-angerville",
@@ -247,7 +367,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:8953/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 48.29037,
+    "longitude": 2.00606,
+    "timezone": "Europe/Paris",
+    "location_label": "Lieu-dit Villeneuve, Angerville",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "rko-anthoine-hubert",
@@ -257,7 +382,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7803/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 25/07/2026 ; à valider pendant un live actif.",
+    "latitude": 49.096,
+    "longitude": 2.0158,
+    "timezone": "Europe/Paris",
+    "location_label": "Circuit Anthoine Hubert / Cormeilles-en-Vexin",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "sek",
@@ -267,7 +397,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7973/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 48.2503,
+    "longitude": 3.3268,
+    "timezone": "Europe/Paris",
+    "location_label": "Soucy / Sens",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "south-garda-karting",
@@ -277,7 +412,12 @@
     "websocket_url": "wss://live-data.apex-timing.com:7443/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie le 02/08/2026 ; à valider pendant un live actif."
+    "notes": "Configuration fournie le 02/08/2026 ; à valider pendant un live actif.",
+    "latitude": 45.4629,
+    "longitude": 10.4844,
+    "timezone": "Europe/Rome",
+    "location_label": "Lonato del Garda",
+    "location_source": "curated_weather_coordinates"
   },
   {
     "id": "top-gun-evasion",
@@ -287,6 +427,11 @@
     "websocket_url": "wss://live-data.apex-timing.com:8573/",
     "session_request": "",
     "status": "testing",
-    "notes": "Configuration fournie ; à valider pendant un live actif."
+    "notes": "Configuration fournie ; à valider pendant un live actif.",
+    "latitude": 44.655294,
+    "longitude": -0.92855,
+    "timezone": "Europe/Paris",
+    "location_label": "310 avenue de la Côte d'Argent, Biganos",
+    "location_source": "curated_weather_coordinates"
   }
 ]

@@ -105,12 +105,6 @@
           <div><span>Passages</span><b id="analyzerFollowedStops">— / —</b></div>
         </div>
       </article>
-      <article class="analyzer-hero-card opportunity-card" id="analyzerOpportunityCard">
-        <span class="analyzer-card-label">OPPORTUNITÉ DE QUICK CHANGE</span>
-        <div class="opportunity-score"><strong id="analyzerOpportunityScore">—</strong><span>/100</span></div>
-        <div class="opportunity-advice" id="analyzerAdvice">En attente de données Apex…</div>
-        <div class="opportunity-detail" id="analyzerAdviceDetail">—</div>
-      </article>
       <article class="analyzer-hero-card rules-card">
         <span class="analyzer-card-label">CONFORMITÉ RÈGLEMENTAIRE</span>
         <div class="rules-status" id="analyzerRulesStatus">—</div>
@@ -120,6 +114,18 @@
           <div><span>Passages restants</span><b id="analyzerStopsRemaining">—</b></div>
           <div><span>Cadence requise</span><b id="analyzerStopCadence">—</b></div>
         </div>
+      </article>
+      <article class="analyzer-hero-card weather-card" id="analyzerWeatherCard">
+        <span class="analyzer-card-label">MÉTÉO</span>
+        <div class="weather-main">
+          <img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo">
+          <div class="weather-current"><strong id="analyzerWeatherTemperature">—</strong><span id="analyzerWeatherCondition">En attente…</span></div>
+        </div>
+        <div class="weather-stats">
+          <div><span>Vent</span><b id="analyzerWeatherWind">—</b></div>
+          <div><span>Pluie</span><b id="analyzerWeatherRain">—</b></div>
+        </div>
+        <div class="weather-forecast" id="analyzerWeatherForecast">Sélectionnez un circuit pour charger la météo.</div>
       </article>
     </section>
 
@@ -168,6 +174,14 @@
               <div id="pitSimulatorBreakdown" class="pit-simulator-breakdown"></div>
               <div id="pitSimulatorResult" class="pit-simulator-result"></div>
             </div>
+          </div>
+        </section>
+
+        <section class="panel analyzer-panel opportunity-card analyzer-opportunity-panel" id="analyzerOpportunityCard">
+          <div class="analyzer-panel-title"><span>OPPORTUNITÉ DE QUICK CHANGE</span></div>
+          <div class="analyzer-opportunity-body">
+            <div class="opportunity-score"><strong id="analyzerOpportunityScore">—</strong><span>/100</span></div>
+            <div><div class="opportunity-advice" id="analyzerAdvice">En attente de données Apex…</div><div class="opportunity-detail" id="analyzerAdviceDetail">—</div></div>
           </div>
         </section>
 
