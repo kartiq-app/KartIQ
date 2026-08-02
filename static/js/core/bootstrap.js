@@ -25,7 +25,7 @@ async function toggleKartIQFullscreen(){
 }
 document.addEventListener('fullscreenchange',()=>syncFullscreenControls(!!document.fullscreenElement));document.addEventListener('webkitfullscreenchange',()=>syncFullscreenControls(!!document.webkitFullscreenElement));
 document.getElementById('installHelp')?.addEventListener('click',e=>{if(e.target.id==='installHelp')closeInstallHelp()});
-if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const key='kartiq-sw-v6-10-1';if(localStorage.getItem(key)!=='1'){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()));if('caches' in window){const names=await caches.keys();await Promise.all(names.map(name=>caches.delete(name)))}localStorage.setItem(key,'1')}await navigator.serviceWorker.register('/static/sw.js?v=6.10.1',{updateViaCache:'none'});navigator.serviceWorker.getRegistration('/static/sw.js').then(reg=>reg&&reg.update()).catch(()=>{})}catch(err){console.warn('Service worker',err)}})}
+if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const key='kartiq-sw-v6-10-2';if(localStorage.getItem(key)!=='1'){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()));if('caches' in window){const names=await caches.keys();await Promise.all(names.map(name=>caches.delete(name)))}localStorage.setItem(key,'1')}await navigator.serviceWorker.register('/static/sw.js?v=6.10.2',{updateViaCache:'none'});navigator.serviceWorker.getRegistration('/static/sw.js').then(reg=>reg&&reg.update()).catch(()=>{})}catch(err){console.warn('Service worker',err)}})}
 
 setModeClass(currentMode);
 loadKartQueues();

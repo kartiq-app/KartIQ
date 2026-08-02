@@ -1,4 +1,4 @@
-/* KartIQ V6.10.1 — Rendu frontend MET Norway */
+/* KartIQ V6.10.2 — Frise météo et animation temps réel du cercle */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -48,9 +48,9 @@ function renderAnalyzerWeatherTimeline(timeline){
   const hasProbability=slot.probability!==null&&slot.probability!==undefined&&Number.isFinite(probability);
   const risk=analyzerWeatherRiskClass(hasProbability?probability:NaN,precipitation);
   const rainText=hasProbability?`💧 ${Math.round(probability)}%`:`💧 ${Number.isFinite(precipitation)?precipitation.toFixed(1):'—'} mm`;
-  return `<div class="weather-slot ${risk}" title="${escapeHtml(slot.label||'Conditions météo')}">
-   <div class="weather-slot-time">${escapeHtml(time)}</div>
-   <img class="weather-slot-icon" src="/static/assets/weather/${escapeHtml(icon)}.svg" alt="${escapeHtml(slot.label||'Météo')}">
+  return `<div class="weather-slot ${risk}" title="${analyzerEscape(slot.label||'Conditions météo')}">
+   <div class="weather-slot-time">${analyzerEscape(time)}</div>
+   <img class="weather-slot-icon" src="/static/assets/weather/${analyzerEscape(icon)}.svg" alt="${analyzerEscape(slot.label||'Météo')}">
    <div class="weather-slot-rain">${rainText}</div>
    <div class="weather-slot-temp">${Number.isFinite(temperature)?Math.round(temperature)+'°':'—'}</div>
   </div>`;
@@ -135,7 +135,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.9.5',
+  appVersion:'6.10.2',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -192,7 +192,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.9.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.10.2',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -256,9 +256,23 @@ function analyzerDriverPace(driver){
  if(Number.isFinite(best)&&best>20)return best;
  return analyzerLiveGridReference()||60;
 }
+const analyzerTrackAnimationAnchors=new Map();
+function analyzerAnimatedTrackSeconds(driver){
+ const key=String(driver?.driver||driver?.apex||driver?.pos||'unknown');
+ const raw=analyzerParseDuration(driver?.track_timer);
+ const now=performance.now();
+ const status=driver?.status==='pit'?'pit':'track';
+ let anchor=analyzerTrackAnimationAnchors.get(key);
+ if(!Number.isFinite(raw)||raw<0){analyzerTrackAnimationAnchors.delete(key);return null}
+ const rawChanged=!anchor||Math.abs(raw-anchor.raw)>.25||anchor.status!==status;
+ if(rawChanged){anchor={raw,at:now,status};analyzerTrackAnimationAnchors.set(key,anchor)}
+ if(status==='pit')return raw;
+ const elapsed=Math.max(0,(now-anchor.at)/1000);
+ return anchor.raw+elapsed;
+}
 function analyzerDriverPhase(driver){
  const pace=analyzerDriverPace(driver);if(!Number.isFinite(pace)||pace<=0)return 0;
- const track=analyzerParseDuration(driver?.track_timer);
+ const track=analyzerAnimatedTrackSeconds(driver);
  if(Number.isFinite(track)&&track>=0)return ((track%pace)+pace)%pace/pace;
  const laps=analyzerNumeric(driver?.laps,0);return ((laps%1)+1)%1;
 }
@@ -346,7 +360,7 @@ async function simulateAnalyzerPitStop(){
  }catch(error){if(status)status.textContent=`Simulation impossible : ${error.message}`;console.warn('[KartIQ] Simulation arrêt',error)}
  finally{analyzerPitSimulationBusy=false;if(button){button.disabled=false;button.textContent='SIMULER UN ARRÊT'}}
 }
-if(!window.__kartiqPitTrackTimer){window.__kartiqPitTrackTimer=setInterval(analyzerRenderPitSimulator,750)}
+if(!window.__kartiqPitTrackTimer){window.__kartiqPitTrackTimer=setInterval(analyzerRenderPitSimulator,100)}
 
 function analyzerKartEvolution(driver,metrics){
  const key=`${analyzerActiveSessionId||analyzerSessionCircuit()}:${analyzerTeamKey(driver)}:${metrics.relayIndex}`;

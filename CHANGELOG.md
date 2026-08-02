@@ -1,3 +1,12 @@
+# V6.10.2 — Frise météo et cercle animé en temps réel
+
+- Correction du rendu de la frise météo : remplacement d'un appel JavaScript inexistant qui interrompait la création des six créneaux.
+- Lecture directe de la timeline MET Norway déjà fournie par le backend.
+- Animation continue des marqueurs du cercle entre deux mises à jour Apex.
+- Recalage automatique de chaque kart dès qu'une nouvelle valeur EN PISTE est reçue.
+- Rafraîchissement visuel du cercle toutes les 100 ms.
+- Mise à jour du cache PWA.
+
 # V6.10.1 — Correction affichage de la frise MET Norway
 
 - Lecture explicite de `response.weather.timeline` côté Analyzer.
