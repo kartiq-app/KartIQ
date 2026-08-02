@@ -159,11 +159,12 @@
   line-height:1.2;
 }
 
-/* V6.4.3 — colonne IN compacte et colonne ÉQUIPE élargie sans chevauchement */
+/* V6.4.4 — CHRONOS se cale immédiatement après le nom d’équipe le plus long */
 .analyzer-ranking-table{
   table-layout:auto;
-  width:max-content;
-  min-width:100%;
+  width:max-content!important;
+  min-width:max-content!important;
+  max-width:none;
 }
 .analyzer-ranking-table th:nth-child(2),
 .analyzer-ranking-table td:nth-child(2),
@@ -183,8 +184,8 @@
 .analyzer-ranking-table td:nth-child(4),
 .analyzer-ranking-table.general-ranking-mode .a-team,
 .analyzer-ranking-table.virtual-ranking-mode .a-team{
-  width:max-content;
-  min-width:360px;
+  width:1%;
+  min-width:0;
   max-width:none;
   white-space:nowrap;
   overflow:visible;

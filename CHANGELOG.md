@@ -1,3 +1,10 @@
+# V6.4.4 — Colonnes ÉQUIPE et CHRONOS ajustées
+
+- La largeur de la colonne **ÉQUIPE / PILOTE** correspond désormais automatiquement au nom le plus long affiché.
+- La colonne **CHRONOS** vient se placer immédiatement après ce nom, sans grand espace vide.
+- Les noms restent complets sur une seule ligne dans les classements général et virtuel.
+- Le tableau conserve son défilement horizontal lorsque sa largeur dépasse celle de l’écran.
+
 # V6.4.3 — Colonne IN compacte et équipe élargie
 
 - Réduction de la colonne **IN** à la largeur minimale utile.
