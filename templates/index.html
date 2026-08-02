@@ -142,7 +142,7 @@
 
     <section class="panel analyzer-ranking-panel">
       <div class="analyzer-panel-title analyzer-ranking-title">
-        <div><span>CLASSEMENT GÉNÉRAL</span><small>Colonnes Apex Timing enrichies par KartIQ</small></div>
+        <div class="analyzer-ranking-heading"><div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT GÉNÉRAL</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button></div><small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par KartIQ</small></div>
         <div class="analyzer-table-controls">
           <label>TRIER PAR
             <select id="analyzerSort" onchange="setAnalyzerSort(this.value)">

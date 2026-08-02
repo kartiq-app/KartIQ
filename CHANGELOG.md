@@ -1,3 +1,12 @@
+# V6.4.0 — Classement virtuel
+
+- Ajout des boutons **CLASSEMENT GÉNÉRAL** et **CLASSEMENT VIRTUEL** dans Analyzer.
+- Le classement virtuel aligne toutes les équipes sur le nombre maximal d’arrêts effectué.
+- Le temps de chaque arrêt manquant est calculé avec la moyenne des trois meilleurs arrêts terminés de l’équipe.
+- Affichage du nombre d’arrêts virtuels, du temps ajouté et de la position réelle de référence.
+- Chargement automatique des historiques PITS Apex au premier affichage du classement virtuel.
+- Utilisation du temps minimum réglementaire comme estimation de secours lorsque l’équipe ne possède encore aucun arrêt terminé.
+
 # V6.3.7 — Couleurs des chronos dans STATS
 
 - Le chrono du tour d’entrée aux stands (IN) est affiché en rouge.

@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.3.7"
+APP_VERSION = "6.4.0"
 APP_RELEASE_NAME = "Correction des temps PITS Apex"
 
 
