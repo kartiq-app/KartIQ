@@ -128,3 +128,7 @@
 /* V6.3.4 — STATS / PITS */
 .apex-history-pits-table .pit-main{color:#33a9ff;font-weight:900}
 .apex-history-pits-table th:nth-child(1),.apex-history-pits-table td:nth-child(1),.apex-history-pits-table th:nth-child(2),.apex-history-pits-table td:nth-child(2){text-align:center}
+
+/* V6.3.7 — couleurs chronos progressifs et tours IN dans STATS */
+.apex-history-laps-table .lap-main.lap-pit-in{color:#ff3b3b!important}
+.apex-history-laps-table .lap-main.lap-progressive-best{color:#38d66b!important}

@@ -1,3 +1,10 @@
+# V6.3.7 — Couleurs des chronos dans STATS
+
+- Le chrono du tour d’entrée aux stands (IN) est affiché en rouge.
+- Chaque nouveau meilleur tour progressif de l’équipe est affiché en vert.
+- Les tours sans amélioration conservent leur couleur actuelle.
+- La règle fonctionne pour la course en direct et les anciennes sessions Apex.
+
 # V6.3.6 — Temps EN PISTE en blanc
 
 - Le temps du relais dans la colonne **EN PISTE** de l’Analyzer est désormais forcé en blanc.
