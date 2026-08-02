@@ -203,6 +203,7 @@ def _weather_for_circuit(circuit):
         "longitude": location["longitude"],
         "current": "temperature_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m,is_day",
         "hourly": "temperature_2m,precipitation_probability,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m",
+        "minutely_15": "temperature_2m,precipitation_probability,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m,is_day",
         "forecast_days": 2,
         "timezone": "auto",
     }
@@ -230,6 +231,61 @@ def _weather_for_circuit(circuit):
                 "label": _weather_label(code),
             }
             break
+    # Frise météo : 12 créneaux de 30 minutes sur les 6 prochaines heures.
+    # Open-Meteo renvoie les horaires dans le fuseau local du circuit grâce à timezone=auto.
+    timeline = []
+    minutely = data.get("minutely_15") or {}
+    mtimes = minutely.get("time") or []
+    current_dt = None
+    try:
+        current_dt = datetime.fromisoformat(current_time)
+    except Exception:
+        current_dt = None
+    if current_dt is not None:
+        minute = 30 if current_dt.minute < 30 else 0
+        hour_add = 0 if current_dt.minute < 30 else 1
+        first_slot = current_dt.replace(minute=minute, second=0, microsecond=0) + timedelta(hours=hour_add)
+        index_by_time = {str(value): idx for idx, value in enumerate(mtimes)}
+        mtemps = minutely.get("temperature_2m") or []
+        mprobs = minutely.get("precipitation_probability") or []
+        mprecips = minutely.get("precipitation") or []
+        mrain = minutely.get("rain") or []
+        mcodes = minutely.get("weather_code") or []
+        mwinds = minutely.get("wind_speed_10m") or []
+        mgusts = minutely.get("wind_gusts_10m") or []
+        mdays = minutely.get("is_day") or []
+        for step in range(12):
+            slot = first_slot + timedelta(minutes=30 * step)
+            key = slot.isoformat(timespec="minutes")
+            idx = index_by_time.get(key)
+            if idx is None:
+                # Certaines réponses incluent les secondes ; recherche du créneau le plus proche.
+                best = None
+                for candidate_idx, value in enumerate(mtimes):
+                    try:
+                        delta = abs((datetime.fromisoformat(str(value)) - slot).total_seconds())
+                    except Exception:
+                        continue
+                    if best is None or delta < best[0]:
+                        best = (delta, candidate_idx)
+                idx = best[1] if best and best[0] <= 900 else None
+            if idx is None:
+                continue
+            code_value = mcodes[idx] if idx < len(mcodes) else None
+            day_value = bool(mdays[idx]) if idx < len(mdays) else True
+            timeline.append({
+                "time": key,
+                "temperature": mtemps[idx] if idx < len(mtemps) else None,
+                "probability": mprobs[idx] if idx < len(mprobs) else None,
+                "precipitation": mprecips[idx] if idx < len(mprecips) else None,
+                "rain": mrain[idx] if idx < len(mrain) else None,
+                "weather_code": code_value,
+                "label": _weather_label(code_value),
+                "icon": _weather_icon_key(code_value, day_value),
+                "wind_speed": mwinds[idx] if idx < len(mwinds) else None,
+                "wind_gusts": mgusts[idx] if idx < len(mgusts) else None,
+            })
+
     code = current.get("weather_code")
     is_day = bool(current.get("is_day", 1))
     payload_data = {
@@ -252,6 +308,7 @@ def _weather_for_circuit(circuit):
             "time": current.get("time"),
         },
         "next_rain": next_rain,
+        "timeline": timeline,
     }
     WEATHER_CACHE[circuit_id] = {"cached_at": now_ts, "payload": payload_data}
     return payload_data
@@ -470,7 +527,7 @@ def _apex_http_request(circuit, command):
         "https://live-data.apex-timing.com/live-timing/commonv2/functions/request.php",
         data=encoded,
         headers={
-            "User-Agent": "Mozilla/5.0 KartIQ/6.9.1",
+            "User-Agent": "Mozilla/5.0 KartIQ/6.9.2",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": circuit.get("live_url") or "https://www.apex-timing.com",
             "Referer": circuit.get("live_url") or "https://www.apex-timing.com/",

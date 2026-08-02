@@ -598,7 +598,7 @@
 @media(max-width:1050px){.analyzer-pit-simulator-body{grid-template-columns:1fr}.pit-simulator-track{min-height:230px}}
 
 
-/* KartIQ V6.9.1 — météo dynamique stratégique */
+/* KartIQ V6.9.2 — frise météo locale sur 6 heures */
 .weather-card{position:relative;overflow:hidden}
 .weather-card.weather-alert{border-color:#f59e0b;box-shadow:inset 0 0 0 1px rgba(245,158,11,.18)}
 .weather-card.weather-wet{border-color:#3388d8;background:linear-gradient(145deg,#0b1420,#0b1017)}
@@ -612,9 +612,20 @@
 .weather-stats div{border-top:1px solid #29303a;padding-top:7px;display:flex;flex-direction:column;gap:3px}
 .weather-stats span{font-size:8px;color:#87919f;text-transform:uppercase;letter-spacing:.08em}
 .weather-stats b{font-size:11px;color:#fff;font-variant-numeric:tabular-nums}
-.weather-forecast{margin-top:9px;border-left:3px solid #3388d8;background:#0c141e;border-radius:0 6px 6px 0;padding:7px 9px;color:#b9c8d9;font-size:10px;line-height:1.35}
-.weather-alert .weather-forecast{border-left-color:#f59e0b;background:#20170a;color:#ffd99a}
-.weather-wet .weather-forecast{border-left-color:#50a8ff;color:#c8e5ff}
+.weather-timeline-wrap{margin-top:10px;width:100%;overflow-x:auto;overflow-y:hidden;padding-bottom:2px;scrollbar-width:thin}
+.weather-timeline{display:grid;grid-template-columns:repeat(12,minmax(56px,1fr));gap:4px;min-width:700px}
+.weather-slot{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;border:1px solid #27313d;border-radius:7px;background:#0c141e;text-align:center}
+.weather-slot-time{font-size:9px;font-weight:900;color:#dce7f5;font-variant-numeric:tabular-nums;white-space:nowrap}
+.weather-slot-icon{width:28px;height:28px;object-fit:contain}
+.weather-slot-rain{font-size:9px;font-weight:800;color:#87c8ff;white-space:nowrap}
+.weather-slot-temp{font-size:11px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums}
+.weather-slot.risk-none{border-color:#244333;background:#0d1914}
+.weather-slot.risk-low{border-color:#7b6a26;background:#19170d}
+.weather-slot.risk-medium{border-color:#9a5923;background:#1e130b}
+.weather-slot.risk-high{border-color:#a63b3b;background:#211011}
+.weather-timeline-empty{grid-column:1/-1;padding:12px;color:#9aa8b8;font-size:10px;text-align:center;border:1px dashed #34404d;border-radius:7px;background:#0c141e}
+@media(min-width:1500px){.weather-timeline{min-width:0}.weather-timeline-wrap{overflow-x:hidden}}
+@media(max-width:900px){.weather-timeline{grid-template-columns:repeat(12,58px);min-width:max-content}}
 .analyzer-opportunity-panel{padding:0;overflow:hidden}
 .analyzer-opportunity-body{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:16px;padding:13px 14px}
 .analyzer-opportunity-panel .opportunity-score{margin:0;min-width:82px}

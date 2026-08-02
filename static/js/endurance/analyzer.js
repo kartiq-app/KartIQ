@@ -1,4 +1,4 @@
-/* KartIQ V6.9.1 — Météo dynamique stratégique */
+/* KartIQ V6.9.2 — Frise météo locale 6 heures */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -31,6 +31,29 @@ function analyzerWeatherFormatHour(value){
 function analyzerWeatherMinutesUntil(value){
  const date=new Date(value);if(Number.isNaN(date.getTime()))return null;return Math.max(0,Math.round((date.getTime()-Date.now())/60000));
 }
+function analyzerWeatherRiskClass(probability, precipitation){
+ const p=Number(probability),mm=Number(precipitation);
+ if((Number.isFinite(p)&&p>=70)||(Number.isFinite(mm)&&mm>=1))return 'risk-high';
+ if((Number.isFinite(p)&&p>=50)||(Number.isFinite(mm)&&mm>=.4))return 'risk-medium';
+ if((Number.isFinite(p)&&p>=20)||(Number.isFinite(mm)&&mm>0))return 'risk-low';
+ return 'risk-none';
+}
+function renderAnalyzerWeatherTimeline(timeline){
+ const container=document.getElementById('analyzerWeatherTimeline');if(!container)return;
+ if(!Array.isArray(timeline)||!timeline.length){container.innerHTML='<div class="weather-timeline-empty">Prévisions à 30 minutes indisponibles.</div>';return}
+ container.innerHTML=timeline.slice(0,12).map(slot=>{
+  const temperature=Number(slot.temperature),probability=Number(slot.probability),precipitation=Number(slot.precipitation||slot.rain||0);
+  const time=analyzerWeatherFormatHour(slot.time);
+  const icon=slot.icon||'cloudy';
+  const risk=analyzerWeatherRiskClass(probability,precipitation);
+  return `<div class="weather-slot ${risk}" title="${escapeHtml(slot.label||'Conditions météo')}">
+   <div class="weather-slot-time">${escapeHtml(time)}</div>
+   <img class="weather-slot-icon" src="/static/assets/weather/${escapeHtml(icon)}.svg" alt="${escapeHtml(slot.label||'Météo')}">
+   <div class="weather-slot-rain">💧 ${Number.isFinite(probability)?Math.round(probability):0}%</div>
+   <div class="weather-slot-temp">${Number.isFinite(temperature)?Math.round(temperature)+'°':'—'}</div>
+  </div>`;
+ }).join('');
+}
 function renderAnalyzerWeather(){
  const card=document.getElementById('analyzerWeatherCard');if(!card)return;
  const icon=document.getElementById('analyzerWeatherIcon');
@@ -38,10 +61,9 @@ function renderAnalyzerWeather(){
  const condition=document.getElementById('analyzerWeatherCondition');
  const wind=document.getElementById('analyzerWeatherWind');
  const rain=document.getElementById('analyzerWeatherRain');
- const forecast=document.getElementById('analyzerWeatherForecast');
  card.classList.remove('weather-alert','weather-wet','weather-loading');
- if(analyzerWeatherLoading&&!analyzerWeatherData){card.classList.add('weather-loading');temp.textContent='…';condition.textContent='Chargement météo';wind.textContent='—';rain.textContent='—';forecast.textContent='Localisation du circuit et prévisions en cours.';return}
- if(!analyzerWeatherData){temp.textContent='—';condition.textContent='Météo indisponible';wind.textContent='—';rain.textContent='—';forecast.textContent=analyzerSessionCircuit()?'Nouvelle tentative automatique dans quelques minutes.':'Sélectionnez un circuit pour charger la météo.';return}
+ if(analyzerWeatherLoading&&!analyzerWeatherData){card.classList.add('weather-loading');temp.textContent='…';condition.textContent='Chargement météo';wind.textContent='—';rain.textContent='—';renderAnalyzerWeatherTimeline([]);return}
+ if(!analyzerWeatherData){temp.textContent='—';condition.textContent='Météo indisponible';wind.textContent='—';rain.textContent='—';const timeline=document.getElementById('analyzerWeatherTimeline');if(timeline)timeline.innerHTML=`<div class="weather-timeline-empty">${analyzerSessionCircuit()?'Nouvelle tentative automatique dans quelques minutes.':'Sélectionnez un circuit pour charger la météo.'}</div>`;return}
  const current=analyzerWeatherData.current||{};
  const temperature=Number(current.temperature);temp.textContent=Number.isFinite(temperature)?`${Math.round(temperature)}°C`:'—';
  condition.textContent=current.label||'Conditions variables';
@@ -49,10 +71,10 @@ function renderAnalyzerWeather(){
  const windSpeed=Number(current.wind_speed),gust=Number(current.wind_gusts);
  wind.textContent=Number.isFinite(windSpeed)?`${Math.round(windSpeed)} km/h${Number.isFinite(gust)&&gust>windSpeed+8?` · raf. ${Math.round(gust)}`:''}`:'—';
  const precipitation=Number(current.precipitation||current.rain||0);rain.textContent=precipitation>0?`${precipitation.toFixed(1)} mm`:'0 mm';
- if(precipitation>0){card.classList.add('weather-wet');forecast.textContent='Pluie en cours : fenêtre potentiellement favorable pour effectuer un arrêt.';return}
- const next=analyzerWeatherData.next_rain;
- if(next){const minutes=analyzerWeatherMinutesUntil(next.time);const probability=Number(next.probability);card.classList.toggle('weather-alert',Number.isFinite(minutes)&&minutes<=30);forecast.textContent=`${next.label||'Pluie'} vers ${analyzerWeatherFormatHour(next.time)}${Number.isFinite(minutes)?` · dans ${minutes} min`:''}${Number.isFinite(probability)?` · ${Math.round(probability)} %`:''}`;}
- else forecast.textContent='Pas de pluie significative prévue dans les prochaines heures.';
+ if(precipitation>0)card.classList.add('weather-wet');
+ const timeline=analyzerWeatherData.timeline||[];
+ if(timeline.some(slot=>Number(slot.probability)>=70||Number(slot.precipitation||slot.rain||0)>=1))card.classList.add('weather-alert');
+ renderAnalyzerWeatherTimeline(timeline);
 }
 async function loadAnalyzerWeather(force=false){
  const circuitId=analyzerSessionCircuit();
@@ -100,7 +122,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.9.1',
+  appVersion:'6.9.2',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -157,7 +179,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.9.1',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.9.2',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){

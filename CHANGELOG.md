@@ -1,3 +1,12 @@
+# V6.9.2 — Frise météo locale sur 6 heures
+
+- Remplacement du texte de prochaine pluie par une frise horizontale.
+- Affichage des 12 prochains créneaux de 30 minutes, soit 6 heures de prévision.
+- Utilisation de l’heure locale du circuit : 13:30, 14:00, 14:30, etc.
+- Affichage pour chaque créneau de l’icône météo, de la probabilité de pluie et de la température.
+- Mise en évidence visuelle progressive selon le risque de précipitation.
+- Conservation de la température, du vent et des précipitations actuelles.
+
 # V6.9.1 — Coordonnées GPS de tous les circuits
 
 - Ajout des coordonnées latitude / longitude pour les 29 circuits configurés.

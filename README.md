@@ -1,4 +1,8 @@
-## Météo dynamique (V6.9.1)
+
+### Frise météo locale sur 6 heures (V6.9.2)
+
+La carte météo affiche les 12 prochains créneaux de 30 minutes sur une seule ligne. Chaque créneau utilise l’heure locale du circuit et présente l’état du ciel, la probabilité de pluie et la température.
+## Météo dynamique (V6.9.2)
 
 La carte météo de l’Analyzer utilise les coordonnées enregistrées du circuit ou, à défaut, la recherche géographique Open-Meteo. Les données sont actualisées automatiquement toutes les cinq minutes et affichent l’état du ciel, la température, le vent, les précipitations et la prochaine période pluvieuse détectée.
 
