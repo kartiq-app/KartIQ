@@ -1,3 +1,12 @@
+## V6.10.7 — MAP synchronisée avec les événements Apex
+
+- La MAP consomme directement les événements WebSocket Apex `*`, `*i1`, `*i2`, `*in` et `*out`.
+- Les marqueurs ne se déplacent plus à partir d'une rotation autonome ou d'une estimation permanente.
+- Les portions S1, S2 et S3 du cercle sont dimensionnées selon les durées de secteurs réellement envoyées par Apex.
+- Les entrées et sorties des stands sont représentées sur une voie dédiée.
+- Les marqueurs expirent comme sur Apex lorsqu'aucun événement suivant n'est reçu, tandis que le cercle reste visible hors course.
+- Le simulateur d'arrêt conserve sa projection de trafic sur la nouvelle MAP.
+
 ## V6.10.6 — Correction du sélecteur de circuit
 
 - Correction d'une erreur JavaScript provoquée par la suppression visuelle du nom du circuit dans l'en-tête.

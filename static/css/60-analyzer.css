@@ -698,3 +698,12 @@
 .rules-card-button:hover{background:#3a240e;color:#ffb15f}
 .pit-simulator-center-value-idle{font-size:10px!important;fill:#aab2bf!important}
 @media(max-width:700px){.analyzer-static-ranking-tab{font-size:9px!important;padding:7px 8px!important}.weather-circuit-name{max-width:150px;font-size:9px}}
+
+/* Velocity V6.10.7 — MAP pilotée par les événements Apex */
+.pit-simulator-ring-base{stroke:#242b35}
+.pit-simulator-sector{fill:none;stroke-width:12;stroke-linecap:butt}
+.pit-simulator-sector.s1{stroke:#2878c8}
+.pit-simulator-sector.s2{stroke:#f2a51a}
+.pit-simulator-sector.s3{stroke:#8b5cf6}
+.pit-simulator-sector-label{fill:#d7dde6;font-size:7px;font-weight:900;text-anchor:middle;dominant-baseline:central}
+.pit-simulator-pitlane{fill:none;stroke:#7b8491;stroke-width:5;stroke-linecap:round;stroke-dasharray:3 3}

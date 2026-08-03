@@ -116,6 +116,63 @@ async function load(){
 let apexBrowserSocket=null;
 let apexBrowserCircuitId=null;
 let apexBrowserConnecting=false;
+
+// MAP Velocity — événements de position réellement émis par Apex Timing.
+// Chaque ligne de classement est animée uniquement à la réception de *, *i1,
+// *i2, *in ou *out. Aucune rotation autonome n'est créée côté Velocity.
+window.velocityApexMap={rows:new Map(),lastEventAt:0,noLive:true,circuitId:null};
+function velocityApexMapEntryPhase(entry,at=Date.now()){
+ if(!entry||!entry.startedAt||!entry.durationMs)return Number(entry?.lastPhase)||0;
+ const progress=Math.max(0,Math.min(1,(at-entry.startedAt)/Math.max(1,entry.durationMs)));
+ const s1=Number(entry.sectors?.s1)||0,s2=Number(entry.sectors?.s2)||0,s3=Number(entry.sectors?.s3)||0;
+ const total=(s1+s2+s3)>0?s1+s2+s3:(Number(entry.lapDurationMs)||entry.durationMs);
+ if(entry.segment==='track')return progress;
+ if(entry.segment==='s1')return total>0?progress*s1/total:progress;
+ if(entry.segment==='s2')return total>0?(s1+progress*s2)/total:Number(entry.lastPhase)||0;
+ if(entry.segment==='s3')return total>0?(s1+s2+progress*s3)/total:Number(entry.lastPhase)||0;
+ if(entry.segment==='out')return 0;
+ return Number(entry.lastPhase)||0;
+}
+function resetVelocityApexMap(circuitId=null){
+ window.velocityApexMap.rows.clear();window.velocityApexMap.lastEventAt=0;window.velocityApexMap.noLive=true;window.velocityApexMap.circuitId=circuitId;
+}
+function ingestApexMapEvents(frame,circuitId){
+ const registry=window.velocityApexMap;
+ if(registry.circuitId!==circuitId)resetVelocityApexMap(circuitId);
+ const raw=String(frame||'').replace(/\r\n?/g,'\n');
+ if(/(?:^|\n)init\|n(?:\||$)/.test(raw)){resetVelocityApexMap(circuitId);return}
+ if(/(?:^|\n)init\|[rb](?:\||$)/.test(raw))registry.noLive=false;
+ const scan=/r(\d+)(?:c\d+)?\|([^|\r\n]*)\|(.*?)(?=(?:\s*r\d+(?:c\d+)?\|)|$)/gs;
+ for(const match of raw.matchAll(scan)){
+  const row=Number(match[1]),code=String(match[2]||'').trim();
+  if(!['*','*i1','*i2','*in','*out'].includes(code))continue;
+  const fields=String(match[3]||'').trim().split('|').map(v=>String(v||'').trim());
+  const value=Number(fields[0]);const extra=Number(fields[1]);const now=Date.now();
+  const previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},lastPhase:0};
+  previous.lastPhase=velocityApexMapEntryPhase(previous,now);
+  if(code==='*'){
+   if(Number.isFinite(value)&&value>0)previous.lapDurationMs=value;
+   if(Number.isFinite(extra)&&extra>0)previous.sectors.s1=extra;
+   previous.segment=Number.isFinite(extra)&&extra>0?'s1':'track';
+   previous.durationMs=Number.isFinite(extra)&&extra>0?extra:value;
+   previous.inPit=false;
+  }else if(code==='*i1'){
+   if(Number.isFinite(value)&&value>0)previous.sectors.s2=value;
+   previous.segment='s2';previous.durationMs=value;previous.inPit=false;
+  }else if(code==='*i2'){
+   if(Number.isFinite(value)&&value>0)previous.sectors.s3=value;
+   previous.segment='s3';previous.durationMs=value;previous.inPit=false;
+  }else if(code==='*in'){
+   previous.segment='in';previous.durationMs=8000;previous.inPit=true;
+  }else if(code==='*out'){
+   previous.segment='out';previous.durationMs=Number.isFinite(value)&&value>0?value:5000;previous.inPit=false;
+  }
+  if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
+  previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
+  registry.rows.set(row,previous);registry.lastEventAt=now;registry.noLive=false;
+ }
+}
+
 async function sendApexStatus(status,connection,error=null){try{await fetch('/api/apex/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,connection,error})})}catch(e){}}
 function closeApexBrowserSocket(){if(apexBrowserSocket){apexBrowserSocket.onclose=null;try{apexBrowserSocket.close()}catch(e){}apexBrowserSocket=null}apexBrowserConnecting=false}
 function ensureApexBrowserConnection(){if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
@@ -126,7 +183,7 @@ function connectApexBrowser(force=false){
  closeApexBrowserSocket();apexBrowserCircuitId=circuit.id;apexBrowserConnecting=true;sendApexStatus('connecting','CONNEXION APEX…');
  try{apexBrowserSocket=new WebSocket(circuit.websocket_url)}catch(err){apexBrowserConnecting=false;sendApexStatus('error','ERREUR LIVE',err.message);return}
  apexBrowserSocket.addEventListener('open',()=>{apexBrowserConnecting=false;sendApexStatus('connected','LIVE • CONNECTÉ');if(circuit.session_request){apexBrowserSocket.send(circuit.session_request);fetch('/api/developer/outbound',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:circuit.session_request})}).catch(()=>{})}});
- apexBrowserSocket.addEventListener('message',async e=>{const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);ingestApexCountdown(frame);try{const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});if(!r.ok){const d=await r.json();throw new Error(d.error||'Décodage Apex impossible')}}catch(err){sendApexStatus('error','ERREUR DÉCODAGE',err.message)}});
+ apexBrowserSocket.addEventListener('message',async e=>{const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);ingestApexCountdown(frame);ingestApexMapEvents(frame,circuit.id);try{const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});if(!r.ok){const d=await r.json();throw new Error(d.error||'Décodage Apex impossible')}}catch(err){sendApexStatus('error','ERREUR DÉCODAGE',err.message)}});
  apexBrowserSocket.addEventListener('error',()=>sendApexStatus('error','ERREUR LIVE','Connexion WebSocket Apex impossible'));
  apexBrowserSocket.addEventListener('close',e=>{apexBrowserSocket=null;apexBrowserConnecting=false;sendApexStatus('closed','LIVE DÉCONNECTÉ',`Code ${e.code}`);setTimeout(()=>{if(state?.circuit_id===apexBrowserCircuitId)connectApexBrowser(false)},5000)});
 }

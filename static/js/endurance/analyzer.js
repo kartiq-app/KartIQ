@@ -270,65 +270,94 @@ function analyzerDriverPace(driver){
  return analyzerLiveGridReference()||60;
 }
 const analyzerTrackAnimationAnchors=new Map();
+function analyzerApexMapRegistry(){return window.velocityApexMap||{rows:new Map(),lastEventAt:0,noLive:true}}
+function analyzerApexMapEntry(driver){
+ const row=Number(driver?.apex_row);return Number.isFinite(row)?analyzerApexMapRegistry().rows.get(row)||null:null;
+}
+function analyzerApexSectorModel(){
+ const entries=[...analyzerApexMapRegistry().rows.values()];
+ const med=key=>analyzerMedian(entries.map(e=>Number(e?.sectors?.[key])).filter(v=>Number.isFinite(v)&&v>0));
+ const s1=med('s1'),s2=med('s2'),s3=med('s3');
+ if([s1,s2,s3].every(v=>Number.isFinite(v)&&v>0))return {s1,s2,s3,total:s1+s2+s3,source:'apex'};
+ return null;
+}
 function analyzerApexRaceIsActive(){
- const drivers=(state?.drivers||[]).filter(d=>d&&d.driver);
- if(!drivers.length)return false;
- const liveStatus=String(state?.live?.status||'').toLowerCase();
- const connection=String(state?.connection||'').toLowerCase();
+ const drivers=(state?.drivers||[]).filter(d=>d&&d.driver);if(!drivers.length)return false;
+ const registry=analyzerApexMapRegistry();if(registry.noLive)return false;
+ const liveStatus=String(state?.live?.status||'').toLowerCase(),connection=String(state?.connection||'').toLowerCase();
  const connected=liveStatus==='connected'||connection.includes('connect');
- const lastRaw=state?.live?.last_message_at;
- const lastMs=lastRaw?Date.parse(lastRaw):NaN;
- const recent=Number.isFinite(lastMs)?Date.now()-lastMs<15000:false;
- const remaining=typeof liveRemainingMilliseconds==='function'?liveRemainingMilliseconds():null;
- const runningClock=Number.isFinite(remaining)?remaining>0:String(state?.time_remaining||'').trim()!=='—';
- const onTrack=drivers.some(d=>d.status!=='pit'&&Number.isFinite(analyzerParseDuration(d.track_timer)));
- return connected&&recent&&runningClock&&onTrack;
+ // Un tour peut durer plus d'une minute : la dernière impulsion Apex reste
+ // exploitable jusqu'à 120 s, mais aucun mouvement n'est inventé après la fin
+ // de la durée transmise pour chaque segment.
+ const recent=registry.lastEventAt>0&&Date.now()-registry.lastEventAt<120000;
+ return connected&&recent;
 }
 function analyzerAnimatedTrackSeconds(driver){
  const key=String(driver?.driver||driver?.apex||driver?.pos||'unknown');
- const raw=analyzerParseDuration(driver?.track_timer);
- const now=performance.now();
- const status=driver?.status==='pit'?'pit':'track';
+ const raw=analyzerParseDuration(driver?.track_timer),now=performance.now(),status=driver?.status==='pit'?'pit':'track';
  let anchor=analyzerTrackAnimationAnchors.get(key);
  if(!Number.isFinite(raw)||raw<0){analyzerTrackAnimationAnchors.delete(key);return null}
  const rawChanged=!anchor||Math.abs(raw-anchor.raw)>.25||anchor.status!==status;
  if(rawChanged){anchor={raw,at:now,status};analyzerTrackAnimationAnchors.set(key,anchor)}
  if(status==='pit')return raw;
- const elapsed=Math.max(0,(now-anchor.at)/1000);
- return anchor.raw+elapsed;
+ return anchor.raw+Math.max(0,(now-anchor.at)/1000);
+}
+function analyzerApexEntryPhase(entry,at=Date.now()){
+ if(!entry)return null;
+ const age=at-Number(entry.startedAt||0),duration=Number(entry.durationMs)||0;
+ if(!duration||age>duration+5000)return null;
+ const p=Math.max(0,Math.min(1,age/duration));
+ const s1=Number(entry.sectors?.s1)||0,s2=Number(entry.sectors?.s2)||0,s3=Number(entry.sectors?.s3)||0;
+ const total=(s1+s2+s3)>0?s1+s2+s3:(Number(entry.lapDurationMs)||duration);
+ if(entry.segment==='track')return p;
+ if(entry.segment==='s1')return total>0?p*s1/total:p;
+ if(entry.segment==='s2')return total>0?(s1+p*s2)/total:Number(entry.lastPhase)||0;
+ if(entry.segment==='s3')return total>0?(s1+s2+p*s3)/total:Number(entry.lastPhase)||0;
+ if(entry.segment==='in'||entry.segment==='out')return Number(entry.lastPhase)||0;
+ return Number(entry.lastPhase)||0;
 }
 function analyzerDriverPhase(driver){
+ const eventPhase=analyzerApexEntryPhase(analyzerApexMapEntry(driver));if(Number.isFinite(eventPhase))return ((eventPhase%1)+1)%1;
  const pace=analyzerDriverPace(driver);if(!Number.isFinite(pace)||pace<=0)return 0;
- const track=analyzerAnimatedTrackSeconds(driver);
- if(Number.isFinite(track)&&track>=0)return ((track%pace)+pace)%pace/pace;
- const laps=analyzerNumeric(driver?.laps,0);return ((laps%1)+1)%1;
+ const track=analyzerAnimatedTrackSeconds(driver);if(Number.isFinite(track)&&track>=0)return ((track%pace)+pace)%pace/pace;
+ return 0;
 }
 function analyzerTrackPoint(phase,radius=86,cx=110,cy=110){
- const angle=(Number(phase)||0)*Math.PI*2-Math.PI/2;
- return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius};
+ const angle=(Number(phase)||0)*Math.PI*2-Math.PI/2;return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius};
+}
+function analyzerMapPoint(driver){
+ const entry=analyzerApexMapEntry(driver),phase=analyzerApexEntryPhase(entry);if(!entry||!Number.isFinite(phase))return null;
+ const ring=analyzerTrackPoint(phase),pit={x:110,y:58};
+ const progress=Math.max(0,Math.min(1,(Date.now()-entry.startedAt)/Math.max(1,entry.durationMs)));
+ if(entry.segment==='in')return {x:ring.x+(pit.x-ring.x)*progress,y:ring.y+(pit.y-ring.y)*progress,phase,inPit:true};
+ if(entry.segment==='out')return {x:pit.x+(110-pit.x)*progress,y:pit.y+(24-pit.y)*progress,phase:0,inPit:false};
+ return {...ring,phase,inPit:Boolean(entry.inPit)};
+}
+function analyzerArcPath(start,end,r=86,cx=110,cy=110){
+ const a=analyzerTrackPoint(start,r,cx,cy),b=analyzerTrackPoint(end,r,cx,cy),large=(end-start)>.5?1:0;
+ return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
+}
+function analyzerMapTrackMarkup(){
+ const model=analyzerApexSectorModel();
+ if(!model)return '<circle class="pit-simulator-ring" cx="110" cy="110" r="86"></circle>';
+ const p1=model.s1/model.total,p2=(model.s1+model.s2)/model.total;
+ const labels=[['S1',p1/2],['S2',(p1+p2)/2],['S3',(p2+1)/2]].map(([label,phase])=>{const p=analyzerTrackPoint(phase,101);return `<text class="pit-simulator-sector-label" x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}">${label}</text>`}).join('');
+ return `<circle class="pit-simulator-ring pit-simulator-ring-base" cx="110" cy="110" r="86"></circle><path class="pit-simulator-sector s1" d="${analyzerArcPath(0,p1)}"></path><path class="pit-simulator-sector s2" d="${analyzerArcPath(p1,p2)}"></path><path class="pit-simulator-sector s3" d="${analyzerArcPath(p2,.99999)}"></path>${labels}`;
 }
 function analyzerSimulationKartLabel(driver){return String(validKartNumber(driver)||driver?.apex||driver?.pos||'—').slice(0,3)}
 function analyzerRenderPitSimulator(){
  const host=document.getElementById('pitSimulatorTrack');if(!host)return;
- const drivers=(state.drivers||[]).filter(d=>d&&d.driver);
- if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Circuit inactif"><circle class="pit-simulator-ring" cx="110" cy="110" r="86"></circle><line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><text class="pit-simulator-center-title" x="110" y="103">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="124">Pas de course en cours</text></svg>`;return}
- if(!drivers.length){host.innerHTML='<div class="analyzer-empty">En attente des données Apex…</div>';return}
- const followed=drivers.find(d=>d.driver===state.followed_driver)||null;
- const simulation=analyzerPitSimulation;
- const horizon=simulation?.horizonSeconds||0;
- const dots=drivers.map(driver=>{
-  const pace=analyzerDriverPace(driver);
-  let phase=analyzerDriverPhase(driver);
-  if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')phase=(phase+horizon/Math.max(1,pace))%1;
-  if(simulation&&driver.driver===simulation.followedName)phase=0;
-  const p=analyzerTrackPoint(phase);
-  const classes=['pit-simulator-dot'];if(driver.driver===state.followed_driver)classes.push('followed');if(driver.status==='pit')classes.push('pit');
+ const drivers=(state.drivers||[]).filter(d=>d&&d.driver),trackMarkup=analyzerMapTrackMarkup();
+ if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Circuit inactif">${trackMarkup}<line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><path class="pit-simulator-pitlane" d="M110 24 L110 58"></path><text class="pit-simulator-center-title" x="110" y="103">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="124">Pas de course en cours</text></svg>`;return}
+ const visible=drivers.map(driver=>({driver,point:analyzerMapPoint(driver)})).filter(item=>item.point);
+ const followed=drivers.find(d=>d.driver===state.followed_driver)||null,simulation=analyzerPitSimulation,horizon=simulation?.horizonSeconds||0;
+ const dots=visible.map(({driver,point})=>{
+  let p=point;if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0);
+  const classes=['pit-simulator-dot'];if(driver.driver===state.followed_driver)classes.push('followed');if(point.inPit||driver.status==='pit')classes.push('pit');
   return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><circle r="9"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`;
  }).join('');
- const projected=simulation?'<circle class="pit-simulator-projected" cx="110" cy="24" r="12"></circle>':'';
- const centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE';
- const centerValue=simulation?analyzerFormatDuration(simulation.horizonSeconds):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
- host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Progression estimée des karts sur un tour"><circle class="pit-simulator-ring" cx="110" cy="110" r="86"></circle><line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line>${dots}${projected}<text class="pit-simulator-center-title" x="110" y="103">${centerTitle}</text><text class="pit-simulator-center-value" x="110" y="124">${centerValue}</text></svg>`;
+ const projected=simulation?'<circle class="pit-simulator-projected" cx="110" cy="24" r="12"></circle>':'',centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(simulation.horizonSeconds):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
+ host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Progression des karts synchronisée avec Apex Timing">${trackMarkup}<line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><path class="pit-simulator-pitlane" d="M110 24 L110 58"></path>${dots}${projected}<text class="pit-simulator-center-title" x="110" y="103">${centerTitle}</text><text class="pit-simulator-center-value" x="110" y="124">${centerValue}</text></svg>`;
 }
 function analyzerPitReferenceLap(laps,pits){
  const pitLaps=new Set((pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite));
