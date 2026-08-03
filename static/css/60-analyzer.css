@@ -860,3 +860,89 @@
  .map-pitlane-pane{min-height:130px!important;padding-top:6px!important}
  .analyzer-neighbor strong{font-size:29px!important}
 }
+
+/* Velocity V6.11.6 — onglet Velocity classique, conformité +30 %, MAP rééquilibrée */
+/* VELOCITY reprend strictement le traitement statique de MAP / Classement général. */
+.analyzer-kartiq-title .analyzer-static-ranking-tab{
+  position:static!important;
+  isolation:auto!important;
+  overflow:visible!important;
+  width:max-content!important;
+  max-width:max-content!important;
+  min-height:0!important;
+  height:auto!important;
+  padding:8px 11px!important;
+  border:1px solid #ff7a00!important;
+  border-radius:7px!important;
+  background:#2b1b0c!important;
+  color:#ff9b32!important;
+  box-shadow:inset 0 -2px #ff7a00!important;
+}
+.analyzer-kartiq-title .analyzer-static-ranking-tab::before,
+.analyzer-kartiq-title .analyzer-static-ranking-tab::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+}
+
+/* Carte Conformité réglementaire : tous les textes +30 %, carte inchangée. */
+.rules-card .analyzer-card-label{font-size:13px!important;line-height:1.2!important}
+.rules-card .rules-status{font-size:16.9px!important;line-height:1.2!important}
+.rules-card .rules-card-button{font-size:14.3px!important;padding:9px 13px!important}
+.rules-card .rules-mini-grid span{font-size:11.7px!important;line-height:1.2!important}
+.rules-card .rules-mini-grid b{font-size:20.8px!important;line-height:1.15!important}
+
+/* MAP : dimensions extérieures inchangées, radar visuellement +30 %, Pit Lane renforcée. */
+.analyzer-pit-simulator-body{overflow:hidden!important}
+.map-stage{
+  grid-template-columns:minmax(0,68%) minmax(0,32%)!important;
+  min-height:250px!important;
+  height:292px!important;
+  gap:0!important;
+  overflow:hidden!important;
+}
+.map-radar-pane{
+  overflow:visible!important;
+  min-width:0!important;
+  height:292px!important;
+}
+.map-radar-pane svg{
+  width:130%!important;
+  max-width:none!important;
+  height:292px!important;
+  max-height:292px!important;
+  transform:scale(1.0)!important;
+  transform-origin:center center!important;
+}
+.map-pitlane-pane{
+  height:292px!important;
+  min-width:0!important;
+  padding:6px 2px!important;
+  overflow:hidden!important;
+}
+.map-pitlane-title{
+  font-size:40px!important;
+  line-height:1!important;
+  margin:0 0 2px!important;
+  white-space:nowrap!important;
+}
+.map-pitlane-pane svg{
+  width:185%!important;
+  max-width:none!important;
+  height:238px!important;
+  max-height:238px!important;
+  align-self:center!important;
+}
+.map-pitlane-line{stroke-width:3.2!important}
+.map-pitlane-pane .pit-simulator-dot circle{transform:scale(1.35);transform-box:fill-box;transform-origin:center}
+.map-pitlane-pane .pit-simulator-dot text{font-size:1.25em!important}
+.pit-simulator-summary{margin-top:8px!important}
+
+@media(max-width:760px){
+  .map-stage{height:auto!important;min-height:0!important;grid-template-columns:1fr!important;overflow:visible!important}
+  .map-radar-pane{height:300px!important;overflow:hidden!important}
+  .map-radar-pane svg{width:130%!important;height:300px!important;max-height:300px!important}
+  .map-pitlane-pane{height:165px!important;min-height:165px!important}
+  .map-pitlane-title{font-size:32px!important}
+  .map-pitlane-pane svg{width:150%!important;height:120px!important;max-height:120px!important}
+}

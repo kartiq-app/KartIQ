@@ -1,12 +1,12 @@
-## V6.11.5 — Corrections visuelles Analyzer, radar et pitlane
+## V6.11.6 — Ajustements visuels Analyzer et MAP
 
-- Onglet `VELOCITY` ajusté à la largeur exacte de son texte.
-- Radar isolé dans sa propre zone de la carte MAP.
-- Pit Lane conservée dans la carte MAP mais placée dans une zone indépendante à droite du radar.
-- Texte central du radar décalé vers le bas pour éviter la ligne d’arrivée.
-- Nom de l’équipe suivie en police Torque, seul sur toute la première ligne.
-- Informations secondaires et deltas déplacés à partir de la seconde ligne.
-- Version applicative, sessions et cache PWA synchronisés en 6.11.5.
+- Suppression du halo et de la rémanence autour de l’onglet VELOCITY.
+- Onglet VELOCITY aligné sur le traitement statique de MAP et Classement général.
+- Tous les textes de la carte Conformité réglementaire agrandis de 30 %.
+- Radar agrandi visuellement de 30 % sans modifier la taille extérieure de la carte MAP.
+- Module PIT LANE renforcé : titre doublé, ligne et marqueurs agrandis.
+- Fonction Simuler un arrêt et résultats conservés sous le radar et la pitlane.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.6.
 
 ## V6.11.3 — Harmonisation Analyzer et pitlane latérale
 
