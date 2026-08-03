@@ -788,3 +788,29 @@
  .analyzer-followed-deltas{padding-left:0;padding-top:12px;border-left:0;border-top:1px solid #303744}
  .analyzer-neighbor strong{font-size:22px}
 }
+
+
+/* Velocity V6.11.4 — onglet contenu, radar isolé, pitlane sœur et équipe suivie sur deux lignes */
+.analyzer-kartiq-title .analyzer-static-ranking-tab{
+  width:max-content!important;max-width:max-content!important;flex:0 0 auto!important;
+  align-self:center!important;justify-self:start!important;
+}
+.analyzer-followed-name-row{width:100%;min-width:0;margin-top:8px;margin-bottom:12px}
+.analyzer-followed-name-row>strong{
+  display:block;width:100%;font-family:var(--font-torque,Arial,sans-serif)!important;
+  font-size:19px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.analyzer-followed-summary>strong{display:none!important}
+.analyzer-followed-layout{margin-top:0!important}
+.pit-simulator-track{display:block!important;padding:0!important}
+.map-stage{display:grid;grid-template-columns:minmax(0,2fr) minmax(150px,1fr);gap:18px;width:100%;min-height:250px;align-items:stretch}
+.map-radar-pane{min-width:0;display:flex;align-items:center;justify-content:center;border:1px solid #252c37;border-radius:10px;background:#080b10;overflow:hidden}
+.map-radar-pane svg{display:block;width:100%;height:auto;max-height:292px}
+.map-pitlane-pane{min-width:0;display:flex;flex-direction:column;justify-content:center;padding:14px 10px 10px;background:transparent}
+.map-pitlane-title{font-family:var(--font-torque,Arial,sans-serif);font-size:20px;font-weight:900;letter-spacing:.06em;color:#d5dbe4;text-align:center;margin-bottom:4px}
+.map-pitlane-pane svg{display:block;width:100%;height:auto;max-height:292px}
+@media(max-width:760px){
+ .map-stage{grid-template-columns:1fr;gap:12px}
+ .map-pitlane-pane{min-height:130px;padding-top:6px}
+ .map-pitlane-pane svg{max-height:130px}
+}

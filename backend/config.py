@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.11.3"
-APP_RELEASE_NAME = "Velocity — Harmonisation Analyzer et pitlane latérale"
+APP_VERSION = "6.11.4"
+APP_RELEASE_NAME = "Velocity — Corrections visuelles Analyzer, radar et pitlane"
 
 
 def _circuit_sort_key(circuit):
