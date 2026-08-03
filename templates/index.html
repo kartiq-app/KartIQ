@@ -22,7 +22,7 @@
     <div class="race-home-glow"></div>
     <div class="race-home-content">
       <div class="kartiq-logo" aria-label="Velocity">
-        <span class="kartiq-kart">VELOC</span><span class="kartiq-iq">ITY</span>
+        <span class="velocity-v">V</span><span class="kartiq-kart">ELOCITY</span>
       </div>
       <div class="kartiq-tagline">PROFESSIONAL LIVE TIMING</div>
 
@@ -82,16 +82,8 @@
   <div class="analyzer-shell">
     <div class="analyzer-toolbar">
       <button class="inline-home-btn analyzer-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button>
-      <div class="analyzer-heading"><span class="analyzer-kicker">ENDURANCE</span><strong>ANALYZER</strong></div>
-      <div class="analyzer-toolbar-actions">
-        <span id="analyzerSessionStatus" class="analyzer-session-status">SESSION EN ATTENTE</span>
-        <button type="button" class="analyzer-action-btn" onclick="openAnalyzerSessions()">💾 SESSIONS</button><button type="button" class="analyzer-action-btn" onclick="openApexHistory()">◷ HISTORIQUE APEX</button>
-        <button type="button" class="analyzer-action-btn" onclick="exportAnalyzerSession()">⇩ EXPORTER</button>
-        <button type="button" class="analyzer-action-btn" onclick="triggerAnalyzerSessionImport()">⇧ IMPORTER</button>
-        <input id="analyzerSessionImport" type="file" accept="application/json,.json" hidden onchange="importAnalyzerSession(event)">
-        <button type="button" class="analyzer-action-btn" onclick="openAnalyzerRules()">⚙ RÈGLEMENT</button>
-        <button type="button" class="analyzer-action-btn" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
-      </div>
+      <div class="analyzer-heading"><span class="analyzer-kicker">ENDURANCE</span></div>
+      <input id="analyzerSessionImport" type="file" accept="application/json,.json" hidden onchange="importAnalyzerSession(event)">
     </div>
 
     <section class="analyzer-hero" aria-label="Synthèse stratégique">
@@ -118,15 +110,15 @@
       <article class="analyzer-hero-card weather-card" id="analyzerWeatherCard">
         <span class="analyzer-card-label">MÉTÉO</span>
         <div class="weather-main">
-          <div class="weather-icon-clock"><img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo"><span id="analyzerWeatherLocalTime" class="weather-local-time">--:--</span></div>
-          <div class="weather-current"><strong id="analyzerWeatherTemperature">—</strong><span id="analyzerWeatherCondition">En attente…</span></div>
+          <div class="weather-current-left"><img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo"><div class="weather-current"><strong id="analyzerWeatherTemperature">—</strong><span id="analyzerWeatherCondition">En attente…</span></div></div>
+          <span id="analyzerWeatherLocalTime" class="weather-local-time">--:--</span>
         </div>
         <div class="weather-stats">
           <div><span>Vent</span><b id="analyzerWeatherWind">—</b></div>
           <div><span>Pluie</span><b id="analyzerWeatherRain">—</b></div>
         </div>
         <div class="weather-timeline-wrap">
-          <div class="weather-timeline" id="analyzerWeatherTimeline" aria-label="Six prévisions météo horaires locales">
+          <div class="weather-timeline" id="analyzerWeatherTimeline" aria-label="Douze prévisions météo horaires locales">
             <div class="weather-timeline-empty">Sélectionnez un circuit pour charger la météo.</div>
           </div>
         </div>
@@ -138,6 +130,7 @@
         <div class="analyzer-panel-title analyzer-ranking-title">
           <div class="analyzer-ranking-heading">
             <div class="analyzer-ranking-toolbar-left">
+              <div class="analyzer-race-remaining"><strong id="analyzerRaceRemaining">—</strong></div>
               <div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT GÉNÉRAL</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button></div>
               <div class="analyzer-table-controls">
                 <label>TRIER PAR
@@ -152,7 +145,6 @@
                 </label>
               </div>
             </div>
-            <div class="analyzer-race-remaining"><span>TEMPS RESTANT</span><strong id="analyzerRaceRemaining">—</strong></div>
             <small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par Velocity</small>
           </div>
         </div>
@@ -213,6 +205,15 @@
       <div id="analyzerWaveStatus" class="wave-status">Aucune vague détectée</div>
       <div class="wave-meter"><i id="analyzerWaveMeter"></i></div>
     </section>
+    <footer class="analyzer-footer">
+      <span id="analyzerSessionStatus" class="analyzer-session-status">SESSION EN ATTENTE</span>
+      <button type="button" onclick="openAnalyzerSessions()">💾 SESSIONS</button>
+      <button type="button" onclick="openApexHistory()">◷ HISTORIQUE APEX</button>
+      <button type="button" onclick="exportAnalyzerSession()">⇩ EXPORTER</button>
+      <button type="button" onclick="triggerAnalyzerSessionImport()">⇧ IMPORTER</button>
+      <button type="button" onclick="openAnalyzerRules()">⚙ RÈGLEMENT</button>
+      <button type="button" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
+    </footer>
   </div>
 
   <div class="analyzer-compat-hidden" aria-hidden="true"><span id="liveDiagStatus"></span><span id="liveDiagMessages"></span><span id="liveDiagParsed"></span><span id="liveDiagLast"></span><span id="liveDiagPreview"></span><span id="liveStatusDot"></span><div id="paceTop8"></div><div id="endurancePenalties"></div><table><tbody id="quickTable"></tbody></table><table><tbody id="enduranceTable"></tbody></table></div>

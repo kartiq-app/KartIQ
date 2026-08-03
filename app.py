@@ -311,11 +311,11 @@ def _weather_for_circuit(circuit):
     if now_local.minute >= 30:
         first_slot_local += timedelta(hours=1)
 
-    selected = [row for row in rows if row["dt"] >= first_slot_local][:6]
+    selected = [row for row in rows if row["dt"] >= first_slot_local][:12]
     if len(selected) < 6:
-        selected = [row for row in rows if row["dt"] >= now_local - timedelta(hours=1)][:6]
+        selected = [row for row in rows if row["dt"] >= now_local - timedelta(hours=1)][:12]
     if len(selected) < 6:
-        selected = rows[:6]
+        selected = rows[:12]
 
     timeline = []
     for row in selected:

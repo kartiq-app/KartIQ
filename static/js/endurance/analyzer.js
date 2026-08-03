@@ -10,7 +10,7 @@ function analyzerUpdateRaceRemaining(){
  if(Number.isFinite(ms)){const total=Math.max(0,Math.floor(ms/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;el.classList.toggle('warning',total<=3600&&total>600);el.classList.toggle('critical',total<=600);return}
  el.textContent=state?.time_remaining||'—';
 }
-/* Velocity V6.10.3 — météo, temps restant et MAP */
+/* Velocity V6.10.4 — météo 12 h, interface et MAP synchronisée Apex */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -53,7 +53,7 @@ function analyzerWeatherRiskClass(probability, precipitation){
 function renderAnalyzerWeatherTimeline(timeline){
  const container=document.getElementById('analyzerWeatherTimeline');if(!container)return;
  if(!Array.isArray(timeline)||!timeline.length){container.innerHTML='<div class="weather-timeline-empty">Prévisions horaires indisponibles.</div>';return}
- container.innerHTML=timeline.slice(0,6).map(slot=>{
+ container.innerHTML=timeline.slice(0,12).map(slot=>{
   const temperature=Number(slot.temperature),probability=Number(slot.probability),precipitation=Number(slot.precipitation||slot.rain||0);
   const time=slot.display_time||analyzerWeatherFormatHour(slot.time);
   const icon=slot.icon||'cloudy';
@@ -147,7 +147,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.10.3',
+  appVersion:'6.10.4',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -204,7 +204,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.10.3',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.10.4',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -269,6 +269,20 @@ function analyzerDriverPace(driver){
  return analyzerLiveGridReference()||60;
 }
 const analyzerTrackAnimationAnchors=new Map();
+function analyzerApexRaceIsActive(){
+ const drivers=(state?.drivers||[]).filter(d=>d&&d.driver);
+ if(!drivers.length)return false;
+ const liveStatus=String(state?.live?.status||'').toLowerCase();
+ const connection=String(state?.connection||'').toLowerCase();
+ const connected=liveStatus==='connected'||connection.includes('connect');
+ const lastRaw=state?.live?.last_message_at;
+ const lastMs=lastRaw?Date.parse(lastRaw):NaN;
+ const recent=Number.isFinite(lastMs)?Date.now()-lastMs<15000:false;
+ const remaining=typeof liveRemainingMilliseconds==='function'?liveRemainingMilliseconds():null;
+ const runningClock=Number.isFinite(remaining)?remaining>0:String(state?.time_remaining||'').trim()!=='—';
+ const onTrack=drivers.some(d=>d.status!=='pit'&&Number.isFinite(analyzerParseDuration(d.track_timer)));
+ return connected&&recent&&runningClock&&onTrack;
+}
 function analyzerAnimatedTrackSeconds(driver){
  const key=String(driver?.driver||driver?.apex||driver?.pos||'unknown');
  const raw=analyzerParseDuration(driver?.track_timer);
@@ -296,6 +310,7 @@ function analyzerSimulationKartLabel(driver){return String(validKartNumber(drive
 function analyzerRenderPitSimulator(){
  const host=document.getElementById('pitSimulatorTrack');if(!host)return;
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver);
+ if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML='<div class="analyzer-empty">Pas de course en cours</div>';return}
  if(!drivers.length){host.innerHTML='<div class="analyzer-empty">En attente des données Apex…</div>';return}
  const followed=drivers.find(d=>d.driver===state.followed_driver)||null;
  const simulation=analyzerPitSimulation;
@@ -342,6 +357,7 @@ function analyzerProjectedTraffic(followed,horizon){
  };
 }
 async function simulateAnalyzerPitStop(){
+ if(!analyzerApexRaceIsActive()){window.alert('Aucune course active détectée dans les données Apex.');return}
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver);
  const button=document.getElementById('pitSimulatorButton'),status=document.getElementById('pitSimulatorStatus');
  if(!followed){window.alert('Sélectionnez d’abord une équipe dans le classement.');return}

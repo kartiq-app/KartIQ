@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.10.3"
-APP_RELEASE_NAME = "Velocity — MAP, météo locale et temps restant"
+APP_VERSION = "6.10.4"
+APP_RELEASE_NAME = "Velocity — Interface, météo 12 h et MAP Apex"
 
 
 def _circuit_sort_key(circuit):

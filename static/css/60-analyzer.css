@@ -653,3 +653,30 @@
  .analyzer-ranking-heading{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:16px;row-gap:5px}
  .analyzer-ranking-toolbar-left{grid-column:1}.analyzer-race-remaining{grid-column:2;grid-row:1}.analyzer-ranking-heading>small{grid-column:1/-1}
 }
+
+
+/* Velocity V6.10.4 — interface desktop, météo 12 h et footer */
+.velocity-v{color:#e3242b}
+.analyzer-toolbar{min-height:50px}
+.analyzer-heading{align-items:center}
+.analyzer-heading .analyzer-kicker{font-size:13px}
+.weather-main{justify-content:space-between;gap:18px}
+.weather-current-left{display:flex;align-items:center;gap:14px;min-width:0}
+.weather-local-time{margin-left:auto;font-size:30px;line-height:1}
+.weather-timeline{display:grid;grid-template-columns:repeat(12,minmax(94px,1fr));gap:7px;min-width:1200px}
+.weather-slot{padding:8px 4px;gap:4px}
+.weather-slot-time{font-size:12px}.weather-slot-icon{width:36px;height:36px}.weather-slot-rain{font-size:11px}.weather-slot-temp{font-size:14px}
+.weather-timeline-wrap{overflow-x:auto!important}
+.analyzer-ranking-toolbar-left{display:flex!important;align-items:center;gap:12px;flex-wrap:wrap}
+.analyzer-race-remaining{margin:0!important;order:-1;display:flex;align-items:center}
+.analyzer-race-remaining strong{font-size:32px!important;line-height:1;font-weight:900}
+.analyzer-ranking-title .analyzer-ranking-heading{display:block!important}
+.analyzer-ranking-heading>small{display:block;margin-top:8px}
+.analyzer-kartiq-title>span,.analyzer-pit-simulator-title>span{display:inline-flex;align-items:center;min-height:38px;padding:0 14px;border-radius:7px;background:#ff7a00;color:#080a0e;font-family:var(--font-torque,Arial,sans-serif)!important;font-size:14px!important;font-weight:900;letter-spacing:.03em}
+.analyzer-kartiq-title,.analyzer-pit-simulator-title{align-items:center!important}
+.analyzer-pit-simulator-title button{align-self:center}
+.analyzer-footer{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;border-top:1px solid #2b313b;padding:14px 4px 2px;margin-top:8px}
+.analyzer-footer button{background:transparent;border:0;color:#aeb8c6;font-size:10px;font-weight:800;cursor:pointer;padding:7px 8px}
+.analyzer-footer button:hover{color:#ff7a00}
+.analyzer-footer .analyzer-session-status{margin-right:6px}
+@media(max-width:900px){.weather-local-time{font-size:24px}.weather-timeline{grid-template-columns:repeat(12,94px);min-width:max-content}.analyzer-race-remaining strong{font-size:25px!important}.analyzer-footer{justify-content:flex-start}}

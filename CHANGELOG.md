@@ -1,3 +1,16 @@
+# Changelog
+
+## V6.10.4 — Interface Velocity, météo 12 h et MAP synchronisée Apex
+
+- Le V du logo Velocity est rouge sur la page d’accueil.
+- La météo affiche icône et température à gauche, heure locale agrandie à droite.
+- La frise météo affiche 12 créneaux horaires avec défilement horizontal.
+- Le temps restant est placé en premier dans la barre du classement et affiché en grand.
+- Les titres Velocity et MAP reprennent le traitement orange du classement général.
+- Suppression du mot Analyzer dans la barre supérieure.
+- Les commandes de session sont déplacées dans un footer.
+- La MAP masque et fige les karts hors course et ne les anime que sur données Apex actives et récentes.
+
 # V6.10.3 — Velocity, heure locale et temps restant
 
 - Renommage de l’application et du module KartIQ en Velocity.
