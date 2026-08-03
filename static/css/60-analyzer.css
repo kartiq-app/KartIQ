@@ -708,20 +708,22 @@
 .pit-simulator-sector-label{fill:#d7dde6;font-size:7px;font-weight:900;text-anchor:middle;dominant-baseline:central}
 .pit-simulator-pitlane{fill:none;stroke:#7b8491;stroke-width:5;stroke-linecap:round;stroke-dasharray:3 3}
 
-/* Velocity V6.11.0 — MAP radar de rythme, filtres et pit lane */
+/* Velocity V6.11.2 — radar agrandi, ligne de chronométrage et menu rythmes */
 .analyzer-map-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0}
 .map-control{position:relative}
 .map-control summary{list-style:none;border:1px solid #384454;border-radius:7px;background:#111923;color:#cbd6e4;font-size:9px;font-weight:900;letter-spacing:.035em;padding:7px 9px;cursor:pointer;white-space:nowrap}
 .map-control summary::-webkit-details-marker{display:none}
 .map-control[open] summary{border-color:#f08a24;color:#fff}
 .map-control-menu{position:absolute;z-index:40;right:0;top:calc(100% + 6px);width:285px;padding:8px;border:1px solid #354151;border-radius:9px;background:#0b1017;box-shadow:0 14px 30px rgba(0,0,0,.45)}
-.map-control-menu label{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:5px;min-height:31px;padding:4px 5px;border-radius:6px;color:#e8eef7;font-size:10px;cursor:pointer}
+.map-control-menu label{display:grid;grid-template-columns:22px minmax(0,1fr) 38px;align-items:center;gap:6px;min-height:40px;padding:5px 7px;border-radius:6px;color:#e8eef7;font-size:10px;cursor:pointer;text-align:center}
+.map-pace-copy{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.18}
+.map-pace-copy>span{width:100%;font-weight:800;text-align:center}
 .map-control-menu label:hover{background:#161f2a}
 .map-control-menu input{margin:0;accent-color:#f08a24}
-.map-control-menu small{grid-column:2;color:#8793a2;font-size:8px}
-.map-control-menu b{grid-column:3;grid-row:1/3;color:#fff;font-variant-numeric:tabular-nums}
+.map-control-menu small{color:#8793a2;font-size:10.4px;font-weight:800;line-height:1.15;text-align:center}
+.map-control-menu b{grid-column:3;grid-row:1;color:#fff;font-size:13px;font-weight:950;font-variant-numeric:tabular-nums;text-align:center}
 .map-highlight-menu{width:205px}
-.map-highlight-menu label{grid-template-columns:18px 1fr}
+.map-highlight-menu label{grid-template-columns:22px 1fr;text-align:left;min-height:31px}
 .map-filter-none{border-bottom:1px solid #26303c;margin-bottom:4px}
 .map-radar-ring{fill:none;stroke:#495666;stroke-width:1;opacity:.42}
 .map-radar-ring.fastest{stroke-width:1.8;opacity:.7}
@@ -740,3 +742,7 @@
 .pit-simulator-dot.pace-slow circle{fill:#4c535d}
 .pit-simulator-dot.pit-queued circle{fill:#5d6672;stroke:#c4ccd6}
 @media(max-width:850px){.analyzer-pit-simulator-title{align-items:flex-start}.analyzer-map-actions{flex-wrap:wrap}.map-control-menu{right:auto;left:0}.analyzer-map-actions #pitSimulatorButton{order:-1}.map-control summary{font-size:8px;padding:6px}}
+
+.map-finish-line{pointer-events:none}
+.map-finish-square{fill:#f4f6f8;opacity:.9}
+.map-finish-square.alt{fill:#161c24;opacity:.95}

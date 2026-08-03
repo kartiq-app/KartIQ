@@ -1,10 +1,19 @@
-## V6.11.1 — Persistance des karts sur la MAP
+## V6.11.2 — Radar agrandi et ligne de chronométrage
+
+- Agrandissement des six anneaux du radar de 25 % pour améliorer la lisibilité.
+- Ajout d’une ligne d’arrivée en damier traversant le demi-rayon supérieur et matérialisant le passage sur la ligne de chronométrage.
+- Recentrage intégral de chaque ligne du menu « Afficher les rythmes ».
+- Agrandissement de 30 % des deltas de rythme et des compteurs de karts.
+- Fonction « Simuler un arrêt », filtres et voie des stands conservés.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.2.
+
+## V6.11.2 — Persistance des karts sur la MAP
 
 - Les marqueurs ne disparaissent plus cinq secondes après la fin d'un segment Apex.
 - À la fin de l'animation, chaque kart reste figé à sa dernière position jusqu'au prochain événement `*`, `*i1`, `*i2`, `*in` ou `*out`.
 - Les marqueurs sont toujours retirés lorsque le live est réellement arrêté, que l'équipe quitte la grille ou qu'elle passe dans la voie des stands.
 - La fonction **Simuler un arrêt** et le radar à six anneaux sont conservés.
-- Version applicative, sessions et cache PWA synchronisés en 6.11.1.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.2.
 
 ## V6.11.0 — MAP radar de rythme et voie des stands
 - Remplacement du cercle unique par six anneaux concentriques classés selon l’écart au meilleur dernier tour.

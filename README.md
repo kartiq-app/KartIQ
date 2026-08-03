@@ -1,3 +1,7 @@
+# Velocity V6.11.2
+
+Cette version agrandit le radar de 25 %, ajoute une ligne de chronométrage en damier et améliore la lisibilité du menu des rythmes.
+
 
 ## Météo
 
