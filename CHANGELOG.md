@@ -1,3 +1,10 @@
+## V6.10.6 — Correction du sélecteur de circuit
+
+- Correction d'une erreur JavaScript provoquée par la suppression visuelle du nom du circuit dans l'en-tête.
+- Le sélecteur de circuit de la page d'accueil est de nouveau pleinement fonctionnel.
+- Le nom du circuit reste affiché uniquement dans la carte météo.
+- Cache PWA mis à jour.
+
 ## V6.10.5 — Alignement des titres, MAP inactive et météo
 
 - Velocity et MAP reprennent exactement le traitement visuel actif du bouton Classement général.
