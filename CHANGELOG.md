@@ -1,3 +1,11 @@
+## V6.11.1 — Persistance des karts sur la MAP
+
+- Les marqueurs ne disparaissent plus cinq secondes après la fin d'un segment Apex.
+- À la fin de l'animation, chaque kart reste figé à sa dernière position jusqu'au prochain événement `*`, `*i1`, `*i2`, `*in` ou `*out`.
+- Les marqueurs sont toujours retirés lorsque le live est réellement arrêté, que l'équipe quitte la grille ou qu'elle passe dans la voie des stands.
+- La fonction **Simuler un arrêt** et le radar à six anneaux sont conservés.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.1.
+
 ## V6.11.0 — MAP radar de rythme et voie des stands
 - Remplacement du cercle unique par six anneaux concentriques classés selon l’écart au meilleur dernier tour.
 - Les karts les plus rapides évoluent sur l’anneau extérieur.
