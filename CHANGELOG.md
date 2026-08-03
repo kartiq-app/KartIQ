@@ -1,3 +1,11 @@
+## V6.11.7 — HEAT MAP et pitlane renforcée
+
+- Le titre de la carte `MAP` devient `HEAT MAP`.
+- Le texte `PIT LANE` retrouve une taille normale.
+- Le trait représentant la voie des stands est doublé en longueur et en épaisseur.
+- La taille extérieure de la carte et la fonction `Simuler un arrêt` sont conservées.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.7.
+
 ## V6.11.6 — Ajustements visuels Analyzer et MAP
 
 - Suppression du halo et de la rémanence autour de l’onglet VELOCITY.

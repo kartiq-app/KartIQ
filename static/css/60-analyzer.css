@@ -946,3 +946,26 @@
   .map-pitlane-title{font-size:32px!important}
   .map-pitlane-pane svg{width:150%!important;height:120px!important;max-height:120px!important}
 }
+
+
+/* Velocity V6.11.7 — HEAT MAP et pitlane renforcée */
+/* Le titre PIT LANE retrouve une taille normale ; le trait est doublé en longueur et épaisseur. */
+.map-pitlane-title{
+  font-size:20px!important;
+  line-height:1.1!important;
+  margin:0 0 6px!important;
+}
+.map-pitlane-pane svg{
+  width:100%!important;
+  max-width:100%!important;
+  height:238px!important;
+  max-height:238px!important;
+}
+.map-pitlane-line{
+  stroke-width:6.4!important;
+  stroke-linecap:round!important;
+}
+@media(max-width:760px){
+  .map-pitlane-title{font-size:18px!important}
+  .map-pitlane-pane svg{width:100%!important;max-width:100%!important;height:120px!important;max-height:120px!important}
+}
