@@ -814,3 +814,49 @@
  .map-pitlane-pane{min-height:130px;padding-top:6px}
  .map-pitlane-pane svg{max-height:130px}
 }
+
+
+/* Velocity V6.11.5 — carte suivie agrandie, onglet animé et MAP unifiée */
+.followed-card .analyzer-card-label{font-size:calc(10px * 1.3)!important}
+.analyzer-followed-name-row>strong{
+  font-family:var(--font-time,"F1 Regular",Arial,sans-serif)!important;
+  font-size:25px!important;font-weight:400!important;line-height:1.12!important;
+}
+.analyzer-followed-list{gap:9px!important}
+.analyzer-followed-list>div{padding-bottom:7px!important}
+.analyzer-followed-list span{font-size:12px!important}
+.analyzer-followed-list b{font-size:16px!important}
+.analyzer-neighbor span{font-size:14px!important}
+.analyzer-neighbor strong{font-size:34px!important}
+.analyzer-neighbor-divider{margin:15px 8px!important}
+
+.analyzer-kartiq-title .analyzer-static-ranking-tab{
+  position:relative!important;isolation:isolate;overflow:hidden!important;
+  width:max-content!important;max-width:max-content!important;min-height:34px!important;
+  padding:8px 11px!important;
+}
+.analyzer-kartiq-title .analyzer-static-ranking-tab::before{
+  content:"";position:absolute;z-index:-2;inset:-55%;
+  background:conic-gradient(from 0deg,transparent 0 72%,rgba(255,255,255,.98) 78% 84%,transparent 90% 100%);
+  animation:velocityTabOrbit 2.6s linear infinite;
+}
+.analyzer-kartiq-title .analyzer-static-ranking-tab::after{
+  content:"";position:absolute;z-index:-1;inset:1px;border-radius:6px;background:#2b1b0c;
+}
+@keyframes velocityTabOrbit{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.analyzer-kartiq-title .analyzer-static-ranking-tab::before{animation:none}}
+
+/* Une seule carte MAP : radar et pitlane sans cadres internes, résultat en dessous. */
+.analyzer-pit-simulator-body{display:grid!important;grid-template-columns:1fr!important;gap:0!important;padding:12px!important;align-items:stretch!important}
+.pit-simulator-track{min-height:0!important;border:0!important;border-radius:0!important;background:transparent!important;overflow:visible!important}
+.map-stage{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(150px,1fr)!important;gap:18px!important;width:100%!important;min-height:250px!important;align-items:center!important}
+.map-radar-pane,.map-pitlane-pane{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.map-radar-pane{min-width:0;display:flex!important;align-items:center!important;justify-content:center!important;overflow:visible!important}
+.map-radar-pane svg{display:block;width:100%!important;height:auto!important;max-height:292px!important}
+.map-pitlane-pane{min-width:0;display:flex!important;flex-direction:column!important;justify-content:center!important;padding:14px 10px 10px!important}
+.pit-simulator-summary{grid-column:1/-1!important;width:100%!important;margin-top:8px!important;padding-top:12px!important;border-top:1px solid #252c37!important}
+@media(max-width:760px){
+ .map-stage{grid-template-columns:1fr!important;gap:12px!important}
+ .map-pitlane-pane{min-height:130px!important;padding-top:6px!important}
+ .analyzer-neighbor strong{font-size:29px!important}
+}

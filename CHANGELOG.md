@@ -1,4 +1,4 @@
-## V6.11.4 — Corrections visuelles Analyzer, radar et pitlane
+## V6.11.5 — Corrections visuelles Analyzer, radar et pitlane
 
 - Onglet `VELOCITY` ajusté à la largeur exacte de son texte.
 - Radar isolé dans sa propre zone de la carte MAP.
@@ -6,7 +6,7 @@
 - Texte central du radar décalé vers le bas pour éviter la ligne d’arrivée.
 - Nom de l’équipe suivie en police Torque, seul sur toute la première ligne.
 - Informations secondaires et deltas déplacés à partir de la seconde ligne.
-- Version applicative, sessions et cache PWA synchronisés en 6.11.4.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.5.
 
 ## V6.11.3 — Harmonisation Analyzer et pitlane latérale
 

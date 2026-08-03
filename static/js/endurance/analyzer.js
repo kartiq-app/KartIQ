@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.11.4',
+  appVersion:'6.11.5',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.11.4',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.11.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -816,12 +816,18 @@ function analyzerSignedDelta(value,sign){
 }
 function analyzerFollowedNeighbors(followed){
  if(!followed)return {ahead:null,behind:null,aheadValue:null,behindValue:null,aheadText:'—',behindText:'—'};
- const ranked=(state.drivers||[]).filter(d=>Number.isFinite(Number(d?.pos))).slice().sort((a,b)=>Number(a.pos)-Number(b.pos));
- const index=ranked.findIndex(d=>d.driver===followed.driver);if(index<0)return {ahead:null,behind:null,aheadValue:null,behindValue:null,aheadText:'—',behindText:'—'};
- const ahead=index>0?ranked[index-1]:null,behind=index<ranked.length-1?ranked[index+1]:null;
- const aheadRaw=followed.interval??followed.gap;
- const behindRaw=behind?.interval;
- return {ahead,behind,aheadValue:ahead?analyzerGapSeconds(aheadRaw):null,behindValue:behind?analyzerGapSeconds(behindRaw):null,aheadText:ahead?analyzerSignedDelta(aheadRaw,'+'):'—',behindText:behind?analyzerSignedDelta(behindRaw,'-'):'—'};
+ // V6.11.5 : source unique avec le mode Focus Endurance.
+ const ahead=typeof sprintDriverAhead==='function'?sprintDriverAhead(followed):null;
+ const behind=typeof sprintDriverBehind==='function'?sprintDriverBehind(followed):null;
+ const aheadText=ahead&&typeof sprintGapAhead==='function'?sprintGapAhead(followed):'—';
+ const behindText=behind&&typeof sprintGapBehind==='function'?sprintGapBehind(followed):'—';
+ return {
+  ahead,behind,
+  aheadValue:ahead?analyzerGapSeconds(aheadText):null,
+  behindValue:behind?analyzerGapSeconds(behindText):null,
+  aheadText:aheadText&&aheadText!=='--'?aheadText:'—',
+  behindText:behindText&&behindText!=='--'?behindText:'—'
+ };
 }
 function analyzerUpdateFollowedDeltas(followed){
  const data=analyzerFollowedNeighbors(followed),lap=Number(followed?.laps);
