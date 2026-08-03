@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.11.2',
+  appVersion:'6.11.3',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.11.2',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.11.3',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -329,7 +329,7 @@ function analyzerDriverPhase(driver){
 }
 const analyzerMapPaceFilters=new Set(['fastest','excellent','good','medium','average','slow']);
 let analyzerMapHighlight='none';
-const analyzerMapGeometry={cx:135,cy:157,viewWidth:270,viewHeight:292};
+const analyzerMapGeometry={cx:135,cy:157,viewWidth:420,viewHeight:292};
 const analyzerMapRings={slow:47.5,average:60,medium:72.5,good:85,excellent:97.5,fastest:110};
 function setAnalyzerMapPaceFilter(category,checked){if(checked)analyzerMapPaceFilters.add(category);else analyzerMapPaceFilters.delete(category);const none=document.querySelector('#mapPaceFilters .map-filter-none input');if(none)none.checked=analyzerMapPaceFilters.size===0;analyzerRenderPitSimulator()}
 function setAnalyzerMapNoPaces(checked){if(checked)analyzerMapPaceFilters.clear();else ['fastest','excellent','good','medium','average','slow'].forEach(x=>analyzerMapPaceFilters.add(x));document.querySelectorAll('#mapPaceFilters input[value]').forEach(input=>input.checked=analyzerMapPaceFilters.has(input.value));analyzerRenderPitSimulator()}
@@ -347,17 +347,17 @@ function analyzerMapPitQueue(drivers){return (drivers||[]).map(driver=>({driver,
 function analyzerRenderPitSimulator(){
  const host=document.getElementById('pitSimulatorTrack');if(!host)return;
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver),radar=analyzerMapRadarMarkup();
- const base=`<path class="map-pitlane-line" d="M45 24 H225"></path><text class="map-pitlane-label" x="135" y="14">PIT LANE</text>${radar}`;
- if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<svg viewBox="0 0 270 292" role="img" aria-label="Circuit inactif">${base}<text class="pit-simulator-center-title" x="135" y="154">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="172">Pas de course en cours</text></svg>`;return}
+ const base=`${radar}<path class="map-pitlane-line" d="M270 145 H405"></path><text class="map-pitlane-label" x="337.5" y="118">PIT LANE</text>`;
+ if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<svg viewBox="0 0 420 292" role="img" aria-label="Circuit inactif">${base}<text class="pit-simulator-center-title" x="135" y="154">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="172">Pas de course en cours</text></svg>`;return}
  const paceData=analyzerMapPaceData(drivers),counts={fastest:0,excellent:0,good:0,medium:0,average:0,slow:0};for(const d of drivers){const c=paceData.map.get(d)?.category||'slow';counts[c]++}Object.entries(counts).forEach(([key,value])=>{const el=document.querySelector(`[data-map-count="${key}"]`);if(el)el.textContent=value});
  const top5=analyzerMapTop5Set(drivers),pitQueue=analyzerMapPitQueue(drivers),pitNames=new Set(pitQueue.map(x=>x.driver.driver));
  const visible=drivers.map(driver=>{const info=paceData.map.get(driver)||{category:'slow',delta:null};const point=analyzerMapPoint(driver,analyzerMapRings[info.category]);return {driver,info,point}}).filter(item=>item.point&&!pitNames.has(item.driver.driver)&&(analyzerMapPaceFilters.has(item.info.category)||item.driver.driver===state.followed_driver));
  const simulation=analyzerPitSimulation,horizon=Number(simulation?.horizon??simulation?.horizonSeconds)||0;
  const dots=visible.map(({driver,info,point})=>{let p=point;if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1,analyzerMapRings[info.category]);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0,analyzerMapRings[info.category]);const classes=['pit-simulator-dot','pace-'+info.category];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,info.category,top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,info.category,top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');const title=Number.isFinite(info.delta)?`${driver.driver} · +${info.delta.toFixed(3)} s`:driver.driver;return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><title>${analyzerEscape(title)}</title><circle r="${info.category==='fastest'?9.5:8.5}"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
- const pitDots=pitQueue.map(({driver,entry},index)=>{const x=219-index*22,classes=['pit-simulator-dot','pit','pit-queued'];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,'pit',top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,'pit',top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');return `<g class="${classes.join(' ')}" transform="translate(${Math.max(51,x)} 24)"><title>${analyzerEscape(driver.driver)}</title><circle r="8.5"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
+ const pitDots=pitQueue.map(({driver,entry},index)=>{const x=400-index*25,classes=['pit-simulator-dot','pit','pit-queued'];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,'pit',top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,'pit',top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');return `<g class="${classes.join(' ')}" transform="translate(${Math.max(275,x)} 145)"><title>${analyzerEscape(driver.driver)}</title><circle r="8.5"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
  const projected=simulation?'<circle class="pit-simulator-projected" cx="135" cy="37" r="11"></circle>':'',followed=drivers.find(d=>d.driver===state.followed_driver)||null,centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(horizon):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
  const waiting=!visible.length&&!pitQueue.length?'<text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="190">En attente d’un passage Apex</text>':'';
- host.innerHTML=`<svg viewBox="0 0 270 292" role="img" aria-label="Radar de rythme et progression synchronisé avec Apex Timing">${base}${dots}${pitDots}${projected}<text class="pit-simulator-center-title" x="135" y="154">${centerTitle}</text><text class="pit-simulator-center-value" x="135" y="172">${centerValue}</text>${waiting}</svg>`;
+ host.innerHTML=`<svg viewBox="0 0 420 292" role="img" aria-label="Radar de rythme et progression synchronisé avec les données live">${base}${dots}${pitDots}${projected}<text class="pit-simulator-center-title" x="135" y="154">${centerTitle}</text><text class="pit-simulator-center-value" x="135" y="172">${centerValue}</text>${waiting}</svg>`;
 }
 function analyzerPitReferenceLap(laps,pits){
  const pitLaps=new Set((pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite));
@@ -800,6 +800,47 @@ function analyzerRefreshKartRelayCountdowns(){
 }
 if(!window.__kartiqRelayCountdownTimer){window.__kartiqRelayCountdownTimer=setInterval(analyzerRefreshKartRelayCountdowns,1000)}
 
+const analyzerFollowedDeltaHistory={driver:'',lap:null,ahead:null,behind:null,aheadTrend:'neutral',behindTrend:'neutral'};
+function analyzerGapSeconds(value){
+ const raw=String(value??'').trim().replace(',','.');
+ if(!raw||raw==='—'||raw==='--'||/lap|tour/i.test(raw))return null;
+ const match=raw.match(/-?\d+(?:\.\d+)?/);if(!match)return null;
+ const n=Math.abs(Number(match[0]));return Number.isFinite(n)?n:null;
+}
+function analyzerSignedDelta(value,sign){
+ const raw=String(value??'').trim();
+ if(!raw||raw==='—'||raw==='--')return '—';
+ if(/lap|tour/i.test(raw))return `${sign}${raw.replace(/^[+-]\s*/,'')}`;
+ const seconds=analyzerGapSeconds(raw);return Number.isFinite(seconds)?`${sign}${seconds.toFixed(2)}`:'—';
+}
+function analyzerFollowedNeighbors(followed){
+ if(!followed)return {ahead:null,behind:null,aheadValue:null,behindValue:null,aheadText:'—',behindText:'—'};
+ const ranked=(state.drivers||[]).filter(d=>Number.isFinite(Number(d?.pos))).slice().sort((a,b)=>Number(a.pos)-Number(b.pos));
+ const index=ranked.findIndex(d=>d.driver===followed.driver);if(index<0)return {ahead:null,behind:null,aheadValue:null,behindValue:null,aheadText:'—',behindText:'—'};
+ const ahead=index>0?ranked[index-1]:null,behind=index<ranked.length-1?ranked[index+1]:null;
+ const aheadRaw=followed.interval??followed.gap;
+ const behindRaw=behind?.interval;
+ return {ahead,behind,aheadValue:ahead?analyzerGapSeconds(aheadRaw):null,behindValue:behind?analyzerGapSeconds(behindRaw):null,aheadText:ahead?analyzerSignedDelta(aheadRaw,'+'):'—',behindText:behind?analyzerSignedDelta(behindRaw,'-'):'—'};
+}
+function analyzerUpdateFollowedDeltas(followed){
+ const data=analyzerFollowedNeighbors(followed),lap=Number(followed?.laps);
+ if(!followed){analyzerFollowedDeltaHistory.driver='';return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
+ if(analyzerFollowedDeltaHistory.driver!==followed.driver){Object.assign(analyzerFollowedDeltaHistory,{driver:followed.driver,lap:Number.isFinite(lap)?lap:null,ahead:data.aheadValue,behind:data.behindValue,aheadTrend:'neutral',behindTrend:'neutral'})}
+ else if(Number.isFinite(lap)&&lap!==analyzerFollowedDeltaHistory.lap){
+  const tolerance=.03;
+  if(Number.isFinite(data.aheadValue)&&Number.isFinite(analyzerFollowedDeltaHistory.ahead))analyzerFollowedDeltaHistory.aheadTrend=data.aheadValue<analyzerFollowedDeltaHistory.ahead-tolerance?'good':data.aheadValue>analyzerFollowedDeltaHistory.ahead+tolerance?'bad':'neutral';else analyzerFollowedDeltaHistory.aheadTrend='neutral';
+  if(Number.isFinite(data.behindValue)&&Number.isFinite(analyzerFollowedDeltaHistory.behind))analyzerFollowedDeltaHistory.behindTrend=data.behindValue>analyzerFollowedDeltaHistory.behind+tolerance?'good':data.behindValue<analyzerFollowedDeltaHistory.behind-tolerance?'bad':'neutral';else analyzerFollowedDeltaHistory.behindTrend='neutral';
+  analyzerFollowedDeltaHistory.lap=lap;analyzerFollowedDeltaHistory.ahead=data.aheadValue;analyzerFollowedDeltaHistory.behind=data.behindValue;
+ }
+ return {...data,aheadTrend:analyzerFollowedDeltaHistory.aheadTrend,behindTrend:analyzerFollowedDeltaHistory.behindTrend};
+}
+function analyzerRenderFollowedDeltas(followed){
+ const data=analyzerUpdateFollowedDeltas(followed),aheadName=document.getElementById('analyzerAheadName'),behindName=document.getElementById('analyzerBehindName'),aheadDelta=document.getElementById('analyzerAheadDelta'),behindDelta=document.getElementById('analyzerBehindDelta');
+ if(aheadName)aheadName.textContent=data.ahead?.driver||'—';if(behindName)behindName.textContent=data.behind?.driver||'—';
+ if(aheadDelta){aheadDelta.textContent=data.aheadText;aheadDelta.className=data.aheadTrend}
+ if(behindDelta){behindDelta.textContent=data.behindText;behindDelta.className=data.behindTrend}
+}
+
 function renderAnalyzer(){
  ensureAnalyzerWeather();
  if(!document.getElementById('analyzerTable'))return;
@@ -818,6 +859,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerFollowedTrack').textContent=followed?.track_timer||'—';
  document.getElementById('analyzerFollowedLimit').textContent=Number.isFinite(ownForecast.maxRemaining)?analyzerFormatDuration(ownForecast.maxRemaining):'—';
  document.getElementById('analyzerFollowedStops').textContent=`${stops.done} / ${analyzerRules.requiredStops}`;
+ analyzerRenderFollowedDeltas(followed);
  document.getElementById('analyzerRuleRelay').textContent=`${analyzerFormatDuration(analyzerRules.minStintMinutes*60)} → ${analyzerFormatDuration(analyzerRules.maxStintMinutes*60)}`;
  document.getElementById('analyzerRulePit').textContent=analyzerFormatDuration(analyzerRules.minPitSeconds);
  document.getElementById('analyzerStopsRemaining').textContent=String(stops.remaining);

@@ -1,3 +1,15 @@
+## V6.11.3 — Harmonisation Analyzer et pitlane latérale
+
+- Onglet VELOCITY strictement harmonisé avec l’onglet actif Classement général sans occuper toute la hauteur de l’en-tête.
+- Bouton RÈGLEMENT de la conformité traité comme le bouton inactif Classement virtuel.
+- PIT LANE déplacée à droite du radar, avec titre doublé et file horizontale conservant l’ordre d’entrée.
+- Carte Équipe suivie réorganisée : Position, Limite relais, Passage et Temps en piste à gauche.
+- Ajout à droite des équipes précédente et suivante avec leurs deltas.
+- Delta vers l’équipe devant : vert si l’écart diminue, orange s’il augmente.
+- Delta vers l’équipe derrière : vert si l’avance augmente, orange si elle diminue.
+- Comparaison effectuée uniquement à chaque nouveau tour de l’équipe suivie avec une tolérance de 0,03 s.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.3.
+
 ## V6.11.2 — Radar agrandi et ligne de chronométrage
 
 - Agrandissement des six anneaux du radar de 25 % pour améliorer la lisibilité.

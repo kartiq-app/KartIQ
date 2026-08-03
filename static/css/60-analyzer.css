@@ -746,3 +746,45 @@
 .map-finish-line{pointer-events:none}
 .map-finish-square{fill:#f4f6f8;opacity:.9}
 .map-finish-square.alt{fill:#161c24;opacity:.95}
+
+
+/* Velocity V6.11.3 — harmonisation des onglets, équipe suivie et pitlane latérale */
+.analyzer-kartiq-title,.analyzer-pit-simulator-title{align-items:center!important}
+.analyzer-static-ranking-tab{
+  align-self:center!important;height:auto!important;min-height:0!important;
+  display:inline-flex!important;align-items:center!important;
+  border:1px solid #ff7a00!important;background:#2b1b0c!important;color:#ff9b32!important;
+  border-radius:7px!important;padding:8px 11px!important;box-shadow:inset 0 -2px #ff7a00!important;
+  font-family:var(--font-torque,Arial,sans-serif)!important;font-size:11px!important;
+  font-weight:400!important;letter-spacing:.025em!important;line-height:1!important;
+  flex:0 0 auto!important;
+}
+.rules-card-button{
+  appearance:none;border:1px solid #343d4b!important;background:#090d13!important;color:#8f99a8!important;
+  border-radius:7px!important;padding:8px 11px!important;font-family:var(--font-torque,Arial,sans-serif)!important;
+  font-size:11px!important;font-weight:400!important;letter-spacing:.025em!important;line-height:1!important;box-shadow:none!important;
+}
+.rules-card-button:hover{border-color:#68768a!important;color:#fff!important;background:#090d13!important}
+.followed-card{min-width:0}
+.analyzer-followed-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,.9fr);gap:18px;align-items:stretch;margin-top:8px}
+.analyzer-followed-summary{min-width:0}
+.analyzer-followed-summary>strong{display:block;font-family:var(--font-torque,Arial,sans-serif);font-size:19px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:12px}
+.analyzer-followed-list{display:flex;flex-direction:column;gap:7px}
+.analyzer-followed-list>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:5px;border-bottom:1px solid #202733}
+.analyzer-followed-list>div:last-child{border-bottom:0;padding-bottom:0}
+.analyzer-followed-list span{font-size:9px;color:#818b99;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.analyzer-followed-list b{font-size:12px;color:#fff;font-variant-numeric:tabular-nums;text-align:right}
+.analyzer-followed-deltas{display:flex;flex-direction:column;justify-content:center;min-width:0;padding-left:16px;border-left:1px solid #303744;text-align:center}
+.analyzer-neighbor{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.analyzer-neighbor span{width:100%;font-size:11px;font-weight:800;color:#d7dde6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.analyzer-neighbor strong{font-family:var(--font-time,monospace);font-size:26px;line-height:1;font-weight:900;font-variant-numeric:tabular-nums;color:#fff}
+.analyzer-neighbor strong.good{color:#38d878}.analyzer-neighbor strong.bad{color:#ff8a1f}.analyzer-neighbor strong.neutral{color:#fff}
+.analyzer-neighbor-divider{height:1px;background:#59616d;margin:12px 6px}
+.map-pitlane-line{stroke:#77818f;stroke-width:2;stroke-linecap:round;opacity:.75}
+.map-pitlane-label{font-family:var(--font-torque,Arial,sans-serif);font-size:20px!important;font-weight:900;fill:#d5dbe4;text-anchor:middle;letter-spacing:.06em}
+#pitSimulatorTrack svg{width:100%;height:auto;display:block}
+@media(max-width:900px){
+ .analyzer-followed-layout{grid-template-columns:1fr;gap:12px}
+ .analyzer-followed-deltas{padding-left:0;padding-top:12px;border-left:0;border-top:1px solid #303744}
+ .analyzer-neighbor strong{font-size:22px}
+}
