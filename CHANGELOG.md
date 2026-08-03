@@ -1,4 +1,11 @@
-## V6.10.7 — MAP synchronisée avec les événements Apex
+# Velocity V6.10.8
+
+- Correction de la détection des impulsions MAP dans les trames Apex concaténées.
+- Gestion automatique des pistes avec secteurs (`*`, `*i1`, `*i2`) et sans secteurs (`*` uniquement).
+- Une grille connectée est reconnue comme session active sans attendre un secteur intermédiaire.
+- La MAP affiche « En attente d’un passage Apex » tant que le premier événement de position n’a pas été reçu.
+
+## V6.10.8 — MAP synchronisée avec les événements Apex
 
 - La MAP consomme directement les événements WebSocket Apex `*`, `*i1`, `*i2`, `*in` et `*out`.
 - Les marqueurs ne se déplacent plus à partir d'une rotation autonome ou d'une estimation permanente.

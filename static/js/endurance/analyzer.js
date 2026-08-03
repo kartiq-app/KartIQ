@@ -283,14 +283,18 @@ function analyzerApexSectorModel(){
 }
 function analyzerApexRaceIsActive(){
  const drivers=(state?.drivers||[]).filter(d=>d&&d.driver);if(!drivers.length)return false;
- const registry=analyzerApexMapRegistry();if(registry.noLive)return false;
+ const registry=analyzerApexMapRegistry();
  const liveStatus=String(state?.live?.status||'').toLowerCase(),connection=String(state?.connection||'').toLowerCase();
- const connected=liveStatus==='connected'||connection.includes('connect');
- // Un tour peut durer plus d'une minute : la dernière impulsion Apex reste
- // exploitable jusqu'à 120 s, mais aucun mouvement n'est inventé après la fin
- // de la durée transmise pour chaque segment.
- const recent=registry.lastEventAt>0&&Date.now()-registry.lastEventAt<120000;
- return connected&&recent;
+ const connected=['connected','receiving'].includes(liveStatus)||connection.includes('connect');
+ // La session est active dès que le live est connecté et qu'une grille existe.
+ // Les impulsions *i1/*i2 sont optionnelles : certaines pistes ne publient
+ // aucun secteur et n'envoient qu'un événement * par tour.
+ if(!connected)return false;
+ if(registry.noLive&&registry.lastEventAt===0){
+  const explicitNoLive=liveStatus==='idle'||liveStatus==='closed'||liveStatus==='error';
+  return !explicitNoLive;
+ }
+ return true;
 }
 function analyzerAnimatedTrackSeconds(driver){
  const key=String(driver?.driver||driver?.apex||driver?.pos||'unknown');
@@ -350,6 +354,7 @@ function analyzerRenderPitSimulator(){
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver),trackMarkup=analyzerMapTrackMarkup();
  if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Circuit inactif">${trackMarkup}<line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><path class="pit-simulator-pitlane" d="M110 24 L110 58"></path><text class="pit-simulator-center-title" x="110" y="103">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="124">Pas de course en cours</text></svg>`;return}
  const visible=drivers.map(driver=>({driver,point:analyzerMapPoint(driver)})).filter(item=>item.point);
+ if(!visible.length){host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Circuit en attente des impulsions Apex">${trackMarkup}<line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><path class="pit-simulator-pitlane" d="M110 24 L110 58"></path><text class="pit-simulator-center-title" x="110" y="103">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="124">En attente d’un passage Apex</text></svg>`;return}
  const followed=drivers.find(d=>d.driver===state.followed_driver)||null,simulation=analyzerPitSimulation,horizon=simulation?.horizonSeconds||0;
  const dots=visible.map(({driver,point})=>{
   let p=point;if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0);

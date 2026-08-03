@@ -140,28 +140,46 @@ function ingestApexMapEvents(frame,circuitId){
  const registry=window.velocityApexMap;
  if(registry.circuitId!==circuitId)resetVelocityApexMap(circuitId);
  const raw=String(frame||'').replace(/\r\n?/g,'\n');
- if(/(?:^|\n)init\|n(?:\||$)/.test(raw)){resetVelocityApexMap(circuitId);return}
- if(/(?:^|\n)init\|[rb](?:\||$)/.test(raw))registry.noLive=false;
- const scan=/r(\d+)(?:c\d+)?\|([^|\r\n]*)\|(.*?)(?=(?:\s*r\d+(?:c\d+)?\|)|$)/gs;
- for(const match of raw.matchAll(scan)){
-  const row=Number(match[1]),code=String(match[2]||'').trim();
-  if(!['*','*i1','*i2','*in','*out'].includes(code))continue;
-  const fields=String(match[3]||'').trim().split('|').map(v=>String(v||'').trim());
-  const value=Number(fields[0]);const extra=Number(fields[1]);const now=Date.now();
-  const previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},lastPhase:0};
+ // Les trames Apex peuvent être séparées par des retours ligne, des espaces,
+ // ou être concaténées. La détection du statut ne dépend donc plus du début
+ // exact d'une ligne.
+ if(/(?:^|[\s@])init\|n(?:\||$)/i.test(raw)){resetVelocityApexMap(circuitId);return}
+ if(/(?:^|[\s@])init\|[rb](?:\||$)/i.test(raw))registry.noLive=false;
+
+ // Recherche directe des impulsions de tracking, indépendamment du séparateur
+ // utilisé entre deux enregistrements Apex.
+ const eventStart=/r(\d+)(?:c\d+)?\|(\*i1|\*i2|\*in|\*out|\*)\|/g;
+ const starts=[...raw.matchAll(eventStart)];
+ for(let index=0;index<starts.length;index++){
+  const match=starts[index],row=Number(match[1]),code=String(match[2]||'').trim();
+  const payloadStart=(match.index||0)+match[0].length;
+  const payloadEnd=index+1<starts.length?(starts[index+1].index||raw.length):raw.length;
+  // On coupe également au prochain enregistrement Apex générique afin de ne
+  // pas absorber les mises à jour de grille accolées à l'impulsion MAP.
+  let payload=raw.slice(payloadStart,payloadEnd);
+  const nextRecord=payload.search(/(?:[\s@]|^)(?:r\d+(?:c\d+)?|init|grid|dyn\d+|track|gmt)\|/i);
+  if(nextRecord>=0)payload=payload.slice(0,nextRecord);
+  const fields=payload.split('|').map(v=>String(v||'').trim());
+  const value=Number(fields[0]);
+  const extra=Number(fields[1]);
+  const now=Date.now();
+  const previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},lastPhase:0,sectorMode:false};
   previous.lastPhase=velocityApexMapEntryPhase(previous,now);
+
   if(code==='*'){
    if(Number.isFinite(value)&&value>0)previous.lapDurationMs=value;
-   if(Number.isFinite(extra)&&extra>0)previous.sectors.s1=extra;
-   previous.segment=Number.isFinite(extra)&&extra>0?'s1':'track';
-   previous.durationMs=Number.isFinite(extra)&&extra>0?extra:value;
+   if(Number.isFinite(extra)&&extra>0){previous.sectors.s1=extra;previous.sectorMode=true}
+   // Sans durée S1 explicite, Apex anime le tour complet : aucun secteur
+   // intermédiaire n'est requis pour faire apparaître le kart.
+   previous.segment=previous.sectorMode&&Number.isFinite(extra)&&extra>0?'s1':'track';
+   previous.durationMs=previous.segment==='s1'?extra:value;
    previous.inPit=false;
   }else if(code==='*i1'){
    if(Number.isFinite(value)&&value>0)previous.sectors.s2=value;
-   previous.segment='s2';previous.durationMs=value;previous.inPit=false;
+   previous.sectorMode=true;previous.segment='s2';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*i2'){
    if(Number.isFinite(value)&&value>0)previous.sectors.s3=value;
-   previous.segment='s3';previous.durationMs=value;previous.inPit=false;
+   previous.sectorMode=true;previous.segment='s3';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*in'){
    previous.segment='in';previous.durationMs=8000;previous.inPit=true;
   }else if(code==='*out'){
@@ -172,7 +190,6 @@ function ingestApexMapEvents(frame,circuitId){
   registry.rows.set(row,previous);registry.lastEventAt=now;registry.noLive=false;
  }
 }
-
 async function sendApexStatus(status,connection,error=null){try{await fetch('/api/apex/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,connection,error})})}catch(e){}}
 function closeApexBrowserSocket(){if(apexBrowserSocket){apexBrowserSocket.onclose=null;try{apexBrowserSocket.close()}catch(e){}apexBrowserSocket=null}apexBrowserConnecting=false}
 function ensureApexBrowserConnection(){if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
