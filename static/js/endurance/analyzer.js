@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.10.5',
+  appVersion:'6.11.0',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.10.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.11.0',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -326,43 +326,36 @@ function analyzerDriverPhase(driver){
  const track=analyzerAnimatedTrackSeconds(driver);if(Number.isFinite(track)&&track>=0)return ((track%pace)+pace)%pace/pace;
  return 0;
 }
-function analyzerTrackPoint(phase,radius=86,cx=110,cy=110){
- const angle=(Number(phase)||0)*Math.PI*2-Math.PI/2;return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius};
-}
-function analyzerMapPoint(driver){
- const entry=analyzerApexMapEntry(driver),phase=analyzerApexEntryPhase(entry);if(!entry||!Number.isFinite(phase))return null;
- const ring=analyzerTrackPoint(phase),pit={x:110,y:58};
- const progress=Math.max(0,Math.min(1,(Date.now()-entry.startedAt)/Math.max(1,entry.durationMs)));
- if(entry.segment==='in')return {x:ring.x+(pit.x-ring.x)*progress,y:ring.y+(pit.y-ring.y)*progress,phase,inPit:true};
- if(entry.segment==='out')return {x:pit.x+(110-pit.x)*progress,y:pit.y+(24-pit.y)*progress,phase:0,inPit:false};
- return {...ring,phase,inPit:Boolean(entry.inPit)};
-}
-function analyzerArcPath(start,end,r=86,cx=110,cy=110){
- const a=analyzerTrackPoint(start,r,cx,cy),b=analyzerTrackPoint(end,r,cx,cy),large=(end-start)>.5?1:0;
- return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
-}
-function analyzerMapTrackMarkup(){
- const model=analyzerApexSectorModel();
- if(!model)return '<circle class="pit-simulator-ring" cx="110" cy="110" r="86"></circle>';
- const p1=model.s1/model.total,p2=(model.s1+model.s2)/model.total;
- const labels=[['S1',p1/2],['S2',(p1+p2)/2],['S3',(p2+1)/2]].map(([label,phase])=>{const p=analyzerTrackPoint(phase,101);return `<text class="pit-simulator-sector-label" x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}">${label}</text>`}).join('');
- return `<circle class="pit-simulator-ring pit-simulator-ring-base" cx="110" cy="110" r="86"></circle><path class="pit-simulator-sector s1" d="${analyzerArcPath(0,p1)}"></path><path class="pit-simulator-sector s2" d="${analyzerArcPath(p1,p2)}"></path><path class="pit-simulator-sector s3" d="${analyzerArcPath(p2,.99999)}"></path>${labels}`;
-}
+const analyzerMapPaceFilters=new Set(['fastest','excellent','good','medium','average','slow']);
+let analyzerMapHighlight='none';
+const analyzerMapRings={slow:38,average:48,medium:58,good:68,excellent:78,fastest:88};
+function setAnalyzerMapPaceFilter(category,checked){if(checked)analyzerMapPaceFilters.add(category);else analyzerMapPaceFilters.delete(category);const none=document.querySelector('#mapPaceFilters .map-filter-none input');if(none)none.checked=analyzerMapPaceFilters.size===0;analyzerRenderPitSimulator()}
+function setAnalyzerMapNoPaces(checked){if(checked)analyzerMapPaceFilters.clear();else ['fastest','excellent','good','medium','average','slow'].forEach(x=>analyzerMapPaceFilters.add(x));document.querySelectorAll('#mapPaceFilters input[value]').forEach(input=>input.checked=analyzerMapPaceFilters.has(input.value));analyzerRenderPitSimulator()}
+function setAnalyzerMapHighlight(value){analyzerMapHighlight=value||'none';analyzerRenderPitSimulator()}
+function analyzerMapLastLap(driver){const value=analyzerParseDuration(driver?.last);return Number.isFinite(value)&&value>20&&value<600?value:null}
+function analyzerMapPaceCategory(delta){if(delta<=.10)return 'fastest';if(delta<=.29)return 'excellent';if(delta<=.49)return 'good';if(delta<=.79)return 'medium';if(delta<=.99)return 'average';return 'slow'}
+function analyzerMapPaceData(drivers){const valid=(drivers||[]).filter(d=>d?.status!=='pit').map(d=>({driver:d,lap:analyzerMapLastLap(d)})).filter(x=>Number.isFinite(x.lap));const best=valid.length?Math.min(...valid.map(x=>x.lap)):null;const map=new Map();for(const d of drivers||[]){const lap=analyzerMapLastLap(d),delta=Number.isFinite(best)&&Number.isFinite(lap)?Math.max(0,lap-best):null;map.set(d,{lap,delta,category:Number.isFinite(delta)?analyzerMapPaceCategory(delta):'slow'})}return {best,map}}
+function analyzerTrackPoint(phase,radius=88,cx=110,cy=122){const angle=(Number(phase)||0)*Math.PI*2-Math.PI/2;return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius}}
+function analyzerMapPoint(driver,radius=88){const entry=analyzerApexMapEntry(driver),phase=analyzerApexEntryPhase(entry);if(!entry||!Number.isFinite(phase))return null;return {...analyzerTrackPoint(phase,radius),phase,inPit:Boolean(entry.inPit),entry}}
+function analyzerMapRadarMarkup(){const rings=Object.entries(analyzerMapRings).map(([category,r])=>`<circle class="map-radar-ring ${category}" cx="110" cy="122" r="${r}"></circle>`).join('');const rays=Array.from({length:8},(_,i)=>{const a=i*Math.PI/4-Math.PI/2,x1=110+Math.cos(a)*30,y1=122+Math.sin(a)*30,x2=110+Math.cos(a)*91,y2=122+Math.sin(a)*91;return `<line class="map-radar-ray" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"></line>`}).join('');return `${rays}${rings}`}
 function analyzerSimulationKartLabel(driver){return String(validKartNumber(driver)||driver?.apex||driver?.pos||'—').slice(0,3)}
+function analyzerMapTop5Set(drivers){return new Set((drivers||[]).slice().sort((a,b)=>(Number(a.velocity_score??a.kart_score??0)||0)-(Number(b.velocity_score??b.kart_score??0)||0)).slice(-5).map(d=>d.driver))}
+function analyzerMapIsHighlighted(driver,category,top5){if(analyzerMapHighlight==='followed')return driver.driver===state.followed_driver;if(analyzerMapHighlight==='top5')return top5.has(driver.driver);if(analyzerMapHighlight==='pit')return driver.status==='pit'||Boolean(analyzerApexMapEntry(driver)?.inPit);if(analyzerMapHighlight==='fastest')return category==='fastest';return false}
+function analyzerMapPitQueue(drivers){return (drivers||[]).map(driver=>({driver,entry:analyzerApexMapEntry(driver)})).filter(x=>x.driver.status==='pit'||x.entry?.inPit).sort((a,b)=>Number(a.entry?.pitEnteredAt||0)-Number(b.entry?.pitEnteredAt||0))}
 function analyzerRenderPitSimulator(){
  const host=document.getElementById('pitSimulatorTrack');if(!host)return;
- const drivers=(state.drivers||[]).filter(d=>d&&d.driver),trackMarkup=analyzerMapTrackMarkup();
- if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Circuit inactif">${trackMarkup}<line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><path class="pit-simulator-pitlane" d="M110 24 L110 58"></path><text class="pit-simulator-center-title" x="110" y="103">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="124">Pas de course en cours</text></svg>`;return}
- const visible=drivers.map(driver=>({driver,point:analyzerMapPoint(driver)})).filter(item=>item.point);
- if(!visible.length){host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Circuit en attente des impulsions Apex">${trackMarkup}<line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><path class="pit-simulator-pitlane" d="M110 24 L110 58"></path><text class="pit-simulator-center-title" x="110" y="103">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="124">En attente d’un passage Apex</text></svg>`;return}
- const followed=drivers.find(d=>d.driver===state.followed_driver)||null,simulation=analyzerPitSimulation,horizon=simulation?.horizonSeconds||0;
- const dots=visible.map(({driver,point})=>{
-  let p=point;if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0);
-  const classes=['pit-simulator-dot'];if(driver.driver===state.followed_driver)classes.push('followed');if(point.inPit||driver.status==='pit')classes.push('pit');
-  return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><circle r="9"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`;
- }).join('');
- const projected=simulation?'<circle class="pit-simulator-projected" cx="110" cy="24" r="12"></circle>':'',centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(simulation.horizonSeconds):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
- host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Progression des karts synchronisée avec Apex Timing">${trackMarkup}<line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><path class="pit-simulator-pitlane" d="M110 24 L110 58"></path>${dots}${projected}<text class="pit-simulator-center-title" x="110" y="103">${centerTitle}</text><text class="pit-simulator-center-value" x="110" y="124">${centerValue}</text></svg>`;
+ const drivers=(state.drivers||[]).filter(d=>d&&d.driver),radar=analyzerMapRadarMarkup();
+ const base=`<path class="map-pitlane-line" d="M38 22 H182"></path><text class="map-pitlane-label" x="110" y="13">PIT LANE</text>${radar}`;
+ if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<svg viewBox="0 0 220 225" role="img" aria-label="Circuit inactif">${base}<text class="pit-simulator-center-title" x="110" y="119">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="137">Pas de course en cours</text></svg>`;return}
+ const paceData=analyzerMapPaceData(drivers),counts={fastest:0,excellent:0,good:0,medium:0,average:0,slow:0};for(const d of drivers){const c=paceData.map.get(d)?.category||'slow';counts[c]++}Object.entries(counts).forEach(([key,value])=>{const el=document.querySelector(`[data-map-count="${key}"]`);if(el)el.textContent=value});
+ const top5=analyzerMapTop5Set(drivers),pitQueue=analyzerMapPitQueue(drivers),pitNames=new Set(pitQueue.map(x=>x.driver.driver));
+ const visible=drivers.map(driver=>{const info=paceData.map.get(driver)||{category:'slow',delta:null};const point=analyzerMapPoint(driver,analyzerMapRings[info.category]);return {driver,info,point}}).filter(item=>item.point&&!pitNames.has(item.driver.driver)&&(analyzerMapPaceFilters.has(item.info.category)||item.driver.driver===state.followed_driver));
+ const simulation=analyzerPitSimulation,horizon=Number(simulation?.horizon??simulation?.horizonSeconds)||0;
+ const dots=visible.map(({driver,info,point})=>{let p=point;if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1,analyzerMapRings[info.category]);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0,analyzerMapRings[info.category]);const classes=['pit-simulator-dot','pace-'+info.category];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,info.category,top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,info.category,top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');const title=Number.isFinite(info.delta)?`${driver.driver} · +${info.delta.toFixed(3)} s`:driver.driver;return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><title>${analyzerEscape(title)}</title><circle r="${info.category==='fastest'?9.5:8.5}"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
+ const pitDots=pitQueue.map(({driver,entry},index)=>{const x=176-index*20,classes=['pit-simulator-dot','pit','pit-queued'];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,'pit',top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,'pit',top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');return `<g class="${classes.join(' ')}" transform="translate(${Math.max(42,x)} 22)"><title>${analyzerEscape(driver.driver)}</title><circle r="8.5"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
+ const projected=simulation?'<circle class="pit-simulator-projected" cx="110" cy="30" r="11"></circle>':'',followed=drivers.find(d=>d.driver===state.followed_driver)||null,centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(horizon):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
+ const waiting=!visible.length&&!pitQueue.length?'<text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="151">En attente d’un passage Apex</text>':'';
+ host.innerHTML=`<svg viewBox="0 0 220 225" role="img" aria-label="Radar de rythme et progression synchronisé avec Apex Timing">${base}${dots}${pitDots}${projected}<text class="pit-simulator-center-title" x="110" y="119">${centerTitle}</text><text class="pit-simulator-center-value" x="110" y="137">${centerValue}</text>${waiting}</svg>`;
 }
 function analyzerPitReferenceLap(laps,pits){
  const pitLaps=new Set((pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite));

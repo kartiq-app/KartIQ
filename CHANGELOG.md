@@ -1,3 +1,13 @@
+## V6.11.0 — MAP radar de rythme et voie des stands
+- Remplacement du cercle unique par six anneaux concentriques classés selon l’écart au meilleur dernier tour.
+- Les karts les plus rapides évoluent sur l’anneau extérieur.
+- Ajout d’une mire radar légère à huit rayons pour visualiser les rapprochements.
+- Ajout des filtres multi-sélection « Afficher les rythmes » avec compteur par catégorie.
+- Ajout du menu « Mettre en évidence » : équipe suivie, Top 5 Velocity, stands ou plus rapides.
+- Ajout d’une voie des stands horizontale au-dessus du radar, classée par ordre d’entrée (plus ancien à droite).
+- Conservation et adaptation de la fonction « Simuler un arrêt » au nouveau radar.
+- Mise à jour du cache PWA.
+
 # Velocity V6.10.8
 
 - Correction de la détection des impulsions MAP dans les trames Apex concaténées.

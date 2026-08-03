@@ -181,9 +181,9 @@ function ingestApexMapEvents(frame,circuitId){
    if(Number.isFinite(value)&&value>0)previous.sectors.s3=value;
    previous.sectorMode=true;previous.segment='s3';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*in'){
-   previous.segment='in';previous.durationMs=8000;previous.inPit=true;
+   previous.segment='in';previous.durationMs=8000;previous.inPit=true;previous.pitEnteredAt=previous.pitEnteredAt||now;
   }else if(code==='*out'){
-   previous.segment='out';previous.durationMs=Number.isFinite(value)&&value>0?value:5000;previous.inPit=false;
+   previous.segment='out';previous.durationMs=Number.isFinite(value)&&value>0?value:5000;previous.inPit=false;previous.pitEnteredAt=null;
   }
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
   previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
