@@ -680,3 +680,21 @@
 .analyzer-footer button:hover{color:#ff7a00}
 .analyzer-footer .analyzer-session-status{margin-right:6px}
 @media(max-width:900px){.weather-local-time{font-size:24px}.weather-timeline{grid-template-columns:repeat(12,94px);min-width:max-content}.analyzer-race-remaining strong{font-size:25px!important}.analyzer-footer{justify-content:flex-start}}
+
+
+/* Velocity V6.10.5 — titres identiques au classement, météo et règlement */
+.analyzer-static-ranking-tab{
+  display:inline-flex!important;align-items:center!important;min-height:34px!important;
+  padding:8px 11px!important;border:1px solid #ff7a00!important;border-radius:7px!important;
+  background:#2b1b0c!important;color:#ff9b32!important;box-shadow:inset 0 -2px #ff7a00!important;
+  font-family:var(--font-torque,Arial,sans-serif)!important;font-size:11px!important;
+  font-weight:400!important;letter-spacing:.025em!important;line-height:1!important;
+}
+.analyzer-kartiq-title,.analyzer-pit-simulator-title{min-height:54px!important;padding:0 14px!important;background:#151a23!important}
+.weather-local-block{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-width:0}
+.weather-circuit-name{margin-top:6px;max-width:240px;color:#aab4c2;font-size:10px;font-weight:800;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rules-status-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rules-card-button{appearance:none;border:1px solid #ff7a00;background:#2b1b0c;color:#ff9b32;border-radius:7px;padding:7px 10px;font-family:var(--font-torque,Arial,sans-serif);font-size:9px;letter-spacing:.025em;cursor:pointer}
+.rules-card-button:hover{background:#3a240e;color:#ffb15f}
+.pit-simulator-center-value-idle{font-size:10px!important;fill:#aab2bf!important}
+@media(max-width:700px){.analyzer-static-ranking-tab{font-size:9px!important;padding:7px 8px!important}.weather-circuit-name{max-width:150px;font-size:9px}}

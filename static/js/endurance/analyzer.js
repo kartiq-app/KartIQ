@@ -10,7 +10,7 @@ function analyzerUpdateRaceRemaining(){
  if(Number.isFinite(ms)){const total=Math.max(0,Math.floor(ms/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;el.classList.toggle('warning',total<=3600&&total>600);el.classList.toggle('critical',total<=600);return}
  el.textContent=state?.time_remaining||'—';
 }
-/* Velocity V6.10.4 — météo 12 h, interface et MAP synchronisée Apex */
+/* Velocity V6.10.5 — titres alignés, MAP inactive visible et réglages météo */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
@@ -70,6 +70,7 @@ function renderAnalyzerWeatherTimeline(timeline){
 }
 function renderAnalyzerWeather(){analyzerFormatLocalClock();
  const card=document.getElementById('analyzerWeatherCard');if(!card)return;
+ const circuitNameEl=document.getElementById('analyzerWeatherCircuitName');if(circuitNameEl)circuitNameEl.textContent=analyzerWeatherData?.circuit_name||analyzerWeatherData?.location?.name||analyzerSessionCircuitName()||'—';
  const icon=document.getElementById('analyzerWeatherIcon');
  const temp=document.getElementById('analyzerWeatherTemperature');
  const condition=document.getElementById('analyzerWeatherCondition');
@@ -147,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.10.4',
+  appVersion:'6.10.5',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -204,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.10.4',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.10.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -310,7 +311,7 @@ function analyzerSimulationKartLabel(driver){return String(validKartNumber(drive
 function analyzerRenderPitSimulator(){
  const host=document.getElementById('pitSimulatorTrack');if(!host)return;
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver);
- if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML='<div class="analyzer-empty">Pas de course en cours</div>';return}
+ if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Circuit inactif"><circle class="pit-simulator-ring" cx="110" cy="110" r="86"></circle><line class="pit-simulator-line" x1="110" y1="12" x2="110" y2="38"></line><text class="pit-simulator-center-title" x="110" y="103">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="110" y="124">Pas de course en cours</text></svg>`;return}
  if(!drivers.length){host.innerHTML='<div class="analyzer-empty">En attente des données Apex…</div>';return}
  const followed=drivers.find(d=>d.driver===state.followed_driver)||null;
  const simulation=analyzerPitSimulation;

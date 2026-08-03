@@ -1,3 +1,11 @@
+## V6.10.5 — Alignement des titres, MAP inactive et météo
+
+- Velocity et MAP reprennent exactement le traitement visuel actif du bouton Classement général.
+- Le cercle de MAP reste visible lorsqu’aucune course n’est active, sans marqueurs ni animation.
+- Le nom du circuit apparaît sous l’heure locale dans la carte météo, aligné à droite.
+- Le nom du circuit est retiré de la ligne supérieure LIVE.
+- Un bouton RÈGLEMENT est ajouté dans la carte Conformité réglementaire et ouvre le pop-up Règlement Analyzer.
+
 # Changelog
 
 ## V6.10.4 — Interface Velocity, météo 12 h et MAP synchronisée Apex
