@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.13.4',
+  appVersion:'6.13.5',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.13.4',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.13.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -344,11 +344,11 @@ function analyzerSimulationKartLabel(driver){return String(validKartNumber(drive
 function analyzerMapTop5Set(drivers){return new Set((drivers||[]).slice().sort((a,b)=>(Number(a.velocity_score??a.kart_score??0)||0)-(Number(b.velocity_score??b.kart_score??0)||0)).slice(-5).map(d=>d.driver))}
 function analyzerMapIsHighlighted(driver,category,top5){if(analyzerMapHighlight==='followed')return driver.driver===state.followed_driver;if(analyzerMapHighlight==='top5')return top5.has(driver.driver);if(analyzerMapHighlight==='pit')return driver.status==='pit'||Boolean(analyzerApexMapEntry(driver)?.inPit);if(analyzerMapHighlight==='fastest')return category==='fastest';return false}
 function analyzerMapPitQueue(drivers){return (drivers||[]).map(driver=>({driver,entry:analyzerApexMapEntry(driver)})).filter(x=>x.driver.status==='pit'||x.entry?.inPit).sort((a,b)=>Number(a.entry?.pitEnteredAt||0)-Number(b.entry?.pitEnteredAt||0))}
-function analyzerPitLaneDots(pitQueue,top5){return pitQueue.map(({driver},index)=>{const perRow=11,row=Math.floor(index/perRow),col=index%perRow,x=252-col*23,y=74+row*31,classes=['pit-simulator-dot','pit','pit-queued'];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,'pit',top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,'pit',top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');return `<g class="${classes.join(' ')}" transform="translate(${x} ${y})"><title>${analyzerEscape(driver.driver)}</title><circle r="9.35"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('')}
+function analyzerPitLaneDots(pitQueue,top5){return pitQueue.map(({driver},index)=>{const perRow=12,row=Math.floor(index/perRow),col=index%perRow,x=8+col*23,y=184+row*29,classes=['pit-simulator-dot','pit','pit-queued'];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,'pit',top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,'pit',top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');return `<g class="${classes.join(' ')}" transform="translate(${x} ${y})"><title>${analyzerEscape(driver.driver)}</title><circle r="9.35"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('')}
 function analyzerRenderPitSimulator(){
  const host=document.getElementById('pitSimulatorTrack');if(!host)return;
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver),radar=analyzerMapRadarMarkup();
- const pitBase=`<text class="map-pitlane-label" x="135" y="30">PIT LANE</text><path class="map-pitlane-line" d="M18 56 H252"></path>`;
+ const pitBase=`<g class="map-pitlane-centered"><text class="map-pitlane-label" x="135" y="132">PIT LANE</text><path class="map-pitlane-line" d="M0 158 H270"></path></g>`;
  if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<div class="map-stage"><div class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Circuit inactif">${radar}<text class="pit-simulator-center-title" x="135" y="145">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="163">Pas de course en cours</text></svg></div><div class="map-pitlane-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Pit lane inactive">${pitBase}</svg></div></div>`;return}
  const paceData=analyzerMapPaceData(drivers),counts={fastest:0,excellent:0,good:0,medium:0,average:0,slow:0};for(const d of drivers){const c=paceData.map.get(d)?.category||'slow';counts[c]++}Object.entries(counts).forEach(([key,value])=>{const el=document.querySelector(`[data-map-count="${key}"]`);if(el)el.textContent=value});
  const top5=analyzerMapTop5Set(drivers),pitQueue=analyzerMapPitQueue(drivers),pitNames=new Set(pitQueue.map(x=>x.driver.driver));
@@ -358,6 +358,7 @@ function analyzerRenderPitSimulator(){
  const pitDots=analyzerPitLaneDots(pitQueue,top5),projected=simulation?'<circle class="pit-simulator-projected" cx="135" cy="25" r="12.1"></circle>':'',followed=drivers.find(d=>d.driver===state.followed_driver)||null,centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(horizon):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
  const waiting=!visible.length?'<text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="184">En attente d’un passage Apex</text>':'';
  host.innerHTML=`<div class="map-stage"><div class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Radar de rythme synchronisé avec Apex Timing">${radar}${dots}${projected}<text class="pit-simulator-center-title" x="135" y="145">${centerTitle}</text><text class="pit-simulator-center-value" x="135" y="163">${centerValue}</text>${waiting}</svg></div><div class="map-pitlane-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Karts dans la pit lane">${pitBase}${pitDots}</svg></div></div>`;
+ if(document.getElementById('analyzerMapFocus')?.classList.contains('show'))analyzerRenderMapFocus();
 }
 function analyzerPitReferenceLap(laps,pits){
  const pitLaps=new Set((pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite));
@@ -847,6 +848,33 @@ function analyzerRenderFollowedDeltas(followed){
  if(behindDelta){behindDelta.textContent=data.behindText;behindDelta.className=data.behindTrend}
 }
 
+const analyzerFollowedPitCache=new Map();
+async function analyzerRefreshFollowedLastPit(followed){
+ const el=document.getElementById('analyzerFollowedLastPit');if(!el){return}
+ const row=Number(followed?.apex_row),stops=Number(followed?.pit_stops||0);if(!row||!stops){el.textContent='—';return}
+ const key=`${row}:${stops}`;if(analyzerFollowedPitCache.has(key)){el.textContent=analyzerFollowedPitCache.get(key);return}
+ try{const pits=await fetchAllApexTeamPits(row,'',null);const value=pits?.[0]?.pitTime||'—';analyzerFollowedPitCache.set(key,value);if((state.followed_driver||'')===followed.driver)el.textContent=value}catch(_error){el.textContent='—'}
+}
+function analyzerRenderFollowedPerformance(followed){
+ const rankEl=document.getElementById('analyzerFollowedLastRank'),lapEl=document.getElementById('analyzerFollowedLastLap');
+ const rank=followed&&typeof sprintLastLapRanking==='function'?sprintLastLapRanking(followed):null;
+ if(rankEl)rankEl.innerHTML=rank&&typeof enduranceOrdinalMarkup==='function'?`${enduranceOrdinalMarkup(rank.rank)}<span class="analyzer-followed-rank-separator">:</span>`:'—';
+ if(lapEl){lapEl.textContent=followed?.last||'—';lapEl.classList.remove('endurance-last-orange','endurance-last-green','endurance-last-purple');if(followed&&typeof enduranceLastLapColorClass==='function')lapEl.classList.add(enduranceLastLapColorClass(followed));}
+ analyzerRefreshFollowedLastPit(followed);
+}
+function openAnalyzerMapFocus(){const o=document.getElementById('analyzerMapFocus');if(!o)return;o.classList.add('show');o.setAttribute('aria-hidden','false');document.body.classList.add('analyzer-map-focus-open');analyzerRenderMapFocus()}
+function closeAnalyzerMapFocus(){const o=document.getElementById('analyzerMapFocus');if(!o)return;o.classList.remove('show');o.setAttribute('aria-hidden','true');document.body.classList.remove('analyzer-map-focus-open')}
+function analyzerMapFocusControls(){
+ const source=document.getElementById('mapPaceFilters'),target=document.getElementById('mapFocusPaceFilters');if(source&&target){target.innerHTML=source.innerHTML;target.querySelectorAll('input[value]').forEach(i=>i.checked=analyzerMapPaceFilters.has(i.value));const none=target.querySelector('.map-filter-none input');if(none)none.checked=analyzerMapPaceFilters.size===0}
+ const hs=document.querySelector('.map-highlight-menu'),ht=document.getElementById('mapFocusHighlight');if(hs&&ht){ht.innerHTML=hs.innerHTML;ht.querySelectorAll('input[name="mapHighlight"]').forEach(i=>{i.name='mapHighlightFocus';i.checked=i.value===analyzerMapHighlight})}
+}
+function analyzerRelayEndLabel(driver){try{const f=analyzerForecastFor(driver);return Number.isFinite(f?.maxRemaining)?analyzerFormatDuration(f.maxRemaining):(driver?.status==='pit'?'IN':'—')}catch(_e){return '—'}}
+function analyzerRenderMapFocus(){
+ const overlay=document.getElementById('analyzerMapFocus');if(!overlay?.classList.contains('show'))return;analyzerMapFocusControls();
+ const radarHost=document.getElementById('analyzerMapFocusRadar'),ranking=document.getElementById('analyzerMapFocusRanking');const source=document.querySelector('#pitSimulatorTrack .map-radar-pane');if(radarHost)radarHost.innerHTML=source?source.innerHTML:'<div class="analyzer-empty">Radar indisponible</div>';
+ const drivers=(state.drivers||[]).filter(d=>d&&d.driver),pace=analyzerMapPaceData(drivers),order=['fastest','excellent','good','medium','average','slow'],labels={fastest:'🔥 LES PLUS RAPIDES',excellent:'🟢 EXCELLENT RYTHME',good:'🟡 BON RYTHME',medium:'🟠 MOYEN',average:'🔴 TRÈS MOYEN',slow:'⚫ LENT'};
+ if(ranking)ranking.innerHTML=order.map(cat=>{const rows=drivers.filter(d=>(pace.map.get(d)?.category||'slow')===cat).sort((a,b)=>(pace.map.get(a)?.lap??9999)-(pace.map.get(b)?.lap??9999));return `<section class="map-focus-group"><h3>${labels[cat]}</h3><div class="map-focus-head"><span>ÉQUIPE</span><span>DERNIER TEMPS</span><span>FIN RELAIS</span></div>${rows.map(d=>`<div class="map-focus-row${d.driver===state.followed_driver?' followed':''}"><span>${analyzerEscape(d.driver)}</span><b>${analyzerEscape(d.last||'—')}</b><b>${analyzerEscape(analyzerRelayEndLabel(d))}</b></div>`).join('')||'<div class="map-focus-empty">—</div>'}</section>`}).join('');
+}
 function renderAnalyzer(){
  ensureAnalyzerWeather();
  if(!document.getElementById('analyzerTable'))return;
@@ -865,6 +893,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerFollowedTrack').textContent=followed?.track_timer||'—';
  document.getElementById('analyzerFollowedLimit').textContent=Number.isFinite(ownForecast.maxRemaining)?analyzerFormatDuration(ownForecast.maxRemaining):'—';
  document.getElementById('analyzerFollowedStops').textContent=`${stops.done} / ${analyzerRules.requiredStops}`;
+ analyzerRenderFollowedPerformance(followed);
  analyzerRenderFollowedDeltas(followed);
  document.getElementById('analyzerRuleRelay').textContent=`${analyzerFormatDuration(analyzerRules.minStintMinutes*60)} → ${analyzerFormatDuration(analyzerRules.maxStintMinutes*60)}`;
  document.getElementById('analyzerRulePit').textContent=analyzerFormatDuration(analyzerRules.minPitSeconds);
@@ -1290,7 +1319,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.13.4 — Radar V6.11.2 restauré, Débrief conservé */
+/* Velocity V6.13.5 — Radar V6.11.2 restauré, Débrief conservé */
 let analyzerDebriefBusy=false;
 let analyzerDebriefReport=null;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}

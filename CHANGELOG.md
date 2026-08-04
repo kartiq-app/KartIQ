@@ -1,11 +1,11 @@
-# Velocity V6.13.4 — Temps restant fiable et HEAT MAP ajustée
+# Velocity V6.13.5 — Temps restant fiable et HEAT MAP ajustée
 
 - Le temps restant expire désormais après 45 secondes sans nouvelle trame `countdown` Apex.
 - Une ancienne session ne peut plus continuer à se décompter lorsqu’aucune course n’est active.
 - Le radar est placé à gauche et la PIT LANE à droite dans la carte HEAT MAP.
 - Trait de PIT LANE allongé de 30 %, avec affichage de tous les karts aux stands sur plusieurs rangées si nécessaire.
 - Radar, anneaux et marqueurs de karts agrandis de 10 %.
-- Version application et cache PWA synchronisés en 6.13.4.
+- Version application et cache PWA synchronisés en 6.13.5.
 
 # Velocity V6.13.3 — Connexions Apex obsolètes sécurisées
 
