@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.13.5',
+  appVersion:'6.13.6',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.13.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.13.6',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -848,19 +848,11 @@ function analyzerRenderFollowedDeltas(followed){
  if(behindDelta){behindDelta.textContent=data.behindText;behindDelta.className=data.behindTrend}
 }
 
-const analyzerFollowedPitCache=new Map();
-async function analyzerRefreshFollowedLastPit(followed){
- const el=document.getElementById('analyzerFollowedLastPit');if(!el){return}
- const row=Number(followed?.apex_row),stops=Number(followed?.pit_stops||0);if(!row||!stops){el.textContent='—';return}
- const key=`${row}:${stops}`;if(analyzerFollowedPitCache.has(key)){el.textContent=analyzerFollowedPitCache.get(key);return}
- try{const pits=await fetchAllApexTeamPits(row,'',null);const value=pits?.[0]?.pitTime||'—';analyzerFollowedPitCache.set(key,value);if((state.followed_driver||'')===followed.driver)el.textContent=value}catch(_error){el.textContent='—'}
-}
 function analyzerRenderFollowedPerformance(followed){
  const rankEl=document.getElementById('analyzerFollowedLastRank'),lapEl=document.getElementById('analyzerFollowedLastLap');
  const rank=followed&&typeof sprintLastLapRanking==='function'?sprintLastLapRanking(followed):null;
- if(rankEl)rankEl.innerHTML=rank&&typeof enduranceOrdinalMarkup==='function'?`${enduranceOrdinalMarkup(rank.rank)}<span class="analyzer-followed-rank-separator">:</span>`:'—';
+ if(rankEl){if(rank&&typeof enduranceOrdinalMarkup==='function'){const markup=enduranceOrdinalMarkup(rank.rank).replace(`>${rank.rank}<`,`>P${rank.rank}<`);rankEl.innerHTML=`${markup}<span class="analyzer-followed-rank-separator">:</span>`;}else{rankEl.textContent='⏱ P— :';}}
  if(lapEl){lapEl.textContent=followed?.last||'—';lapEl.classList.remove('endurance-last-orange','endurance-last-green','endurance-last-purple');if(followed&&typeof enduranceLastLapColorClass==='function')lapEl.classList.add(enduranceLastLapColorClass(followed));}
- analyzerRefreshFollowedLastPit(followed);
 }
 function openAnalyzerMapFocus(){const o=document.getElementById('analyzerMapFocus');if(!o)return;o.classList.add('show');o.setAttribute('aria-hidden','false');document.body.classList.add('analyzer-map-focus-open');analyzerRenderMapFocus()}
 function closeAnalyzerMapFocus(){const o=document.getElementById('analyzerMapFocus');if(!o)return;o.classList.remove('show');o.setAttribute('aria-hidden','true');document.body.classList.remove('analyzer-map-focus-open')}
@@ -1319,7 +1311,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.13.5 — Radar V6.11.2 restauré, Débrief conservé */
+/* Velocity V6.13.6 — Radar V6.11.2 restauré, Débrief conservé */
 let analyzerDebriefBusy=false;
 let analyzerDebriefReport=null;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}

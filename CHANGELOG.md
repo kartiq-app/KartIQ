@@ -1,11 +1,18 @@
-# Velocity V6.13.5 — Temps restant fiable et HEAT MAP ajustée
+# V6.13.6 — Restauration carte Équipe suivie
+
+- Restaure la disposition de la carte Équipe suivie de la V6.13.4.
+- Conserve les évolutions Focus et HEAT MAP plein écran de la V6.13.5.
+- Ajoute uniquement sous Temps en piste la position du dernier chrono et le dernier temps au format compact.
+- Retire la ligne Dernier arrêt et la mise en page en deux colonnes qui déséquilibraient la carte.
+
+# Velocity V6.13.6 — Temps restant fiable et HEAT MAP ajustée
 
 - Le temps restant expire désormais après 45 secondes sans nouvelle trame `countdown` Apex.
 - Une ancienne session ne peut plus continuer à se décompter lorsqu’aucune course n’est active.
 - Le radar est placé à gauche et la PIT LANE à droite dans la carte HEAT MAP.
 - Trait de PIT LANE allongé de 30 %, avec affichage de tous les karts aux stands sur plusieurs rangées si nécessaire.
 - Radar, anneaux et marqueurs de karts agrandis de 10 %.
-- Version application et cache PWA synchronisés en 6.13.5.
+- Version application et cache PWA synchronisés en 6.13.6.
 
 # Velocity V6.13.3 — Connexions Apex obsolètes sécurisées
 

@@ -1061,13 +1061,12 @@ body.analyzer-debrief-open{overflow:hidden}
 @media(max-width:760px){.map-stage{grid-template-columns:minmax(0,62%) minmax(0,38%)!important;height:300px!important}.map-radar-pane,.map-pitlane-pane{height:300px!important}.map-radar-pane svg,.map-pitlane-pane svg{height:300px!important;max-height:300px!important;width:100%!important}}
 
 
-/* Velocity V6.13.5 — équipe suivie, delta partagé et Heat Map plein écran */
-.analyzer-followed-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:end;max-width:50%}
-.analyzer-followed-performance{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;white-space:nowrap}
-.analyzer-followed-last-rank{display:flex;align-items:center;font-family:var(--font-driver);font-size:clamp(20px,2vw,34px);font-weight:800}
-.analyzer-followed-last-rank .endurance-focus-stopwatch{width:1.05em;height:1.05em;margin-right:.2em}
-.analyzer-followed-rank-separator{margin-left:.12em}
-.analyzer-followed-last-lap{font-family:var(--font-time);font-size:clamp(22px,2.25vw,39px);font-weight:800;letter-spacing:-.035em}
+/* Velocity V6.13.6 — carte Équipe suivie restaurée, ajout compact du dernier tour */
+.analyzer-followed-performance-simple{justify-content:flex-start!important;gap:7px!important;max-width:50%;border-bottom:0!important;padding-top:2px;padding-bottom:0!important;white-space:nowrap}
+.analyzer-followed-last-rank-simple{display:inline-flex;align-items:center;font-family:var(--font-driver);font-size:16px!important;color:#fff!important;font-weight:800;letter-spacing:0;text-transform:none!important}
+.analyzer-followed-last-rank-simple .endurance-focus-stopwatch{width:1em;height:1em;margin-right:.22em}
+.analyzer-followed-last-lap-simple{font-family:var(--font-time);font-size:18px!important;font-weight:800;letter-spacing:-.03em;color:#fff}
+@media(max-width:700px){.analyzer-followed-performance-simple{max-width:100%}.analyzer-followed-last-rank-simple{font-size:18px!important}.analyzer-followed-last-lap-simple{font-size:21px!important}}
 .sprint-focus-delta.good{color:#38d878!important}.sprint-focus-delta.bad{color:#ff8a1f!important}.sprint-focus-delta.neutral{color:#fff!important}
 .pit-simulator-track{cursor:pointer;transition:filter .2s ease,box-shadow .2s ease}
 .pit-simulator-track:hover{filter:brightness(1.18);box-shadow:0 0 24px rgba(255,90,45,.28)}
@@ -1086,4 +1085,4 @@ body.analyzer-debrief-open{overflow:hidden}
 .map-focus-group h3{margin:14px 0 5px;padding:8px 10px;border-top:1px solid #3a3e45;border-bottom:1px solid #3a3e45;font:800 13px/1 var(--font-driver);letter-spacing:.06em}
 .map-focus-head,.map-focus-row{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(92px,.75fr) minmax(82px,.65fr);gap:8px;align-items:center;padding:7px 9px;border-bottom:1px solid #24282d}
 .map-focus-head{color:#9298a1;font-size:10px;font-weight:800}.map-focus-row{font-family:var(--font-driver);font-size:13px}.map-focus-row b{font-family:var(--font-time);text-align:right}.map-focus-row.followed{background:rgba(56,216,120,.12);color:#38d878}.map-focus-empty{padding:8px;color:#777}
-@media(max-width:900px){.analyzer-map-focus-main{grid-template-columns:1fr}.analyzer-map-focus-ranking{display:none}.analyzer-followed-summary{max-width:100%}}
+@media(max-width:900px){.analyzer-map-focus-main{grid-template-columns:1fr}.analyzer-map-focus-ranking{display:none}}
