@@ -1,9 +1,17 @@
-## 6.12.6
+# Velocity V6.13.1 — Restauration complète du radar V6.11.2
+
+- Remplacement intégral du moteur et du rendu du radar HEAT MAP par la version fonctionnelle validée en V6.11.2.
+- Restauration du registre Apex, des phases, des ancres d’animation, des six anneaux de rythme, des filtres, de la PIT LANE et de la ligne de chronométrage.
+- Suppression du moteur et des correctifs expérimentaux introduits entre les V6.12.4 et V6.12.6.
+- Conservation des évolutions récentes hors radar : Débrief, comparaison des relais et export PDF.
+- Synchronisation de la version application et du cache PWA en 6.13.1.
+
+## 6.13.1
 
 - HEAT MAP : un statut générique `pit` ne retire plus un kart du radar.
 - La PIT LANE utilise exclusivement les impulsions Apex `*in` et `*out`, conservées dans le registre MAP.
 - L'animation `EN PISTE` ne se fige plus lors d'un faux statut `pit` transitoire.
-- Version application et cache PWA synchronisés en 6.12.6.
+- Version application et cache PWA synchronisés en 6.13.1.
 
 ## 6.12.5
 
