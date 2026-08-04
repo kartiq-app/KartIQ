@@ -1,3 +1,10 @@
+## 6.12.6
+
+- HEAT MAP : un statut générique `pit` ne retire plus un kart du radar.
+- La PIT LANE utilise exclusivement les impulsions Apex `*in` et `*out`, conservées dans le registre MAP.
+- L'animation `EN PISTE` ne se fige plus lors d'un faux statut `pit` transitoire.
+- Version application et cache PWA synchronisés en 6.12.6.
+
 ## 6.12.5
 
 - HEAT MAP : `analyzerMapPoint()` utilise désormais `analyzerDriverPhase()` au lieu d’exiger en permanence une entrée MAP Apex.
@@ -5,12 +12,12 @@
 - Le marqueur n’est plus supprimé lors d’une trame Apex incomplète ; l’état `inPit` reste pris en compte lorsque l’entrée existe.
 - Version application et cache PWA synchronisés en 6.12.5.
 
-## 6.12.5
+## 6.12.4
 
 - Correction de la disparition intermittente des marqueurs sur la HEAT MAP.
 - Conservation de la dernière position Apex valide lorsque `apex_row` ou le registre MAP devient brièvement indisponible entre deux mises à jour.
 - Le cache de position est vidé uniquement lorsque le live n'est plus actif ; une équipe absente de la grille ou aux stands reste gérée normalement.
-- Version application et cache PWA synchronisés en 6.12.5.
+- Version application et cache PWA synchronisés en 6.12.4.
 
 ## 6.12.3
 

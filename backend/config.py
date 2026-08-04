@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "6.12.5"
+APP_VERSION = "6.12.6"
 APP_RELEASE_NAME = "DÉBRIEF STATS"
 
 

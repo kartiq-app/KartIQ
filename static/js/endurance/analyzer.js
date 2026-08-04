@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.12.5',
+  appVersion:'6.12.6',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.12.5',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.12.6',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -313,7 +313,7 @@ function analyzerApexRaceIsActive(){
 }
 function analyzerAnimatedTrackSeconds(driver){
  const key=String(driver?.driver||driver?.apex||driver?.pos||'unknown');
- const raw=analyzerParseDuration(driver?.track_timer),now=performance.now(),status=driver?.status==='pit'?'pit':'track';
+ const raw=analyzerParseDuration(driver?.track_timer),now=performance.now(),status=analyzerApexMapEntry(driver)?.inPit===true?'pit':'track';
  let anchor=analyzerTrackAnimationAnchors.get(key);
  if(!Number.isFinite(raw)||raw<0){analyzerTrackAnimationAnchors.delete(key);return null}
  const rawChanged=!anchor||Math.abs(raw-anchor.raw)>.25||anchor.status!==status;
@@ -351,14 +351,18 @@ function setAnalyzerMapNoPaces(checked){if(checked)analyzerMapPaceFilters.clear(
 function setAnalyzerMapHighlight(value){analyzerMapHighlight=value||'none';analyzerRenderPitSimulator()}
 function analyzerMapLastLap(driver){const value=analyzerParseDuration(driver?.last);return Number.isFinite(value)&&value>20&&value<600?value:null}
 function analyzerMapPaceCategory(delta){if(delta<=.10)return 'fastest';if(delta<=.29)return 'excellent';if(delta<=.49)return 'good';if(delta<=.79)return 'medium';if(delta<=.99)return 'average';return 'slow'}
-function analyzerMapPaceData(drivers){const valid=(drivers||[]).filter(d=>d?.status!=='pit').map(d=>({driver:d,lap:analyzerMapLastLap(d)})).filter(x=>Number.isFinite(x.lap));const best=valid.length?Math.min(...valid.map(x=>x.lap)):null;const map=new Map();for(const d of drivers||[]){const lap=analyzerMapLastLap(d),delta=Number.isFinite(best)&&Number.isFinite(lap)?Math.max(0,lap-best):null;map.set(d,{lap,delta,category:Number.isFinite(delta)?analyzerMapPaceCategory(delta):'slow'})}return {best,map}}
+function analyzerMapPaceData(drivers){const valid=(drivers||[]).filter(d=>analyzerApexMapEntry(d)?.inPit!==true).map(d=>({driver:d,lap:analyzerMapLastLap(d)})).filter(x=>Number.isFinite(x.lap));const best=valid.length?Math.min(...valid.map(x=>x.lap)):null;const map=new Map();for(const d of drivers||[]){const lap=analyzerMapLastLap(d),delta=Number.isFinite(best)&&Number.isFinite(lap)?Math.max(0,lap-best):null;map.set(d,{lap,delta,category:Number.isFinite(delta)?analyzerMapPaceCategory(delta):'slow'})}return {best,map}}
 function analyzerTrackPoint(phase,radius=110,cx=analyzerMapGeometry.cx,cy=analyzerMapGeometry.cy){const angle=(Number(phase)||0)*Math.PI*2-Math.PI/2;return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius}}
 function analyzerMapPoint(driver,radius=110){const entry=analyzerApexMapEntry(driver),phase=analyzerDriverPhase(driver);if(!Number.isFinite(phase))return null;return {...analyzerTrackPoint(phase,radius),phase,inPit:Boolean(entry?.inPit),entry}}
 function analyzerMapRadarMarkup(){const {cx,cy}=analyzerMapGeometry;const rings=Object.entries(analyzerMapRings).map(([category,r])=>`<circle class="map-radar-ring ${category}" cx="${cx}" cy="${cy}" r="${r}"></circle>`).join('');const rays=Array.from({length:8},(_,i)=>{const a=i*Math.PI/4-Math.PI/2,x1=cx+Math.cos(a)*37.5,y1=cy+Math.sin(a)*37.5,x2=cx+Math.cos(a)*113.5,y2=cy+Math.sin(a)*113.5;return `<line class="map-radar-ray" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"></line>`}).join('');const checker=Array.from({length:11},(_,i)=>{const y=cy-10*(i+1),alt=i%2;return `<rect class="map-finish-square ${alt?'alt':''}" x="${cx-5}" y="${y}" width="5" height="10"></rect><rect class="map-finish-square ${alt?'':'alt'}" x="${cx}" y="${y}" width="5" height="10"></rect>`}).join('');return `${rays}${rings}<g class="map-finish-line">${checker}</g>`}
 function analyzerSimulationKartLabel(driver){return String(validKartNumber(driver)||driver?.apex||driver?.pos||'—').slice(0,3)}
 function analyzerMapTop5Set(drivers){return new Set((drivers||[]).slice().sort((a,b)=>(Number(a.velocity_score??a.kart_score??0)||0)-(Number(b.velocity_score??b.kart_score??0)||0)).slice(-5).map(d=>d.driver))}
-function analyzerMapIsHighlighted(driver,category,top5){if(analyzerMapHighlight==='followed')return driver.driver===state.followed_driver;if(analyzerMapHighlight==='top5')return top5.has(driver.driver);if(analyzerMapHighlight==='pit')return driver.status==='pit'||Boolean(analyzerApexMapEntry(driver)?.inPit);if(analyzerMapHighlight==='fastest')return category==='fastest';return false}
-function analyzerMapPitQueue(drivers){return (drivers||[]).map(driver=>({driver,entry:analyzerApexMapEntry(driver)})).filter(x=>x.driver.status==='pit'||x.entry?.inPit).sort((a,b)=>Number(a.entry?.pitEnteredAt||0)-Number(b.entry?.pitEnteredAt||0))}
+function analyzerMapIsHighlighted(driver,category,top5){if(analyzerMapHighlight==='followed')return driver.driver===state.followed_driver;if(analyzerMapHighlight==='top5')return top5.has(driver.driver);if(analyzerMapHighlight==='pit')return Boolean(analyzerApexMapEntry(driver)?.inPit);if(analyzerMapHighlight==='fastest')return category==='fastest';return false}
+// V6.12.6 : la PIT LANE de la HEAT MAP est pilotée uniquement par les
+// impulsions Apex *in / *out mémorisées dans velocityApexMap. Le statut
+// générique de la grille peut passer brièvement à "pit" pendant un refresh ;
+// il ne doit jamais suffire à retirer un kart du radar.
+function analyzerMapPitQueue(drivers){return (drivers||[]).map(driver=>({driver,entry:analyzerApexMapEntry(driver)})).filter(x=>x.entry?.inPit===true).sort((a,b)=>Number(a.entry?.pitEnteredAt||0)-Number(b.entry?.pitEnteredAt||0))}
 function analyzerRenderPitSimulator(){
  const host=document.getElementById('pitSimulatorTrack');if(!host)return;
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver),radar=analyzerMapRadarMarkup();
@@ -369,7 +373,7 @@ function analyzerRenderPitSimulator(){
  const pitLane=`<section class="map-pitlane-pane" aria-label="Voie des stands"><div class="map-pitlane-title">PIT LANE</div><svg viewBox="0 0 300 292" role="img" aria-label="Karts dans la voie des stands"><path class="map-pitlane-line" d="M10 150 H290"></path>${pitDots}</svg></section>`;
  if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();analyzerApexMapEntryCache.clear();host.innerHTML=`<div class="map-stage"><section class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Radar inactif">${radar}<text class="pit-simulator-center-title" x="135" y="184">HEAT MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="202">Pas de course en cours</text></svg></section>${pitLane}</div>`;return}
  const visible=drivers.map(driver=>{const info=paceData.map.get(driver)||{category:'slow',delta:null};const point=analyzerMapPoint(driver,analyzerMapRings[info.category]);return {driver,info,point}}).filter(item=>item.point&&!pitNames.has(item.driver.driver)&&(analyzerMapPaceFilters.has(item.info.category)||item.driver.driver===state.followed_driver));
- const dots=visible.map(({driver,info,point})=>{let p=point;if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1,analyzerMapRings[info.category]);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0,analyzerMapRings[info.category]);const classes=['pit-simulator-dot','pace-'+info.category];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,info.category,top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,info.category,top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');const title=Number.isFinite(info.delta)?`${driver.driver} · +${info.delta.toFixed(3)} s`:driver.driver;return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><title>${analyzerEscape(title)}</title><circle r="${info.category==='fastest'?9.5:8.5}"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
+ const dots=visible.map(({driver,info,point})=>{let p=point;if(simulation&&driver.driver!==simulation.followedName&&analyzerApexMapEntry(driver)?.inPit!==true)p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1,analyzerMapRings[info.category]);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0,analyzerMapRings[info.category]);const classes=['pit-simulator-dot','pace-'+info.category];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,info.category,top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,info.category,top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');const title=Number.isFinite(info.delta)?`${driver.driver} · +${info.delta.toFixed(3)} s`:driver.driver;return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><title>${analyzerEscape(title)}</title><circle r="${info.category==='fastest'?9.5:8.5}"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
  const projected=simulation?'<circle class="pit-simulator-projected" cx="135" cy="37" r="11"></circle>':'',followed=drivers.find(d=>d.driver===state.followed_driver)||null,centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(horizon):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
  const waiting=!visible.length&&!pitQueue.length?'<text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="220">En attente d’un passage Apex</text>':'';
  const radarPane=`<section class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Radar de rythme et progression synchronisé avec les données live">${radar}${dots}${projected}<text class="pit-simulator-center-title" x="135" y="184">${centerTitle}</text><text class="pit-simulator-center-value" x="135" y="202">${centerValue}</text>${waiting}</svg></section>`;
@@ -1306,7 +1310,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.12.5 — finitions du rapport et du PDF */
+/* Velocity V6.12.6 — HEAT MAP pilotée par les événements *in / *out */
 let analyzerDebriefBusy=false;
 let analyzerDebriefReport=null;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
