@@ -1,3 +1,19 @@
+## 6.12.3
+
+- La régularité affiche uniquement la valeur numérique en secondes dans le rapport et le PDF.
+- Dans le classement du rythme moyen, la colonne MOYENNE précède désormais MEILLEUR.
+- Le circuit est précédé de la mention « Piste : » dans le rapport et le PDF.
+- La date du PDF est introduite par « Rapport généré par votre Master Chef 🧑🏾‍🍳 le ».
+- Version application et cache PWA synchronisés en 6.12.3.
+
+## 6.12.2
+
+- Le statut du débrief se cale désormais sur le temps restant réel transmis par Apex.
+- Temps restant strictement supérieur à zéro : **Débrief intermédiaire**.
+- Temps restant égal ou inférieur à zéro : **Débrief final**.
+- La même règle est appliquée dans la fenêtre interactive et dans le PDF exporté.
+- Version application, sessions et cache PWA synchronisés en 6.12.2.
+
 ## 6.12.1
 
 - Ajout de l’export direct du débrief en PDF depuis la fenêtre Analyzer.

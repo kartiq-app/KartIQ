@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.12.1',
+  appVersion:'6.12.3',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.12.1',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.12.3',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -1291,7 +1291,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.12.1 — débrief comparatif, progression et export PDF neutre */
+/* Velocity V6.12.3 — finitions du rapport et du PDF */
 let analyzerDebriefBusy=false;
 let analyzerDebriefReport=null;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
@@ -1337,7 +1337,7 @@ function analyzerDebriefRelayComparison(relay,team,all){
 }
 function analyzerDebriefConstanceClass(value){if(!Number.isFinite(value))return '';if(value<=.25)return 'debrief-positive';if(value<=.45)return 'debrief-constance-good';if(value<=.70)return 'debrief-warning';return 'debrief-negative'}
 function analyzerDebriefFmtConstance(value){return Number.isFinite(value)?`+${value.toFixed(3)} s`:'—'}
-function analyzerDebriefRegularityLabel(value){if(!Number.isFinite(value))return '—';if(value<=.15)return `Excellente (${value.toFixed(3)} s)`;if(value<=.30)return `Bonne (${value.toFixed(3)} s)`;if(value<=.50)return `Moyenne (${value.toFixed(3)} s)`;return `À améliorer (${value.toFixed(3)} s)`}
+function analyzerDebriefRegularityLabel(value){return Number.isFinite(value)?`${value.toFixed(3)} s`:'—'}
 function analyzerDebriefVerdictText(team,all){
  const paceRank=analyzerDebriefRank(all,'average',team.average),consistencyRank=analyzerDebriefRank(all,'std',team.std),pitRank=analyzerDebriefRank(all,'pitAverage',team.pitAverage),n=all.length;
  const strengths=[],work=[];
@@ -1354,16 +1354,24 @@ function analyzerDebriefSetProgress(done,total){
  if(fill)fill.style.width=`${percent}%`;
  if(label)label.textContent=`${percent} %`;
 }
+function analyzerDebriefIsIntermediate(){
+ const liveMs=typeof liveRemainingMilliseconds==='function'?liveRemainingMilliseconds():null;
+ if(Number.isFinite(liveMs))return liveMs>0;
+ const raw=String(state?.time_remaining??'').trim();
+ const parsed=typeof analyzerParseDuration==='function'?analyzerParseDuration(raw):NaN;
+ if(Number.isFinite(parsed))return parsed>0;
+ return true;
+}
 function renderAnalyzerDebrief(team,all){
  const host=document.getElementById('analyzerDebriefContent'),status=document.getElementById('analyzerDebriefStatus'),pdfButton=document.getElementById('analyzerDebriefPdfButton');if(!host)return;
  const n=all.length,paceRank=analyzerDebriefRank(all,'average',team.average),bestRank=analyzerDebriefRank(all,'best',team.best),consistencyRank=analyzerDebriefRank(all,'std',team.std),pitRank=analyzerDebriefRank(all,'pitAverage',team.pitAverage);
  const ranking=all.slice().sort((a,b)=>(a.average||999)-(b.average||999));
- analyzerDebriefReport={team,all,ranking,generatedAt:new Date(),isIntermediate:Boolean(state?.time_remaining&&state.time_remaining!=='00:00:00'),circuit:analyzerWeatherData?.circuit_name||analyzerWeatherData?.location?.name||analyzerSessionCircuitName()||''};
+ analyzerDebriefReport={team,all,ranking,generatedAt:new Date(),isIntermediate:analyzerDebriefIsIntermediate(),circuit:analyzerWeatherData?.circuit_name||analyzerWeatherData?.location?.name||analyzerSessionCircuitName()||''};
  if(status){status.classList.add('ready');status.style.display='none'}
  if(pdfButton)pdfButton.disabled=false;
  host.innerHTML=`
   <section class="debrief-hero">
-   <div class="debrief-card debrief-team"><span>Équipe suivie</span><strong>${analyzerEscape(team.name)}</strong><small class="debrief-pill">Débrief ${analyzerDebriefReport.isIntermediate?'intermédiaire':'complet'}</small></div>
+   <div class="debrief-card debrief-team"><span>Équipe suivie</span><strong>${analyzerEscape(team.name)}</strong><small class="debrief-pill">Débrief ${analyzerDebriefReport.isIntermediate?'intermédiaire':'final'}</small>${analyzerDebriefReport.circuit?`<small class="debrief-track">Piste : ${analyzerEscape(analyzerDebriefReport.circuit)}</small>`:''}</div>
    <div class="debrief-card"><span>Rythme moyen</span><strong>${analyzerDebriefFmtSeconds(team.average)}</strong></div>
    <div class="debrief-card"><span>Meilleur tour</span><strong>${analyzerDebriefFmtSeconds(team.best)}</strong></div>
    <div class="debrief-card"><span>Régularité</span><strong>${analyzerDebriefRegularityLabel(team.std)}</strong></div>
@@ -1377,7 +1385,7 @@ function renderAnalyzerDebrief(team,all){
   </div></section>
   <section class="debrief-section"><h3>ANALYSE DES RELAIS TERMINÉS / EN COURS</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RELAIS</th><th>TOURS</th><th>POS. RELAIS</th><th>FENÊTRE</th><th>MEILLEUR</th><th>MOYENNE</th><th>CONSTANCE</th></tr></thead><tbody>${team.relays.map(r=>{const comparison=analyzerDebriefRelayComparison(r,team,all);return `<tr><td>R${r.index}</td><td>${r.laps}</td><td><strong class="debrief-relay-position">${analyzerDebriefRelayPosition(comparison.rank,comparison.total)}</strong></td><td>${r.from} → ${r.to}</td><td>${analyzerDebriefFmtSeconds(r.best)}</td><td>${analyzerDebriefFmtSeconds(r.average)}</td><td class="${analyzerDebriefConstanceClass(comparison.constance)}" title="Écart entre la moyenne et le meilleur tour du relais">${analyzerDebriefFmtConstance(comparison.constance)}</td></tr>`}).join('')||'<tr><td colspan="7">Aucun relais exploitable pour le moment.</td></tr>'}</tbody></table></div><p class="debrief-table-note"><strong>POS. RELAIS</strong> classe le rythme moyen de l’équipe face aux équipes disposant d’au moins deux tours exploitables sur la même fenêtre de course. <strong>Constance</strong> correspond à l’écart entre la moyenne et le meilleur tour : plus l’écart est faible, plus le relais est régulier.</p></section>
   <section class="debrief-section"><h3>ARRÊTS AUX STANDS</h3><div class="debrief-grid"><div class="debrief-metric"><span>Nombre</span><b>${team.pitCount}</b></div><div class="debrief-metric"><span>Temps moyen</span><b>${analyzerDebriefFmtPit(team.pitAverage)}</b></div><div class="debrief-metric"><span>Dispersion</span><b>${Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'}</b></div><div class="debrief-metric"><span>Rang plateau</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div></div></section>
-  <section class="debrief-section"><h3>CLASSEMENT DU RYTHME MOYEN</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RANG</th><th>ÉQUIPE</th><th>MEILLEUR</th><th>MOYENNE</th><th>RÉGULARITÉ</th><th>PITS</th><th>MOY. PIT</th></tr></thead><tbody>${ranking.map((x,i)=>`<tr class="${x===team?'debrief-followed-row':''}"><td>${i+1}</td><td>${analyzerEscape(x.name)}</td><td>${analyzerDebriefFmtSeconds(x.best)}</td><td>${analyzerDebriefFmtSeconds(x.average)}</td><td>${analyzerDebriefRegularityLabel(x.std)}</td><td>${x.pitCount}</td><td>${analyzerDebriefFmtPit(x.pitAverage)}</td></tr>`).join('')}</tbody></table></div></section>
+  <section class="debrief-section"><h3>CLASSEMENT DU RYTHME MOYEN</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RANG</th><th>ÉQUIPE</th><th>MOYENNE</th><th>MEILLEUR</th><th>RÉGULARITÉ</th><th>PITS</th><th>MOY. PIT</th></tr></thead><tbody>${ranking.map((x,i)=>`<tr class="${x===team?'debrief-followed-row':''}"><td>${i+1}</td><td>${analyzerEscape(x.name)}</td><td>${analyzerDebriefFmtSeconds(x.average)}</td><td>${analyzerDebriefFmtSeconds(x.best)}</td><td>${analyzerDebriefRegularityLabel(x.std)}</td><td>${x.pitCount}</td><td>${analyzerDebriefFmtPit(x.pitAverage)}</td></tr>`).join('')}</tbody></table></div></section>
   <section class="debrief-section"><h3>CONCLUSION</h3><div class="debrief-verdict">${analyzerDebriefVerdict(team,all)}</div></section>`;
 }
 async function openAnalyzerDebrief(){
@@ -1416,7 +1424,7 @@ function analyzerDebriefPdfBuild(jpegs){
 }
 function analyzerDebriefPdfDataUrlBytes(dataUrl){const binary=atob(dataUrl.split(',')[1]),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes}
 function analyzerDebriefPdfCreatePage(){const canvas=document.createElement('canvas');canvas.width=1240;canvas.height=1754;const ctx=canvas.getContext('2d');ctx.fillStyle='#f5f5f3';ctx.fillRect(0,0,canvas.width,canvas.height);return {canvas,ctx,y:92}}
-function analyzerDebriefPdfHeader(page,report,title,subtitle){const {ctx,canvas}=page;ctx.fillStyle='#111';ctx.fillRect(0,0,canvas.width,26);ctx.fillStyle='#bb1018';ctx.fillRect(0,26,canvas.width,12);ctx.fillStyle='#111';ctx.font='700 42px Arial';ctx.fillText(title,80,104);ctx.font='700 25px Arial';ctx.fillStyle='#bb1018';ctx.fillText(report.team.name,80,145);ctx.font='20px Arial';ctx.fillStyle='#555';ctx.fillText(subtitle,80,178);if(report.circuit)ctx.fillText(report.circuit,80,207);page.y=250}
+function analyzerDebriefPdfHeader(page,report,title,subtitle){const {ctx,canvas}=page;ctx.fillStyle='#111';ctx.fillRect(0,0,canvas.width,26);ctx.fillStyle='#bb1018';ctx.fillRect(0,26,canvas.width,12);ctx.fillStyle='#111';ctx.font='700 42px Arial';ctx.fillText(title,80,104);ctx.font='700 25px Arial';ctx.fillStyle='#bb1018';ctx.fillText(report.team.name,80,145);ctx.font='20px Arial';ctx.fillStyle='#555';ctx.fillText(subtitle,80,178);if(report.circuit)ctx.fillText(`Piste : ${report.circuit}`,80,207);page.y=250}
 function analyzerDebriefPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function analyzerDebriefPdfSection(page,title){const {ctx}=page;page.y+=18;ctx.fillStyle='#111';ctx.font='700 25px Arial';ctx.fillText(title,80,page.y);ctx.fillStyle='#bb1018';ctx.fillRect(80,page.y+12,1080,4);page.y+=48}
 function analyzerDebriefPdfParagraph(page,text){const {ctx}=page;ctx.fillStyle='#222';ctx.font='19px Arial';const lines=analyzerDebriefPdfWrap(ctx,text,1080);for(const line of lines){ctx.fillText(line,80,page.y);page.y+=29}page.y+=10}
@@ -1427,11 +1435,11 @@ async function exportAnalyzerDebriefPdf(){
  if(button){button.disabled=true;button.textContent='GÉNÉRATION…'}
  try{
   const pages=[],team=report.team,all=report.all,n=all.length,paceRank=analyzerDebriefRank(all,'average',team.average),bestRank=analyzerDebriefRank(all,'best',team.best),consistencyRank=analyzerDebriefRank(all,'std',team.std),pitRank=analyzerDebriefRank(all,'pitAverage',team.pitAverage);
-  let page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,report.isIntermediate?'DÉBRIEF INTERMÉDIAIRE':'DÉBRIEF DE COURSE',`Rapport généré le ${report.generatedAt.toLocaleString('fr-FR')}`);analyzerDebriefPdfMetricGrid(page,[{label:'Rythme moyen',value:analyzerDebriefFmtSeconds(team.average)},{label:'Meilleur tour',value:analyzerDebriefFmtSeconds(team.best)},{label:'Régularité',value:analyzerDebriefRegularityLabel(team.std).replace(/ \(.*/,'')},{label:'Arrêts',value:team.pitCount},{label:'Vitesse pure',value:analyzerDebriefOrdinal(bestRank,n)},{label:'Rythme moyen',value:analyzerDebriefOrdinal(paceRank,n)},{label:'Régularité',value:analyzerDebriefOrdinal(consistencyRank,n)},{label:'Stands',value:team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}]);analyzerDebriefPdfSection(page,'SYNTHÈSE');analyzerDebriefPdfParagraph(page,analyzerDebriefVerdictText(team,all));pages.push(page);
+  let page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,report.isIntermediate?'DÉBRIEF INTERMÉDIAIRE':'DÉBRIEF FINAL',`Rapport généré par votre Master Chef 🧑🏾‍🍳 le ${report.generatedAt.toLocaleString('fr-FR')}`);analyzerDebriefPdfMetricGrid(page,[{label:'Rythme moyen',value:analyzerDebriefFmtSeconds(team.average)},{label:'Meilleur tour',value:analyzerDebriefFmtSeconds(team.best)},{label:'Régularité',value:analyzerDebriefRegularityLabel(team.std)},{label:'Arrêts',value:team.pitCount},{label:'Vitesse pure',value:analyzerDebriefOrdinal(bestRank,n)},{label:'Rythme moyen',value:analyzerDebriefOrdinal(paceRank,n)},{label:'Régularité',value:analyzerDebriefOrdinal(consistencyRank,n)},{label:'Stands',value:team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}]);analyzerDebriefPdfSection(page,'SYNTHÈSE');analyzerDebriefPdfParagraph(page,analyzerDebriefVerdictText(team,all));pages.push(page);
   const relayRows=team.relays.map(r=>{const c=analyzerDebriefRelayComparison(r,team,all);return [`R${r.index}`,r.laps,analyzerDebriefRelayPosition(c.rank,c.total),`${r.from}-${r.to}`,analyzerDebriefFmtSeconds(r.best),analyzerDebriefFmtSeconds(r.average),analyzerDebriefFmtConstance(c.constance)]});
   for(let i=0;i<Math.max(1,Math.ceil(relayRows.length/18));i++){page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,'ANALYSE DES RELAIS',relayRows.length?`Relais ${i*18+1} à ${Math.min(relayRows.length,(i+1)*18)}`:'Aucun relais exploitable');analyzerDebriefPdfTable(page,['RELAIS','TOURS','POS.','FENÊTRE','MEILLEUR','MOYENNE','CONSTANCE'],relayRows.slice(i*18,(i+1)*18),[105,100,120,140,180,180,190]);pages.push(page)}
-  const rankRows=report.ranking.map((x,i)=>[i+1,x.name,analyzerDebriefFmtSeconds(x.best),analyzerDebriefFmtSeconds(x.average),analyzerDebriefRegularityLabel(x.std),x.pitCount,analyzerDebriefFmtPit(x.pitAverage)]);
-  for(let i=0;i<Math.max(1,Math.ceil(rankRows.length/20));i++){page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,'COMPARAISON DU PLATEAU',`Classement du rythme moyen — ${n} équipes analysées`);if(i===0){analyzerDebriefPdfSection(page,'ARRÊTS AUX STANDS');analyzerDebriefPdfMetricGrid(page,[{label:'Nombre',value:team.pitCount},{label:'Temps moyen',value:analyzerDebriefFmtPit(team.pitAverage)},{label:'Dispersion',value:Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'},{label:'Rang plateau',value:team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}]);analyzerDebriefPdfSection(page,'RYTHME MOYEN')}analyzerDebriefPdfTable(page,['RANG','ÉQUIPE','MEILLEUR','MOYENNE','RÉGULARITÉ','PITS','MOY. PIT'],rankRows.slice(i*20,(i+1)*20),[80,310,150,150,190,80,140],44);pages.push(page)}
+  const rankRows=report.ranking.map((x,i)=>[i+1,x.name,analyzerDebriefFmtSeconds(x.average),analyzerDebriefFmtSeconds(x.best),analyzerDebriefRegularityLabel(x.std),x.pitCount,analyzerDebriefFmtPit(x.pitAverage)]);
+  for(let i=0;i<Math.max(1,Math.ceil(rankRows.length/20));i++){page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,'COMPARAISON DU PLATEAU',`Classement du rythme moyen — ${n} équipes analysées`);if(i===0){analyzerDebriefPdfSection(page,'ARRÊTS AUX STANDS');analyzerDebriefPdfMetricGrid(page,[{label:'Nombre',value:team.pitCount},{label:'Temps moyen',value:analyzerDebriefFmtPit(team.pitAverage)},{label:'Dispersion',value:Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'},{label:'Rang plateau',value:team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}]);analyzerDebriefPdfSection(page,'RYTHME MOYEN')}analyzerDebriefPdfTable(page,['RANG','ÉQUIPE','MOYENNE','MEILLEUR','RÉGULARITÉ','PITS','MOY. PIT'],rankRows.slice(i*20,(i+1)*20),[80,310,150,150,190,80,140],44);pages.push(page)}
   pages.forEach((p,i)=>analyzerDebriefPdfFooter(p,i+1,pages.length));
   const jpegs=pages.map(({canvas})=>{const url=canvas.toDataURL('image/jpeg',.92);return {width:canvas.width,height:canvas.height,bytes:analyzerDebriefPdfDataUrlBytes(url)}}),pdf=analyzerDebriefPdfBuild(jpegs),blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`Debrief_${analyzerDebriefPdfSafeName(team.name)}_${new Date().toISOString().slice(0,10)}.pdf`;document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
  }catch(error){console.error('[PDF Debrief]',error);window.alert(`Impossible de générer le PDF : ${error.message}`)}finally{if(button){button.disabled=false;button.textContent='EXPORTER EN PDF'}}
