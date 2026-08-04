@@ -1112,3 +1112,40 @@ body.analyzer-debrief-open{overflow:hidden}
 .analyzer-heatmap-expand:hover{border-color:#f08a24;background:#171d24}
 #analyzerFollowedLastChrono{color:#fff!important}
 .map-expand-button{display:none!important}
+
+
+/* Velocity V6.13.9 — titre HEAT MAP classique et Position/Chrono */
+/* Le groupe ne reçoit plus l'aplat orange prévu pour les anciens titres directs. */
+.analyzer-pit-simulator-title > .analyzer-heatmap-title-group{
+  display:inline-flex!important;align-items:center!important;gap:9px!important;
+  min-width:0!important;min-height:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  color:inherit!important;box-shadow:none!important;
+  font:inherit!important;letter-spacing:normal!important;line-height:normal!important;
+  flex:0 0 auto!important;
+}
+/* HEAT MAP garde strictement le format d'onglet classique validé. */
+.analyzer-heatmap-title-group > #pitSimulatorTitle{
+  align-self:center!important;height:auto!important;min-height:0!important;
+  display:inline-flex!important;align-items:center!important;
+  border:1px solid #ff7a00!important;background:#2b1b0c!important;color:#ff9b32!important;
+  border-radius:7px!important;padding:8px 11px!important;box-shadow:inset 0 -2px #ff7a00!important;
+  font-family:var(--font-torque,Arial,sans-serif)!important;font-size:11px!important;
+  font-weight:400!important;letter-spacing:.025em!important;line-height:1!important;
+  flex:0 0 auto!important;
+}
+/* Le bouton plein écran reste indépendant et ne modifie pas la taille du titre. */
+.analyzer-heatmap-title-group > .analyzer-heatmap-expand{
+  width:30px!important;height:30px!important;padding:0!important;min-height:0!important;
+  border:1px solid #4b535d!important;border-radius:5px!important;
+  background:#10141a!important;color:#fff!important;box-shadow:none!important;
+  font-family:Arial,sans-serif!important;font-size:19px!important;font-weight:400!important;
+  letter-spacing:0!important;line-height:1!important;
+}
+.analyzer-heatmap-title-group > .analyzer-heatmap-expand:hover{border-color:#f08a24!important;background:#171d24!important}
+/* Valeur en F1 Regular, +20 %, sans modifier la hauteur des cartes de la première ligne. */
+#analyzerFollowedLastChrono{
+  color:#fff!important;font-family:var(--font-time)!important;
+  font-size:120%!important;line-height:1!important;font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}

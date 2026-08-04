@@ -1,3 +1,11 @@
+# V6.13.9
+
+- Restauration du bouton **HEAT MAP** dans son format classique, sans aplat orange élargi.
+- Conservation de l’icône plein écran indépendante, immédiatement à côté du titre.
+- Remplacement de **Dernier Chrono** par **Position/Chrono** dans la carte Équipe suivie.
+- Affichage de la valeur Position/Chrono en police F1 Regular, agrandie de 20 %.
+- Hauteur et structure des cartes de la première ligne inchangées.
+
 # V6.13.8
 
 - Carte Équipe suivie : la donnée du dernier tour devient une ligne standard « Dernier Chrono : P5 | 1:27.230 ».
