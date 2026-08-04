@@ -1,11 +1,9 @@
-# V6.13.7 — Carte Équipe suivie et HEAT MAP plein écran
+# V6.13.8
 
-- Le dernier chrono et sa position sont affichés en blanc et agrandis de 50 %.
-- Les écarts de la carte Équipe suivie indiquent désormais le nombre de tours lorsqu’il atteint un tour ou plus.
-- Suppression de l’effet lumineux au survol de la HEAT MAP classique.
-- Ajout d’un bouton d’agrandissement explicite à gauche du radar.
-- Centrage des colonnes Dernier Temps et Fin relais dans le classement plein écran.
-- Le menu AFFICHER LES RYTHMES s’ouvre vers la droite dans le mode plein écran.
+- Carte Équipe suivie : la donnée du dernier tour devient une ligne standard « Dernier Chrono : P5 | 1:27.230 ».
+- HEAT MAP : l’icône plein écran est placée juste après le titre HEAT MAP.
+- Suppression de l’icône plein écran flottante à gauche du radar.
+- Correction de l’ouverture du radar plein écran depuis l’en-tête de la carte.
 
 # V6.13.6 — Restauration carte Équipe suivie
 

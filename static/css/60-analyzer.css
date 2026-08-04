@@ -1088,7 +1088,7 @@ body.analyzer-debrief-open{overflow:hidden}
 @media(max-width:900px){.analyzer-map-focus-main{grid-template-columns:1fr}.analyzer-map-focus-ranking{display:none}}
 
 
-/* Velocity V6.13.7 — Lisibilité équipe suivie et accès plein écran explicite */
+/* Velocity V6.13.8 — Dernier chrono simplifié et accès plein écran dans le titre */
 .analyzer-followed-performance-simple{gap:10px!important}
 .analyzer-followed-last-rank-simple{font-size:24px!important;color:#fff!important}
 .analyzer-followed-last-lap-simple{font-size:27px!important;color:#fff!important}
@@ -1104,3 +1104,11 @@ body.analyzer-debrief-open{overflow:hidden}
 .map-focus-row b:nth-child(2),.map-focus-row b:nth-child(3){text-align:center!important}
 .analyzer-map-focus-toolbar .map-control-menu{left:0!important;right:auto!important}
 @media(max-width:700px){.analyzer-followed-last-rank-simple{font-size:27px!important}.analyzer-followed-last-lap-simple{font-size:31.5px!important}.map-expand-button{left:4px;width:34px;height:34px;font-size:21px}}
+
+
+/* Velocity V6.13.8 — Dernier chrono sur une ligne standard + icône plein écran dans le titre */
+.analyzer-heatmap-title-group{display:inline-flex;align-items:center;gap:9px;min-width:0}
+.analyzer-heatmap-expand{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #4b535d;border-radius:5px;background:#10141a;color:#fff;font-size:19px;line-height:1;cursor:pointer;flex:0 0 auto}
+.analyzer-heatmap-expand:hover{border-color:#f08a24;background:#171d24}
+#analyzerFollowedLastChrono{color:#fff!important}
+.map-expand-button{display:none!important}
