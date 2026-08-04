@@ -3,6 +3,91 @@ let stateLoadInFlight=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
 const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
+
+// Journal local du décodeur Apex. Les trames sont conservées uniquement dans
+// ce navigateur et ne sont incluses dans un fichier que sur action explicite
+// de l'utilisateur via le bouton DIAGNOSTIC DÉCODEUR.
+const apexDecoderDiagnostics={
+ version:1,
+ startedAt:new Date().toISOString(),
+ receivedCount:0,
+ decodedCount:0,
+ decodeErrorCount:0,
+ lastGoodFrame:null,
+ lastGoodAt:null,
+ failedFrame:null,
+ failedAt:null,
+ lastError:null,
+ recentFrames:[]
+};
+function apexDiagnosticFramePreview(frame,limit=20000){
+ const text=String(frame??'');
+ return text.length>limit?text.slice(0,limit)+`\n… [trame tronquée, ${text.length-limit} caractères supplémentaires]`:text;
+}
+function recordApexFrameReceived(frame,circuitId){
+ apexDecoderDiagnostics.receivedCount+=1;
+ apexDecoderDiagnostics.recentFrames.push({
+  receivedAt:new Date().toISOString(),
+  circuitId:circuitId||null,
+  length:String(frame??'').length,
+  frame:apexDiagnosticFramePreview(frame,4000),
+  status:'received'
+ });
+ if(apexDecoderDiagnostics.recentFrames.length>25)apexDecoderDiagnostics.recentFrames.splice(0,apexDecoderDiagnostics.recentFrames.length-25);
+}
+function recordApexDecodeSuccess(frame,circuitId,result){
+ const now=new Date().toISOString();
+ apexDecoderDiagnostics.decodedCount+=1;
+ apexDecoderDiagnostics.lastGoodAt=now;
+ apexDecoderDiagnostics.lastGoodFrame={
+  circuitId:circuitId||null,
+  length:String(frame??'').length,
+  frame:apexDiagnosticFramePreview(frame),
+  response:result||null
+ };
+ const recent=apexDecoderDiagnostics.recentFrames[apexDecoderDiagnostics.recentFrames.length-1];
+ if(recent){recent.status='decoded';recent.decodedAt=now;recent.response=result||null}
+}
+function recordApexDecodeFailure(frame,circuitId,error,details={}){
+ const now=new Date().toISOString();
+ apexDecoderDiagnostics.decodeErrorCount+=1;
+ apexDecoderDiagnostics.failedAt=now;
+ apexDecoderDiagnostics.failedFrame={
+  circuitId:circuitId||null,
+  length:String(frame??'').length,
+  frame:apexDiagnosticFramePreview(frame)
+ };
+ apexDecoderDiagnostics.lastError={
+  message:String(error?.message||error||'Erreur inconnue'),
+  name:String(error?.name||'Error'),
+  stack:error?.stack?String(error.stack):null,
+  ...details
+ };
+ const recent=apexDecoderDiagnostics.recentFrames[apexDecoderDiagnostics.recentFrames.length-1];
+ if(recent){recent.status='decode-error';recent.failedAt=now;recent.error=apexDecoderDiagnostics.lastError}
+}
+function exportDecoderDiagnostics(){
+ const now=new Date();
+ const circuit=(state?.circuits||[]).find(item=>item.id===state?.circuit_id);
+ const payload={
+  type:'apex-decoder-diagnostic',
+  exportedAt:now.toISOString(),
+  appVersion:String(state?.version||'6.13.2'),
+  pageUrl:location.href,
+  userAgent:navigator.userAgent,
+  circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
+  live:{connection:state?.connection||null,status:state?.live?.status||null,lastError:state?.live?.last_error||state?.live?.error||null,lastMessageAt:state?.live?.last_message_at||null,messages:state?.live?.messages||0,parsedUpdates:state?.live?.parsed_updates||0},
+  diagnostics:JSON.parse(JSON.stringify(apexDecoderDiagnostics))
+ };
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ const safeCircuit=String(circuit?.name||state?.circuit_id||'circuit').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'circuit';
+ a.href=url;
+ a.download=`Diagnostic_Decodeur_Apex_${safeCircuit}_${now.toISOString().replace(/[:.]/g,'-')}.json`;
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+window.exportDecoderDiagnostics=exportDecoderDiagnostics;
+
 let iphoneOrientation='portrait';
 function resetPreviewViewport(){const frame=document.getElementById('iphoneFrame');try{const w=frame.contentWindow;const d=frame.contentDocument;if(w){w.scrollTo(0,0);requestAnimationFrame(()=>w.scrollTo(0,0))}if(d){d.documentElement.scrollLeft=0;d.documentElement.scrollTop=0;d.body.scrollLeft=0;d.body.scrollTop=0;const active=d.querySelector('.screen.active');if(active)active.scrollTo(0,0)}}catch(e){}}
 function setIphoneOrientation(orientation){iphoneOrientation=orientation==='landscape'?'landscape':'portrait';const stage=document.getElementById('iphoneStage');const landscape=iphoneOrientation==='landscape';stage.classList.toggle('landscape',landscape);document.getElementById('iphonePreviewTitle').textContent=landscape?'iPhone SE — 667 × 375 px':'iPhone SE — 375 × 667 px';document.getElementById('portraitBtn').classList.toggle('active',!landscape);document.getElementById('landscapeBtn').classList.toggle('active',landscape);setTimeout(resetPreviewViewport,60);setTimeout(resetPreviewViewport,250)}
@@ -200,7 +285,7 @@ function connectApexBrowser(force=false){
  closeApexBrowserSocket();apexBrowserCircuitId=circuit.id;apexBrowserConnecting=true;sendApexStatus('connecting','CONNEXION APEX…');
  try{apexBrowserSocket=new WebSocket(circuit.websocket_url)}catch(err){apexBrowserConnecting=false;sendApexStatus('error','ERREUR LIVE',err.message);return}
  apexBrowserSocket.addEventListener('open',()=>{apexBrowserConnecting=false;sendApexStatus('connected','LIVE • CONNECTÉ');if(circuit.session_request){apexBrowserSocket.send(circuit.session_request);fetch('/api/developer/outbound',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:circuit.session_request})}).catch(()=>{})}});
- apexBrowserSocket.addEventListener('message',async e=>{const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);ingestApexCountdown(frame);ingestApexMapEvents(frame,circuit.id);try{const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});if(!r.ok){const d=await r.json();throw new Error(d.error||'Décodage Apex impossible')}}catch(err){sendApexStatus('error','ERREUR DÉCODAGE',err.message)}});
+ apexBrowserSocket.addEventListener('message',async e=>{const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);recordApexFrameReceived(frame,circuit.id);ingestApexCountdown(frame);ingestApexMapEvents(frame,circuit.id);try{const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});let d=null;try{d=await r.json()}catch(parseError){d={responseParseError:parseError.message,responseText:'Réponse serveur non JSON'}}if(!r.ok){const err=new Error(d?.error||`Décodage Apex impossible (HTTP ${r.status})`);err.httpStatus=r.status;err.serverResponse=d;throw err}recordApexDecodeSuccess(frame,circuit.id,d)}catch(err){recordApexDecodeFailure(frame,circuit.id,err,{httpStatus:err?.httpStatus||null,serverResponse:err?.serverResponse||null});sendApexStatus('error','ERREUR DÉCODAGE',err.message)}});
  apexBrowserSocket.addEventListener('error',()=>sendApexStatus('error','ERREUR LIVE','Connexion WebSocket Apex impossible'));
  apexBrowserSocket.addEventListener('close',e=>{apexBrowserSocket=null;apexBrowserConnecting=false;sendApexStatus('closed','LIVE DÉCONNECTÉ',`Code ${e.code}`);setTimeout(()=>{if(state?.circuit_id===apexBrowserCircuitId)connectApexBrowser(false)},5000)});
 }

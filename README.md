@@ -1,4 +1,9 @@
-# Velocity V6.13.1
+# Velocity V6.13.2
+
+## Diagnostic du décodeur Apex
+
+Le footer de l’Analyzer contient un bouton `🐞 DIAGNOSTIC DÉCODEUR` qui exporte les dernières trames Apex et le détail de la dernière erreur de décodage.
+
 
 Cette version agrandit le radar de 25 %, ajoute une ligne de chronométrage en damier et améliore la lisibilité du menu des rythmes.
 
