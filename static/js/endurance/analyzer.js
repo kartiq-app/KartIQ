@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.11.9',
+  appVersion:'6.12.0',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.11.9',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.12.0',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -1291,7 +1291,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.11.9 — DÉBRIEF STATS, modal corrigée et retours d'erreur visibles */
+/* Velocity V6.12.0 — classement des relais, constance et score relais */
 let analyzerDebriefBusy=false;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
 function analyzerDebriefAverage(values){const a=values.filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN}
@@ -1323,6 +1323,26 @@ async function analyzerDebriefLoadTeam(driver){
 function analyzerDebriefFmtSeconds(value){return Number.isFinite(value)?formatApexMilliseconds(value*1000):'—'}
 function analyzerDebriefFmtPit(value){return Number.isFinite(value)?formatApexPitDuration(value*1000):'—'}
 function analyzerDebriefOrdinal(rank,total){return rank?`${rank}${rank===1?'er':'e'} / ${total}`:'—'}
+function analyzerDebriefRelayPosition(rank,total){return rank&&total?`P${rank}/${total}`:'—'}
+function analyzerDebriefRelayComparison(relay,team,all){
+ const entries=(all||[]).map(candidate=>{
+  const values=(candidate.clean||[]).filter(l=>Number(l.lap)>=relay.from&&Number(l.lap)<=relay.to).map(l=>l.seconds).filter(Number.isFinite);
+  if(values.length<2)return null;
+  const best=Math.min(...values),average=analyzerDebriefAverage(values);
+  return {candidate,laps:values.length,best,average,constance:average-best};
+ }).filter(Boolean).sort((a,b)=>a.average-b.average);
+ const current=entries.find(entry=>entry.candidate===team)||entries.find(entry=>normalizeApexTeamName(entry.candidate?.name)===normalizeApexTeamName(team?.name));
+ if(!current)return {rank:0,total:entries.length,constance:Number.isFinite(relay.average)&&Number.isFinite(relay.best)?relay.average-relay.best:NaN,score:0};
+ const rank=entries.indexOf(current)+1,total=entries.length;
+ const bestEntries=entries.slice().sort((a,b)=>a.best-b.best),bestRank=bestEntries.indexOf(current)+1;
+ const rankPoints=total<=1?40:40*(total-rank)/(total-1);
+ const bestPoints=total<=1?20:20*(total-bestRank)/(total-1);
+ const constancePoints=30*Math.max(0,Math.min(1,1-current.constance/1));
+ const lengthPoints=10*Math.min(1,current.laps/30);
+ return {rank,total,constance:current.constance,score:Math.max(0,Math.min(100,Math.round(rankPoints+bestPoints+constancePoints+lengthPoints)))};
+}
+function analyzerDebriefConstanceClass(value){if(!Number.isFinite(value))return '';if(value<=.25)return 'debrief-positive';if(value<=.45)return 'debrief-constance-good';if(value<=.70)return 'debrief-warning';return 'debrief-negative'}
+function analyzerDebriefFmtConstance(value){return Number.isFinite(value)?`+${value.toFixed(3)} s`:'—'}
 function analyzerDebriefVerdict(team,all){
  const paceRank=analyzerDebriefRank(all,'average',team.average),consistencyRank=analyzerDebriefRank(all,'std',team.std),pitRank=analyzerDebriefRank(all,'pitAverage',team.pitAverage),n=all.length;
  const strengths=[],work=[];
@@ -1350,7 +1370,7 @@ function renderAnalyzerDebrief(team,all){
    <div class="debrief-metric"><span>Régularité</span><b>${analyzerDebriefOrdinal(consistencyRank,n)}</b></div>
    <div class="debrief-metric"><span>Temps moyen stands</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div>
   </div></section>
-  <section class="debrief-section"><h3>ANALYSE DES RELAIS TERMINÉS / EN COURS</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RELAIS</th><th>TOURS</th><th>FENÊTRE</th><th>MEILLEUR</th><th>MOYENNE</th><th>MÉDIANE</th><th>RÉGULARITÉ</th></tr></thead><tbody>${team.relays.map(r=>`<tr><td>R${r.index}</td><td>${r.laps}</td><td>${r.from} → ${r.to}</td><td>${analyzerDebriefFmtSeconds(r.best)}</td><td>${analyzerDebriefFmtSeconds(r.average)}</td><td>${analyzerDebriefFmtSeconds(r.median)}</td><td>${Number.isFinite(r.std)?r.std.toFixed(3)+' s':'—'}</td></tr>`).join('')||'<tr><td colspan="7">Aucun relais exploitable pour le moment.</td></tr>'}</tbody></table></div></section>
+  <section class="debrief-section"><h3>ANALYSE DES RELAIS TERMINÉS / EN COURS</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RELAIS</th><th>TOURS</th><th>POS. RELAIS</th><th>FENÊTRE</th><th>MEILLEUR</th><th>MOYENNE</th><th>CONSTANCE</th><th>SCORE</th></tr></thead><tbody>${team.relays.map(r=>{const comparison=analyzerDebriefRelayComparison(r,team,all);return `<tr><td>R${r.index}</td><td>${r.laps}</td><td><strong class="debrief-relay-position">${analyzerDebriefRelayPosition(comparison.rank,comparison.total)}</strong></td><td>${r.from} → ${r.to}</td><td>${analyzerDebriefFmtSeconds(r.best)}</td><td>${analyzerDebriefFmtSeconds(r.average)}</td><td class="${analyzerDebriefConstanceClass(comparison.constance)}" title="Écart entre la moyenne et le meilleur tour du relais">${analyzerDebriefFmtConstance(comparison.constance)}</td><td><strong class="debrief-relay-score">${comparison.score}</strong></td></tr>`}).join('')||'<tr><td colspan="8">Aucun relais exploitable pour le moment.</td></tr>'}</tbody></table></div><p class="debrief-table-note"><strong>POS. RELAIS</strong> classe le rythme moyen de l’équipe face aux équipes disposant d’au moins deux tours exploitables sur la même fenêtre de course. <strong>Constance</strong> correspond à l’écart entre la moyenne et le meilleur tour : plus l’écart est faible, plus le relais est régulier.</p></section>
   <section class="debrief-section"><h3>ARRÊTS AUX STANDS</h3><div class="debrief-grid"><div class="debrief-metric"><span>Nombre</span><b>${team.pitCount}</b></div><div class="debrief-metric"><span>Temps moyen</span><b>${analyzerDebriefFmtPit(team.pitAverage)}</b></div><div class="debrief-metric"><span>Dispersion</span><b>${Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'}</b></div><div class="debrief-metric"><span>Rang plateau</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div></div></section>
   <section class="debrief-section"><h3>CLASSEMENT DU RYTHME MOYEN</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RANG</th><th>ÉQUIPE</th><th>MEILLEUR</th><th>MOYENNE</th><th>σ</th><th>PITS</th><th>MOY. PIT</th></tr></thead><tbody>${ranking.map((x,i)=>`<tr class="${x===team?'debrief-followed-row':''}"><td>${i+1}</td><td>${analyzerEscape(x.name)}</td><td>${analyzerDebriefFmtSeconds(x.best)}</td><td>${analyzerDebriefFmtSeconds(x.average)}</td><td>${Number.isFinite(x.std)?x.std.toFixed(3)+' s':'—'}</td><td>${x.pitCount}</td><td>${analyzerDebriefFmtPit(x.pitAverage)}</td></tr>`).join('')}</tbody></table></div></section>
   <section class="debrief-section"><h3>VERDICT VELOCITY</h3><div class="debrief-verdict">${analyzerDebriefVerdict(team,all)}</div></section>`;

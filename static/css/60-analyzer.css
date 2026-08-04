@@ -1023,3 +1023,10 @@
 .analyzer-modal-head h2{margin:4px 0 0;font-family:var(--font-torque,Arial,sans-serif)}
 .analyzer-modal-head button{border:0;background:none;color:#fff;font-size:30px;line-height:1;cursor:pointer}
 body.analyzer-debrief-open{overflow:hidden}
+
+/* Velocity V6.12.0 — position, constance et score des relais */
+.debrief-relay-position{color:#fff;font-size:14px;letter-spacing:.02em}
+.debrief-relay-score{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:30px;padding:0 8px;border-radius:8px;background:rgba(215,25,32,.18);border:1px solid rgba(255,80,80,.35);color:#fff;font-size:16px}
+.debrief-constance-good{color:#e6d84c}
+.debrief-table-note{margin:12px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+.debrief-table-note strong{color:#fff}

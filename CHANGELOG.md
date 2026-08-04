@@ -1,3 +1,11 @@
+## 6.12.0
+
+- Ajout de la colonne **POS. RELAIS** avec classement P#/total sur la même fenêtre de course.
+- Remplacement de la médiane par la **Constance** (moyenne moins meilleur tour).
+- Ajout d’un **Score Relais sur 100** combinant position, vitesse pure, constance et longueur du relais.
+- Ajout d’une légende explicative sous le tableau des relais.
+- Version application, sessions et cache PWA synchronisés en 6.12.0.
+
 
 ## 6.11.9
 - Correction de la fenêtre DÉBRIEF qui restait invisible malgré le lancement de l’analyse.
