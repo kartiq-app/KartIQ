@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.11.7',
+  appVersion:'6.11.8',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.11.7',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.11.8',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -1289,3 +1289,89 @@ async function loadApexTeamPits(rowId,sessionId=''){
 document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSessionAutosaveStart();document.getElementById('analyzerRulesModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerRulesModal')closeAnalyzerRules()});document.getElementById('analyzerSessionsModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerSessionsModal')closeAnalyzerSessions()});document.getElementById('apexHistoryModal')?.addEventListener('click',event=>{if(event.target.id==='apexHistoryModal')closeApexHistory()})});window.addEventListener('beforeunload',()=>analyzerSaveSession('beforeunload'));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')analyzerSaveSession('hidden')});
 
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
+
+
+/* Velocity V6.11.8 — DÉBRIEF basé sur STATS (tours + pits de toutes les équipes) */
+let analyzerDebriefBusy=false;
+function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
+function analyzerDebriefAverage(values){const a=values.filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN}
+function analyzerDebriefStd(values){const a=values.filter(Number.isFinite),avg=analyzerDebriefAverage(a);return a.length&&Number.isFinite(avg)?Math.sqrt(a.reduce((s,v)=>s+(v-avg)**2,0)/a.length):NaN}
+function analyzerDebriefRank(items,key,value){const valid=items.map(x=>x[key]).filter(Number.isFinite).sort((a,b)=>a-b);return Number.isFinite(value)?valid.findIndex(v=>v>=value)+1:0}
+function analyzerDebriefCleanLaps(laps,pits){
+ const pitLaps=new Set((pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite));
+ const raw=(laps||[]).filter(l=>Number(l.lap)>0&&Number(l.lapTime)>0&&!pitLaps.has(Number(l.lap))).map(l=>({...l,seconds:Number(l.lapTime)/1000})).sort((a,b)=>a.lap-b.lap);
+ const med=analyzerDebriefMedian(raw.map(l=>l.seconds));
+ return raw.filter(l=>!Number.isFinite(med)||l.seconds<=med+5);
+}
+function analyzerDebriefRelays(laps,pits){
+ const pitLaps=(pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite).sort((a,b)=>a-b),boundaries=[0,...pitLaps,Infinity],relays=[];
+ for(let i=0;i<boundaries.length-1;i++){
+  let values=laps.filter(l=>l.lap>boundaries[i]&&l.lap<boundaries[i+1]);
+  if(values.length>1)values=values.slice(1); // tour de sortie / départ
+  if(!values.length)continue;
+  const sec=values.map(l=>l.seconds);
+  relays.push({index:i+1,from:values[0].lap,to:values[values.length-1].lap,laps:values.length,best:Math.min(...sec),average:analyzerDebriefAverage(sec),median:analyzerDebriefMedian(sec),std:analyzerDebriefStd(sec)});
+ }
+ return relays;
+}
+async function analyzerDebriefLoadTeam(driver){
+ const rowId=Number(driver?.apex_row)||0;if(!rowId)throw new Error(`Identifiant STATS indisponible pour ${driver?.driver||'une équipe'}`);
+ const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(rowId,'',null),fetchAllApexTeamPits(rowId,'',null).catch(()=>[])]);
+ const clean=analyzerDebriefCleanLaps(laps,pits),seconds=clean.map(l=>l.seconds),pitDurations=(pits||[]).map(p=>Math.max(0,(p.pitOutMs||0)-(p.pitInMs||0))/1000).filter(v=>v>0);
+ return {driver,name:driver.driver||`Équipe ${rowId}`,position:Number(driver.pos)||999,laps,pits,clean,relays:analyzerDebriefRelays(clean,pits),best:seconds.length?Math.min(...seconds):NaN,average:analyzerDebriefAverage(seconds),median:analyzerDebriefMedian(seconds),std:analyzerDebriefStd(seconds),pitAverage:analyzerDebriefAverage(pitDurations),pitStd:analyzerDebriefStd(pitDurations),pitCount:pits.length};
+}
+function analyzerDebriefFmtSeconds(value){return Number.isFinite(value)?formatApexMilliseconds(value*1000):'—'}
+function analyzerDebriefFmtPit(value){return Number.isFinite(value)?formatApexPitDuration(value*1000):'—'}
+function analyzerDebriefOrdinal(rank,total){return rank?`${rank}${rank===1?'er':'e'} / ${total}`:'—'}
+function analyzerDebriefVerdict(team,all){
+ const paceRank=analyzerDebriefRank(all,'average',team.average),consistencyRank=analyzerDebriefRank(all,'std',team.std),pitRank=analyzerDebriefRank(all,'pitAverage',team.pitAverage),n=all.length;
+ const strengths=[],work=[];
+ if(paceRank&&paceRank<=Math.max(3,Math.ceil(n*.25)))strengths.push(`un rythme moyen de premier quart du plateau (${analyzerDebriefOrdinal(paceRank,n)})`);else work.push(`le rythme moyen, classé ${analyzerDebriefOrdinal(paceRank,n)}`);
+ if(consistencyRank&&consistencyRank<=Math.max(3,Math.ceil(n*.25)))strengths.push(`une excellente régularité (${analyzerDebriefOrdinal(consistencyRank,n)})`);else work.push(`la régularité des tours (${analyzerDebriefOrdinal(consistencyRank,n)})`);
+ if(team.pitCount&&pitRank&&pitRank<=Math.max(3,Math.ceil(n*.25)))strengths.push(`des arrêts compétitifs (${analyzerDebriefOrdinal(pitRank,n)})`);else if(team.pitCount)work.push(`le temps moyen aux stands (${analyzerDebriefOrdinal(pitRank,n)})`);
+ return `<strong>${analyzerEscape(team.name)}</strong> présente ${strengths.length?strengths.join(' et '):'une performance équilibrée'}. ${work.length?`Le principal levier de progression concerne ${work.join(' puis ')}.`:'Aucun point faible majeur ne ressort des données STATS disponibles.'}`;
+}
+function renderAnalyzerDebrief(team,all){
+ const host=document.getElementById('analyzerDebriefContent'),status=document.getElementById('analyzerDebriefStatus');if(!host)return;
+ const n=all.length,paceRank=analyzerDebriefRank(all,'average',team.average),bestRank=analyzerDebriefRank(all,'best',team.best),consistencyRank=analyzerDebriefRank(all,'std',team.std),pitRank=analyzerDebriefRank(all,'pitAverage',team.pitAverage);
+ status.textContent=`Rapport généré à partir des tours et des arrêts STATS de ${n} équipe(s).`;status.classList.remove('error');
+ const ranking=all.slice().sort((a,b)=>(a.average||999)-(b.average||999));
+ host.innerHTML=`
+  <section class="debrief-hero">
+   <div class="debrief-card debrief-team"><span>Équipe suivie</span><strong>${analyzerEscape(team.name)}</strong><small class="debrief-pill">Débrief ${state?.time_remaining&&state.time_remaining!=='00:00:00'?'intermédiaire':'complet'}</small></div>
+   <div class="debrief-card"><span>Rythme moyen</span><strong>${analyzerDebriefFmtSeconds(team.average)}</strong></div>
+   <div class="debrief-card"><span>Meilleur tour</span><strong>${analyzerDebriefFmtSeconds(team.best)}</strong></div>
+   <div class="debrief-card"><span>Régularité σ</span><strong>${Number.isFinite(team.std)?team.std.toFixed(3)+' s':'—'}</strong></div>
+   <div class="debrief-card"><span>Arrêts</span><strong>${team.pitCount}</strong></div>
+  </section>
+  <section class="debrief-section"><h3>POSITIONNEMENT FACE AU PLATEAU</h3><div class="debrief-grid">
+   <div class="debrief-metric"><span>Vitesse pure</span><b>${analyzerDebriefOrdinal(bestRank,n)}</b></div>
+   <div class="debrief-metric"><span>Rythme moyen</span><b>${analyzerDebriefOrdinal(paceRank,n)}</b></div>
+   <div class="debrief-metric"><span>Régularité</span><b>${analyzerDebriefOrdinal(consistencyRank,n)}</b></div>
+   <div class="debrief-metric"><span>Temps moyen stands</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div>
+  </div></section>
+  <section class="debrief-section"><h3>ANALYSE DES RELAIS TERMINÉS / EN COURS</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RELAIS</th><th>TOURS</th><th>FENÊTRE</th><th>MEILLEUR</th><th>MOYENNE</th><th>MÉDIANE</th><th>RÉGULARITÉ</th></tr></thead><tbody>${team.relays.map(r=>`<tr><td>R${r.index}</td><td>${r.laps}</td><td>${r.from} → ${r.to}</td><td>${analyzerDebriefFmtSeconds(r.best)}</td><td>${analyzerDebriefFmtSeconds(r.average)}</td><td>${analyzerDebriefFmtSeconds(r.median)}</td><td>${Number.isFinite(r.std)?r.std.toFixed(3)+' s':'—'}</td></tr>`).join('')||'<tr><td colspan="7">Aucun relais exploitable pour le moment.</td></tr>'}</tbody></table></div></section>
+  <section class="debrief-section"><h3>ARRÊTS AUX STANDS</h3><div class="debrief-grid"><div class="debrief-metric"><span>Nombre</span><b>${team.pitCount}</b></div><div class="debrief-metric"><span>Temps moyen</span><b>${analyzerDebriefFmtPit(team.pitAverage)}</b></div><div class="debrief-metric"><span>Dispersion</span><b>${Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'}</b></div><div class="debrief-metric"><span>Rang plateau</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div></div></section>
+  <section class="debrief-section"><h3>CLASSEMENT DU RYTHME MOYEN</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RANG</th><th>ÉQUIPE</th><th>MEILLEUR</th><th>MOYENNE</th><th>σ</th><th>PITS</th><th>MOY. PIT</th></tr></thead><tbody>${ranking.map((x,i)=>`<tr class="${x===team?'debrief-followed-row':''}"><td>${i+1}</td><td>${analyzerEscape(x.name)}</td><td>${analyzerDebriefFmtSeconds(x.best)}</td><td>${analyzerDebriefFmtSeconds(x.average)}</td><td>${Number.isFinite(x.std)?x.std.toFixed(3)+' s':'—'}</td><td>${x.pitCount}</td><td>${analyzerDebriefFmtPit(x.pitAverage)}</td></tr>`).join('')}</tbody></table></div></section>
+  <section class="debrief-section"><h3>VERDICT VELOCITY</h3><div class="debrief-verdict">${analyzerDebriefVerdict(team,all)}</div></section>`;
+}
+async function openAnalyzerDebrief(){
+ if(analyzerDebriefBusy)return;
+ const modal=document.getElementById('analyzerDebriefModal'),status=document.getElementById('analyzerDebriefStatus'),host=document.getElementById('analyzerDebriefContent'),button=document.getElementById('analyzerDebriefButton');
+ modal?.classList.add('show');if(host)host.innerHTML='';if(status){status.textContent='Lecture des données STATS de toutes les équipes…';status.classList.remove('error')}
+ const drivers=(state?.drivers||[]).filter(d=>Number(d.apex_row)>0);const followed=drivers.find(d=>d.driver===state?.followed_driver)||drivers[0];
+ if(!followed){if(status){status.textContent='Aucune équipe disponible dans le classement.';status.classList.add('error')}return}
+ analyzerDebriefBusy=true;if(button)button.disabled=true;
+ try{
+  const results=[];
+  for(let i=0;i<drivers.length;i++){
+   if(status)status.textContent=`Lecture STATS : ${i+1} / ${drivers.length} — ${drivers[i].driver||'Équipe'}`;
+   try{results.push(await analyzerDebriefLoadTeam(drivers[i]))}catch(error){console.warn('[Velocity Debrief]',drivers[i]?.driver,error)}
+  }
+  const team=results.find(x=>x.driver===followed)||results.find(x=>normalizeApexTeamName(x.name)===normalizeApexTeamName(followed.driver));
+  if(!team)throw new Error('Impossible de charger les données STATS de l’équipe suivie.');
+  renderAnalyzerDebrief(team,results.filter(x=>Number.isFinite(x.average)));
+ }catch(error){if(status){status.textContent=`Débrief indisponible : ${error.message}`;status.classList.add('error')}}finally{analyzerDebriefBusy=false;if(button)button.disabled=false}
+}
+function closeAnalyzerDebrief(){document.getElementById('analyzerDebriefModal')?.classList.remove('show')}
+document.addEventListener('DOMContentLoaded',()=>document.getElementById('analyzerDebriefModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerDebriefModal')closeAnalyzerDebrief()}));

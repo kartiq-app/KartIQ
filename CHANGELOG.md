@@ -1,10 +1,19 @@
-## V6.11.7 — HEAT MAP et pitlane renforcée
+## V6.11.8 — DÉBRIEF STATS
+
+- Ajout du bouton rouge **DÉBRIEF** à droite de **ENDURANCE** dans l’Analyzer.
+- Lecture des temps au tour et des arrêts STATS de toutes les équipes.
+- Comparaison de l’équipe suivie au plateau : meilleur tour, moyenne, régularité et stands.
+- Reconstruction et analyse des relais de l’équipe suivie.
+- Rapport intermédiaire utilisable pendant la course et rapport complet après l’arrivée.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.8.
+
+## V6.11.8 — HEAT MAP et pitlane renforcée
 
 - Le titre de la carte `MAP` devient `HEAT MAP`.
 - Le texte `PIT LANE` retrouve une taille normale.
 - Le trait représentant la voie des stands est doublé en longueur et en épaisseur.
 - La taille extérieure de la carte et la fonction `Simuler un arrêt` sont conservées.
-- Version applicative, sessions et cache PWA synchronisés en 6.11.7.
+- Version applicative, sessions et cache PWA synchronisés en 6.11.8.
 
 ## V6.11.6 — Ajustements visuels Analyzer et MAP
 
