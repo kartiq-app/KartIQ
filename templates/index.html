@@ -277,9 +277,17 @@
   <div class="analyzer-modal-card analyzer-debrief-card">
     <div class="analyzer-modal-head">
       <div><span class="analyzer-modal-kicker">VELOCITY</span><h2 id="analyzerDebriefTitle">DÉBRIEF ÉQUIPE</h2></div>
-      <button type="button" onclick="closeAnalyzerDebrief()" aria-label="Fermer">×</button>
+      <div class="analyzer-debrief-head-actions">
+        <button id="analyzerDebriefPdfButton" class="analyzer-debrief-pdf-button" type="button" onclick="exportAnalyzerDebriefPdf()" disabled>EXPORTER EN PDF</button>
+        <button type="button" onclick="closeAnalyzerDebrief()" aria-label="Fermer">×</button>
+      </div>
     </div>
-    <div id="analyzerDebriefStatus" class="analyzer-debrief-status">Préparation du rapport…</div>
+    <div id="analyzerDebriefStatus" class="analyzer-debrief-status">
+      <div class="analyzer-debrief-progress" aria-label="Progression de l’analyse">
+        <div id="analyzerDebriefProgressFill" class="analyzer-debrief-progress-fill"></div>
+      </div>
+      <span id="analyzerDebriefProgressPercent" class="analyzer-debrief-progress-percent">0 %</span>
+    </div>
     <div id="analyzerDebriefContent" class="analyzer-debrief-content"></div>
   </div>
 </div>

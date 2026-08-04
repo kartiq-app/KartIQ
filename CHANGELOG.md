@@ -1,3 +1,12 @@
+## 6.12.1
+
+- Ajout de l’export direct du débrief en PDF depuis la fenêtre Analyzer.
+- PDF volontairement neutre : aucune mention, aucun logo et aucun pied de page lié à Velocity ou au logiciel.
+- Suppression de la colonne Score dans l’analyse des relais.
+- Remplacement du texte de chargement par une barre de progression rouge et noire reprenant la direction artistique de la home.
+- Remplacement du symbole sigma par une appréciation lisible de la régularité.
+- Version application, sessions et cache PWA synchronisés en 6.12.1.
+
 ## 6.12.0
 
 - Ajout de la colonne **POS. RELAIS** avec classement P#/total sur la même fenêtre de course.
