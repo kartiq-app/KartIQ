@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.12.3',
+  appVersion:'6.12.4',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.12.3',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.12.4',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -271,8 +271,23 @@ function analyzerDriverPace(driver){
 }
 const analyzerTrackAnimationAnchors=new Map();
 function analyzerApexMapRegistry(){return window.velocityApexMap||{rows:new Map(),lastEventAt:0,noLive:true}}
+// V6.12.4 : conserve la dernière entrée MAP valide par équipe.
+// Certaines mises à jour de grille Apex rendent brièvement apex_row ou la ligne
+// du registre indisponible entre deux impulsions de position. Sans ce cache,
+// le marqueur disparaissait alors que le kart roulait toujours.
+const analyzerApexMapEntryCache=new Map();
 function analyzerApexMapEntry(driver){
- const row=Number(driver?.apex_row);return Number.isFinite(row)?analyzerApexMapRegistry().rows.get(row)||null:null;
+ const key=String(driver?.driver||driver?.apex_row||driver?.pos||'');
+ const row=Number(driver?.apex_row),registry=analyzerApexMapRegistry();
+ const current=Number.isFinite(row)?registry.rows.get(row)||null:null;
+ if(current){if(key)analyzerApexMapEntryCache.set(key,current);return current}
+ const cached=key?analyzerApexMapEntryCache.get(key)||null:null;
+ // Le cache ne sert qu'à traverser une indisponibilité transitoire pendant
+ // un live actif. La disparition de l'équipe de state.drivers retire de toute
+ // façon son marqueur au prochain rendu.
+ if(cached&&analyzerApexRaceIsActive())return cached;
+ if(key)analyzerApexMapEntryCache.delete(key);
+ return null;
 }
 function analyzerApexSectorModel(){
  const entries=[...analyzerApexMapRegistry().rows.values()];
@@ -352,7 +367,7 @@ function analyzerRenderPitSimulator(){
  const simulation=analyzerPitSimulation,horizon=Number(simulation?.horizon??simulation?.horizonSeconds)||0;
  const pitDots=pitQueue.map(({driver},index)=>{const x=Math.max(20,286-index*34),classes=['pit-simulator-dot','pit','pit-queued'];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,'pit',top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,'pit',top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');return `<g class="${classes.join(' ')}" transform="translate(${x} 150)"><title>${analyzerEscape(driver.driver)}</title><circle r="8.5"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
  const pitLane=`<section class="map-pitlane-pane" aria-label="Voie des stands"><div class="map-pitlane-title">PIT LANE</div><svg viewBox="0 0 300 292" role="img" aria-label="Karts dans la voie des stands"><path class="map-pitlane-line" d="M10 150 H290"></path>${pitDots}</svg></section>`;
- if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<div class="map-stage"><section class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Radar inactif">${radar}<text class="pit-simulator-center-title" x="135" y="184">HEAT MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="202">Pas de course en cours</text></svg></section>${pitLane}</div>`;return}
+ if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();analyzerApexMapEntryCache.clear();host.innerHTML=`<div class="map-stage"><section class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Radar inactif">${radar}<text class="pit-simulator-center-title" x="135" y="184">HEAT MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="202">Pas de course en cours</text></svg></section>${pitLane}</div>`;return}
  const visible=drivers.map(driver=>{const info=paceData.map.get(driver)||{category:'slow',delta:null};const point=analyzerMapPoint(driver,analyzerMapRings[info.category]);return {driver,info,point}}).filter(item=>item.point&&!pitNames.has(item.driver.driver)&&(analyzerMapPaceFilters.has(item.info.category)||item.driver.driver===state.followed_driver));
  const dots=visible.map(({driver,info,point})=>{let p=point;if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1,analyzerMapRings[info.category]);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0,analyzerMapRings[info.category]);const classes=['pit-simulator-dot','pace-'+info.category];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,info.category,top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,info.category,top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');const title=Number.isFinite(info.delta)?`${driver.driver} · +${info.delta.toFixed(3)} s`:driver.driver;return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><title>${analyzerEscape(title)}</title><circle r="${info.category==='fastest'?9.5:8.5}"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
  const projected=simulation?'<circle class="pit-simulator-projected" cx="135" cy="37" r="11"></circle>':'',followed=drivers.find(d=>d.driver===state.followed_driver)||null,centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(horizon):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
@@ -1291,7 +1306,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.12.3 — finitions du rapport et du PDF */
+/* Velocity V6.12.4 — finitions du rapport et du PDF */
 let analyzerDebriefBusy=false;
 let analyzerDebriefReport=null;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}

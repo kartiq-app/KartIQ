@@ -1,4 +1,4 @@
-# Velocity V6.12.3
+# Velocity V6.12.4
 
 Cette version agrandit le radar de 25 %, ajoute une ligne de chronométrage en damier et améliore la lisibilité du menu des rythmes.
 

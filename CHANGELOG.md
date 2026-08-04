@@ -1,3 +1,10 @@
+## 6.12.4
+
+- Correction de la disparition intermittente des marqueurs sur la HEAT MAP.
+- Conservation de la dernière position Apex valide lorsque `apex_row` ou le registre MAP devient brièvement indisponible entre deux mises à jour.
+- Le cache de position est vidé uniquement lorsque le live n'est plus actif ; une équipe absente de la grille ou aux stands reste gérée normalement.
+- Version application et cache PWA synchronisés en 6.12.4.
+
 ## 6.12.3
 
 - La régularité affiche uniquement la valeur numérique en secondes dans le rapport et le PDF.
