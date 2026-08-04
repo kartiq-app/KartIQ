@@ -72,7 +72,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'6.13.2'),
+  appVersion:String(state?.version||'6.13.3'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -201,6 +201,7 @@ async function load(){
 let apexBrowserSocket=null;
 let apexBrowserCircuitId=null;
 let apexBrowserConnecting=false;
+let apexBrowserConnectionToken=0;
 
 // MAP Velocity — événements de position réellement émis par Apex Timing.
 // Chaque ligne de classement est animée uniquement à la réception de *, *i1,
@@ -276,18 +277,70 @@ function ingestApexMapEvents(frame,circuitId){
  }
 }
 async function sendApexStatus(status,connection,error=null){try{await fetch('/api/apex/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,connection,error})})}catch(e){}}
-function closeApexBrowserSocket(){if(apexBrowserSocket){apexBrowserSocket.onclose=null;try{apexBrowserSocket.close()}catch(e){}apexBrowserSocket=null}apexBrowserConnecting=false}
+function closeApexBrowserSocket(){
+ apexBrowserConnectionToken+=1;
+ const socket=apexBrowserSocket;
+ apexBrowserSocket=null;
+ apexBrowserConnecting=false;
+ if(socket){
+  socket.onopen=null;socket.onmessage=null;socket.onerror=null;socket.onclose=null;
+  try{socket.close()}catch(e){}
+ }
+}
 function ensureApexBrowserConnection(){if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
 function connectApexBrowser(force=false){
  const circuit=(state?.circuits||[]).find(c=>c.id===state.circuit_id);
  if(!circuit?.websocket_url)return;
  if(!force&&apexBrowserSocket&&apexBrowserCircuitId===circuit.id&&[0,1].includes(apexBrowserSocket.readyState))return;
- closeApexBrowserSocket();apexBrowserCircuitId=circuit.id;apexBrowserConnecting=true;sendApexStatus('connecting','CONNEXION APEX…');
- try{apexBrowserSocket=new WebSocket(circuit.websocket_url)}catch(err){apexBrowserConnecting=false;sendApexStatus('error','ERREUR LIVE',err.message);return}
- apexBrowserSocket.addEventListener('open',()=>{apexBrowserConnecting=false;sendApexStatus('connected','LIVE • CONNECTÉ');if(circuit.session_request){apexBrowserSocket.send(circuit.session_request);fetch('/api/developer/outbound',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:circuit.session_request})}).catch(()=>{})}});
- apexBrowserSocket.addEventListener('message',async e=>{const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);recordApexFrameReceived(frame,circuit.id);ingestApexCountdown(frame);ingestApexMapEvents(frame,circuit.id);try{const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});let d=null;try{d=await r.json()}catch(parseError){d={responseParseError:parseError.message,responseText:'Réponse serveur non JSON'}}if(!r.ok){const err=new Error(d?.error||`Décodage Apex impossible (HTTP ${r.status})`);err.httpStatus=r.status;err.serverResponse=d;throw err}recordApexDecodeSuccess(frame,circuit.id,d)}catch(err){recordApexDecodeFailure(frame,circuit.id,err,{httpStatus:err?.httpStatus||null,serverResponse:err?.serverResponse||null});sendApexStatus('error','ERREUR DÉCODAGE',err.message)}});
- apexBrowserSocket.addEventListener('error',()=>sendApexStatus('error','ERREUR LIVE','Connexion WebSocket Apex impossible'));
- apexBrowserSocket.addEventListener('close',e=>{apexBrowserSocket=null;apexBrowserConnecting=false;sendApexStatus('closed','LIVE DÉCONNECTÉ',`Code ${e.code}`);setTimeout(()=>{if(state?.circuit_id===apexBrowserCircuitId)connectApexBrowser(false)},5000)});
+ closeApexBrowserSocket();
+ apexBrowserCircuitId=circuit.id;
+ apexBrowserConnecting=true;
+ const connectionToken=++apexBrowserConnectionToken;
+ sendApexStatus('connecting','CONNEXION APEX…');
+ let socket;
+ try{socket=new WebSocket(circuit.websocket_url);apexBrowserSocket=socket}catch(err){if(connectionToken!==apexBrowserConnectionToken)return;apexBrowserConnecting=false;sendApexStatus('error','ERREUR LIVE',err.message);return}
+ const isCurrentConnection=()=>connectionToken===apexBrowserConnectionToken&&socket===apexBrowserSocket&&circuit.id===state?.circuit_id;
+ socket.addEventListener('open',()=>{
+  if(!isCurrentConnection())return;
+  apexBrowserConnecting=false;
+  sendApexStatus('connected','LIVE • CONNECTÉ');
+  if(circuit.session_request){socket.send(circuit.session_request);fetch('/api/developer/outbound',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:circuit.session_request})}).catch(()=>{})}
+ });
+ socket.addEventListener('message',async e=>{
+  if(!isCurrentConnection())return;
+  const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);
+  if(!isCurrentConnection())return;
+  recordApexFrameReceived(frame,circuit.id);
+  ingestApexCountdown(frame);
+  ingestApexMapEvents(frame,circuit.id);
+  try{
+   const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});
+   let d=null;
+   try{d=await r.json()}catch(parseError){d={responseParseError:parseError.message,responseText:'Réponse serveur non JSON'}}
+   if(!isCurrentConnection())return;
+   // Une réponse « ignored » signifie qu'une ancienne connexion a terminé
+   // sa requête après un changement de piste. Ce n'est pas une erreur de
+   // décodage et elle ne doit jamais modifier l'état LIVE ni la HEAT MAP.
+   if(d?.ignored===true){
+    const recent=apexDecoderDiagnostics.recentFrames[apexDecoderDiagnostics.recentFrames.length-1];
+    if(recent){recent.status='ignored-obsolete';recent.ignoredAt=new Date().toISOString();recent.reason=d?.error||'Connexion obsolète'}
+    return;
+   }
+   if(!r.ok){const err=new Error(d?.error||`Décodage Apex impossible (HTTP ${r.status})`);err.httpStatus=r.status;err.serverResponse=d;throw err}
+   recordApexDecodeSuccess(frame,circuit.id,d);
+  }catch(err){
+   if(!isCurrentConnection())return;
+   recordApexDecodeFailure(frame,circuit.id,err,{httpStatus:err?.httpStatus||null,serverResponse:err?.serverResponse||null});
+   sendApexStatus('error','ERREUR DÉCODAGE',err.message);
+  }
+ });
+ socket.addEventListener('error',()=>{if(isCurrentConnection())sendApexStatus('error','ERREUR LIVE','Connexion WebSocket Apex impossible')});
+ socket.addEventListener('close',e=>{
+  if(!isCurrentConnection())return;
+  apexBrowserSocket=null;apexBrowserConnecting=false;
+  sendApexStatus('closed','LIVE DÉCONNECTÉ',`Code ${e.code}`);
+  setTimeout(()=>{if(connectionToken===apexBrowserConnectionToken&&state?.circuit_id===circuit.id)connectApexBrowser(false)},5000);
+ });
 }
 function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
 function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}

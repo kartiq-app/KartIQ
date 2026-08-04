@@ -830,7 +830,7 @@ def apex_frame():
     # Une ancienne WebSocket peut encore livrer une dernière trame pendant le
     # changement de piste. Elle est ignorée pour empêcher tout mélange.
     if frame_circuit_id != STATE.get("circuit_id"):
-        return jsonify(ok=False, ignored=True, error="Trame d'un ancien circuit ignorée"), 409
+        return jsonify(ok=True, ignored=True, error="Trame d'un ancien circuit ignorée")
 
     write_traffic("IN", frame)
     grid = parse_grid_frame(frame)

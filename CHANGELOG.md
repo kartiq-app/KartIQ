@@ -1,3 +1,12 @@
+# Velocity V6.13.3 — Connexions Apex obsolètes sécurisées
+
+- Ajout d’un jeton unique à chaque connexion WebSocket navigateur.
+- Les messages, erreurs et fermetures provenant d’une ancienne connexion sont désormais ignorés silencieusement.
+- Une trame d’un ancien circuit n’est plus traitée comme une erreur de décodage.
+- L’état `LIVE • DONNÉES RÉELLES` et les données de la HEAT MAP sont conservés lors d’un changement ou d’une reconnexion.
+- L’API `/api/apex/frame` renvoie une réponse normale `ignored: true` pour une trame obsolète, sans code HTTP d’erreur.
+- Version application et cache PWA synchronisés en 6.13.3.
+
 # Velocity V6.13.2 — Diagnostic du décodeur Apex
 
 - Ajout d’un bouton `🐞 DIAGNOSTIC DÉCODEUR` dans le footer de l’Analyzer.
