@@ -986,3 +986,40 @@
 .debrief-table-wrap{overflow:auto}.debrief-table{width:100%;border-collapse:collapse}.debrief-table th,.debrief-table td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.09);text-align:left;white-space:nowrap}.debrief-table th{color:var(--muted);font-size:10px;letter-spacing:.07em}.debrief-followed-row{background:rgba(215,25,32,.13)}
 .debrief-verdict{font-size:15px;line-height:1.55}.debrief-verdict strong{color:#fff}.debrief-pill{display:inline-block;border-radius:999px;padding:4px 8px;background:rgba(255,138,0,.16);color:#ff9c28;font-weight:800;font-size:11px}.debrief-positive{color:#52dc83}.debrief-warning{color:#ffad42}.debrief-negative{color:#ff6b6b}
 @media(max-width:760px){.analyzer-debrief-button{padding:8px 11px;font-size:11px}.debrief-hero{grid-template-columns:1fr 1fr}.debrief-team{grid-column:1/-1}.debrief-grid{grid-template-columns:1fr 1fr}.analyzer-debrief-card{width:96vw}}
+
+/* Velocity V6.11.9 — correction affichage de la fenêtre DÉBRIEF */
+.analyzer-modal{
+  position:fixed;
+  inset:0;
+  z-index:10050;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(3px);
+}
+.analyzer-modal.show{display:flex}
+.analyzer-modal-card{
+  width:min(1180px,94vw);
+  max-height:90vh;
+  overflow:auto;
+  padding:20px;
+  border:1px solid #353d49;
+  border-radius:14px;
+  background:#0c1017;
+  box-shadow:0 28px 80px rgba(0,0,0,.9);
+}
+.analyzer-modal-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:16px;
+  padding-bottom:12px;
+  border-bottom:2px solid #d71920;
+}
+.analyzer-modal-kicker{color:#ff8a1f;font-size:9px;font-weight:900;letter-spacing:.12em}
+.analyzer-modal-head h2{margin:4px 0 0;font-family:var(--font-torque,Arial,sans-serif)}
+.analyzer-modal-head button{border:0;background:none;color:#fff;font-size:30px;line-height:1;cursor:pointer}
+body.analyzer-debrief-open{overflow:hidden}

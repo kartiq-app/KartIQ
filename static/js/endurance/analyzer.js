@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.11.8',
+  appVersion:'6.11.9',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.11.8',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.11.9',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -1291,7 +1291,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.11.8 — DÉBRIEF basé sur STATS (tours + pits de toutes les équipes) */
+/* Velocity V6.11.9 — DÉBRIEF STATS, modal corrigée et retours d'erreur visibles */
 let analyzerDebriefBusy=false;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
 function analyzerDebriefAverage(values){const a=values.filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN}
@@ -1358,7 +1358,7 @@ function renderAnalyzerDebrief(team,all){
 async function openAnalyzerDebrief(){
  if(analyzerDebriefBusy)return;
  const modal=document.getElementById('analyzerDebriefModal'),status=document.getElementById('analyzerDebriefStatus'),host=document.getElementById('analyzerDebriefContent'),button=document.getElementById('analyzerDebriefButton');
- modal?.classList.add('show');if(host)host.innerHTML='';if(status){status.textContent='Lecture des données STATS de toutes les équipes…';status.classList.remove('error')}
+ if(!modal){console.error('[Velocity Debrief] Fenêtre introuvable');return;} modal.classList.add('show');document.body.classList.add('analyzer-debrief-open');if(host)host.innerHTML='';if(status){status.textContent='Lecture des données STATS de toutes les équipes…';status.classList.remove('error')}
  const drivers=(state?.drivers||[]).filter(d=>Number(d.apex_row)>0);const followed=drivers.find(d=>d.driver===state?.followed_driver)||drivers[0];
  if(!followed){if(status){status.textContent='Aucune équipe disponible dans le classement.';status.classList.add('error')}return}
  analyzerDebriefBusy=true;if(button)button.disabled=true;
@@ -1373,5 +1373,5 @@ async function openAnalyzerDebrief(){
   renderAnalyzerDebrief(team,results.filter(x=>Number.isFinite(x.average)));
  }catch(error){if(status){status.textContent=`Débrief indisponible : ${error.message}`;status.classList.add('error')}}finally{analyzerDebriefBusy=false;if(button)button.disabled=false}
 }
-function closeAnalyzerDebrief(){document.getElementById('analyzerDebriefModal')?.classList.remove('show')}
+function closeAnalyzerDebrief(){document.getElementById('analyzerDebriefModal')?.classList.remove('show');document.body.classList.remove('analyzer-debrief-open')}
 document.addEventListener('DOMContentLoaded',()=>document.getElementById('analyzerDebriefModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerDebriefModal')closeAnalyzerDebrief()}));
