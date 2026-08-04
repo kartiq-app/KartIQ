@@ -325,8 +325,22 @@ function renderEndurancePenaltyAlert(list,f){
  }else endurancePenaltyAlert=null;
 }
 
+
+function renderEnduranceDriverMessage(){
+ const host=document.getElementById('enduranceDriverMessageOverlay');
+ const text=document.getElementById('enduranceDriverMessageText');
+ if(!host||!text)return;
+ const message=state?.driver_message;
+ const delivered=Number(message?.delivered_at_ms);
+ const duration=Number(message?.duration_ms)||15000;
+ const active=Boolean(message?.message&&Number.isFinite(delivered)&&Date.now()-delivered>=0&&Date.now()-delivered<duration);
+ host.classList.toggle('show',active);
+ if(active)text.textContent=message.message;
+}
+
 function renderEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay?.classList.contains('show'))return;
+ renderEnduranceDriverMessage();
  const f=state.followed||{};
  renderEndurancePitState(f);
  const endurancePenaltyList=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));

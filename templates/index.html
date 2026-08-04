@@ -114,16 +114,30 @@
           </div>
         </div>
       </article>
-      <article class="analyzer-hero-card rules-card">
-        <span class="analyzer-card-label">CONFORMITÉ RÈGLEMENTAIRE</span>
-        <div class="rules-status-row"><div class="rules-status" id="analyzerRulesStatus">—</div><button class="rules-card-button" type="button" onclick="openAnalyzerRules()">RÈGLEMENT</button></div>
-        <div class="rules-mini-grid">
-          <div><span>Relais</span><b id="analyzerRuleRelay">10:00 → 60:00</b></div>
-          <div><span>Stand minimum</span><b id="analyzerRulePit">02:30</b></div>
-          <div><span>Passages restants</span><b id="analyzerStopsRemaining">—</b></div>
-          <div><span>Cadence requise</span><b id="analyzerStopCadence">—</b></div>
-        </div>
-      </article>
+      <div class="analyzer-rules-message-stack">
+        <article class="analyzer-hero-card rules-card">
+          <span class="analyzer-card-label">CONFORMITÉ RÈGLEMENTAIRE</span>
+          <div class="rules-status-row"><div class="rules-status" id="analyzerRulesStatus">—</div><button class="rules-card-button" type="button" onclick="openAnalyzerRules()">RÈGLEMENT</button></div>
+          <div class="rules-mini-grid">
+            <div><span>Relais</span><b id="analyzerRuleRelay">10:00 → 60:00</b></div>
+            <div><span>Stand minimum</span><b id="analyzerRulePit">02:30</b></div>
+            <div><span>Passages restants</span><b id="analyzerStopsRemaining">—</b></div>
+            <div><span>Cadence requise</span><b id="analyzerStopCadence">—</b></div>
+          </div>
+        </article>
+        <article class="analyzer-hero-card analyzer-driver-message-card" aria-label="Envoyer un message au pilote">
+          <div class="analyzer-driver-message-row">
+            <span class="analyzer-driver-message-icon" aria-hidden="true">📨</span>
+            <div class="analyzer-driver-message-input-wrap">
+              <input id="analyzerDriverMessageInput" type="text" maxlength="25" placeholder="Message au pilote" aria-label="Message au pilote, 25 caractères maximum" oninput="updateAnalyzerDriverMessageCounter()">
+              <small id="analyzerDriverMessageCounter">0/25</small>
+            </div>
+            <button id="analyzerDriverMessageSend" type="button" onclick="sendAnalyzerDriverMessage()" disabled>ENVOYER</button>
+            <label class="analyzer-driver-message-urgent"><input id="analyzerDriverMessageUrgent" type="checkbox"><span>URGENT</span></label>
+          </div>
+          <div id="analyzerDriverMessageStatus" class="analyzer-driver-message-status" aria-live="polite"></div>
+        </article>
+      </div>
       <article class="analyzer-hero-card weather-card" id="analyzerWeatherCard">
         <span class="analyzer-card-label">MÉTÉO</span>
         <div class="weather-main">
@@ -340,6 +354,9 @@
         <div class="endurance-focus-last-lap" id="enduranceFocusLastLap">—</div>
       </div>
     </div>
+  </div>
+  <div class="endurance-driver-message-overlay" id="enduranceDriverMessageOverlay" aria-live="assertive" aria-atomic="true">
+    <div class="endurance-driver-message-text" id="enduranceDriverMessageText">—</div>
   </div>
   <div class="endurance-penalty-banner" id="endurancePenaltyBanner" aria-live="assertive" aria-atomic="true">
     <div class="endurance-penalty-banner-label">PÉNALITÉ</div>

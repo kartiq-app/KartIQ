@@ -10,6 +10,7 @@ import webbrowser
 import urllib.parse
 import urllib.request
 import os
+import time
 
 try:
     import websocket
@@ -67,6 +68,7 @@ STATE = {
     "developer_mode": False,
     "traffic_recording": False,
     "traffic_recording_started_at": None,
+    "driver_message": None,
 }
 
 
@@ -76,6 +78,7 @@ RACE_STATE = RaceStateService(STATE)
 WEATHER_CACHE = {}
 WEATHER_LOCATION_CACHE = {}
 WEATHER_LOCK = threading.Lock()
+DRIVER_MESSAGE_LOCK = threading.Lock()
 WEATHER_TTL_SECONDS = 300
 WEATHER_LOCATION_TTL_SECONDS = 86400
 
@@ -575,7 +578,24 @@ def sync_state_from_race(snapshot, interpreted_events=None):
 
 
 def payload():
-    return RACE_STATE.payload()
+    data = RACE_STATE.payload()
+    now_ms = int(time.time() * 1000)
+    with DRIVER_MESSAGE_LOCK:
+        message = STATE.get("driver_message")
+        if message:
+            target = driver_by_name(message.get("target_driver"))
+            if not message.get("delivered_at_ms") and target:
+                current_laps = int(target.get("laps") or 0)
+                baseline_laps = int(message.get("baseline_laps") or 0)
+                if current_laps > baseline_laps:
+                    message["delivered_at_ms"] = now_ms
+                    message["delivery_reason"] = "line_crossing"
+            delivered_at = message.get("delivered_at_ms")
+            if delivered_at and now_ms - int(delivered_at) >= 15000:
+                STATE["driver_message"] = None
+                message = None
+        data["driver_message"] = deepcopy(message) if message else None
+    return data
 
 
 @app.get("/")
@@ -663,6 +683,8 @@ def set_mode():
 
 def reset_race_state_for_new_circuit(circuit_id):
     """Vide toutes les données appartenant au circuit précédent."""
+    with DRIVER_MESSAGE_LOCK:
+        STATE["driver_message"] = None
     stop_live_connection()
     APEX_TABLE.reset()
     PROTOCOL_ENGINE.reset()
@@ -679,11 +701,44 @@ def set_circuit():
     return jsonify(ok=True)
 
 
+
+
+@app.post("/api/driver-message")
+def send_driver_message():
+    body = request.get_json(force=True) or {}
+    text = str(body.get("message") or "").strip()
+    urgent = bool(body.get("urgent"))
+    if not text:
+        return jsonify(ok=False, error="Le message est vide."), 400
+    if len(text) > 25:
+        return jsonify(ok=False, error="Le message dépasse 25 caractères."), 400
+    target_name = str(STATE.get("followed_driver") or "").strip()
+    target = driver_by_name(target_name)
+    if not target_name or not target:
+        return jsonify(ok=False, error="Aucune équipe suivie active."), 400
+    now_ms = int(time.time() * 1000)
+    with DRIVER_MESSAGE_LOCK:
+        STATE["driver_message"] = {
+            "id": f"msg-{now_ms}",
+            "message": text,
+            "urgent": urgent,
+            "target_driver": target_name,
+            "baseline_laps": int(target.get("laps") or 0),
+            "created_at_ms": now_ms,
+            "delivered_at_ms": now_ms if urgent else None,
+            "delivery_reason": "urgent" if urgent else "line_crossing",
+            "duration_ms": 15000,
+        }
+    return jsonify(ok=True, message=deepcopy(STATE["driver_message"]))
+
+
 @app.post("/api/follow")
 def follow():
     name = request.get_json(force=True).get("driver")
     if not driver_by_name(name):
         return jsonify(ok=False), 400
+    with DRIVER_MESSAGE_LOCK:
+        STATE["driver_message"] = None
     STATE["followed_driver"] = name
     STATE["followed_locked"] = True
     driver = driver_by_name(name)

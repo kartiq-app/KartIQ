@@ -1316,7 +1316,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.13.9 — Dernier chrono simplifié et ouverture plein écran */
+/* Velocity V6.14.0 — Dernier chrono simplifié et ouverture plein écran */
 let analyzerDebriefBusy=false;
 let analyzerDebriefReport=null;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
@@ -1470,3 +1470,34 @@ async function exportAnalyzerDebriefPdf(){
  }catch(error){console.error('[PDF Debrief]',error);window.alert(`Impossible de générer le PDF : ${error.message}`)}finally{if(button){button.disabled=false;button.textContent='EXPORTER EN PDF'}}
 }
 document.addEventListener('DOMContentLoaded',()=>document.getElementById('analyzerDebriefModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerDebriefModal')closeAnalyzerDebrief()}));
+
+// V6.14.0 — Messagerie Team Manager vers le pilote en Focus Endurance.
+function updateAnalyzerDriverMessageCounter(){
+ const input=document.getElementById('analyzerDriverMessageInput');
+ const counter=document.getElementById('analyzerDriverMessageCounter');
+ const button=document.getElementById('analyzerDriverMessageSend');
+ const length=String(input?.value||'').length;
+ if(counter)counter.textContent=`${length}/25`;
+ if(button)button.disabled=!String(input?.value||'').trim();
+}
+async function sendAnalyzerDriverMessage(){
+ const input=document.getElementById('analyzerDriverMessageInput');
+ const urgent=document.getElementById('analyzerDriverMessageUrgent');
+ const button=document.getElementById('analyzerDriverMessageSend');
+ const status=document.getElementById('analyzerDriverMessageStatus');
+ const message=String(input?.value||'').trim();
+ if(!message)return;
+ if(button)button.disabled=true;
+ if(status){status.textContent='ENVOI…';status.className='analyzer-driver-message-status sending'}
+ try{
+  const response=await fetch('/api/driver-message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,urgent:Boolean(urgent?.checked)})});
+  const payload=await response.json().catch(()=>({}));
+  if(!response.ok||!payload.ok)throw new Error(payload.error||'Envoi impossible');
+  if(input)input.value='';if(urgent)urgent.checked=false;updateAnalyzerDriverMessageCounter();
+  if(status){status.textContent=payload.message?.urgent?'MESSAGE AFFICHÉ IMMÉDIATEMENT':'MESSAGE EN ATTENTE DU PROCHAIN PASSAGE';status.className='analyzer-driver-message-status success'}
+ }catch(error){
+  if(status){status.textContent=error.message||'ENVOI IMPOSSIBLE';status.className='analyzer-driver-message-status error'}
+ }finally{if(button)button.disabled=!String(input?.value||'').trim();setTimeout(()=>{if(status)status.textContent=''},5000)}
+}
+document.addEventListener('DOMContentLoaded',updateAnalyzerDriverMessageCounter);
+

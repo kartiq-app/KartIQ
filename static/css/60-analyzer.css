@@ -1114,7 +1114,7 @@ body.analyzer-debrief-open{overflow:hidden}
 .map-expand-button{display:none!important}
 
 
-/* Velocity V6.13.9 — titre HEAT MAP classique et Position/Chrono */
+/* Velocity V6.14.0 — titre HEAT MAP classique et Position/Chrono */
 /* Le groupe ne reçoit plus l'aplat orange prévu pour les anciens titres directs. */
 .analyzer-pit-simulator-title > .analyzer-heatmap-title-group{
   display:inline-flex!important;align-items:center!important;gap:9px!important;
@@ -1149,3 +1149,36 @@ body.analyzer-debrief-open{overflow:hidden}
   font-size:120%!important;line-height:1!important;font-variant-numeric:tabular-nums;
   white-space:nowrap;
 }
+
+/* V6.14.0 — colonne Conformité 70 % + messagerie pilote 30 %. */
+.analyzer-rules-message-stack{display:grid;grid-template-rows:minmax(0,7fr) minmax(0,3fr);gap:8px;min-width:0;min-height:150px;height:100%}
+.analyzer-rules-message-stack>.analyzer-hero-card{min-height:0;height:100%;box-sizing:border-box}
+.analyzer-rules-message-stack>.rules-card{padding:11px 12px;overflow:hidden}
+.analyzer-rules-message-stack>.rules-card .analyzer-card-label{margin-bottom:5px}
+.analyzer-rules-message-stack>.rules-card .rules-status{font-size:16px}
+.analyzer-rules-message-stack>.rules-card .rules-mini-grid{gap:5px;margin-top:7px}
+.analyzer-rules-message-stack>.rules-card .rules-mini-grid div{padding:5px 7px}
+.analyzer-rules-message-stack>.rules-card .rules-mini-grid span{font-size:7px}
+.analyzer-rules-message-stack>.rules-card .rules-mini-grid b{font-size:12px;margin-top:2px}
+.analyzer-driver-message-card{padding:7px 9px!important;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.analyzer-driver-message-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:6px;min-width:0}
+.analyzer-driver-message-icon{font-size:18px;line-height:1}
+.analyzer-driver-message-input-wrap{position:relative;min-width:0}
+.analyzer-driver-message-input-wrap input{width:100%;height:30px;box-sizing:border-box;border:1px solid #353d49;border-radius:6px;background:#05070b;color:#fff;padding:0 42px 0 8px;font-size:11px;outline:none}
+.analyzer-driver-message-input-wrap input:focus{border-color:#ff7a00}
+.analyzer-driver-message-input-wrap small{position:absolute;right:6px;top:50%;transform:translateY(-50%);color:#737d8d;font-size:8px;font-weight:800}
+#analyzerDriverMessageSend{height:30px;border:1px solid #ff7a00;border-radius:6px;background:#ff7a00;color:#080a0e;padding:0 9px;font-size:8px;font-weight:900;cursor:pointer}
+#analyzerDriverMessageSend:disabled{opacity:.38;cursor:not-allowed}
+.analyzer-driver-message-urgent{display:flex;align-items:center;gap:4px;color:#ff5b5b;font-size:8px;font-weight:900;white-space:nowrap;cursor:pointer}
+.analyzer-driver-message-urgent input{accent-color:#e3222b}
+.analyzer-driver-message-status{min-height:10px;margin-top:3px;font-size:7px;font-weight:900;letter-spacing:.03em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.analyzer-driver-message-status.success{color:#35d889}.analyzer-driver-message-status.error{color:#ff6262}.analyzer-driver-message-status.sending{color:#ff9b32}
+
+/* Message pilote : écran noir intégral pendant 15 secondes. */
+.endurance-driver-message-overlay{position:absolute;inset:0;z-index:120;display:none;align-items:center;justify-content:center;background:#000;padding:5vw;text-align:center}
+.endurance-driver-message-overlay.show{display:flex}
+.endurance-driver-message-text{max-width:94vw;color:#fff;font-family:var(--font-torque,Arial,sans-serif);font-size:clamp(46px,9vw,150px);font-weight:900;line-height:1.05;letter-spacing:.03em;text-transform:uppercase;overflow-wrap:anywhere}
+
+@media(max-width:1050px){.analyzer-rules-message-stack{grid-column:1/-1;min-height:210px}.rules-card{grid-column:auto!important}}
+@media(max-width:700px){.analyzer-rules-message-stack{grid-column:auto;min-height:220px}.analyzer-driver-message-row{grid-template-columns:auto minmax(0,1fr) auto}.analyzer-driver-message-urgent{grid-column:2/4;justify-content:flex-end}}
+

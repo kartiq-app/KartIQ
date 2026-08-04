@@ -1,3 +1,12 @@
+# V6.14.0 — Messagerie pilote
+
+- La carte Conformité réglementaire occupe 70 % de la colonne centrale.
+- Nouvelle carte de messagerie compacte sur les 30 % restants.
+- Message limité à 25 caractères, avec envoi normal au prochain passage sur la ligne.
+- Option URGENT pour affichage immédiat.
+- Affichage plein écran noir dans Focus Endurance pendant 15 secondes.
+- Synchronisation multi-appareils via l’état serveur de la session.
+
 # V6.13.9
 
 - Restauration du bouton **HEAT MAP** dans son format classique, sans aplat orange élargi.
