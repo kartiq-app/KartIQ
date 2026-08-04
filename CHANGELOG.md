@@ -1,9 +1,16 @@
-## 6.12.4
+## 6.12.5
+
+- HEAT MAP : `analyzerMapPoint()` utilise désormais `analyzerDriverPhase()` au lieu d’exiger en permanence une entrée MAP Apex.
+- Les impulsions Apex restent prioritaires ; en cas d’entrée MAP momentanément absente, la position est calculée avec les ancres `EN PISTE`.
+- Le marqueur n’est plus supprimé lors d’une trame Apex incomplète ; l’état `inPit` reste pris en compte lorsque l’entrée existe.
+- Version application et cache PWA synchronisés en 6.12.5.
+
+## 6.12.5
 
 - Correction de la disparition intermittente des marqueurs sur la HEAT MAP.
 - Conservation de la dernière position Apex valide lorsque `apex_row` ou le registre MAP devient brièvement indisponible entre deux mises à jour.
 - Le cache de position est vidé uniquement lorsque le live n'est plus actif ; une équipe absente de la grille ou aux stands reste gérée normalement.
-- Version application et cache PWA synchronisés en 6.12.4.
+- Version application et cache PWA synchronisés en 6.12.5.
 
 ## 6.12.3
 
