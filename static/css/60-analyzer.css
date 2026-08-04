@@ -1086,3 +1086,21 @@ body.analyzer-debrief-open{overflow:hidden}
 .map-focus-head,.map-focus-row{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(92px,.75fr) minmax(82px,.65fr);gap:8px;align-items:center;padding:7px 9px;border-bottom:1px solid #24282d}
 .map-focus-head{color:#9298a1;font-size:10px;font-weight:800}.map-focus-row{font-family:var(--font-driver);font-size:13px}.map-focus-row b{font-family:var(--font-time);text-align:right}.map-focus-row.followed{background:rgba(56,216,120,.12);color:#38d878}.map-focus-empty{padding:8px;color:#777}
 @media(max-width:900px){.analyzer-map-focus-main{grid-template-columns:1fr}.analyzer-map-focus-ranking{display:none}}
+
+
+/* Velocity V6.13.7 — Lisibilité équipe suivie et accès plein écran explicite */
+.analyzer-followed-performance-simple{gap:10px!important}
+.analyzer-followed-last-rank-simple{font-size:24px!important;color:#fff!important}
+.analyzer-followed-last-lap-simple{font-size:27px!important;color:#fff!important}
+.analyzer-followed-last-lap-simple.endurance-last-orange,
+.analyzer-followed-last-lap-simple.endurance-last-green,
+.analyzer-followed-last-lap-simple.endurance-last-purple{color:#fff!important}
+.pit-simulator-track{cursor:default!important;transition:none!important;box-shadow:none!important;filter:none!important}
+.pit-simulator-track:hover{filter:none!important;box-shadow:none!important}
+.map-stage{position:relative!important}
+.map-expand-button{position:absolute;left:8px;top:50%;z-index:12;transform:translateY(-50%);width:38px;height:38px;border:1px solid #4b535d;border-radius:7px;background:#0d1116;color:#fff;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.map-expand-button:hover{border-color:#f08a24;background:#171d24}
+.map-focus-head span:nth-child(2),.map-focus-head span:nth-child(3),
+.map-focus-row b:nth-child(2),.map-focus-row b:nth-child(3){text-align:center!important}
+.analyzer-map-focus-toolbar .map-control-menu{left:0!important;right:auto!important}
+@media(max-width:700px){.analyzer-followed-last-rank-simple{font-size:27px!important}.analyzer-followed-last-lap-simple{font-size:31.5px!important}.map-expand-button{left:4px;width:34px;height:34px;font-size:21px}}

@@ -148,7 +148,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:2,
-  appVersion:'6.13.6',
+  appVersion:'6.13.7',
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -205,7 +205,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.13.6',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:2,appVersion:'6.13.7',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -349,7 +349,7 @@ function analyzerRenderPitSimulator(){
  const host=document.getElementById('pitSimulatorTrack');if(!host)return;
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver),radar=analyzerMapRadarMarkup();
  const pitBase=`<g class="map-pitlane-centered"><text class="map-pitlane-label" x="135" y="132">PIT LANE</text><path class="map-pitlane-line" d="M0 158 H270"></path></g>`;
- if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<div class="map-stage"><div class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Circuit inactif">${radar}<text class="pit-simulator-center-title" x="135" y="145">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="163">Pas de course en cours</text></svg></div><div class="map-pitlane-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Pit lane inactive">${pitBase}</svg></div></div>`;return}
+ if(!analyzerApexRaceIsActive()){analyzerTrackAnimationAnchors.clear();host.innerHTML=`<div class="map-stage"><button class="map-expand-button" type="button" onclick="openAnalyzerMapFocus()" aria-label="Agrandir la Heat Map en plein écran" title="Agrandir en plein écran">⛶</button><div class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Circuit inactif">${radar}<text class="pit-simulator-center-title" x="135" y="145">MAP</text><text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="163">Pas de course en cours</text></svg></div><div class="map-pitlane-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Pit lane inactive">${pitBase}</svg></div></div>`;return}
  const paceData=analyzerMapPaceData(drivers),counts={fastest:0,excellent:0,good:0,medium:0,average:0,slow:0};for(const d of drivers){const c=paceData.map.get(d)?.category||'slow';counts[c]++}Object.entries(counts).forEach(([key,value])=>{const el=document.querySelector(`[data-map-count="${key}"]`);if(el)el.textContent=value});
  const top5=analyzerMapTop5Set(drivers),pitQueue=analyzerMapPitQueue(drivers),pitNames=new Set(pitQueue.map(x=>x.driver.driver));
  const visible=drivers.map(driver=>{const info=paceData.map.get(driver)||{category:'slow',delta:null};const point=analyzerMapPoint(driver,analyzerMapRings[info.category]);return {driver,info,point}}).filter(item=>item.point&&!pitNames.has(item.driver.driver)&&(analyzerMapPaceFilters.has(item.info.category)||item.driver.driver===state.followed_driver));
@@ -357,7 +357,7 @@ function analyzerRenderPitSimulator(){
  const dots=visible.map(({driver,info,point})=>{let p=point;if(simulation&&driver.driver!==simulation.followedName&&driver.status!=='pit')p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1,analyzerMapRings[info.category]);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0,analyzerMapRings[info.category]);const classes=['pit-simulator-dot','pace-'+info.category];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,info.category,top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,info.category,top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');const title=Number.isFinite(info.delta)?`${driver.driver} · +${info.delta.toFixed(3)} s`:driver.driver;return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><title>${analyzerEscape(title)}</title><circle r="${info.category==='fastest'?10.45:9.35}"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
  const pitDots=analyzerPitLaneDots(pitQueue,top5),projected=simulation?'<circle class="pit-simulator-projected" cx="135" cy="25" r="12.1"></circle>':'',followed=drivers.find(d=>d.driver===state.followed_driver)||null,centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(horizon):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
  const waiting=!visible.length?'<text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="184">En attente d’un passage Apex</text>':'';
- host.innerHTML=`<div class="map-stage"><div class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Radar de rythme synchronisé avec Apex Timing">${radar}${dots}${projected}<text class="pit-simulator-center-title" x="135" y="145">${centerTitle}</text><text class="pit-simulator-center-value" x="135" y="163">${centerValue}</text>${waiting}</svg></div><div class="map-pitlane-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Karts dans la pit lane">${pitBase}${pitDots}</svg></div></div>`;
+ host.innerHTML=`<div class="map-stage"><button class="map-expand-button" type="button" onclick="openAnalyzerMapFocus()" aria-label="Agrandir la Heat Map en plein écran" title="Agrandir en plein écran">⛶</button><div class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Radar de rythme synchronisé avec Apex Timing">${radar}${dots}${projected}<text class="pit-simulator-center-title" x="135" y="145">${centerTitle}</text><text class="pit-simulator-center-value" x="135" y="163">${centerValue}</text>${waiting}</svg></div><div class="map-pitlane-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Karts dans la pit lane">${pitBase}${pitDots}</svg></div></div>`;
  if(document.getElementById('analyzerMapFocus')?.classList.contains('show'))analyzerRenderMapFocus();
 }
 function analyzerPitReferenceLap(laps,pits){
@@ -819,8 +819,10 @@ function analyzerFollowedNeighbors(followed){
  // V6.11.6 : source unique avec le mode Focus Endurance.
  const ahead=typeof sprintDriverAhead==='function'?sprintDriverAhead(followed):null;
  const behind=typeof sprintDriverBehind==='function'?sprintDriverBehind(followed):null;
- const aheadText=ahead&&typeof sprintGapAhead==='function'?sprintGapAhead(followed):'—';
- const behindText=behind&&typeof sprintGapBehind==='function'?sprintGapBehind(followed):'—';
+ const lapDiffAhead=ahead?Math.max(0,(Number(ahead.laps)||0)-(Number(followed?.laps)||0)):0;
+ const lapDiffBehind=behind?Math.max(0,(Number(followed?.laps)||0)-(Number(behind.laps)||0)):0;
+ const aheadText=lapDiffAhead>=1?`-${lapDiffAhead} ${lapDiffAhead===1?'tour':'tours'}`:(ahead&&typeof sprintGapAhead==='function'?sprintGapAhead(followed):'—');
+ const behindText=lapDiffBehind>=1?`+${lapDiffBehind} ${lapDiffBehind===1?'tour':'tours'}`:(behind&&typeof sprintGapBehind==='function'?sprintGapBehind(followed):'—');
  return {
   ahead,behind,
   aheadValue:ahead?analyzerGapSeconds(aheadText):null,
@@ -1311,7 +1313,7 @@ document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSession
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
 
 
-/* Velocity V6.13.6 — Radar V6.11.2 restauré, Débrief conservé */
+/* Velocity V6.13.7 — Ajustements carte suivie et HEAT MAP */
 let analyzerDebriefBusy=false;
 let analyzerDebriefReport=null;
 function analyzerDebriefMedian(values){const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
