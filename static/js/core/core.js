@@ -72,7 +72,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'6.13.3'),
+  appVersion:String(state?.version||'6.13.4'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -120,7 +120,11 @@ function syncRemainingFromState(nextState){
    const serverAt=Number(nextState?.time_remaining_updated_at_ms);
    if(Number.isFinite(ms)&&ms>=0&&Number.isFinite(serverAt))candidate=Math.max(0,ms-Math.max(0,Date.now()-serverAt));
  }
- if(candidate===null)return;
+ if(candidate===null){
+   const directIsFresh=remainingCountdownDirectSyncAt>0&&(Date.now()-remainingCountdownDirectSyncAt)<45000;
+   if(!directIsFresh){remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownUsesHours=false;updateRemainingDisplay()}
+   return;
+ }
  const current=liveRemainingMilliseconds();
  // La trame WebSocket reçue directement dans ce navigateur est la source
  // prioritaire. L'état serveur sert au chargement initial ou en secours.

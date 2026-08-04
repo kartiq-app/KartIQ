@@ -424,18 +424,45 @@ class RaceStateService:
                         }
 
         session = snapshot.get("session", {})
-        end_at_ms = session.get("remaining_end_at_ms")
+        now_ms = int(time.time() * 1000)
+        updated_at_ms = session.get("remaining_updated_at_ms")
+        try:
+            countdown_is_fresh = bool(
+                updated_at_ms is not None
+                and now_ms - int(updated_at_ms) <= 45_000
+            )
+        except (TypeError, ValueError):
+            countdown_is_fresh = False
+
+        # Une ancienne grille mémorisée ne suffit pas à prouver qu'une course est
+        # encore active. Le compte à rebours n'est affiché que si Apex vient de le
+        # rafraîchir et si la grille contient au moins une donnée sportive réelle.
+        def _has_sporting_data(driver: dict) -> bool:
+            laps_raw = driver.get("laps")
+            try:
+                laps_value = int(laps_raw or 0)
+            except (TypeError, ValueError):
+                laps_value = 0
+            return bool(
+                driver.get("position") is not None
+                or laps_value > 0
+                or driver.get("last_lap")
+                or driver.get("best_lap")
+            )
+
+        has_active_grid = any(_has_sporting_data(d) for d in live_drivers)
+        end_at_ms = session.get("remaining_end_at_ms") if countdown_is_fresh and has_active_grid else None
         current_remaining_ms = None
         if end_at_ms is not None:
             try:
-                current_remaining_ms = max(0, int(end_at_ms) - int(time.time() * 1000))
+                current_remaining_ms = max(0, int(end_at_ms) - now_ms)
             except (TypeError, ValueError):
                 current_remaining_ms = None
-        if current_remaining_ms is None:
+        if current_remaining_ms is None and countdown_is_fresh and has_active_grid:
             current_remaining_ms = session.get("remaining_ms")
         self.state["time_remaining"] = self._format_remaining(current_remaining_ms)
         self.state["time_remaining_ms"] = current_remaining_ms
-        self.state["time_remaining_updated_at_ms"] = int(time.time() * 1000) if current_remaining_ms is not None else None
+        self.state["time_remaining_updated_at_ms"] = now_ms if current_remaining_ms is not None else None
         self.state["time_remaining_end_at_ms"] = end_at_ms
 
         # Apex ne fournit pas toujours un objectif de tours. Lorsque ce total est

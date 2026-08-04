@@ -154,10 +154,19 @@ class ProtocolEngine:
             "heuristic_schema": self._heuristic_schema_applied,
         }
         snap["mapping_status"] = "automatic_grid" if self.protocol == "html_grid" else "automatic_heuristic"
+        # Un compte à rebours Apex n'est valable que s'il a été rafraîchi récemment.
+        # Sans cette expiration, une ancienne session peut continuer à se décompter
+        # localement alors qu'aucune course n'est plus active sur la piste.
+        now_ms = int(time.time() * 1000)
+        countdown_fresh = bool(
+            self.remaining_updated_at_ms is not None
+            and now_ms - self.remaining_updated_at_ms <= 45_000
+        )
         snap["session"] = {
-            "remaining_ms": self.remaining_ms,
-            "remaining_updated_at_ms": self.remaining_updated_at_ms,
-            "remaining_end_at_ms": self.remaining_end_at_ms,
+            "remaining_ms": self.remaining_ms if countdown_fresh else None,
+            "remaining_updated_at_ms": self.remaining_updated_at_ms if countdown_fresh else None,
+            "remaining_end_at_ms": self.remaining_end_at_ms if countdown_fresh else None,
+            "countdown_fresh": countdown_fresh,
         }
         snap["comments"] = {
             "raw": self.comments_raw,

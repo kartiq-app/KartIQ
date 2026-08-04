@@ -1045,3 +1045,17 @@ body.analyzer-debrief-open{overflow:hidden}
 
 /* Velocity V6.12.3 — piste dans la carte équipe du débrief */
 .debrief-track{display:block;margin-top:8px;color:#9a9a9a;font-size:.78rem;font-weight:700;letter-spacing:.03em}
+
+
+/* Velocity V6.13.4 — HEAT MAP : radar gauche, pit lane droite, éléments +10 %. */
+.analyzer-pit-simulator-body,.pit-simulator-track,.map-stage{overflow:visible!important}
+.map-stage{display:grid!important;grid-template-columns:minmax(0,68%) minmax(0,32%)!important;gap:0!important;width:100%!important;height:292px!important;align-items:center!important}
+.map-radar-pane{grid-column:1!important;height:292px!important;overflow:visible!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.map-radar-pane svg{width:110%!important;max-width:none!important;height:292px!important;max-height:292px!important;overflow:visible!important}
+.map-pitlane-pane{grid-column:2!important;height:292px!important;min-width:0!important;padding:0!important;overflow:visible!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.map-pitlane-pane svg{width:100%!important;max-width:none!important;height:292px!important;max-height:292px!important;overflow:visible!important}
+.map-pitlane-label{font-size:20px!important;font-weight:900!important;text-anchor:middle!important}
+.map-pitlane-line{stroke-width:4px!important}
+.map-pitlane-pane .pit-simulator-dot circle{transform:none!important}
+.map-pitlane-pane .pit-simulator-dot text{font-size:1em!important}
+@media(max-width:760px){.map-stage{grid-template-columns:minmax(0,62%) minmax(0,38%)!important;height:300px!important}.map-radar-pane,.map-pitlane-pane{height:300px!important}.map-radar-pane svg,.map-pitlane-pane svg{height:300px!important;max-height:300px!important;width:100%!important}}
