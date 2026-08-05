@@ -1188,3 +1188,15 @@ body.analyzer-debrief-open{overflow:hidden}
 .analyzer-driver-message-urgent{font-size:9px!important;font-weight:950!important;min-height:30px;align-items:center!important}
 .analyzer-driver-message-urgent input{width:15px;height:15px;margin:0}
 @media(max-width:700px){.analyzer-driver-message-title{font-size:13px!important}.analyzer-driver-message-urgent{font-size:8px!important}.analyzer-driver-message-row{grid-template-columns:minmax(0,1fr) auto auto!important}}
+
+/* Velocity V7.2 — synchronisation Analyzer ↔ Spotter */
+.analyzer-spotter-sync{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}
+.analyzer-spotter-kart{position:relative;min-width:126px;min-height:88px;border-radius:10px;padding:10px;display:flex;flex-direction:column;justify-content:center;gap:5px;color:#fff;border:1px solid rgba(255,255,255,.14)}
+.analyzer-spotter-kart.available{background:linear-gradient(135deg,#0a6d39,#074a29)}
+.analyzer-spotter-kart.reserved{background:linear-gradient(135deg,#b41221,#650a12)}
+.analyzer-spotter-kart.maintenance{background:linear-gradient(135deg,#b96b08,#684006)}
+.analyzer-spotter-kart strong{font-family:'F1 Regular',Arial,sans-serif;font-size:12px;line-height:1.15}
+.analyzer-spotter-kart small{font-size:9px;color:rgba(255,255,255,.78)}
+.analyzer-spotter-kart b{font-size:9px;font-weight:800}
+.analyzer-spotter-position{position:absolute;right:7px;top:6px;font-size:10px;font-weight:900;opacity:.7}
+.analyzer-spotter-maintenance-title{display:flex;align-items:center;padding:0 6px;font-family:'F1 Regular',Arial,sans-serif;font-size:10px;color:#f59e0b}

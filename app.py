@@ -69,6 +69,7 @@ STATE = {
     "traffic_recording": False,
     "traffic_recording_started_at": None,
     "driver_message": None,
+    "spotter": {"configured": False, "updated_at_ms": None, "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live"},
 }
 
 
@@ -79,6 +80,7 @@ WEATHER_CACHE = {}
 WEATHER_LOCATION_CACHE = {}
 WEATHER_LOCK = threading.Lock()
 DRIVER_MESSAGE_LOCK = threading.Lock()
+SPOTTER_LOCK = threading.Lock()
 WEATHER_TTL_SECONDS = 300
 WEATHER_LOCATION_TTL_SECONDS = 86400
 
@@ -595,6 +597,8 @@ def payload():
                 STATE["driver_message"] = None
                 message = None
         data["driver_message"] = deepcopy(message) if message else None
+    with SPOTTER_LOCK:
+        data["spotter"] = deepcopy(STATE.get("spotter") or {})
     return data
 
 
@@ -670,6 +674,27 @@ def weather():
 @app.get("/api/state")
 def get_state():
     return jsonify(payload())
+
+
+@app.post("/api/spotter-state")
+def update_spotter_state():
+    body = request.get_json(force=True, silent=True) or {}
+    snapshot = body.get("spotter")
+    if not isinstance(snapshot, dict):
+        return jsonify(ok=False, error="État Spotter invalide"), 400
+    allowed = {"configured", "mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "free_started_at", "pit_ins", "pit_outs", "recalibrating"}
+    clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
+    clean["updated_at_ms"] = int(time.time() * 1000)
+    clean["circuit_id"] = str(STATE.get("circuit_id") or "")
+    with SPOTTER_LOCK:
+        STATE["spotter"] = clean
+    return jsonify(ok=True, updated_at_ms=clean["updated_at_ms"])
+
+
+@app.get("/api/spotter-state")
+def get_spotter_state():
+    with SPOTTER_LOCK:
+        return jsonify(ok=True, spotter=deepcopy(STATE.get("spotter") or {}))
 
 
 @app.post("/api/mode")

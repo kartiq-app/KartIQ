@@ -1,6 +1,6 @@
-/* Velocity V7.1.10 — Configuration Spotter et messagerie pilote */
+/* Velocity V7.2.0 — Connexion Velocity ↔ Spotter */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.1.10';
+const SPOTTER_APP_RELEASE='7.2.0';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -61,8 +61,24 @@ function loadSpotterFoundation(){
  saveSpotterFoundation();
  renderSpotterFoundation();
 }
+let spotterSyncTimer=null;
+function spotterSharedSnapshot(){
+ const clone=value=>JSON.parse(JSON.stringify(value??null));
+ return {
+  configured:Boolean(spotterState.configured),
+  mode:spotterState.recalibrating?'recalibrating':(spotterState.freeMode?'auto':'live'),
+  queue:clone(spotterState.queue||[]),maintenance:clone(spotterState.maintenance||[]),incoming:clone(spotterState.incoming||[]),
+  assignments:clone(spotterState.assignments||{}),movement_log:clone((spotterState.movementLog||[]).slice(0,40)),
+  free_started_at:spotterState.freeStartedAt||null,pit_ins:Number(spotterState.freePitIns)||0,pit_outs:Number(spotterState.freePitOuts)||0,recalibrating:Boolean(spotterState.recalibrating)
+ };
+}
+async function spotterPushSharedState(){
+ try{await fetch('/api/spotter-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({spotter:spotterSharedSnapshot()})})}catch(error){console.warn('[Spotter] Synchronisation serveur impossible',error)}
+}
+function spotterScheduleSharedSync(){clearTimeout(spotterSyncTimer);spotterSyncTimer=setTimeout(spotterPushSharedState,80)}
 function saveSpotterFoundation(){
  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
+ spotterScheduleSharedSync();
 }
 function openSpotterSetup(){spotterState.configured=false;saveSpotterFoundation();renderSpotterFoundation('mode')}
 function setSpotterMode(mode){if(Number(mode)!==1)return;spotterState.mode=1;saveSpotterFoundation();renderSpotterFoundation('queue')}
@@ -170,6 +186,18 @@ function spotterProcessPitOut(team,{source='apex'}={}){
  if(spotterState.freeMode){spotterState.freePitOuts+=1;spotterState.freeNeedsRecalibration=true;}
  spotterLogMovement('pit_out',{team:key,kv:assigned.kv,source,estimated:Boolean(spotterState.freeMode||assigned.estimated)});saveSpotterFoundation();renderSpotterFoundation('live');return true;
 }
+function spotterRefreshVelocityMetrics(){
+ let changed=false;
+ Object.entries(spotterState.assignments||{}).forEach(([team,item])=>{
+  if(!item||item.status!=='track')return;
+  const driver=spotterFindDriver(team);if(!driver)return;
+  const metrics=spotterMetricsForDriver(driver);
+  if(metrics.score!==null&&metrics.score!==item.score){item.score=metrics.score;changed=true}
+  if(metrics.confidence!==null&&metrics.confidence!==item.confidence){item.confidence=metrics.confidence;changed=true}
+  item.apexKart=String(driver.apex||driver.kart||item.apexKart||'—');item.currentTeam=team;item.lastTeam=team;
+ });
+ return changed;
+}
 function spotterMonitorApex(){
  if(!spotterState.configured||spotterState.recalibrating)return;
  const drivers=(window.state?.drivers||[]).filter(driver=>spotterDriverKey(driver));
@@ -178,7 +206,7 @@ function spotterMonitorApex(){
   drivers.forEach(driver=>{spotterState.lastDriverStatus[spotterDriverKey(driver)]=String(driver.status||'unknown').toLowerCase()});
   spotterState.monitorPrimed=true;saveSpotterFoundation();return;
  }
- let changed=false;
+ let changed=spotterRefreshVelocityMetrics();
  drivers.forEach(driver=>{
   const team=spotterDriverKey(driver),status=String(driver.status||'unknown').toLowerCase(),previous=spotterState.lastDriverStatus[team];
   if(previous&&previous!=='pit'&&status==='pit')changed=spotterAddIncoming(team,driver,{source:'apex'})||changed;
@@ -323,4 +351,4 @@ function spotterMaintenanceCard(item){
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750)});
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterRefreshVelocityMetrics();spotterPushSharedState()}},2000)});

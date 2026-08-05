@@ -925,11 +925,47 @@ function renderAnalyzer(){
   const stopsValue=isVirtual?`${analyzerEscape(d.pit_stops??0)}${virtual.missing?`<small class="virtual-stop-add">+${virtual.missing} virtuel${virtual.missing>1?'s':''}</small>`:''}`:analyzerEscape(d.pit_stops??'—');
   const gapValue=isVirtual?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):analyzerEscape(d.gap);
   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Moyenne ${virtual.pitAverage.samples||0} arrêt(s)">+${analyzerFormatDuration(virtual.extra)}${virtual.pitAverage.estimated?' estimé':''}</small>`:'';
-  return `<tr class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td>${analyzerEscape(x.history.virtualKart)}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
+  return `<tr class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}" onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerSpotterStatusLabel(analyzerSpotterAssignmentForTeam(d.driver)))}">${analyzerEscape(analyzerSpotterKvLabel(d.driver,x.history.virtualKart))}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
  }).join('');
  analyzerRenderPitSimulator();
  renderAnalyzerQueueAdvice();
+ analyzerRenderSpotterSync();
 }
+
+// V7.2 — état partagé par le module Spotter. Velocity reste l'unique source
+// des scores et de la confiance ; Spotter partage uniquement le KV et son état FIFO.
+function analyzerSpotterState(){return state?.spotter&&typeof state.spotter==='object'?state.spotter:null}
+function analyzerSpotterAssignmentForTeam(team){
+ const spotter=analyzerSpotterState();if(!spotter?.configured)return null;
+ const key=String(team||'');
+ const direct=spotter.assignments?.[key];if(direct)return {...direct,spotterStatus:direct.status||'track'};
+ const reserved=(spotter.queue||[]).find(item=>item?.status==='reserved'&&item?.reservedTeam===key);
+ return reserved?{...reserved,spotterStatus:'reserved'}:null;
+}
+function analyzerSpotterKvLabel(team,fallback='—'){
+ const item=analyzerSpotterAssignmentForTeam(team);return item?.kv||fallback;
+}
+function analyzerSpotterStatusLabel(item){
+ const status=item?.spotterStatus||item?.status;
+ return status==='reserved'?'ATTRIBUÉ':status==='maintenance'?'MAINTENANCE':status==='available'?'DISPONIBLE':status==='track'?'EN PISTE':'—';
+}
+function analyzerRenderSpotterSync(){
+ const spotter=analyzerSpotterState();const root=document.getElementById('kartQueues');if(!root)return;
+ if(!spotter?.configured)return;
+ const title=document.getElementById('kartQueuesTitle');if(title)title.textContent='SPOTTER — FILE FIFO';
+ const subtitle=document.querySelector('.analyzer-queue-subtitle');if(subtitle)subtitle.textContent=`Synchronisé en temps réel · ${spotter.mode==='auto'?'suivi estimé':spotter.mode==='recalibrating'?'recalage en cours':'suivi confirmé'}`;
+ const control=document.querySelector('.queue-count-control');if(control)control.style.display='none';
+ const actions=document.querySelector('.queue-actions');if(actions)actions.style.display='none';
+ const cards=(spotter.queue||[]).map((item,index)=>{
+  const reserved=item.status==='reserved';const origin=item.lastTeam&&item.lastTeam!=='Initialisation'?item.lastTeam:`Kart ${item.apexKart||'—'}`;
+  const name=reserved?item.reservedTeam:origin;const status=reserved?'ATTRIBUÉ':'DISPONIBLE';
+  return `<div class="analyzer-spotter-kart ${reserved?'reserved':'available'}"><span class="analyzer-spotter-position">${index+1}</span><strong>${analyzerEscape(name||'—')}</strong><small>${analyzerEscape(item.kv||'—')} · ${status}</small><b>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</b></div>`;
+ }).join('');
+ const maintenance=(spotter.maintenance||[]).map(item=>`<div class="analyzer-spotter-kart maintenance"><strong>${analyzerEscape(item.lastTeam||item.apexKart||'—')}</strong><small>${analyzerEscape(item.kv||'—')} · MAINTENANCE</small><b>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</b></div>`).join('');
+ root.innerHTML=`<div class="analyzer-spotter-sync">${cards||'<div class="analyzer-empty">File Spotter vide.</div>'}${maintenance?`<div class="analyzer-spotter-maintenance-title">MAINTENANCE</div>${maintenance}`:''}</div>`;
+ const advice=document.getElementById('analyzerQueueAdvice');if(advice){const first=(spotter.queue||[]).find(item=>item.status==='available');advice.textContent=first?`${first.lastTeam&&first.lastTeam!=='Initialisation'?first.lastTeam:'Kart '+(first.apexKart||'—')} · ${first.kv} · Score ${first.score??'—'}`:'Aucun kart disponible';}
+}
+
 function renderAnalyzerQueueAdvice(){
  const el=document.getElementById('analyzerQueueAdvice');if(!el)return;
  const first=analyzerQueueCandidates().filter(x=>x.index===0);

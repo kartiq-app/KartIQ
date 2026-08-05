@@ -1,3 +1,10 @@
+# Velocity V7.2.0 — Connexion Velocity ↔ Spotter
+
+- Synchronisation serveur de la file FIFO entre Spotter et Analyzer.
+- Score et confiance affichés dans Spotter depuis le moteur Velocity existant, sans nouvel algorithme.
+- Dernière équipe utilisatrice et identifiant KV partagés.
+- Analyzer affiche l’ordre, la disponibilité, les attributions et la maintenance en temps réel.
+
 # Velocity V7.1.10 — Configuration Spotter et messagerie pilote
 
 - À la première ouverture du Spotter après chaque nouvelle version, le menu de configuration est affiché avant le lancement de la session.
