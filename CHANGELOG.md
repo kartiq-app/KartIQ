@@ -1,3 +1,17 @@
+# V7.0.0 — Spotter Foundation
+
+- Ajout du mode **SPOTTER** sur la Home et dans la navigation.
+- Nouvelle interface portrait dédiée au Quick Change.
+- Écran de sélection du nombre de files : 1 file active, 2 et 3 files annoncées comme prochaines évolutions.
+- Initialisation manuelle des karts présents dans la file au départ.
+- Attribution automatique des identifiants KV01, KV02, KV03, etc.
+- Représentation verticale de la file dans le sens de la sortie.
+- Cartes vertes pour les karts disponibles.
+- Sections réservées aux Karts entrants et à la Maintenance.
+- Persistance locale de la configuration Spotter.
+- Boutons Modifier la file et Réinitialiser.
+- Cette version Foundation ne déclenche encore aucune attribution PIT IN/PIT OUT ; le moteur FIFO sera ajouté en V7.1.
+
 # V6.14.0 — Messagerie pilote
 
 - La carte Conformité réglementaire occupe 70 % de la colonne centrale.

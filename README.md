@@ -1,3 +1,7 @@
+# Velocity V7.0.0 — Spotter Foundation
+
+Cette version ajoute la fondation portrait du module Spotter Quick Change à une file FIFO.
+
 # Velocity V6.13.6
 
 ## Diagnostic du décodeur Apex

@@ -346,7 +346,7 @@ function connectApexBrowser(force=false){
   setTimeout(()=>{if(connectionToken===apexBrowserConnectionToken&&state?.circuit_id===circuit.id)connectApexBrowser(false)},5000);
  });
 }
-function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
+function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer','current-spotter');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
 function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}
 function showMode(mode){
  if(mode!=='home'&&!state?.circuit_id){
@@ -362,7 +362,7 @@ function showMode(mode){
  // un clone de Qualification pour le dashboard, mais son bouton Focus ouvre
  // le Focus Sprint dédié à Endurance.
  const screen=document.getElementById(mode);
- screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode})
+ screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home'&&mode!=='spotter')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode})
 }
 
 let sprintFocusWakeLock=null;

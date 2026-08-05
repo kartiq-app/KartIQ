@@ -9,11 +9,11 @@
 <meta name="apple-mobile-web-app-title" content="Velocity">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
-<title>Velocity V{{ app_version }} — Architecture 4 modes</title>
+<title>Velocity V{{ app_version }} — Architecture 5 modes</title>
 <link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
 </head>
 <body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="analyzer" onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleKartIQFullscreen()" title="Plein écran" aria-label="Afficher KartIQ en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="analyzer" onclick="showMode('analyzer')">Analyzer</button><button class="mode-btn" data-mode="spotter" onclick="showMode('spotter')">Spotter</button></div><div class="meta"><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitKartIQFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -61,6 +61,13 @@
           <span class="race-mode-label">Analyzer</span>
           <span class="race-chevron">›</span>
         </button>
+        <button class="race-mode-card" data-home-mode="spotter" onclick="showMode('spotter')" aria-label="Ouvrir le mode Spotter">
+          <span class="race-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><path d="M18 10h28v44H18z"/><path d="M24 18h16M24 26h16M24 34h10"/><circle cx="39" cy="45" r="6"/><path d="M39 42v6M36 45h6"/></svg>
+          </span>
+          <span class="race-mode-label">Spotter</span>
+          <span class="race-chevron">›</span>
+        </button>
       </div>
 
       <div class="powered-by">
@@ -71,6 +78,9 @@
     </div>
   </div>
 </section>
+
+
+<section id="spotter" class="screen spotter-screen" aria-label="Spotter Quick Change"><div id="spotterApp"></div></section>
 
 <section id="qualification" class="screen"><div class="qual-wrap"><div class="qual-top"><section class="panel qual-strip"><button class="inline-home-btn qual-menu-cell" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><div class="qual-cell position-cell"><div class="hero-position" id="qPos">—</div><div class="hero-name" id="qName">—</div></div><div class="qual-cell qual-delta-focus-cell"><button class="qual-focus-launch" type="button" onclick="openQualificationFocus()" aria-label="Ouvrir le mode Focus"><span class="qual-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg></span><span>FOCUS</span></button><div class="qual-delta-content"><div class="qual-delta" id="qDelta">—</div><div class="gap-with" id="qGapWith">vs —</div></div></div><div class="qual-cell landscape-session-clock"><strong class="landscape-clock-value landscape-clock-time" id="qRemaining">—</strong><strong class="landscape-clock-value landscape-clock-laps" id="qLapsRemaining">—</strong></div></section></div><section class="panel qual-table-wrap"><table><thead><tr id="qualifHead"><th>POS</th><th class="optional-kart-head">KART</th><th>PILOTE</th><th>DERNIER</th><th>MEILLEUR</th><th>ÉCART</th></tr></thead><tbody id="qualifTable"></tbody></table></section></div></section>
 
@@ -383,4 +393,4 @@
 <div class="overlay" id="genericOverlay" onclick="clearAlert()"><div class="generic-box"><div class="label" id="alertTitle">ALERTE</div><h1 id="alertLine1">—</h1><div class="line2" id="alertLine2">—</div></div></div>
 <div class="overlay" id="top8PitOverlay"><div class="top8-alert-box"><div class="top8-alert-title">🚨 ALERTE</div><div class="top8-alert-team" id="top8AlertTeam">—</div><div class="top8-alert-message">vient d'entrer aux stands</div><div class="top8-alert-position-label">Position</div><div class="top8-alert-position" id="top8AlertPosition">P— / Top 8</div><button class="top8-alert-close" onclick="clearTop8Alert()">FERMER</button></div></div>
 <div id="installHelp" class="install-help" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle"><div class="install-help-card"><h2 id="installHelpTitle">KartIQ en plein écran sur iPhone</h2><p>Safari ne permet pas toujours d’activer le vrai plein écran depuis une page web. Pour obtenir l’affichage sans barre d’adresse :</p><p><strong>1.</strong> Appuie sur l’icône Partager de Safari.<br><strong>2.</strong> Choisis « Sur l’écran d’accueil ».<br><strong>3.</strong> Ouvre ensuite KartIQ depuis sa nouvelle icône.</p><button onclick="closeInstallHelp()">J’ai compris</button></div></div>
-<script src="/static/js/core/core.js?v={{ app_version }}"></script><script src="/static/js/sprint/sprint.js?v={{ app_version }}"></script><script src="/static/js/qualification/qualification.js?v={{ app_version }}"></script><script src="/static/js/ui/race-ui.js?v={{ app_version }}"></script><script src="/static/js/endurance/queues.js?v={{ app_version }}"></script><script src="/static/js/endurance/analyzer.js?v={{ app_version }}"></script><script src="/static/js/ui/session-clock-fit.js?v={{ app_version }}"></script><script src="/static/js/core/bootstrap.js?v={{ app_version }}"></script></body></html>
+<script src="/static/js/core/core.js?v={{ app_version }}"></script><script src="/static/js/spotter/spotter.js?v={{ app_version }}"></script><script src="/static/js/sprint/sprint.js?v={{ app_version }}"></script><script src="/static/js/qualification/qualification.js?v={{ app_version }}"></script><script src="/static/js/ui/race-ui.js?v={{ app_version }}"></script><script src="/static/js/endurance/queues.js?v={{ app_version }}"></script><script src="/static/js/endurance/analyzer.js?v={{ app_version }}"></script><script src="/static/js/ui/session-clock-fit.js?v={{ app_version }}"></script><script src="/static/js/core/bootstrap.js?v={{ app_version }}"></script></body></html>
