@@ -1,4 +1,4 @@
-/* Velocity V7.1.4 — Bandeau sortie endurance intégré */
+/* Velocity V7.1.5 — Filet endurance et barre Spotter compacte */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
 const spotterState={
  version:4,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
@@ -234,7 +234,7 @@ function renderSpotterFoundation(forceStep){
  const root=document.getElementById('spotterApp');if(!root)return;
  const step=forceStep||(spotterState.configured?'live':'mode');
  root.innerHTML=`<div class="spotter-shell">
-  <div class="spotter-exit-band"><div class="spotter-exit-tools"><button class="spotter-back" type="button" onclick="showHome()" aria-label="Retour accueil">☰</button><button class="spotter-icon-btn" type="button" onclick="openSpotterSetup()" aria-label="Configurer">⚙</button></div><div class="spotter-exit-direction"><span>SORTIE</span><b aria-hidden="true">▲</b></div></div>
+  <div class="spotter-top-accent" aria-hidden="true"></div><div class="spotter-command-bar"><button class="spotter-back" type="button" onclick="showHome()" aria-label="Retour accueil">☰</button><div class="spotter-command-title">SORTIE</div><button class="spotter-icon-btn" type="button" onclick="openSpotterSetup()" aria-label="Configurer">⚙</button></div>
   <div class="spotter-step ${step==='mode'?'active':''}" id="spotterModeStep">
    <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option active" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Disponible</small></button><button class="spotter-mode-option" type="button" disabled><strong>2</strong><span>Files</span><small>Bientôt</small></button><button class="spotter-mode-option" type="button" disabled><strong>3</strong><span>Files</span><small>Bientôt</small></button></div></div></section>
   </div>

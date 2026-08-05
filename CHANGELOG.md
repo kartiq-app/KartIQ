@@ -1,3 +1,11 @@
+# V7.1.5 — Filet Endurance et barre Spotter compacte
+
+- suppression complète du bandeau orange entourant la zone SORTIE ;
+- ajout d’un filet orange fin en haut, identique au repère du mode Endurance portrait ;
+- nouvelle barre supérieure sur une seule ligne : menu à gauche, SORTIE centré, paramètres à droite ;
+- suppression de la flèche et récupération de hauteur utile pour la file FIFO ;
+- moteur FIFO, maintenance et glisser-déposer conservés sans modification.
+
 # V7.1.4 — Bandeau SORTIE Spotter
 
 - intégration de « SORTIE » et de la flèche directement dans le bandeau orange ;
