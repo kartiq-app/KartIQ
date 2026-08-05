@@ -1364,3 +1364,94 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
   body.current-spotter .spotter-command-desktop{display:flex!important}
   body.current-spotter .spotter-footer-actions{display:none!important}
 }
+
+
+/* Velocity V7.2.20 — centrage Desktop et numéro d'équipe */
+.spotter-team-number{
+  display:block;
+  width:100%;
+  color:#ff8a1f;
+  font-family:'F1 Torque',Arial,sans-serif;
+  font-size:clamp(14px,4.2vw,22px);
+  font-weight:900;
+  line-height:1;
+  text-align:center;
+}
+
+@media(min-width:900px){
+  /* Barre de commandes centrée dans la page */
+  body.current-spotter .spotter-command-desktop{
+    width:max-content!important;
+    max-width:calc(100vw - 40px)!important;
+    margin:10px auto!important;
+    justify-content:center!important;
+  }
+
+  /* Ensemble Files + colonne Entrants/Maintenance centré */
+  body.current-spotter .spotter-live-desktop-layout{
+    display:grid!important;
+    grid-template-columns:496px minmax(390px,480px)!important;
+    gap:14px!important;
+    width:max-content!important;
+    max-width:calc(100vw - 32px)!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    justify-content:center!important;
+    align-items:start!important;
+  }
+
+  /* La grande carte des files épouse exactement la largeur des trois files.
+     Les cartes de kart internes conservent leur taille actuelle. */
+  body.current-spotter .spotter-desktop-queues{
+    width:496px!important;
+    min-width:496px!important;
+    max-width:496px!important;
+  }
+  body.current-spotter .spotter-desktop-queues .spotter-queue-panel{
+    width:496px!important;
+    min-width:496px!important;
+    max-width:496px!important;
+    box-sizing:border-box!important;
+  }
+  body.current-spotter .spotter-desktop-queues .spotter-queue-panel > .spotter-card-body{
+    width:100%!important;
+    padding-left:12px!important;
+    padding-right:12px!important;
+    box-sizing:border-box!important;
+  }
+  body.current-spotter .spotter-desktop-queues .spotter-queues-layout,
+  body.current-spotter .spotter-desktop-queues .spotter-queues-layout.queues-1,
+  body.current-spotter .spotter-desktop-queues .spotter-queues-layout.queues-2,
+  body.current-spotter .spotter-desktop-queues .spotter-queues-layout.queues-3{
+    width:100%!important;
+    max-width:100%!important;
+    justify-content:center!important;
+    gap:14px!important;
+  }
+
+  /* Colonne droite : Maintenance reste toujours sous Karts entrants */
+  body.current-spotter .spotter-desktop-sidebar{
+    width:100%!important;
+    min-width:0!important;
+    max-width:480px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:10px!important;
+    align-items:stretch!important;
+  }
+  body.current-spotter .spotter-desktop-sidebar .spotter-incoming-panel{order:1!important}
+  body.current-spotter .spotter-desktop-sidebar .spotter-maintenance{order:2!important}
+
+  /* Numéro d'équipe au-dessus du nom dans les cartes entrantes */
+  body.current-spotter .spotter-incoming-info .spotter-team-number{
+    font-size:17px!important;
+    margin-bottom:1px!important;
+  }
+}
+
+@media(min-width:900px) and (max-width:1030px){
+  body.current-spotter .spotter-live-desktop-layout{
+    grid-template-columns:496px minmax(330px,1fr)!important;
+    width:calc(100vw - 24px)!important;
+  }
+}

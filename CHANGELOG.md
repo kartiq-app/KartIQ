@@ -1,5 +1,13 @@
 # Changelog
 
+## V7.2.20 — Centrage Desktop Spotter
+
+- La carte des files est réduite à la largeur exacte des trois files, sans modifier la taille des cartes de kart.
+- L’ensemble Files + Karts entrants + Maintenance est centré dans la page Desktop.
+- La barre Live | ↩ | Préparer la zone Quick Change | Auto | Modifier la file | Réinitialiser est centrée.
+- La carte Maintenance reste systématiquement sous la carte Karts entrants.
+- Le numéro de l’équipe est affiché au-dessus du nom de l’équipe dans les cartes de kart entrant, sur Desktop et smartphone.
+
 ## V7.2.19 — Correction Desktop Spotter
 
 - Le titre Spotter retrouve exactement le style orange, le corps et la hauteur du libellé Endurance dans Analyzer.

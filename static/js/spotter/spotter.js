@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.19';
+const SPOTTER_APP_RELEASE='7.2.20';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -541,6 +541,13 @@ function spotterQueueCard(item){
  return `<div class="spotter-queue-card available spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}"><button class="spotter-drag-handle" type="button" aria-label="Déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','queue')">⋮⋮</button><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div></div>`;
 }
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
+function spotterTeamNumber(item){
+ const driver=spotterFindDriver(item?.team||item?.name);
+ const raw=item?.teamNumber??item?.team_number??item?.number??item?.num??driver?.teamNumber??driver?.team_number??driver?.number??driver?.num??driver?.bib;
+ if(raw!==undefined&&raw!==null&&String(raw).trim())return String(raw).trim();
+ const match=String(item?.team||item?.name||'').trim().match(/^(?:TEAM|ÉQUIPE)?\s*#?([0-9]{1,4})\b/i);
+ return match?match[1]:'—';
+}
 function updateSpotterLiveTimers(){document.querySelectorAll('[data-spotter-pit-start]').forEach(node=>{node.textContent=spotterFormatDuration(Date.now()-Number(node.dataset.spotterPitStart||Date.now()))})}
 function spotterIncomingCard(item){
  const selected=Number(spotterState.incomingQueueSelections[item.id])||0;
@@ -551,6 +558,7 @@ function spotterIncomingCard(item){
  }).join('');
  return `<div class="spotter-incoming-card">
   <div class="spotter-incoming-info">
+   <span class="spotter-team-number">${spotterEscape(spotterTeamNumber(item))}</span>
    <strong>${spotterEscape(spotterDisplayName(item.name||item.team))}</strong>
    <span class="spotter-kv-value">${spotterEscape(item.returnedKv||'—')}</span>
    <span class="spotter-score">Score : ${item.score??'—'}</span>

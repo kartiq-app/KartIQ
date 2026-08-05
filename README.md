@@ -1,4 +1,4 @@
-# Velocity V7.2.19 — Correction Desktop Spotter
+# Velocity V7.2.20 — Centrage Desktop Spotter
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 
