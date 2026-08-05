@@ -1,4 +1,4 @@
-## V7.1.8 — Recalage FIFO stable
+## V7.1.9 — Mode Auto et messagerie pilote
 
 - Le glisser-déposer conserve désormais l’écran **RECALER LA FILE**.
 - Le suivi Apex est suspendu durant le recalage.

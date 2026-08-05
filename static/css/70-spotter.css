@@ -173,7 +173,7 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
 .spotter-queue-panel{margin-top:0!important}
 @media(min-width:700px){body.current-spotter .spotter-screen{padding-top:10px!important}}
 
-/* Velocity V7.1.7 — barre LIVE/FREE et mode FREE estimé */
+/* Velocity V7.1.9 — barre LIVE/AUTO et mode AUTO estimé */
 .spotter-command-bar.live-mode{grid-template-columns:40px minmax(42px,.72fr) minmax(72px,1fr) minmax(42px,.72fr) 40px;gap:5px}
 .spotter-live-state,.spotter-free-button{font-family:Arial,sans-serif;font-size:11px;font-weight:900;letter-spacing:.06em;text-align:center}
 .spotter-live-state{color:#41d17c}
@@ -193,7 +193,7 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
 #spotterRecalibrateStep.active{display:flex;flex-direction:column;gap:7px}
 @media(max-width:370px){.spotter-command-bar.live-mode{grid-template-columns:38px 38px minmax(68px,1fr) 38px 38px;gap:3px}.spotter-live-state,.spotter-free-button{font-size:10px}.spotter-command-title{font-size:12px}}
 
-/* Velocity V7.1.8 — recalage stable et validation visible */
+/* Velocity V7.1.9 — mode Auto et recalage stable */
 #spotterRecalibrateStep .spotter-confirm-recalibration{
   position:sticky;
   top:calc(env(safe-area-inset-top, 0px) + 54px);
