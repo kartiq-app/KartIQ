@@ -32,6 +32,7 @@ class ProtocolEngine:
         self.remaining_ms: int | None = None
         self.remaining_updated_at_ms: int | None = None
         self.remaining_end_at_ms: int | None = None
+        self.total_laps: int | None = None
         self.comments_raw: str = ""
         self.comments_updated_at_ms: int | None = None
 
@@ -44,6 +45,19 @@ class ProtocolEngine:
             self.remaining_ms = max(0, int(countdowns[-1]))
             self.remaining_updated_at_ms = received_at_ms
             self.remaining_end_at_ms = received_at_ms + self.remaining_ms
+        # Les courses au nombre de tours publient selon les configurations Apex
+        # une cible explicite sous plusieurs noms dynamiques. On ne retient que
+        # ces clés structurées afin de ne pas confondre la cible avec le compteur
+        # de tours individuel présent dans la grille.
+        lap_targets = re.findall(
+            r"(?:^|[\r\n\s])(?:dyn1\|)?(?:total_laps|totallaps|max_laps|maxlaps|laps_total|lapstotal|nb_laps|nblaps|nb_tours|nbtours|tours_total|tourstotal|lapcount)\|(\d+)",
+            frame,
+            re.IGNORECASE,
+        )
+        if lap_targets:
+            target = int(lap_targets[-1])
+            if target > 0:
+                self.total_laps = target
         # La zone « Commentaires » Apex est publiée via com||... .
         # On conserve uniquement une valeur non vide afin qu'une trame partielle
         # ne supprime pas accidentellement la dernière information reçue.
@@ -167,6 +181,7 @@ class ProtocolEngine:
             "remaining_updated_at_ms": self.remaining_updated_at_ms if countdown_fresh else None,
             "remaining_end_at_ms": self.remaining_end_at_ms if countdown_fresh else None,
             "countdown_fresh": countdown_fresh,
+            "total_laps": self.total_laps,
         }
         snap["comments"] = {
             "raw": self.comments_raw,

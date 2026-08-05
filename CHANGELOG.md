@@ -1,3 +1,10 @@
+# Velocity V7.2.2 — Courses au nombre de tours
+
+- détection d'une cible de tours Apex explicite ;
+- affichage prioritaire sous la forme `7/8 tours` ;
+- suppression de l'ancien temps restant lorsqu'une course est définie en tours ;
+- correction appliquée aux écrans Sprint, Qualifications, Endurance, Focus et Analyzer.
+
 # Velocity V7.2.1 — AUTO gris et messagerie agrandie
 
 - Bouton AUTO gris, aligné sur le traitement du bouton Classement virtuel.

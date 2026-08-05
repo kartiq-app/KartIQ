@@ -132,8 +132,8 @@ function renderSprintFocus(){
  sprintFocusAhead.style.display=isLeader?'none':'';
  sprintFocusBehind.style.display=(!isLeader&&!hasDriverBehind)?'none':'';
  const sprintFocusDivider=overlay.querySelector('.sprint-focus-divider');if(sprintFocusDivider)sprintFocusDivider.style.display=(isLeader||!hasDriverBehind)?'none':'';
- const ms=liveRemainingMilliseconds();sprintFocusTime.textContent=ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms);sprintFocusTime.classList.toggle('time-critical',Number.isFinite(ms)&&ms<=120000);
- const laps=String(state.apex_laps_remaining||'—');sprintFocusLaps.textContent=(laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'—';
+ const lapMode=raceUsesLapTarget();const ms=lapMode?null:liveRemainingMilliseconds();sprintFocusTime.textContent=lapMode?formatRaceLapProgress():(ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms));sprintFocusTime.classList.toggle('time-critical',!lapMode&&Number.isFinite(ms)&&ms<=120000);
+ const laps=String(state.apex_laps_remaining||'—');sprintFocusLaps.textContent=lapMode?'':((laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'—');
  const list=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));
  renderSprintFocusPenalties(list);
 }

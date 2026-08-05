@@ -35,6 +35,7 @@ function qualificationPurpleBest(){
  return {driver:leader?.driver||'—',lap:leader?.best||'—'};
 }
 function qualificationFocusSessionStatus(){
+ if(raceUsesLapTarget())return {time:formatRaceLapProgress(),laps:'',critical:false};
  const laps=String(state.apex_laps_remaining||'').trim();
  const ms=liveRemainingMilliseconds();
  const time=ms===null?String(state.time_remaining||'—'):formatRemainingMilliseconds(ms);

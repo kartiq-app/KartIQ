@@ -1,4 +1,4 @@
-# Velocity V7.2.1 — Connexion Velocity ↔ Spotter
+# Velocity V7.2.2 — Affichage des courses au nombre de tours
 
 - Synchronisation serveur de la file FIFO entre Spotter et Analyzer.
 - Score et confiance affichés dans Spotter depuis le moteur Velocity existant, sans nouvel algorithme.

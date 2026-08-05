@@ -480,8 +480,14 @@ class RaceStateService:
             session_total_laps = 0
         if session_total_laps > 0:
             self.state["total_laps"] = session_total_laps
-            remaining_laps = max(0, session_total_laps - leader_laps)
-            self.state["apex_laps_remaining"] = f"{remaining_laps} TOUR" + ("S" if remaining_laps != 1 else "")
+            completed_laps = min(session_total_laps, leader_laps)
+            self.state["apex_laps_remaining"] = f"{completed_laps}/{session_total_laps} TOURS"
+            # Une cible de tours explicite prévaut sur tout ancien compte à rebours
+            # encore présent dans le cache de la session précédente.
+            self.state["time_remaining"] = "—"
+            self.state["time_remaining_ms"] = None
+            self.state["time_remaining_updated_at_ms"] = None
+            self.state["time_remaining_end_at_ms"] = None
         elif leader_laps > 0:
             self.state["apex_laps_remaining"] = f"TOUR {leader_laps}"
         else:

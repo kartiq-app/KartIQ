@@ -6,6 +6,9 @@ function analyzerFormatLocalClock(){
 }
 function analyzerUpdateRaceRemaining(){
  const el=document.getElementById('analyzerRaceRemaining');if(!el)return;
+ if(typeof raceUsesLapTarget==='function'&&raceUsesLapTarget()){
+  el.textContent=formatRaceLapProgress();el.classList.remove('warning','critical');return;
+ }
  const ms=typeof liveRemainingMilliseconds==='function'?liveRemainingMilliseconds():null;
  if(Number.isFinite(ms)){const total=Math.max(0,Math.floor(ms/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;el.classList.toggle('warning',total<=3600&&total>600);el.classList.toggle('critical',total<=600);return}
  el.textContent=state?.time_remaining||'—';

@@ -72,7 +72,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'6.14.0'),
+  appVersion:String(state?.version||'7.2.2'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -111,6 +111,7 @@ function ingestApexCountdown(frame){
  return syncRemainingFromApex(Number(matches[matches.length-1][1]),{direct:true});
 }
 function syncRemainingFromState(nextState){
+ if(Number(nextState?.total_laps)>0){remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownUsesHours=false;remainingCountdownDirectSyncAt=0;updateRemainingDisplay();return}
  const endAt=Number(nextState?.time_remaining_end_at_ms);
  let candidate=null;
  if(Number.isFinite(endAt)){
@@ -167,13 +168,33 @@ function formatMainRemainingDisplay(ms,fallback='—'){
  const sourceMs=Number.isFinite(ms)?ms:parseRemainingTextMilliseconds(fallback);
  return Number.isFinite(sourceMs)?formatLandscapeRemainingMilliseconds(sourceMs):(fallback||'—');
 }
+function raceLeaderLaps(){
+ const values=(state?.drivers||[]).map(driver=>Number(driver?.laps)).filter(Number.isFinite);
+ return values.length?Math.max(0,...values):0;
+}
+function raceTotalLaps(){
+ const total=Number(state?.total_laps);
+ return Number.isFinite(total)&&total>0?Math.floor(total):0;
+}
+function raceUsesLapTarget(){return raceTotalLaps()>0}
+function formatRaceLapProgress(){
+ const total=raceTotalLaps();
+ if(!total)return '';
+ const completed=Math.min(total,raceLeaderLaps());
+ return `${completed}/${total} tours`;
+}
+function mainSessionProgressDisplay(){
+ if(raceUsesLapTarget())return formatRaceLapProgress();
+ return formatMainRemainingDisplay(liveRemainingMilliseconds(),state?.time_remaining||'—');
+}
 function updateRemainingDisplay(){
- const ms=liveRemainingMilliseconds();
- const display=formatMainRemainingDisplay(ms,state.time_remaining||'—');
+ const lapMode=raceUsesLapTarget();
+ const ms=lapMode?null:liveRemainingMilliseconds();
+ const display=lapMode?formatRaceLapProgress():formatMainRemainingDisplay(ms,state.time_remaining||'—');
  const seconds=ms===null?null:ms/1000;
- const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
- const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
- const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',Number.isFinite(seconds)&&seconds<120)}
+ const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
+ const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
+ const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  renderQualificationFocus();
  renderSprintFocus();
  renderEnduranceFocus();
