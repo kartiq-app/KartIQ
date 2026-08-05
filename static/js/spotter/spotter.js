@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.20';
+const SPOTTER_APP_RELEASE='7.2.21';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -364,7 +364,7 @@ function spotterCommandBar(step){
   <span class="spotter-live-state">LIVE</span>
   ${undo}
   <button class="spotter-desktop-command spotter-quick-change-command" type="button" onclick="openSpotterSetup()">PRÉPARER LA ZONE QUICK CHANGE</button>
-  <button class="spotter-desktop-command spotter-auto-command ${spotterState.freeMode?'active':''}" type="button" onclick="spotterToggleAuto()">AUTO</button>
+  <button class="spotter-desktop-command spotter-auto-command ${spotterState.freeMode?'active resume':''}" type="button" onclick="spotterToggleAuto()">${spotterState.freeMode?'▶ REPRENDRE':'AUTO'}</button>
   <button class="spotter-desktop-command spotter-modify-command" type="button" onclick="spotterModifyQueueMode()">MODIFIER LA FILE</button>
   <button class="spotter-desktop-command spotter-reset-command" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button>
  </div>`;

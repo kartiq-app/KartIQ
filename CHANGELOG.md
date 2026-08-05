@@ -1,5 +1,11 @@
 # Changelog
 
+## V7.2.21 — Auto et Reprendre Spotter
+
+- Sur Desktop, le bouton Auto devient un bouton orange « ▶ REPRENDRE » lorsque le mode Auto est actif.
+- Le bouton Desktop reprend le même état visuel que sur smartphone.
+- Sur smartphone, le libellé « ▶ REPRENDRE » est affiché entièrement sans être tronqué.
+
 ## V7.2.20 — Centrage Desktop Spotter
 
 - La carte des files est réduite à la largeur exacte des trois files, sans modifier la taille des cartes de kart.

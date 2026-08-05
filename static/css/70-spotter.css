@@ -1455,3 +1455,33 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
     width:calc(100vw - 24px)!important;
   }
 }
+
+
+/* Velocity V7.2.21 — état Auto/Reprendre lisible */
+.spotter-resume-main{
+  min-width:0!important;
+  width:100%!important;
+  padding:0 8px!important;
+  overflow:visible!important;
+  white-space:nowrap!important;
+  text-overflow:clip!important;
+  font-size:clamp(9px,2.8vw,11px)!important;
+  letter-spacing:.02em!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:370px){
+  .spotter-resume-main{
+    padding:0 4px!important;
+    font-size:9px!important;
+    letter-spacing:0!important;
+  }
+}
+@media(min-width:900px){
+  .spotter-command-desktop .spotter-auto-command.resume{
+    min-width:132px!important;
+    border-color:#ff8a00!important;
+    background:linear-gradient(180deg,#ff941f,#dd6f00)!important;
+    color:#08090c!important;
+    box-shadow:0 0 18px rgba(255,138,0,.22)!important;
+  }
+}
