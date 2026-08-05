@@ -1,5 +1,12 @@
 # Changelog
 
+## V7.2.12 — Déplacement précis des cartes Spotter
+
+- Suppression du préfixe « Kart » dans les noms affichés.
+- Poignée intégrée au bord droit de la carte, sans fond.
+- La carte déplacée suit exactement le doigt ou la souris, sans saut au démarrage.
+- Zone d’insertion lumineuse entre deux cartes et après la dernière carte.
+
 ## V7.2.11 — Poignées et lisibilité Spotter
 
 - Le déplacement d’un kart démarre uniquement depuis une poignée dédiée.

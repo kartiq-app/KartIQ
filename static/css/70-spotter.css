@@ -703,3 +703,47 @@ body.current-spotter .spotter-shell{
   .spotter-drag-handle{top:2px!important;right:2px!important;width:20px!important;height:20px!important;font-size:13px!important}
   .spotter-file-list .spotter-queue-card strong{font-size:clamp(8px,2.55vw,13px)!important}
 }
+
+/* Velocity V7.2.12 — déplacement précis et zones d’insertion */
+.spotter-drag-handle{
+  top:50%!important;
+  right:2px!important;
+  transform:translateY(-50%)!important;
+  width:18px!important;
+  height:34px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:rgba(255,255,255,.82)!important;
+  font-size:14px!important;
+  letter-spacing:-5px!important;
+  text-shadow:0 1px 5px rgba(0,0,0,.9)!important;
+}
+.spotter-drag-handle:active{background:transparent!important;color:#fff!important}
+.spotter-draggable{touch-action:pan-y!important;cursor:default!important}
+.spotter-draggable.dragging{opacity:.22!important}
+.spotter-drag-ghost{
+  transform:none!important;
+  opacity:.96!important;
+  margin:0!important;
+  transition:none!important;
+  will-change:left,top!important;
+}
+.spotter-insertion-marker{
+  position:fixed;
+  z-index:100000;
+  height:7px;
+  border-radius:999px;
+  pointer-events:none;
+  opacity:0;
+  background:#fff;
+  box-shadow:0 0 0 2px rgba(255,255,255,.18),0 0 16px rgba(255,255,255,.95);
+  transform:scaleX(.96);
+}
+.spotter-insertion-marker.visible{opacity:1}
+body.spotter-drag-active{user-select:none;-webkit-user-select:none}
+.spotter-drop-target{outline:2px dashed #fff!important;outline-offset:3px!important}
+@media(max-width:370px){
+ .spotter-drag-handle{top:50%!important;right:1px!important;width:16px!important;height:30px!important;transform:translateY(-50%)!important;font-size:12px!important}
+}

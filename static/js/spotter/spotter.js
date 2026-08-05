@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.11';
+const SPOTTER_APP_RELEASE='7.2.12';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -147,7 +147,7 @@ function spotterAddIncoming(team,driver=null,{source='apex'}={}){
 }
 function simulateSpotterPitIn(){
  const index=spotterState.movementLog.filter(item=>item.type==='dev_pit_in').length;
- const team=`Kart ${spotterDefaultKartName(index)}`;const score=78+((index*7)%21);const confidence=64+((index*11)%32);
+ const team=spotterDefaultKartName(index);const score=78+((index*7)%21);const confidence=64+((index*11)%32);
  if(!spotterState.assignments[team])spotterState.assignments[team]={kv:spotterAllocateKv(),apexKart:spotterDefaultKartName(index),lastTeam:team,currentTeam:team,score,confidence,status:'track'};
  spotterLogMovement('dev_pit_in',{team});spotterAddIncoming(team,null,{source:'dev'});
 }
@@ -243,51 +243,73 @@ function spotterCommandBar(step){
 
 function spotterRenderCurrent(){renderSpotterFoundation(spotterState.recalibrating?'recalibrate':'live')}
 
-const spotterDrag={kv:null,from:null,pointerId:null,ghost:null};
+const spotterDrag={kv:null,from:null,pointerId:null,ghost:null,offsetX:0,offsetY:0,target:null,marker:null};
 function spotterQueueMovable(item){return item&&item.status==='available'}
+function spotterEnsureInsertionMarker(){
+ if(spotterDrag.marker?.isConnected)return spotterDrag.marker;
+ const marker=document.createElement('div');marker.className='spotter-insertion-marker';document.body.appendChild(marker);spotterDrag.marker=marker;return marker;
+}
+function spotterHideInsertionMarker(){if(spotterDrag.marker)spotterDrag.marker.classList.remove('visible')}
+function spotterShowInsertionMarker(rect){
+ const marker=spotterEnsureInsertionMarker();
+ marker.style.left=`${rect.left}px`;marker.style.top=`${rect.top}px`;marker.style.width=`${rect.width}px`;marker.classList.add('visible');
+}
 function spotterStartDrag(event,kv,from){
  if(event.button!==undefined&&event.button!==0)return;
  const source=(from==='queue'?spotterState.queue:spotterState.maintenance).find(item=>item.kv===kv);
  if(!source||!spotterQueueMovable(source))return;
- event.preventDefault();
- spotterDrag.kv=kv;spotterDrag.from=from;spotterDrag.pointerId=event.pointerId;
- event.stopPropagation();
+ event.preventDefault();event.stopPropagation();
  const handle=event.currentTarget;
- const card=handle.closest('.spotter-queue-card');if(!card)return;card.classList.add('dragging');
+ const card=handle.closest('.spotter-queue-card');if(!card)return;
+ const rect=card.getBoundingClientRect();
+ Object.assign(spotterDrag,{kv,from,pointerId:event.pointerId,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top,target:null});
+ card.classList.add('dragging');
  try{handle.setPointerCapture(event.pointerId)}catch(_){ }
- const ghost=card.cloneNode(true);ghost.classList.add('spotter-drag-ghost');ghost.style.width=`${card.getBoundingClientRect().width}px`;
+ const ghost=card.cloneNode(true);ghost.classList.add('spotter-drag-ghost');ghost.querySelector('.spotter-drag-handle')?.remove();ghost.style.width=`${rect.width}px`;ghost.style.height=`${rect.height}px`;
  document.body.appendChild(ghost);spotterDrag.ghost=ghost;spotterMoveGhost(event.clientX,event.clientY);
+ document.body.classList.add('spotter-drag-active');
  document.addEventListener('pointermove',spotterOnDragMove,{passive:false});
  document.addEventListener('pointerup',spotterEndDrag,{once:true});
  document.addEventListener('pointercancel',spotterEndDrag,{once:true});
 }
-function spotterMoveGhost(x,y){if(spotterDrag.ghost){spotterDrag.ghost.style.left=`${x}px`;spotterDrag.ghost.style.top=`${y}px`}}
+function spotterMoveGhost(x,y){if(spotterDrag.ghost){spotterDrag.ghost.style.left=`${x-spotterDrag.offsetX}px`;spotterDrag.ghost.style.top=`${y-spotterDrag.offsetY}px`}}
+function spotterSetQueueTarget(column,beforeKv,markerRect){
+ const file=column?.dataset.spotterFile||null;if(!file)return;
+ spotterDrag.target={type:'queue',file,beforeKv:beforeKv||null};spotterShowInsertionMarker(markerRect);
+}
 function spotterOnDragMove(event){
  if(spotterDrag.pointerId!==null&&event.pointerId!==spotterDrag.pointerId)return;
- event.preventDefault();spotterMoveGhost(event.clientX,event.clientY);
- document.querySelectorAll('.spotter-drop-target,.spotter-drop-before').forEach(node=>node.classList.remove('spotter-drop-target','spotter-drop-before'));
+ event.preventDefault();spotterMoveGhost(event.clientX,event.clientY);spotterHideInsertionMarker();spotterDrag.target=null;
+ document.querySelectorAll('.spotter-drop-target').forEach(node=>node.classList.remove('spotter-drop-target'));
  const element=document.elementFromPoint(event.clientX,event.clientY);
  const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
- if(maintenance){maintenance.classList.add('spotter-drop-target');return}
- const queue=element?.closest('[data-spotter-drop-zone="queue"]');
- const endZone=element?.closest('[data-spotter-drop-end="queue"]');
+ if(maintenance){maintenance.classList.add('spotter-drop-target');spotterDrag.target={type:'maintenance'};return}
+ const column=element?.closest('[data-spotter-file]');if(!column)return;
+ const list=column.querySelector('.spotter-file-list');if(!list)return;
  const card=element?.closest('[data-spotter-queue-kv]');
- if(endZone){endZone.classList.add('spotter-drop-target');return}
- if(card&&card.dataset.spotterQueueKv!==spotterDrag.kv)card.classList.add('spotter-drop-before');
- else if(queue)queue.classList.add('spotter-drop-target');
+ const cards=[...list.querySelectorAll('[data-spotter-queue-kv]')].filter(node=>node.dataset.spotterQueueKv!==spotterDrag.kv);
+ if(card&&card.dataset.spotterQueueKv!==spotterDrag.kv){
+  const rect=card.getBoundingClientRect();const after=event.clientY>rect.top+rect.height/2;
+  if(after){
+   const index=cards.indexOf(card);const next=cards[index+1]||null;
+   if(next){const nr=next.getBoundingClientRect();spotterSetQueueTarget(column,next.dataset.spotterQueueKv,{left:nr.left,top:nr.top-5,width:nr.width});}
+   else spotterSetQueueTarget(column,null,{left:rect.left,top:rect.bottom+3,width:rect.width});
+  }else spotterSetQueueTarget(column,card.dataset.spotterQueueKv,{left:rect.left,top:rect.top-5,width:rect.width});
+  return;
+ }
+ const endZone=element?.closest('[data-spotter-drop-end="queue"]');
+ if(endZone){const rect=endZone.getBoundingClientRect();spotterSetQueueTarget(column,null,{left:rect.left,top:rect.top+rect.height/2-3,width:rect.width});return}
+ if(!cards.length){const rect=list.getBoundingClientRect();spotterSetQueueTarget(column,null,{left:rect.left,top:rect.top+28,width:rect.width});return}
+ const lastRect=cards[cards.length-1].getBoundingClientRect();spotterSetQueueTarget(column,null,{left:lastRect.left,top:lastRect.bottom+3,width:lastRect.width});
 }
 function spotterEndDrag(event){
  document.removeEventListener('pointermove',spotterOnDragMove);
- const element=document.elementFromPoint(event.clientX,event.clientY);
- const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
- const queueCard=element?.closest('[data-spotter-queue-kv]');
- const queueEnd=element?.closest('[data-spotter-drop-end="queue"]');
- const queue=element?.closest('[data-spotter-drop-zone="queue"]');
- if(maintenance)spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);
- else if(queueEnd){const column=queueEnd.closest('[data-spotter-file]');spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,null,column?.dataset.spotterFile||null);}
- else if(queueCard||queue){const column=(queueCard||queue)?.closest('[data-spotter-file]');spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,queueCard?.dataset.spotterQueueKv||null,column?.dataset.spotterFile||null);}
- document.querySelectorAll('.dragging,.spotter-drop-target,.spotter-drop-before').forEach(node=>node.classList.remove('dragging','spotter-drop-target','spotter-drop-before'));
- spotterDrag.ghost?.remove();Object.assign(spotterDrag,{kv:null,from:null,pointerId:null,ghost:null});
+ const target=spotterDrag.target;
+ if(target?.type==='maintenance')spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);
+ else if(target?.type==='queue')spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,target.beforeKv,target.file);
+ document.querySelectorAll('.dragging,.spotter-drop-target').forEach(node=>node.classList.remove('dragging','spotter-drop-target'));
+ spotterDrag.ghost?.remove();spotterDrag.marker?.remove();document.body.classList.remove('spotter-drag-active');
+ Object.assign(spotterDrag,{kv:null,from:null,pointerId:null,ghost:null,offsetX:0,offsetY:0,target:null,marker:null});
 }
 function spotterMoveKartInQueue(kv,from,beforeKv=null,targetFile=null){
  let item=null;
@@ -349,19 +371,20 @@ function renderSpotterFoundation(forceStep){
   </div>
  </div>`;
 }
-function spotterOriginLabel(item){return item?.lastTeam&&item.lastTeam!=='Initialisation'?String(item.lastTeam):`Kart ${item?.apexKart||'—'}`}
+function spotterDisplayName(value){return String(value??'—').replace(/^\s*Kart\s+/i,'').trim()||'—'}
+function spotterOriginLabel(item){return item?.lastTeam&&item.lastTeam!=='Initialisation'?spotterDisplayName(item.lastTeam):spotterDisplayName(item?.apexKart||'—')}
 function spotterQueueCard(item){
  const score=item.score==null?'—':item.score,confidence=item.confidence==null?'—':`${item.confidence}%`;
- if(item.status==='reserved')return `<div class="spotter-queue-card reserved ${item.estimated?'estimated':''}"><strong>${spotterEscape(item.reservedTeam)}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
- return `<div class="spotter-queue-card available spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}"><button class="spotter-drag-handle" type="button" aria-label="Déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','queue')">⠿</button><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div></div>`;
+ if(item.status==='reserved')return `<div class="spotter-queue-card reserved ${item.estimated?'estimated':''}"><strong>${spotterEscape(spotterDisplayName(item.reservedTeam))}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
+ return `<div class="spotter-queue-card available spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}"><button class="spotter-drag-handle" type="button" aria-label="Déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','queue')">⋮⋮</button><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div></div>`;
 }
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
 function updateSpotterLiveTimers(){document.querySelectorAll('[data-spotter-pit-start]').forEach(node=>{node.textContent=spotterFormatDuration(Date.now()-Number(node.dataset.spotterPitStart||Date.now()))})}
 function spotterIncomingCard(item){
- return `<div class="spotter-queue-card incoming"><strong>${spotterEscape(item.name||item.team)}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.returnedKv||'—')}</span><span class="spotter-score">Score : ${item.score??'—'}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div><div class="spotter-incoming-actions"><button type="button" class="spotter-validate" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',false)" aria-label="Valider">✓</button><button type="button" class="spotter-maintenance-btn" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',true)" aria-label="Maintenance">⚠</button></div></div>`;
+ return `<div class="spotter-queue-card incoming"><strong>${spotterEscape(spotterDisplayName(item.name||item.team))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.returnedKv||'—')}</span><span class="spotter-score">Score : ${item.score??'—'}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div><div class="spotter-incoming-actions"><button type="button" class="spotter-validate" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',false)" aria-label="Valider">✓</button><button type="button" class="spotter-maintenance-btn" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',true)" aria-label="Maintenance">⚠</button></div></div>`;
 }
 function spotterMaintenanceCard(item){
- return `<div class="spotter-queue-card maintenance spotter-draggable"><button class="spotter-drag-handle" type="button" aria-label="Déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','maintenance')">⠿</button><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${item.score??'—'}</span></div><button type="button" class="spotter-reinsert" onclick="event.stopPropagation();spotterReinsertMaintenance('${spotterEscapeJs(item.kv)}')">↩ FIN DE FILE</button></div>`;
+ return `<div class="spotter-queue-card maintenance spotter-draggable"><button class="spotter-drag-handle" type="button" aria-label="Déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','maintenance')">⋮⋮</button><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${item.score??'—'}</span></div><button type="button" class="spotter-reinsert" onclick="event.stopPropagation();spotterReinsertMaintenance('${spotterEscapeJs(item.kv)}')">↩ FIN DE FILE</button></div>`;
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
