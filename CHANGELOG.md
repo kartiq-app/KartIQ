@@ -1,5 +1,15 @@
 # Changelog
 
+## V7.2.17 — En-tête et cartes Desktop Spotter
+
+- L’en-tête Desktop commence désormais par « Spotter », puis le filet orange.
+- L’en-tête reprend la hauteur, le corps, la graisse, l’espacement et la couleur de « Endurance » dans Analyzer.
+- La ligne Live | ↶ | Auto | Paramètres est déplacée sous le filet orange.
+- Les commandes Desktop deviennent des boutons horizontaux et homogènes.
+- Les cartes des files sont agrandies de 25 % sur Desktop.
+- Le kart et les textes sont recentrés dans chaque carte.
+- L’ensemble des files est centré dans la carte principale.
+
 ## V7.2.16 — Mise en page Desktop Spotter
 
 - Les cartes de kart conservent exactement la même taille en mode 1, 2 ou 3 files.

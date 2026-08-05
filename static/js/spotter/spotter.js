@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.16';
+const SPOTTER_APP_RELEASE='7.2.17';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -459,8 +459,9 @@ function renderSpotterFoundation(forceStep){
  const root=document.getElementById('spotterApp');if(!root)return;
  const step=forceStep||(spotterState.configured?(spotterState.recalibrating?'recalibrate':'live'):'mode');
  root.innerHTML=`<div class="spotter-shell">
-  <div class="spotter-top-accent" aria-hidden="true"></div>${spotterCommandBar(step)}
-  <div class="spotter-desktop-heading"><span>Spotter</span></div>
+  <div class="spotter-top-accent" aria-hidden="true"></div>
+  <div class="spotter-desktop-heading"><span>SPOTTER</span></div>
+  ${spotterCommandBar(step)}
   <div class="spotter-step ${step==='mode'?'active':''}" id="spotterModeStep">
    <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option ${spotterState.mode===1?'active':''}" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Verticale</small></button><button class="spotter-mode-option ${spotterState.mode===2?'active':''}" type="button" onclick="setSpotterMode(2)"><strong>2</strong><span>Files</span><small>Côte à côte</small></button><button class="spotter-mode-option ${spotterState.mode===3?'active':''}" type="button" onclick="setSpotterMode(3)"><strong>3</strong><span>Files</span><small>Côte à côte</small></button></div></div></section>
   </div>

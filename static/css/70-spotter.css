@@ -1092,3 +1092,143 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
     max-width:none!important;
   }
 }
+
+
+/* Velocity V7.2.17 — En-tête Desktop Analyzer et cartes +25 % */
+@media(min-width:900px){
+  /* En-tête strictement calé sur Analyzer : même hauteur, police et filet */
+  .spotter-desktop-heading{
+    display:flex!important;
+    align-items:center!important;
+    min-height:58px!important;
+    height:58px!important;
+    margin:0!important;
+    padding:0 0 12px!important;
+    border-bottom:2px solid #ff7a00!important;
+    box-sizing:border-box!important;
+  }
+  .spotter-desktop-heading span{
+    font-family:Arial,sans-serif!important;
+    font-size:13px!important;
+    line-height:1!important;
+    color:#ff8a1f!important;
+    font-weight:800!important;
+    letter-spacing:.16em!important;
+    text-transform:uppercase!important;
+  }
+
+  /* La ligne de commandes passe sous le filet orange */
+  .spotter-command-bar.live-mode,
+  .spotter-command-bar.free-active{
+    margin-top:10px!important;
+    margin-bottom:10px!important;
+    width:max-content!important;
+    max-width:100%!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:8px!important;
+    grid-template-columns:none!important;
+  }
+  .spotter-command-bar .spotter-live-state,
+  .spotter-command-bar .spotter-undo-button,
+  .spotter-command-bar .spotter-free-button,
+  .spotter-command-bar .spotter-resume-main,
+  .spotter-command-bar .spotter-icon-btn{
+    width:auto!important;
+    min-width:112px!important;
+    height:42px!important;
+    min-height:42px!important;
+    padding:0 18px!important;
+    border-radius:8px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    box-sizing:border-box!important;
+    white-space:nowrap!important;
+  }
+  .spotter-command-bar .spotter-undo-button{
+    min-width:76px!important;
+    font-size:29px!important;
+    padding:0 16px!important;
+  }
+  .spotter-command-bar .spotter-icon-btn span{
+    display:inline!important;
+  }
+
+  /* Cartes de file agrandies de 25 % */
+  .spotter-desktop-queues .spotter-file-column{
+    flex:0 0 148px!important;
+    width:148px!important;
+    max-width:148px!important;
+    align-items:center!important;
+  }
+  .spotter-desktop-queues .spotter-file-list{
+    width:148px!important;
+    max-width:148px!important;
+    align-items:center!important;
+  }
+  .spotter-desktop-queues .spotter-file-list .spotter-queue-card{
+    width:148px!important;
+    min-width:148px!important;
+    max-width:148px!important;
+    height:148px!important;
+    min-height:148px!important;
+    max-height:148px!important;
+    padding:10px 10px 10px 67px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+  }
+
+  /* Kart et texte recentrés dans la carte agrandie */
+  .spotter-desktop-queues .spotter-file-list .spotter-queue-card::after{
+    width:60px!important;
+    height:100%!important;
+    background-size:auto 96%!important;
+    background-position:left center!important;
+  }
+  .spotter-desktop-queues .spotter-file-list .spotter-queue-card > :not(.spotter-drag-handle){
+    width:66px!important;
+    max-width:66px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    text-align:center!important;
+  }
+  .spotter-desktop-queues .spotter-file-list .spotter-queue-card strong{
+    width:66px!important;
+    max-width:66px!important;
+    font-size:13px!important;
+    line-height:1.06!important;
+  }
+  .spotter-desktop-queues .spotter-file-list .spotter-queue-card small{
+    width:66px!important;
+    max-width:66px!important;
+    font-size:9px!important;
+    line-height:1.06!important;
+  }
+  .spotter-desktop-queues .spotter-file-list .spotter-card-stats{
+    width:66px!important;
+    max-width:66px!important;
+    font-size:9px!important;
+    line-height:1.08!important;
+  }
+  .spotter-desktop-queues .spotter-file-list .spotter-pit-time{
+    width:66px!important;
+    max-width:66px!important;
+    font-size:15px!important;
+  }
+
+  /* Ensemble des files centré dans sa carte principale */
+  .spotter-desktop-queues .spotter-queues-layout,
+  .spotter-desktop-queues .spotter-queues-layout.queues-1,
+  .spotter-desktop-queues .spotter-queues-layout.queues-2,
+  .spotter-desktop-queues .spotter-queues-layout.queues-3{
+    justify-content:center!important;
+    gap:14px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+}
