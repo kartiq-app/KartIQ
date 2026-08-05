@@ -1,10 +1,9 @@
-# V7.0.1 — Ajustements Spotter Foundation
+## V7.0.2 — Accueil carré et Spotter compact
 
-- Accueil mobile compacté de 5 %.
-- Cinq modes sur une ligne en desktop et paysage, ordre : Qualifications, Sprint, Endurance, Spotter, Analyzer.
-- Simplification de l’écran Spotter.
-- Valeurs initiales X, Y, Z puis A, B, C… pour les karts de la file.
-- Cartes carrées et ajout d’un simulateur de kart entrant dans les outils développeur.
+- Accueil desktop : les cinq modes sont affichés sur une seule ligne avec des cartes carrées agrandies d’environ 5 %.
+- Accueil smartphone portrait : suppression du bloc « POWERED BY » et du logo Apex Timing afin de recentrer le menu.
+- Spotter : réduction des cartes carrées à un format compatible avec trois files côte à côte.
+- Spotter : les karts entrants sont désormais affichés en file indienne, dans leur ordre d’arrivée, avec le même gabarit compact que la file principale.
 
 # V7.0.0 — Spotter Foundation
 

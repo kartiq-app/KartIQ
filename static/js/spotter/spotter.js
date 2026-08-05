@@ -1,4 +1,4 @@
-/* Velocity V7.0.1 — Spotter Foundation */
+/* Velocity V7.0.2 — Spotter Foundation */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
 const spotterState={mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false};
 function spotterPadKv(index){return `KV${String(index+1).padStart(2,'0')}`}
