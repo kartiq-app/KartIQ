@@ -1719,3 +1719,33 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
   box-sizing:border-box!important;
 }
 .spotter-drag-preview .spotter-drag-handle{display:none!important}
+
+
+/* Velocity V7.2.28 — verrouillage du scroll pendant le drag mobile */
+@media(max-width:899px){
+  html.spotter-scroll-locked{
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+    height:100%!important;
+  }
+  body.spotter-scroll-locked{
+    position:fixed!important;
+    top:var(--spotter-lock-scroll-y,0px)!important;
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    height:100%!important;
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+    touch-action:none!important;
+  }
+  body.spotter-scroll-locked .spotter-screen,
+  body.spotter-scroll-locked .spotter-shell,
+  body.spotter-scroll-locked .spotter-step.active{
+    overscroll-behavior:none!important;
+    touch-action:none!important;
+  }
+  body.spotter-scroll-locked .spotter-drag-preview{
+    touch-action:none!important;
+  }
+}

@@ -1,5 +1,14 @@
 # Changelog
 
+## V7.2.28 — Verrouillage du scroll mobile
+
+- Le défilement de la page reste autorisé avant la validation de l’appui long.
+- Dès que la carte est saisie, la position verticale de la page est mémorisée et verrouillée.
+- Les gestes tactiles déplacent uniquement le kart pendant le drag actif.
+- Le scroll et l’overscroll du navigateur sont bloqués jusqu’au relâchement.
+- La position initiale de la page est restaurée proprement après le dépôt ou l’annulation.
+- Le comportement Desktop reste inchangé.
+
 ## V7.2.27 — Aperçu drag corrigé
 
 - Suppression du clone complet de la carte qui pouvait hériter du layout Spotter et s’étendre sur toute la largeur.

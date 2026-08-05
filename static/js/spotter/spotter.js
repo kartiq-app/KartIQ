@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.27';
+const SPOTTER_APP_RELEASE='7.2.28';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -376,7 +376,7 @@ function spotterRenderCurrent(){renderSpotterFoundation(spotterState.recalibrati
 const spotterDrag={
  kv:null,from:null,pointerId:null,ghost:null,placeholder:null,timer:null,
  startX:0,startY:0,lastX:0,lastY:0,active:false,card:null,
- originalParent:null,originalNext:null,target:null
+ originalParent:null,originalNext:null,target:null,lockedScrollY:0,scrollLocked:false
 };
 function spotterQueueMovable(item){return item&&item.status==='available'}
 function spotterDragSource(kv,from){
@@ -446,12 +446,35 @@ function spotterCreateGhost(card,rect){
  document.body.appendChild(ghost);
  return ghost;
 }
+function spotterLockMobileScroll(){
+ if(!window.matchMedia('(max-width:899px)').matches||spotterDrag.scrollLocked)return;
+ const scrollY=window.scrollY||document.documentElement.scrollTop||0;
+ spotterDrag.lockedScrollY=scrollY;
+ spotterDrag.scrollLocked=true;
+ document.documentElement.classList.add('spotter-scroll-locked');
+ document.body.classList.add('spotter-scroll-locked');
+ document.body.style.setProperty('--spotter-lock-scroll-y',`-${scrollY}px`);
+}
+function spotterUnlockMobileScroll(){
+ if(!spotterDrag.scrollLocked)return;
+ const scrollY=Number(spotterDrag.lockedScrollY)||0;
+ document.documentElement.classList.remove('spotter-scroll-locked');
+ document.body.classList.remove('spotter-scroll-locked');
+ document.body.style.removeProperty('--spotter-lock-scroll-y');
+ spotterDrag.scrollLocked=false;
+ requestAnimationFrame(()=>window.scrollTo(0,scrollY));
+}
+function spotterPreventTouchScroll(event){
+ if(spotterDrag.active)event.preventDefault();
+}
 function spotterActivateDrag(){
  const card=spotterDrag.card;if(!card)return;
  spotterDrag.active=true;
  spotterDrag.timer=null;
  card.classList.remove('spotter-pressing');
  card.classList.add('spotter-holding');
+ spotterLockMobileScroll();
+ document.addEventListener('touchmove',spotterPreventTouchScroll,{passive:false});
  const rect=card.getBoundingClientRect();
  spotterDrag.originalParent=card.parentElement;
  spotterDrag.originalNext=card.nextSibling;
@@ -524,6 +547,7 @@ function spotterOnDragMove(event){
   return;
  }
  event.preventDefault();
+ if(spotterDrag.scrollLocked&&window.scrollY!==spotterDrag.lockedScrollY)window.scrollTo(0,spotterDrag.lockedScrollY);
  spotterMoveGhost(event.clientX,event.clientY);
  spotterClearDropHighlights();
 
@@ -567,6 +591,7 @@ function spotterRestoreOriginalCard(){
 }
 function spotterEndDrag(){
  document.removeEventListener('pointermove',spotterOnDragMove);
+ document.removeEventListener('touchmove',spotterPreventTouchScroll);
  spotterCancelPendingDrag();
  const target=spotterDrag.active?spotterDrag.target:null;
  if(spotterDrag.active){
@@ -579,10 +604,11 @@ function spotterEndDrag(){
  spotterDrag.ghost?.remove();
  spotterDrag.placeholder?.remove();
  document.body.classList.remove('spotter-drag-active');
+ spotterUnlockMobileScroll();
  Object.assign(spotterDrag,{
   kv:null,from:null,pointerId:null,ghost:null,placeholder:null,timer:null,
   startX:0,startY:0,lastX:0,lastY:0,active:false,card:null,
-  originalParent:null,originalNext:null,target:null
+  originalParent:null,originalNext:null,target:null,lockedScrollY:0,scrollLocked:false
  });
 }
 function spotterMoveKartInQueue(kv,from,beforeKv=null,targetFile=null){

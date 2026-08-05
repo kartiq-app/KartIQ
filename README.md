@@ -1,4 +1,4 @@
-# Velocity V7.2.27 — Aperçu drag corrigé
+# Velocity V7.2.28 — Verrouillage du scroll mobile
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 
