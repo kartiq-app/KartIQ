@@ -1615,3 +1615,26 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
     height:148px!important;
   }
 }
+
+
+/* Velocity V7.2.24 — calibrage mobile et fin de file tolérante */
+@media(max-width:899px){
+  .spotter-file-column{
+    min-height:calc(min(28vw,104px) + 210px)!important;
+  }
+  .spotter-file-list{
+    min-height:calc(min(28vw,104px) + 170px)!important;
+    padding-bottom:120px!important;
+    box-sizing:border-box!important;
+  }
+  .spotter-drag-ghost{
+    opacity:.94!important;
+  }
+  .spotter-card-placeholder{
+    margin-top:4px!important;
+    margin-bottom:4px!important;
+  }
+  .spotter-file-column.spotter-file-active{
+    background:rgba(53,208,127,.055)!important;
+  }
+}

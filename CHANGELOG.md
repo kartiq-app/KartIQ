@@ -1,5 +1,14 @@
 # Changelog
 
+## V7.2.24 — Calibrage du déplacement mobile
+
+- Le kart déplacé est affiché légèrement au-dessus du doigt sur smartphone afin de garder la destination visible.
+- La détection des files ne dépend plus uniquement de l’élément situé exactement sous le doigt.
+- Les colonnes disposent d’une zone d’accroche horizontale et verticale plus tolérante sur mobile.
+- Lorsqu’une file ne contient qu’un seul kart, la moitié basse du kart et toute la zone située dessous sélectionnent immédiatement la fin de file.
+- La zone libre sous le dernier kart est prolongée pour faciliter un dépôt en dernière position.
+- Le fonctionnement Desktop reste inchangé.
+
 ## V7.2.23 — Drag & drop fluide Spotter
 
 - Toute la carte de kart devient la zone de prise ; suppression de la petite poignée.

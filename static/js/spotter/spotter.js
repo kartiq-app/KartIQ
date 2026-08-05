@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.23';
+const SPOTTER_APP_RELEASE='7.2.24';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -388,7 +388,9 @@ function spotterCancelPendingDrag(){
 }
 function spotterMoveGhost(x,y){
  if(!spotterDrag.ghost)return;
- spotterDrag.ghost.style.transform=`translate3d(${x-spotterDrag.ghost.offsetWidth/2}px,${y-spotterDrag.ghost.offsetHeight/2}px,0) scale(1.05)`;
+ const mobile=window.matchMedia('(max-width:899px)').matches;
+ const offsetY=mobile?spotterDrag.ghost.offsetHeight*.82:spotterDrag.ghost.offsetHeight/2;
+ spotterDrag.ghost.style.transform=`translate3d(${x-spotterDrag.ghost.offsetWidth/2}px,${y-offsetY}px,0) scale(1.05)`;
 }
 function spotterClearDropHighlights(){
  document.querySelectorAll('.spotter-file-column.spotter-file-active,.spotter-maintenance.spotter-drop-target')
@@ -448,9 +450,11 @@ function spotterStartDrag(event,kv,from){
 function spotterFindInsertion(list,y){
  const cards=[...list.querySelectorAll('.spotter-queue-card[data-spotter-queue-kv]')]
   .filter(node=>node!==spotterDrag.card);
+ if(!cards.length)return null;
  for(const card of cards){
   const rect=card.getBoundingClientRect();
-  if(y<rect.top+rect.height/2)return card;
+  const threshold=rect.top+rect.height*.48;
+  if(y<threshold)return card;
  }
  return null;
 }
@@ -458,6 +462,24 @@ function spotterPlacePlaceholder(list,before){
  const placeholder=spotterDrag.placeholder;if(!placeholder)return;
  if(before)list.insertBefore(placeholder,before);
  else list.appendChild(placeholder);
+}
+function spotterFindTargetColumn(x,y){
+ const columns=[...document.querySelectorAll('[data-spotter-file]')];
+ if(!columns.length)return null;
+ const mobile=window.matchMedia('(max-width:899px)').matches;
+ const horizontalTolerance=mobile?22:12;
+ const verticalTolerance=mobile?180:100;
+ let best=null,bestDistance=Infinity;
+ for(const column of columns){
+  const rect=column.getBoundingClientRect();
+  const insideX=x>=rect.left-horizontalTolerance&&x<=rect.right+horizontalTolerance;
+  const insideY=y>=rect.top-verticalTolerance&&y<=rect.bottom+verticalTolerance;
+  if(!insideX||!insideY)continue;
+  const centerX=(rect.left+rect.right)/2;
+  const distance=Math.abs(x-centerX);
+  if(distance<bestDistance){best=column;bestDistance=distance}
+ }
+ return best;
 }
 function spotterOnDragMove(event){
  if(spotterDrag.pointerId!==null&&event.pointerId!==spotterDrag.pointerId)return;
@@ -470,6 +492,7 @@ function spotterOnDragMove(event){
  event.preventDefault();
  spotterMoveGhost(event.clientX,event.clientY);
  spotterClearDropHighlights();
+
  const element=document.elementFromPoint(event.clientX,event.clientY);
  const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
  if(maintenance){
@@ -477,11 +500,24 @@ function spotterOnDragMove(event){
   spotterDrag.target={type:'maintenance'};
   return;
  }
- const column=element?.closest('[data-spotter-file]');
+
+ const column=spotterFindTargetColumn(event.clientX,event.clientY);
  const list=column?.querySelector('.spotter-file-list');
  if(!column||!list){spotterDrag.target=null;return}
+
  column.classList.add('spotter-file-active');
- const before=spotterFindInsertion(list,event.clientY);
+
+ const cards=[...list.querySelectorAll('.spotter-queue-card[data-spotter-queue-kv]')]
+  .filter(node=>node!==spotterDrag.card);
+ let before=null;
+
+ if(cards.length===1){
+  const rect=cards[0].getBoundingClientRect();
+  before=event.clientY<rect.top+rect.height*.48?cards[0]:null;
+ }else{
+  before=spotterFindInsertion(list,event.clientY);
+ }
+
  spotterPlacePlaceholder(list,before);
  spotterDrag.target={
   type:'queue',
