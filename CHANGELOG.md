@@ -1,5 +1,16 @@
 # Changelog
 
+## V7.2.23 — Drag & drop fluide Spotter
+
+- Toute la carte de kart devient la zone de prise ; suppression de la petite poignée.
+- Appui long de 450 ms avant activation afin de préserver le défilement tactile.
+- Halo vert, léger agrandissement et vibration confirment que la carte est saisie.
+- La carte mobile reste centrée sous le doigt ou la souris et suit le mouvement sans inertie.
+- Les autres cartes s’écartent grâce à un emplacement dynamique de la même taille que la carte.
+- Les colonnes s’illuminent lorsqu’elles deviennent la destination active.
+- La zone Maintenance s’illumine en rouge lorsqu’elle peut recevoir le kart.
+- Le bouton d’annulation ↶ reste disponible pour restaurer la dernière manipulation.
+
 ## V7.2.22 — Recaler la file Desktop
 
 - Après Auto puis Reprendre, le panneau Recaler la file n’occupe plus toute la largeur sur Desktop.

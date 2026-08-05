@@ -1,4 +1,4 @@
-# Velocity V7.2.22 — Recaler la file Desktop
+# Velocity V7.2.23 — Drag & drop fluide Spotter
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 

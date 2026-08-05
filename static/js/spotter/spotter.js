@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.22';
+const SPOTTER_APP_RELEASE='7.2.23';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -373,89 +373,147 @@ function spotterCommandBar(step){
 
 function spotterRenderCurrent(){renderSpotterFoundation(spotterState.recalibrating?'recalibrate':'live')}
 
-const spotterDrag={kv:null,from:null,pointerId:null,ghost:null,offsetX:0,offsetY:0,target:null,marker:null,timer:null,startX:0,startY:0,active:false,card:null,handle:null};
+const spotterDrag={
+ kv:null,from:null,pointerId:null,ghost:null,placeholder:null,timer:null,
+ startX:0,startY:0,lastX:0,lastY:0,active:false,card:null,
+ originalParent:null,originalNext:null,target:null
+};
 function spotterQueueMovable(item){return item&&item.status==='available'}
-function spotterEnsureInsertionMarker(){
- if(spotterDrag.marker?.isConnected)return spotterDrag.marker;
- const marker=document.createElement('div');marker.className='spotter-insertion-marker';document.body.appendChild(marker);spotterDrag.marker=marker;return marker;
+function spotterDragSource(kv,from){
+ return (from==='queue'?spotterState.queue:spotterState.maintenance).find(item=>item.kv===kv);
 }
-function spotterHideInsertionMarker(){if(spotterDrag.marker)spotterDrag.marker.classList.remove('visible')}
-function spotterShowInsertionMarker(rect){
- const marker=spotterEnsureInsertionMarker();
- marker.style.left=`${rect.left}px`;marker.style.top=`${rect.top}px`;marker.style.width=`${rect.width}px`;marker.classList.add('visible');
+function spotterCancelPendingDrag(){
+ if(spotterDrag.timer){clearTimeout(spotterDrag.timer);spotterDrag.timer=null}
+ spotterDrag.card?.classList.remove('spotter-holding');
 }
-function spotterActivateDrag(clientX,clientY){
- const {card,handle}=spotterDrag;if(!card||!handle)return;
- spotterDrag.active=true;card.classList.add('dragging','drag-ready');
+function spotterMoveGhost(x,y){
+ if(!spotterDrag.ghost)return;
+ spotterDrag.ghost.style.transform=`translate3d(${x-spotterDrag.ghost.offsetWidth/2}px,${y-spotterDrag.ghost.offsetHeight/2}px,0) scale(1.05)`;
+}
+function spotterClearDropHighlights(){
+ document.querySelectorAll('.spotter-file-column.spotter-file-active,.spotter-maintenance.spotter-drop-target')
+  .forEach(node=>node.classList.remove('spotter-file-active','spotter-drop-target'));
+}
+function spotterCreatePlaceholder(rect){
+ const placeholder=document.createElement('div');
+ placeholder.className='spotter-card-placeholder';
+ placeholder.style.width=`${rect.width}px`;
+ placeholder.style.height=`${rect.height}px`;
+ return placeholder;
+}
+function spotterCreateGhost(card,rect){
+ const ghost=card.cloneNode(true);
+ ghost.classList.remove('dragging','spotter-holding');
+ ghost.classList.add('spotter-drag-ghost','drag-ready');
+ ghost.removeAttribute('onpointerdown');
+ ghost.style.width=`${rect.width}px`;
+ ghost.style.height=`${rect.height}px`;
+ ghost.style.margin='0';
+ document.body.appendChild(ghost);
+ return ghost;
+}
+function spotterActivateDrag(){
+ const card=spotterDrag.card;if(!card)return;
+ spotterDrag.active=true;
+ spotterDrag.timer=null;
  const rect=card.getBoundingClientRect();
- spotterDrag.offsetX=clientX-rect.left;spotterDrag.offsetY=clientY-rect.top;
- const ghost=card.cloneNode(true);ghost.classList.add('spotter-drag-ghost','drag-ready');ghost.querySelector('.spotter-drag-handle')?.remove();ghost.style.width=`${rect.width}px`;ghost.style.height=`${rect.height}px`;
- document.body.appendChild(ghost);spotterDrag.ghost=ghost;spotterMoveGhost(clientX,clientY);
+ spotterDrag.originalParent=card.parentElement;
+ spotterDrag.originalNext=card.nextSibling;
+ spotterDrag.placeholder=spotterCreatePlaceholder(rect);
+ card.parentElement.insertBefore(spotterDrag.placeholder,card);
+ card.classList.add('dragging','drag-ready');
+ spotterDrag.ghost=spotterCreateGhost(card,rect);
+ spotterMoveGhost(spotterDrag.lastX,spotterDrag.lastY);
  document.body.classList.add('spotter-drag-active');
- if(navigator.vibrate)navigator.vibrate(25);
+ if(navigator.vibrate)navigator.vibrate(30);
 }
 function spotterStartDrag(event,kv,from){
  if(event.button!==undefined&&event.button!==0)return;
- const source=(from==='queue'?spotterState.queue:spotterState.maintenance).find(item=>item.kv===kv);
+ const source=spotterDragSource(kv,from);
  if(!source||!spotterQueueMovable(source))return;
- event.stopPropagation();
- const handle=event.currentTarget;
- const card=handle.closest('.spotter-queue-card');if(!card)return;
+ const card=event.currentTarget.closest('.spotter-queue-card');if(!card)return;
  spotterCancelPendingDrag();
- Object.assign(spotterDrag,{kv,from,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,active:false,card,handle,target:null});
- try{handle.setPointerCapture(event.pointerId)}catch(_){}
- handle.classList.add('holding');
- spotterDrag.timer=setTimeout(()=>spotterActivateDrag(spotterDrag.startX,spotterDrag.startY),500);
+ Object.assign(spotterDrag,{
+  kv,from,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,
+  lastX:event.clientX,lastY:event.clientY,active:false,card,target:null,
+  ghost:null,placeholder:null,originalParent:null,originalNext:null
+ });
+ card.classList.add('spotter-holding');
+ try{card.setPointerCapture(event.pointerId)}catch(_){}
+ spotterDrag.timer=setTimeout(spotterActivateDrag,450);
  document.addEventListener('pointermove',spotterOnDragMove,{passive:false});
  document.addEventListener('pointerup',spotterEndDrag,{once:true});
  document.addEventListener('pointercancel',spotterEndDrag,{once:true});
 }
-function spotterCancelPendingDrag(){
- if(spotterDrag.timer){clearTimeout(spotterDrag.timer);spotterDrag.timer=null}
- spotterDrag.handle?.classList.remove('holding');
+function spotterFindInsertion(list,y){
+ const cards=[...list.querySelectorAll('.spotter-queue-card[data-spotter-queue-kv]')]
+  .filter(node=>node!==spotterDrag.card);
+ for(const card of cards){
+  const rect=card.getBoundingClientRect();
+  if(y<rect.top+rect.height/2)return card;
+ }
+ return null;
 }
-function spotterMoveGhost(x,y){if(spotterDrag.ghost){spotterDrag.ghost.style.left=`${x-spotterDrag.offsetX}px`;spotterDrag.ghost.style.top=`${y-spotterDrag.offsetY}px`}}
-function spotterSetQueueTarget(column,beforeKv,markerRect){
- const file=column?.dataset.spotterFile||null;if(!file)return;
- spotterDrag.target={type:'queue',file,beforeKv:beforeKv||null};spotterShowInsertionMarker(markerRect);
+function spotterPlacePlaceholder(list,before){
+ const placeholder=spotterDrag.placeholder;if(!placeholder)return;
+ if(before)list.insertBefore(placeholder,before);
+ else list.appendChild(placeholder);
 }
 function spotterOnDragMove(event){
  if(spotterDrag.pointerId!==null&&event.pointerId!==spotterDrag.pointerId)return;
+ spotterDrag.lastX=event.clientX;spotterDrag.lastY=event.clientY;
  if(!spotterDrag.active){
   const distance=Math.hypot(event.clientX-spotterDrag.startX,event.clientY-spotterDrag.startY);
   if(distance>10)spotterCancelPendingDrag();
   return;
  }
- event.preventDefault();spotterMoveGhost(event.clientX,event.clientY);spotterHideInsertionMarker();spotterDrag.target=null;
- document.querySelectorAll('.spotter-drop-target').forEach(node=>node.classList.remove('spotter-drop-target'));
+ event.preventDefault();
+ spotterMoveGhost(event.clientX,event.clientY);
+ spotterClearDropHighlights();
  const element=document.elementFromPoint(event.clientX,event.clientY);
  const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
- if(maintenance){maintenance.classList.add('spotter-drop-target');spotterDrag.target={type:'maintenance'};return}
- const column=element?.closest('[data-spotter-file]');if(!column)return;
- const list=column.querySelector('.spotter-file-list');if(!list)return;
- const card=element?.closest('[data-spotter-queue-kv]');
- const cards=[...list.querySelectorAll('[data-spotter-queue-kv]')].filter(node=>node.dataset.spotterQueueKv!==spotterDrag.kv);
- if(card&&card.dataset.spotterQueueKv!==spotterDrag.kv){
-  const rect=card.getBoundingClientRect();const after=event.clientY>rect.top+rect.height/2;
-  if(after){
-   const index=cards.indexOf(card);const next=cards[index+1]||null;
-   if(next){const nr=next.getBoundingClientRect();spotterSetQueueTarget(column,next.dataset.spotterQueueKv,{left:nr.left,top:nr.top-5,width:nr.width});}
-   else spotterSetQueueTarget(column,null,{left:rect.left,top:rect.bottom+3,width:rect.width});
-  }else spotterSetQueueTarget(column,card.dataset.spotterQueueKv,{left:rect.left,top:rect.top-5,width:rect.width});
+ if(maintenance){
+  maintenance.classList.add('spotter-drop-target');
+  spotterDrag.target={type:'maintenance'};
   return;
  }
- if(!cards.length){const rect=list.getBoundingClientRect();spotterSetQueueTarget(column,null,{left:rect.left,top:rect.top+28,width:rect.width});return}
- const lastRect=cards[cards.length-1].getBoundingClientRect();spotterSetQueueTarget(column,null,{left:lastRect.left,top:lastRect.bottom+3,width:lastRect.width});
+ const column=element?.closest('[data-spotter-file]');
+ const list=column?.querySelector('.spotter-file-list');
+ if(!column||!list){spotterDrag.target=null;return}
+ column.classList.add('spotter-file-active');
+ const before=spotterFindInsertion(list,event.clientY);
+ spotterPlacePlaceholder(list,before);
+ spotterDrag.target={
+  type:'queue',
+  file:column.dataset.spotterFile,
+  beforeKv:before?.dataset.spotterQueueKv||null
+ };
+}
+function spotterRestoreOriginalCard(){
+ const {card,originalParent,originalNext}=spotterDrag;
+ if(!card||!originalParent)return;
+ if(originalNext&&originalNext.parentNode===originalParent)originalParent.insertBefore(card,originalNext);
+ else originalParent.appendChild(card);
 }
 function spotterEndDrag(){
  document.removeEventListener('pointermove',spotterOnDragMove);
  spotterCancelPendingDrag();
  const target=spotterDrag.active?spotterDrag.target:null;
- if(target?.type==='maintenance')spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);
- else if(target?.type==='queue')spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,target.beforeKv,target.file);
- document.querySelectorAll('.dragging,.drag-ready,.spotter-drop-target').forEach(node=>node.classList.remove('dragging','drag-ready','spotter-drop-target'));
- spotterDrag.ghost?.remove();spotterDrag.marker?.remove();document.body.classList.remove('spotter-drag-active');
- Object.assign(spotterDrag,{kv:null,from:null,pointerId:null,ghost:null,offsetX:0,offsetY:0,target:null,marker:null,timer:null,startX:0,startY:0,active:false,card:null,handle:null});
+ if(spotterDrag.active){
+  if(target?.type==='maintenance')spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);
+  else if(target?.type==='queue')spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,target.beforeKv,target.file);
+  else spotterRestoreOriginalCard();
+ }
+ spotterClearDropHighlights();
+ spotterDrag.card?.classList.remove('dragging','drag-ready','spotter-holding');
+ spotterDrag.ghost?.remove();
+ spotterDrag.placeholder?.remove();
+ document.body.classList.remove('spotter-drag-active');
+ Object.assign(spotterDrag,{
+  kv:null,from:null,pointerId:null,ghost:null,placeholder:null,timer:null,
+  startX:0,startY:0,lastX:0,lastY:0,active:false,card:null,
+  originalParent:null,originalNext:null,target:null
+ });
 }
 function spotterMoveKartInQueue(kv,from,beforeKv=null,targetFile=null){
  spotterRememberUndo();
@@ -544,7 +602,7 @@ function spotterMaintenanceSelectionKey(kv){return `maintenance:${String(kv||'')
 function spotterQueueCard(item){
  const score=item.score==null?'—':item.score,confidence=item.confidence==null?'—':`${item.confidence}%`;
  if(item.status==='reserved')return `<div class="spotter-queue-card reserved ${item.estimated?'estimated':''}"><strong>${spotterEscape(spotterDisplayName(item.reservedTeam))}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
- return `<div class="spotter-queue-card available spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}"><button class="spotter-drag-handle" type="button" aria-label="Déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','queue')">⋮⋮</button><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div></div>`;
+ return `<div class="spotter-queue-card available spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}" role="button" aria-label="Maintenir pour déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','queue')"><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div></div>`;
 }
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
 function spotterTeamNumber(item){

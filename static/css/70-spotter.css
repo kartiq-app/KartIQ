@@ -1537,3 +1537,81 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
     max-width:none!important;
   }
 }
+
+
+/* Velocity V7.2.23 — déplacement fluide de toute la carte */
+.spotter-drag-handle{display:none!important}
+.spotter-queue-card.available.spotter-draggable{
+  cursor:grab!important;
+  touch-action:pan-y!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;
+  transition:transform .16s ease,box-shadow .16s ease,opacity .16s ease!important;
+}
+.spotter-queue-card.available.spotter-draggable.spotter-holding{
+  transform:scale(1.025)!important;
+  box-shadow:0 0 0 2px rgba(53,208,127,.35),0 0 18px rgba(53,208,127,.42)!important;
+}
+.spotter-queue-card.available.spotter-draggable.dragging{
+  opacity:.16!important;
+  transform:scale(.96)!important;
+}
+.spotter-drag-ghost{
+  position:fixed!important;
+  left:0!important;
+  top:0!important;
+  z-index:100000!important;
+  pointer-events:none!important;
+  transform-origin:center center!important;
+  opacity:.96!important;
+  outline:3px solid #35d07f!important;
+  outline-offset:2px!important;
+  box-shadow:0 0 0 6px rgba(53,208,127,.2),0 0 30px rgba(53,208,127,.85),0 18px 42px rgba(0,0,0,.65)!important;
+  transition:none!important;
+  will-change:transform!important;
+}
+.spotter-card-placeholder{
+  flex:0 0 auto!important;
+  box-sizing:border-box!important;
+  border:2px dashed #35d07f!important;
+  border-radius:14px!important;
+  background:rgba(53,208,127,.12)!important;
+  box-shadow:inset 0 0 18px rgba(53,208,127,.14),0 0 16px rgba(53,208,127,.28)!important;
+  animation:spotterPlaceholderPulse .8s ease-in-out infinite alternate!important;
+}
+@keyframes spotterPlaceholderPulse{
+  from{opacity:.65;transform:scale(.97)}
+  to{opacity:1;transform:scale(1)}
+}
+.spotter-file-column.spotter-file-active{
+  border-color:#35d07f!important;
+  box-shadow:0 0 0 2px rgba(53,208,127,.18),0 0 22px rgba(53,208,127,.25)!important;
+}
+.spotter-maintenance.spotter-drop-target{
+  border-color:#ff5b5b!important;
+  box-shadow:0 0 0 3px rgba(255,91,91,.2),0 0 28px rgba(255,91,91,.48)!important;
+  transform:scale(1.01)!important;
+}
+body.spotter-drag-active{
+  cursor:grabbing!important;
+  overflow:hidden!important;
+}
+body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
+  cursor:grabbing!important;
+}
+
+/* Le placeholder conserve exactement la taille des cartes selon l'écran */
+@media(max-width:899px){
+  .spotter-card-placeholder{
+    width:min(28vw,104px)!important;
+    height:min(28vw,104px)!important;
+    aspect-ratio:1!important;
+  }
+}
+@media(min-width:900px){
+  .spotter-card-placeholder{
+    width:148px!important;
+    height:148px!important;
+  }
+}
