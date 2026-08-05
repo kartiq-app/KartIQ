@@ -834,3 +834,120 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
  .spotter-incoming-buttons{grid-template-columns:minmax(0,1fr) 38px!important}
  .spotter-incoming-buttons .spotter-maintenance-btn{font-size:19px!important}
 }
+
+
+/* Velocity V7.2.15 — Desktop 75/25, annulation et synchronisation */
+.spotter-command-bar.live-mode,
+.spotter-command-bar.free-active{
+  grid-template-columns:minmax(52px,.75fr) minmax(44px,.7fr) 58px minmax(54px,.8fr) minmax(52px,.75fr)!important;
+  gap:6px!important;
+}
+.spotter-menu-command,
+.spotter-command-bar .spotter-icon-btn{
+  width:auto!important;
+  min-width:44px!important;
+  padding:0 7px!important;
+  gap:3px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.spotter-menu-command span,
+.spotter-command-bar .spotter-icon-btn span{
+  display:none;
+  font-family:Arial,sans-serif;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.03em;
+}
+.spotter-undo-button{
+  width:52px;
+  min-width:52px;
+  height:44px;
+  justify-self:center;
+  border:1px solid #536071;
+  border-radius:11px;
+  background:#111720;
+  color:#fff;
+  font-size:30px;
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+  box-shadow:0 0 0 1px rgba(255,255,255,.025),0 6px 16px rgba(0,0,0,.28);
+}
+.spotter-undo-button:active{transform:scale(.96)}
+.spotter-undo-button:disabled{opacity:.28;cursor:default;box-shadow:none}
+.spotter-live-desktop-layout{display:block}
+.spotter-desktop-sidebar{display:flex;flex-direction:column;gap:8px}
+.spotter-draggable.drag-ready,
+.spotter-drag-ghost.drag-ready{
+  outline:3px solid #35d07f!important;
+  outline-offset:3px!important;
+  box-shadow:0 0 0 6px rgba(53,208,127,.22),0 0 30px rgba(53,208,127,.95),0 16px 38px rgba(0,0,0,.6)!important;
+}
+
+@media(min-width:900px){
+ body.current-spotter .spotter-screen{
+  width:100%!important;
+  max-width:none!important;
+  padding-left:12px!important;
+  padding-right:12px!important;
+  box-sizing:border-box!important;
+ }
+ body.current-spotter .spotter-shell{width:100%!important;max-width:none!important}
+ .spotter-command-bar.live-mode,
+ .spotter-command-bar.free-active{
+  grid-template-columns:110px 90px 66px 100px 122px!important;
+  justify-content:start!important;
+ }
+ .spotter-command-bar .spotter-menu-command{display:none!important}
+ .spotter-command-bar .spotter-icon-btn span{display:inline}
+ .spotter-command-bar .spotter-icon-btn{justify-self:start!important}
+ .spotter-undo-button{width:60px;min-width:60px;height:48px;font-size:34px}
+ .spotter-live-desktop-layout{
+  display:grid!important;
+  grid-template-columns:minmax(0,3fr) minmax(270px,1fr)!important;
+  gap:12px!important;
+  align-items:start!important;
+  width:100%!important;
+ }
+ .spotter-desktop-queues{min-width:0}
+ .spotter-desktop-sidebar{
+  min-width:0;
+  position:sticky;
+  top:10px;
+  max-height:calc(100vh - 90px);
+  overflow-y:auto;
+  padding-right:2px;
+ }
+ .spotter-desktop-queues .spotter-queue-panel{width:100%!important}
+ .spotter-desktop-queues .spotter-queues-layout{
+  justify-content:flex-start!important;
+  align-items:flex-start!important;
+  width:100%!important;
+ }
+ .spotter-desktop-queues .spotter-file-column{
+  min-width:0!important;
+  align-items:flex-start!important;
+ }
+ .spotter-desktop-queues .spotter-file-list{
+  width:100%!important;
+  align-items:flex-start!important;
+ }
+ .spotter-desktop-queues .spotter-file-list .spotter-queue-card{
+  width:min(100%,118px)!important;
+  max-width:118px!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+ }
+ .spotter-desktop-sidebar .spotter-incoming-card{
+  min-height:112px!important;
+ }
+ .spotter-desktop-sidebar .spotter-incoming-info{padding:8px 6px!important;gap:4px!important}
+ .spotter-desktop-sidebar .spotter-incoming-info strong{font-size:13px!important}
+ .spotter-desktop-sidebar .spotter-file-choice{width:46px!important;font-size:20px!important}
+ .spotter-desktop-sidebar .spotter-incoming-control{padding:7px!important;gap:7px!important}
+ .spotter-desktop-sidebar .spotter-incoming-buttons button{min-height:40px!important}
+ .spotter-footer-actions{grid-column:1/-1}
+}

@@ -1,5 +1,16 @@
 # Changelog
 
+## V7.2.15 — Desktop Spotter, annulation et synchronisation
+
+- Desktop Spotter sur toute la largeur avec une répartition 75 % pour les files et 25 % pour le panneau latéral.
+- Cartes des files réduites de 25 % sur ordinateur et alignées à gauche.
+- Karts entrants empilés dans la colonne droite, puis Maintenance juste en dessous.
+- Suppression du bouton Menu interne au Spotter sur ordinateur pour éviter le doublon avec le menu général.
+- Remplacement de « Sortie » par un grand bouton ↶ qui annule uniquement la dernière action après confirmation.
+- L’annulation restaure également un déplacement en tête de file, un changement de file, une validation ou une mise en maintenance.
+- Synchronisation serveur bidirectionnelle : les actions du mode développeur, du mobile et du Desktop sont répercutées entre les écrans.
+- Préparation du même état partagé pour l’intégration future dans Analyzer.
+
 ## V7.2.14 — Maintenance et déplacement Spotter
 
 - Bouton Maintenance rouge, réduit et remplacé par une icône d’avertissement.
