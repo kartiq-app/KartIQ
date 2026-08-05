@@ -1,3 +1,7 @@
+## V7.1.7 — Mode FREE Spotter
+
+Le module Spotter peut poursuivre les attributions FIFO en mode estimé pendant une absence, puis imposer un recalage manuel de la file avant le retour au suivi confirmé.
+
 # Velocity V7.0.0 — Spotter Foundation
 
 Cette version ajoute la fondation portrait du module Spotter Quick Change à une file FIFO.

@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.1.6"
-APP_RELEASE_NAME = "FILET ENDURANCE SPOTTER"
+APP_VERSION = "7.1.7"
+APP_RELEASE_NAME = "MODE FREE SPOTTER"
 
 
 def _circuit_sort_key(circuit):

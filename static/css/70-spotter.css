@@ -172,3 +172,23 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
 .spotter-step.active#spotterLiveStep{gap:7px}
 .spotter-queue-panel{margin-top:0!important}
 @media(min-width:700px){body.current-spotter .spotter-screen{padding-top:10px!important}}
+
+/* Velocity V7.1.7 — barre LIVE/FREE et mode FREE estimé */
+.spotter-command-bar.live-mode{grid-template-columns:40px minmax(42px,.72fr) minmax(72px,1fr) minmax(42px,.72fr) 40px;gap:5px}
+.spotter-live-state,.spotter-free-button{font-family:Arial,sans-serif;font-size:11px;font-weight:900;letter-spacing:.06em;text-align:center}
+.spotter-live-state{color:#41d17c}
+.spotter-free-button{border:0;background:transparent;color:#ff9a1f;height:34px;border-radius:8px;cursor:pointer}
+.spotter-free-button:active{background:rgba(255,138,0,.12)}
+.spotter-command-bar.free-active{grid-template-columns:40px minmax(0,1fr) 40px;gap:8px}
+.spotter-resume-main{height:40px;border:1px solid #ff8a00;border-radius:9px;background:linear-gradient(180deg,#ff941f,#dd6f00);color:#08090c;font-family:Arial,sans-serif;font-size:11px;font-weight:1000;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 0 18px rgba(255,138,0,.22)}
+.spotter-free-status{border:1px solid rgba(255,138,0,.45);background:rgba(255,138,0,.09);border-radius:10px;padding:8px 10px;text-align:center;display:flex;flex-direction:column;gap:3px}
+.spotter-free-status strong{font-family:Arial,sans-serif;font-size:10px;color:#ff9b25;letter-spacing:.06em}
+.spotter-free-status span{font-size:9px;color:#c7ccd5}
+.spotter-queue-card.estimated{outline:2px solid rgba(255,138,0,.75);outline-offset:-2px}
+.spotter-recalibrate-card h2{margin:0 0 8px;font-family:'F1 Regular',Arial,sans-serif;font-size:15px;letter-spacing:.08em;text-align:center}
+.spotter-recalibrate-card p{margin:0;color:#b9c0cc;font-size:11px;line-height:1.45;text-align:center}
+.spotter-recalibrate-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.spotter-recalibrate-summary span{background:#171b23;border:1px solid #303641;border-radius:8px;padding:8px 4px;font-size:9px;font-weight:900;text-align:center}
+.spotter-confirm-recalibration{margin-top:0}
+#spotterRecalibrateStep.active{display:flex;flex-direction:column;gap:7px}
+@media(max-width:370px){.spotter-command-bar.live-mode{grid-template-columns:38px 38px minmax(68px,1fr) 38px 38px;gap:3px}.spotter-live-state,.spotter-free-button{font-size:10px}.spotter-command-title{font-size:12px}}

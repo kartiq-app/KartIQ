@@ -1,3 +1,13 @@
+# Velocity V7.1.7 — Mode FREE Spotter
+
+- Nouvelle barre : Menu | LIVE | SORTIE | FREE | Paramètres.
+- LIVE et FREE utilisent la police standard ; SORTIE conserve F1 Regular.
+- En mode FREE, la barre affiche un grand bouton « REPRENDRE LE SUIVI ».
+- Le moteur FIFO continue automatiquement en mode estimé pendant l'absence du spotter.
+- Les PIT IN/PIT OUT survenus en mode FREE sont comptabilisés.
+- À la reprise, un écran unique « RECALER LA FILE » permet de réordonner la file et la maintenance par glisser-déposer.
+- Validation du recalage pour revenir au suivi LIVE confirmé.
+
 # Velocity V7.1.6 — Filet Endurance portrait dans Spotter
 
 - Suppression du filet orange spécifique ajouté en V7.1.5.
