@@ -1,5 +1,12 @@
 # Changelog
 
+## V7.2.22 — Recaler la file Desktop
+
+- Après Auto puis Reprendre, le panneau Recaler la file n’occupe plus toute la largeur sur Desktop.
+- Le bloc de recalage reprend exactement la largeur de la carte des files du Spotter.
+- Les Karts entrants et la Maintenance restent dans la colonne droite, comme dans la vue Spotter normale.
+- La transition entre la vue normale et la vue de recalage conserve la même structure et le même centrage.
+
 ## V7.2.21 — Auto et Reprendre Spotter
 
 - Sur Desktop, le bouton Auto devient un bouton orange « ▶ REPRENDRE » lorsque le mode Auto est actif.

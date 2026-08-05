@@ -1485,3 +1485,55 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
     box-shadow:0 0 18px rgba(255,138,0,.22)!important;
   }
 }
+
+
+/* Velocity V7.2.22 — vue Recaler la file aux dimensions du Spotter Desktop */
+.spotter-recalibrate-desktop-layout{display:block}
+.spotter-recalibrate-sidebar{display:flex;flex-direction:column;gap:8px}
+
+@media(min-width:900px){
+  #spotterRecalibrateStep.active{
+    width:100%!important;
+  }
+  .spotter-recalibrate-desktop-layout{
+    display:grid!important;
+    grid-template-columns:minmax(0,var(--spotter-files-width,474px)) minmax(320px,420px)!important;
+    gap:12px!important;
+    align-items:start!important;
+    justify-content:center!important;
+    width:max-content!important;
+    max-width:100%!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+  .spotter-recalibrate-main{
+    width:var(--spotter-files-width,474px)!important;
+    max-width:100%!important;
+    min-width:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:8px!important;
+  }
+  .spotter-recalibrate-main .spotter-recalibrate-card,
+  .spotter-recalibrate-main .spotter-queue-panel,
+  .spotter-recalibrate-main .spotter-confirm-recalibration{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+  .spotter-recalibrate-main .spotter-queue-panel .spotter-queues-layout{
+    justify-content:center!important;
+  }
+  .spotter-recalibrate-sidebar{
+    width:100%!important;
+    min-width:0!important;
+    position:sticky!important;
+    top:10px!important;
+    max-height:calc(100vh - 90px)!important;
+    overflow-y:auto!important;
+  }
+  .spotter-recalibrate-sidebar .spotter-card{
+    width:100%!important;
+    max-width:none!important;
+  }
+}
