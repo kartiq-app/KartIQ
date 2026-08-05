@@ -1,3 +1,11 @@
+# Velocity V7.2.6 — Kart complet dans le Spotter
+
+- Suppression du précédent visuel partiel du kart dans les cartes.
+- Intégration du nouveau kart complet fourni, détouré sur fond transparent.
+- Positionnement du kart en petit et centré dans la partie basse de chaque carte.
+- Conservation des textes et informations dans la partie haute pour préserver la lisibilité.
+- Mise à jour du numéro de version affiché sur la page d’accueil.
+
 # Velocity V7.2.5 — Cartes-karts du Spotter
 
 - Remplacement visuel des carrés du Spotter par des cartes sombres intégrant l’avant d’un kart en partie basse.

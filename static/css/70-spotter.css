@@ -290,7 +290,7 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
   bottom:-1px;
   height:47%;
   pointer-events:none;
-  background:url("../assets/spotter/kart-front.png") center bottom/100% auto no-repeat;
+  background:url("../assets/spotter/kart-full.png") center bottom/100% auto no-repeat;
   opacity:.92;
   filter:drop-shadow(0 0 4px rgba(255,255,255,.10));
 }
@@ -334,4 +334,24 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
 @media(max-width:370px){
  .spotter-queue-card,.spotter-queue-card.incoming,.spotter-queue-end-drop{width:min(43vw,148px)!important}
  .spotter-queue-card{padding-bottom:63px!important}
+}
+
+/* Velocity V7.2.6 — kart complet sous les informations */
+.spotter-queue-card{
+  padding:9px 8px 66px!important;
+}
+.spotter-queue-card::after{
+  left:0!important;
+  right:0!important;
+  bottom:4px!important;
+  height:62px!important;
+  background:url("../assets/spotter/kart-full.png") center bottom/62px 62px no-repeat!important;
+  opacity:.94!important;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.10))!important;
+}
+.spotter-queue-card.reserved::after,.spotter-queue-card.incoming::after{opacity:.82!important}
+.spotter-queue-card.maintenance::after{opacity:.76!important}
+@media(max-width:370px){
+ .spotter-queue-card{padding-bottom:60px!important}
+ .spotter-queue-card::after{height:56px!important;background-size:56px 56px!important;bottom:3px!important}
 }
