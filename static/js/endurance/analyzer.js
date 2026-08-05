@@ -804,7 +804,7 @@ function analyzerRefreshKartRelayCountdowns(){
 }
 if(!window.__kartiqRelayCountdownTimer){window.__kartiqRelayCountdownTimer=setInterval(analyzerRefreshKartRelayCountdowns,1000)}
 
-const analyzerFollowedDeltaHistory={driver:'',lap:null,ahead:null,behind:null,aheadTrend:'neutral',behindTrend:'neutral'};
+const analyzerFollowedDeltaHistory={driver:'',signature:null,ahead:null,behind:null,aheadTrend:'neutral',behindTrend:'neutral'};
 function analyzerGapSeconds(value){
  const raw=String(value??'').trim().replace(',','.');
  if(!raw||raw==='—'||raw==='--'||/lap|tour/i.test(raw))return null;
@@ -817,9 +817,16 @@ function analyzerSignedDelta(value,sign){
  if(/lap|tour/i.test(raw))return `${sign}${raw.replace(/^[+-]\s*/,'')}`;
  const seconds=analyzerGapSeconds(raw);return Number.isFinite(seconds)?`${sign}${seconds.toFixed(2)}`:'—';
 }
+function analyzerDeltaSignature(followed){
+ if(!followed)return '';
+ const lap=Number(followed.laps);
+ const lapPart=Number.isFinite(lap)?String(lap):'';
+ const lastPart=String(followed.last||followed.last_lap||'').trim();
+ return `${lapPart}|${lastPart}`;
+}
 function analyzerFollowedNeighbors(followed){
  if(!followed)return {ahead:null,behind:null,aheadValue:null,behindValue:null,aheadText:'—',behindText:'—'};
- // V6.11.6 : source unique avec le mode Focus Endurance.
+ // Source unique avec les modes Focus Sprint / Endurance.
  const ahead=typeof sprintDriverAhead==='function'?sprintDriverAhead(followed):null;
  const behind=typeof sprintDriverBehind==='function'?sprintDriverBehind(followed):null;
  const lapDiffAhead=ahead?Math.max(0,(Number(ahead.laps)||0)-(Number(followed?.laps)||0)):0;
@@ -835,14 +842,23 @@ function analyzerFollowedNeighbors(followed){
  };
 }
 function analyzerUpdateFollowedDeltas(followed){
- const data=analyzerFollowedNeighbors(followed),lap=Number(followed?.laps);
- if(!followed){analyzerFollowedDeltaHistory.driver='';return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
- if(analyzerFollowedDeltaHistory.driver!==followed.driver){Object.assign(analyzerFollowedDeltaHistory,{driver:followed.driver,lap:Number.isFinite(lap)?lap:null,ahead:data.aheadValue,behind:data.behindValue,aheadTrend:'neutral',behindTrend:'neutral'})}
- else if(Number.isFinite(lap)&&lap!==analyzerFollowedDeltaHistory.lap){
+ const data=analyzerFollowedNeighbors(followed);
+ if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',signature:null,ahead:null,behind:null,aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
+ const driverKey=String(followed.driver||state?.followed_driver||followed.pos||'');
+ const signature=analyzerDeltaSignature(followed);
+ if(analyzerFollowedDeltaHistory.driver!==driverKey){
+  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,signature,ahead:data.aheadValue,behind:data.behindValue,aheadTrend:'neutral',behindTrend:'neutral'});
+ }else if(signature&&signature!==analyzerFollowedDeltaHistory.signature){
   const tolerance=.03;
-  if(Number.isFinite(data.aheadValue)&&Number.isFinite(analyzerFollowedDeltaHistory.ahead))analyzerFollowedDeltaHistory.aheadTrend=data.aheadValue<analyzerFollowedDeltaHistory.ahead-tolerance?'good':data.aheadValue>analyzerFollowedDeltaHistory.ahead+tolerance?'bad':'neutral';else analyzerFollowedDeltaHistory.aheadTrend='neutral';
-  if(Number.isFinite(data.behindValue)&&Number.isFinite(analyzerFollowedDeltaHistory.behind))analyzerFollowedDeltaHistory.behindTrend=data.behindValue>analyzerFollowedDeltaHistory.behind+tolerance?'good':data.behindValue<analyzerFollowedDeltaHistory.behind-tolerance?'bad':'neutral';else analyzerFollowedDeltaHistory.behindTrend='neutral';
-  analyzerFollowedDeltaHistory.lap=lap;analyzerFollowedDeltaHistory.ahead=data.aheadValue;analyzerFollowedDeltaHistory.behind=data.behindValue;
+  if(Number.isFinite(data.aheadValue)&&Number.isFinite(analyzerFollowedDeltaHistory.ahead)){
+   analyzerFollowedDeltaHistory.aheadTrend=data.aheadValue<analyzerFollowedDeltaHistory.ahead-tolerance?'good':data.aheadValue>analyzerFollowedDeltaHistory.ahead+tolerance?'bad':'neutral';
+  }
+  if(Number.isFinite(data.behindValue)&&Number.isFinite(analyzerFollowedDeltaHistory.behind)){
+   analyzerFollowedDeltaHistory.behindTrend=data.behindValue>analyzerFollowedDeltaHistory.behind+tolerance?'good':data.behindValue<analyzerFollowedDeltaHistory.behind-tolerance?'bad':'neutral';
+  }
+  analyzerFollowedDeltaHistory.signature=signature;
+  if(Number.isFinite(data.aheadValue))analyzerFollowedDeltaHistory.ahead=data.aheadValue;
+  if(Number.isFinite(data.behindValue))analyzerFollowedDeltaHistory.behind=data.behindValue;
  }
  return {...data,aheadTrend:analyzerFollowedDeltaHistory.aheadTrend,behindTrend:analyzerFollowedDeltaHistory.behindTrend};
 }

@@ -45,6 +45,26 @@ function qualificationFocusSessionStatus(){
   critical:Number.isFinite(ms)&&ms<=120000
  };
 }
+
+const qualificationDeltaHistory={driver:'',signature:null,value:null,trend:'neutral'};
+function qualificationDeltaTrend(followed,value){
+ const isLeader=qualificationDeltaIsLeader(followed);
+ if(isLeader)return 'good';
+ const numeric=typeof analyzerGapSeconds==='function'?analyzerGapSeconds(value):null;
+ const driverKey=String(followed?.driver||state?.followed_driver||followed?.pos||'');
+ const signature=typeof analyzerDeltaSignature==='function'?analyzerDeltaSignature(followed):`${Number(followed?.laps)||''}|${String(followed?.last||'')}`;
+ if(qualificationDeltaHistory.driver!==driverKey){
+  Object.assign(qualificationDeltaHistory,{driver:driverKey,signature,value:numeric,trend:'neutral'});
+ }else if(signature&&signature!==qualificationDeltaHistory.signature){
+  const tolerance=.03;
+  if(Number.isFinite(numeric)&&Number.isFinite(qualificationDeltaHistory.value)){
+   qualificationDeltaHistory.trend=numeric<qualificationDeltaHistory.value-tolerance?'good':numeric>qualificationDeltaHistory.value+tolerance?'bad':'neutral';
+  }
+  qualificationDeltaHistory.signature=signature;
+  if(Number.isFinite(numeric))qualificationDeltaHistory.value=numeric;
+ }
+ return qualificationDeltaHistory.trend;
+}
 function renderQualificationFocus(){
  const overlay=document.getElementById('qualificationFocus');
  if(!overlay?.classList.contains('show'))return;
@@ -58,7 +78,7 @@ function renderQualificationFocus(){
  const bestTime=document.getElementById('focusBestTime');
  if(position)position.textContent=f.pos?'P'+f.pos:'—';
  if(followedName)followedName.textContent=f.driver||state.followed_driver||'—';
- if(delta){const value=qualificationDeltaFor(f);delta.textContent=value;const leader=qualificationDeltaIsLeader(f);delta.classList.toggle('delta-good',leader);delta.classList.toggle('delta-orange',!leader&&value!=='--'&&value!=='—')}
+ if(delta){const value=qualificationDeltaFor(f);const trend=qualificationDeltaTrend(f,value);delta.textContent=value;delta.classList.toggle('delta-good',trend==='good');delta.classList.toggle('delta-orange',trend==='bad');delta.classList.toggle('delta-neutral',trend==='neutral')}
  const sessionStatus=qualificationFocusSessionStatus();
  if(remaining){remaining.textContent=sessionStatus.time;remaining.classList.toggle('time-critical',sessionStatus.critical)}
  if(laps){laps.textContent=sessionStatus.laps||'—';laps.classList.toggle('is-empty',!sessionStatus.laps)}

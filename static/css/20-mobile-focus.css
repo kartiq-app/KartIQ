@@ -114,6 +114,7 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 .qual-focus-delta{font-family:var(--font-driver);font-size:clamp(94px,23vh,260px);font-weight:700;font-style:italic;letter-spacing:-.045em;line-height:.86;white-space:nowrap}
 .qual-focus-delta.delta-good{color:var(--green)}
 .qual-focus-delta.delta-orange{color:#ff9f1a}
+.qual-focus-delta.delta-neutral{color:#fff}
 .qual-focus-remaining{font-family:var(--font-time);font-size:clamp(52px,12vh,145px);font-weight:500;line-height:.9;white-space:nowrap}
 .qual-focus-remaining.time-critical{color:#ff9f1a!important;text-shadow:0 0 18px rgba(255,159,26,.28)}
 .qual-focus-laps{margin-top:clamp(10px,2.5vh,28px);font-family:var(--font-time);font-size:clamp(30px,6.5vh,76px);font-weight:500;line-height:1;white-space:nowrap}

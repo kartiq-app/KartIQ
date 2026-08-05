@@ -1,3 +1,12 @@
+# Velocity V7.2.4 — Couleurs dynamiques des deltas
+
+- Rétablit les couleurs vert / orange des deltas dans Analyzer.
+- Utilise la même logique dans les Focus Sprint et Endurance.
+- Ajoute un suivi tour par tour robuste fondé sur le numéro de tour et le dernier chrono.
+- Ajoute la tendance du delta dans le Focus Qualifications.
+- Vert : évolution favorable ; orange : évolution défavorable ; blanc : neutre ou première mesure.
+- Conserve une tolérance de 0,03 s pour éviter les changements de couleur parasites.
+
 # Velocity V7.2.3 — Détection dyn1 des courses au nombre de tours
 
 - Décode les trames Apex `dyn1|text|Giro X/Y`.

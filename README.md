@@ -1,4 +1,4 @@
-# Velocity V7.2.3 — Détection Apex dyn1 des courses au nombre de tours
+# Velocity V7.2.4 — Couleurs dynamiques des deltas
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 

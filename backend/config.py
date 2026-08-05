@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.3"
+APP_VERSION = "7.2.4"
 APP_RELEASE_NAME = "AUTO GRIS ET MESSAGERIE AGRANDIE"
 
 
