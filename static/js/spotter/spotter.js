@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.17';
+const SPOTTER_APP_RELEASE='7.2.18';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -324,14 +324,51 @@ function spotterConfirmRecalibration(){
  saveSpotterFoundation();renderSpotterFoundation('live');
 }
 function spotterFreeDuration(){return spotterState.freeStartedAt?spotterFormatDuration(Date.now()-Number(spotterState.freeStartedAt)): '00:00'}
+function spotterToggleAuto(){
+ if(spotterState.freeMode)spotterRequestResume();
+ else spotterActivateFree();
+}
+function spotterModifyQueueMode(){
+ const current=Math.max(1,Math.min(3,Number(spotterState.mode)||1));
+ const answer=prompt('Nombre de files : 1, 2 ou 3',String(current));
+ if(answer===null)return;
+ const next=Number(answer);
+ if(![1,2,3].includes(next)){alert('Choisissez 1, 2 ou 3 files.');return}
+ if(next===current)return;
+ if(!confirm(`Passer de ${current} à ${next} file${next>1?'s':''} ?`))return;
+ spotterRememberUndo();
+ spotterState.mode=next;
+ (spotterState.queue||[]).forEach((item,index)=>{
+  const previous=Math.max(1,Number(item.queueFile)||1);
+  item.queueFile=previous<=next?previous:((index%next)+1);
+ });
+ (spotterState.maintenance||[]).forEach(item=>{
+  item.queueFile=Math.max(1,Math.min(next,Number(item.queueFile)||1));
+ });
+ Object.keys(spotterState.incomingQueueSelections||{}).forEach(id=>{
+  spotterState.incomingQueueSelections[id]=Math.max(1,Math.min(next,Number(spotterState.incomingQueueSelections[id])||1));
+ });
+ spotterLogMovement('change_queue_mode',{from:current,to:next});
+ saveSpotterFoundation();spotterRenderCurrent();
+}
 function spotterCommandBar(step){
  const undoDisabled=spotterCanUndo()?'':'disabled';
  const menu=`<button class="spotter-back spotter-menu-command" type="button" onclick="showHome()" aria-label="Menu">☰<span>MENU</span></button>`;
- const undo=`<button class="spotter-undo-button" type="button" onclick="spotterUndoLastAction()" aria-label="Annuler la dernière action" title="Annuler la dernière action" ${undoDisabled}>↶</button>`;
- const settings=`<button class="spotter-icon-btn" type="button" onclick="openSpotterSetup()" aria-label="Paramètres">⚙<span>PARAMÈTRES</span></button>`;
- if(step==='live'&&spotterState.freeMode&&!spotterState.recalibrating)return `<div class="spotter-command-bar free-active">${menu}<span class="spotter-live-state">LIVE</span>${undo}<button class="spotter-resume-main" type="button" onclick="spotterRequestResume()">▶ REPRENDRE</button>${settings}</div>`;
- if(step==='live')return `<div class="spotter-command-bar live-mode">${menu}<span class="spotter-live-state">LIVE</span>${undo}<button class="spotter-free-button" type="button" onclick="spotterActivateFree()">AUTO</button>${settings}</div>`;
- return `<div class="spotter-command-bar">${menu}<span class="spotter-live-state">LIVE</span>${undo}<span></span>${settings}</div>`;
+ const undo=`<button class="spotter-undo-button" type="button" onclick="spotterUndoLastAction()" aria-label="Annuler la dernière action" title="Annuler la dernière action" ${undoDisabled}>↩</button>`;
+ const mobileSettings=`<button class="spotter-icon-btn" type="button" onclick="openSpotterSetup()" aria-label="Préparer la zone Quick Change">⚙<span>QUICK CHANGE</span></button>`;
+ const mobileAuto=spotterState.freeMode&&!spotterState.recalibrating
+  ? `<button class="spotter-resume-main" type="button" onclick="spotterRequestResume()">▶ REPRENDRE</button>`
+  : `<button class="spotter-free-button" type="button" onclick="spotterActivateFree()">AUTO</button>`;
+ const mobile=`<div class="spotter-command-bar spotter-command-mobile ${spotterState.freeMode?'free-active':'live-mode'}">${menu}<span class="spotter-live-state">LIVE</span>${undo}${mobileAuto}${mobileSettings}</div>`;
+ const desktop=`<div class="spotter-command-bar spotter-command-desktop">
+  <span class="spotter-live-state">LIVE</span>
+  ${undo}
+  <button class="spotter-desktop-command spotter-quick-change-command" type="button" onclick="openSpotterSetup()">PRÉPARER LA ZONE QUICK CHANGE</button>
+  <button class="spotter-desktop-command spotter-auto-command ${spotterState.freeMode?'active':''}" type="button" onclick="spotterToggleAuto()">AUTO</button>
+  <button class="spotter-desktop-command spotter-modify-command" type="button" onclick="spotterModifyQueueMode()">MODIFIER LA FILE</button>
+  <button class="spotter-desktop-command spotter-reset-command" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button>
+ </div>`;
+ return mobile+desktop;
 }
 
 function spotterRenderCurrent(){renderSpotterFoundation(spotterState.recalibrating?'recalibrate':'live')}

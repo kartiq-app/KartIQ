@@ -1,4 +1,4 @@
-# Velocity V7.2.17 — En-tête et cartes Desktop Spotter
+# Velocity V7.2.18 — Commandes Desktop Spotter
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 

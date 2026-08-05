@@ -1,5 +1,15 @@
 # Changelog
 
+## V7.2.18 — Commandes Desktop Spotter
+
+- Flèche d’annulation Desktop remplacée par une flèche de retour horizontale.
+- Nouvelle barre : Live | ↩ | Préparer la zone Quick Change | Auto | Modifier la file | Réinitialiser.
+- « Paramètres » devient « Préparer la zone Quick Change ».
+- Ajout du bouton Modifier la file avec conservation des karts et adaptation à 1, 2 ou 3 files.
+- Ajout du bouton Réinitialiser avec confirmation.
+- Suppression du fond coloré en haut du Spotter Desktop au profit du fond noir de l’Analyzer.
+- Le titre Spotter reprend exactement la typographie, le corps et la hauteur du titre Endurance de l’Analyzer.
+
 ## V7.2.17 — En-tête et cartes Desktop Spotter
 
 - L’en-tête Desktop commence désormais par « Spotter », puis le filet orange.

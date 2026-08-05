@@ -1232,3 +1232,110 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
     margin-right:auto!important;
   }
 }
+
+
+/* Velocity V7.2.18 — commandes Desktop Spotter */
+.spotter-command-desktop{display:none!important}
+
+@media(min-width:900px){
+  /* Fond totalement noir, sans halo ni dégradé coloré */
+  body.current-spotter,
+  body.current-spotter .spotter-screen,
+  body.current-spotter .spotter-shell{
+    background:#05070b!important;
+    background-image:none!important;
+  }
+
+  /* En-tête strictement aligné sur Analyzer */
+  .spotter-desktop-heading{
+    display:flex!important;
+    align-items:center!important;
+    gap:14px!important;
+    min-height:58px!important;
+    height:auto!important;
+    margin:0!important;
+    padding:0 0 12px!important;
+    border-bottom:2px solid #ff7a00!important;
+    box-sizing:border-box!important;
+  }
+  .spotter-desktop-heading span{
+    font-family:var(--font-torque,Arial,sans-serif)!important;
+    font-size:clamp(24px,3vw,42px)!important;
+    line-height:1!important;
+    letter-spacing:.05em!important;
+    color:#f7f8fb!important;
+    font-weight:900!important;
+    text-transform:none!important;
+  }
+
+  /* Une barre Desktop dédiée et homogène */
+  .spotter-command-mobile{display:none!important}
+  .spotter-command-desktop{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    flex-wrap:nowrap!important;
+    width:100%!important;
+    max-width:100%!important;
+    gap:8px!important;
+    margin:10px 0!important;
+    min-height:44px!important;
+    overflow-x:auto!important;
+    scrollbar-width:thin;
+  }
+  .spotter-command-desktop .spotter-live-state,
+  .spotter-command-desktop .spotter-undo-button,
+  .spotter-command-desktop .spotter-desktop-command{
+    height:42px!important;
+    min-height:42px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    flex:0 0 auto!important;
+    box-sizing:border-box!important;
+    border-radius:8px!important;
+    white-space:nowrap!important;
+    font-family:Arial,sans-serif!important;
+    font-size:11px!important;
+    font-weight:900!important;
+    letter-spacing:.035em!important;
+  }
+  .spotter-command-desktop .spotter-live-state{
+    min-width:88px!important;
+    padding:0 18px!important;
+  }
+  .spotter-command-desktop .spotter-undo-button{
+    width:72px!important;
+    min-width:72px!important;
+    padding:0!important;
+    font-size:28px!important;
+    line-height:1!important;
+    transform:none!important;
+    writing-mode:horizontal-tb!important;
+  }
+  .spotter-command-desktop .spotter-desktop-command{
+    border:1px solid #313844!important;
+    background:#10141c!important;
+    color:#fff!important;
+    padding:0 16px!important;
+    cursor:pointer!important;
+  }
+  .spotter-command-desktop .spotter-quick-change-command{min-width:238px!important}
+  .spotter-command-desktop .spotter-auto-command{min-width:86px!important}
+  .spotter-command-desktop .spotter-modify-command{min-width:148px!important}
+  .spotter-command-desktop .spotter-reset-command{
+    min-width:126px!important;
+    border-color:#71333a!important;
+    background:#241014!important;
+    color:#ffb7bd!important;
+  }
+  .spotter-command-desktop .spotter-desktop-command:hover,
+  .spotter-command-desktop .spotter-undo-button:hover:not(:disabled){
+    border-color:#ff7a00!important;
+  }
+  .spotter-command-desktop .spotter-auto-command.active{
+    border-color:#35d07f!important;
+    background:#123a29!important;
+    color:#6ff0aa!important;
+  }
+}
