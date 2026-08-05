@@ -1,3 +1,11 @@
+## V7.1.0 — Moteur FIFO Spotter
+- Validation des karts entrants avec réservation automatique du premier kart disponible.
+- Ajout du kart rendu en fin de file ou en maintenance.
+- Chronomètre en temps réel des équipes encore aux stands.
+- Détection automatique du PIT OUT pour libérer la tête de file.
+- Réinsertion des karts de maintenance en fin de file.
+- Outils développeur pour simuler un PIT IN et un PIT OUT.
+
 ## V7.0.2 — Accueil carré et Spotter compact
 
 - Accueil desktop : les cinq modes sont affichés sur une seule ligne avec des cartes carrées agrandies d’environ 5 %.
