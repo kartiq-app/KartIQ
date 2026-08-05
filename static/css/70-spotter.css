@@ -512,3 +512,142 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
   .spotter-queue .spotter-queue-card,
   .spotter-queue .spotter-queue-end-drop{width:min(31.5%,190px)!important;max-width:190px!important}
 }
+
+/* Velocity V7.2.10 — 1, 2 ou 3 files verticales côte à côte */
+body.current-spotter .spotter-shell{
+  width:min(100%,980px)!important;
+  max-width:none!important;
+}
+.spotter-queue-panel .spotter-card-body{
+  padding:8px!important;
+}
+.spotter-queues-layout{
+  display:grid!important;
+  grid-template-columns:repeat(var(--spotter-files,1),minmax(0,1fr))!important;
+  gap:7px!important;
+  width:100%!important;
+  align-items:start!important;
+}
+.spotter-queues-layout.queues-1{--spotter-files:1;max-width:190px;margin-inline:auto}
+.spotter-queues-layout.queues-2{--spotter-files:2;max-width:390px;margin-inline:auto}
+.spotter-queues-layout.queues-3{--spotter-files:3;max-width:100%;margin-inline:auto}
+.spotter-file-column{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:5px!important;
+}
+.spotter-file-title{
+  min-height:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#aeb5c2;
+  font-family:'F1 Regular',Arial,sans-serif;
+  font-size:clamp(8px,2vw,11px);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.spotter-file-list{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:6px!important;
+  min-width:0!important;
+}
+.spotter-file-list .spotter-queue-card{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  aspect-ratio:1/1!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  padding:6px 4px 6px 48%!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:2px!important;
+  text-align:center!important;
+}
+.spotter-file-list .spotter-queue-card::after{
+  left:0!important;
+  right:auto!important;
+  top:0!important;
+  bottom:0!important;
+  width:46%!important;
+  height:100%!important;
+  background:url("../assets/spotter/kart-front.png") left center/auto 100% no-repeat!important;
+  opacity:.94!important;
+}
+.spotter-file-list .spotter-queue-card > *{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  text-align:center!important;
+}
+.spotter-file-list .spotter-queue-card strong{
+  min-height:0!important;
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;
+  overflow:hidden!important;
+  font-size:clamp(6px,1.85vw,11px)!important;
+  line-height:1.05!important;
+}
+.spotter-file-list .spotter-queue-card small{
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;
+  overflow:hidden!important;
+  font-size:clamp(5px,1.35vw,8px)!important;
+  line-height:1.03!important;
+}
+.spotter-file-list .spotter-card-stats{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:1px!important;
+  font-size:clamp(5px,1.35vw,8px)!important;
+  line-height:1.05!important;
+}
+.spotter-file-list .spotter-card-stats span:first-child{
+  font-size:clamp(8px,2.5vw,15px)!important;
+  line-height:1!important;
+}
+.spotter-file-list .spotter-pit-time{
+  font-size:clamp(8px,2.2vw,13px)!important;
+  line-height:1!important;
+}
+.spotter-file-list .spotter-queue-end-drop{
+  width:100%!important;
+  max-width:none!important;
+  min-height:28px!important;
+  grid-column:auto!important;
+}
+.spotter-file-empty{
+  min-height:64px!important;
+  padding:10px 3px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:8px!important;
+}
+@media(max-width:370px){
+  .spotter-queues-layout{gap:4px!important}
+  .spotter-file-list{gap:4px!important}
+  .spotter-queue-panel .spotter-card-body{padding:5px!important}
+  .spotter-file-list .spotter-queue-card{padding:4px 2px 4px 48%!important}
+  .spotter-file-title{min-height:18px;font-size:7px}
+}
+@media(min-width:700px){
+  .spotter-queues-layout{gap:10px!important}
+  .spotter-file-list{gap:9px!important}
+  .spotter-file-list .spotter-queue-card{padding:9px 7px 9px 48%!important;gap:4px!important}
+}

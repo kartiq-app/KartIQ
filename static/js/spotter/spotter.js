@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.9';
+const SPOTTER_APP_RELEASE='7.2.10';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -31,6 +31,8 @@ function spotterEnsureSetupDefaults(){
  if(!Number.isFinite(Number(spotterState.freePitOuts)))spotterState.freePitOuts=0;
  if(typeof spotterState.freeNeedsRecalibration!=='boolean')spotterState.freeNeedsRecalibration=false;
  if(typeof spotterState.recalibrating!=='boolean')spotterState.recalibrating=false;
+ spotterState.mode=Math.max(1,Math.min(3,Number(spotterState.mode)||1));
+ [...(spotterState.queue||[]),...(spotterState.maintenance||[])].forEach((item,index)=>{if(item&&!Number.isFinite(Number(item.queueFile)))item.queueFile=(index%spotterState.mode)+1;item.queueFile=Math.max(1,Math.min(spotterState.mode,Number(item.queueFile)||1));});
  spotterState.version=5;
  const all=[...(spotterState.queue||[]),...(spotterState.maintenance||[]),...Object.values(spotterState.assignments||{})];
  const max=all.reduce((value,item)=>Math.max(value,spotterKvNumber(item?.kv)),0);
@@ -81,7 +83,7 @@ function saveSpotterFoundation(){
  spotterScheduleSharedSync();
 }
 function openSpotterSetup(){spotterState.configured=false;saveSpotterFoundation();renderSpotterFoundation('mode')}
-function setSpotterMode(mode){if(Number(mode)!==1)return;spotterState.mode=1;saveSpotterFoundation();renderSpotterFoundation('queue')}
+function setSpotterMode(mode){const count=Math.max(1,Math.min(3,Number(mode)||1));spotterState.mode=count;saveSpotterFoundation();renderSpotterFoundation('queue')}
 function addSpotterSetupKart(){spotterState.setupKarts.push(spotterDefaultKartName(spotterState.setupKarts.length));renderSpotterFoundation('queue');setTimeout(()=>document.querySelector('.spotter-setup-row:last-of-type input')?.focus(),0)}
 function removeSpotterSetupKart(index){if(spotterState.setupKarts.length<=1)return;spotterState.setupKarts.splice(index,1);renderSpotterFoundation('queue')}
 function updateSpotterSetupKart(index,value){spotterState.setupKarts[index]=String(value||'').trim().slice(0,18);saveSpotterFoundation();const btn=document.getElementById('spotterLaunchButton');if(btn)btn.disabled=!spotterState.setupKarts.some(Boolean)}
@@ -102,7 +104,7 @@ function spotterSeedGridAssignments(startNumber){
  return {assignments,next};
 }
 function launchSpotterFoundation(){
- const karts=spotterState.setupKarts.filter(kart=>String(kart||'').trim()).map((kart,index)=>({kv:spotterPadKv(index),apexKart:String(kart).trim(),lastTeam:'Initialisation',score:null,confidence:null,status:'available'}));
+ const karts=spotterState.setupKarts.filter(kart=>String(kart||'').trim()).map((kart,index)=>({kv:spotterPadKv(index),apexKart:String(kart).trim(),lastTeam:'Initialisation',score:null,confidence:null,status:'available',queueFile:(index%spotterState.mode)+1}));
  if(!karts.length)return;
  const seeded=spotterSeedGridAssignments(karts.length+1);
  spotterState.queue=karts;spotterState.incoming=[];spotterState.maintenance=[];spotterState.assignments=seeded.assignments;spotterState.nextKvNumber=seeded.next;spotterState.movementLog=[];spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;spotterState.freeMode=false;spotterState.freeStartedAt=null;spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.configured=true;
@@ -165,7 +167,7 @@ function spotterValidateIncoming(id,toMaintenance=false,{silent=false,estimated=
  const availableIndex=spotterAvailableIndex();
  if(availableIndex<0){if(!silent)alert('Aucun kart disponible dans la file.');return false}
  const incoming=spotterState.incoming[index];const assigned=spotterState.queue[availableIndex];const current=spotterEnsureAssignment(incoming.team,spotterFindDriver(incoming.team));
- const returned={...current,kv:incoming.returnedKv||current.kv,apexKart:incoming.returnedKart||current.apexKart,lastTeam:incoming.team,currentTeam:null,score:incoming.score??current.score,confidence:incoming.confidence??current.confidence,status:toMaintenance?'maintenance':'available',enteredAt:Date.now()};
+ const returned={...current,kv:incoming.returnedKv||current.kv,apexKart:incoming.returnedKart||current.apexKart,lastTeam:incoming.team,currentTeam:null,score:incoming.score??current.score,confidence:incoming.confidence??current.confidence,status:toMaintenance?'maintenance':'available',enteredAt:Date.now(),queueFile:Number(assigned.queueFile)||1};
  spotterRemoveKvEverywhere(returned.kv);
  assigned.status='reserved';assigned.reservedTeam=incoming.team;assigned.pitInAt=incoming.pitInAt||Date.now();assigned.reservedAt=Date.now();assigned.sourceLastTeam=assigned.lastTeam;assigned.estimated=Boolean(estimated||incoming.estimated||spotterState.freeMode);
  spotterState.incoming.splice(index,1);
@@ -280,12 +282,12 @@ function spotterEndDrag(event){
  const queueEnd=element?.closest('[data-spotter-drop-end="queue"]');
  const queue=element?.closest('[data-spotter-drop-zone="queue"]');
  if(maintenance)spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);
- else if(queueEnd)spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,null);
- else if(queueCard||queue)spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,queueCard?.dataset.spotterQueueKv||null);
+ else if(queueEnd){const column=queueEnd.closest('[data-spotter-file]');spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,null,column?.dataset.spotterFile||null);}
+ else if(queueCard||queue){const column=(queueCard||queue)?.closest('[data-spotter-file]');spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,queueCard?.dataset.spotterQueueKv||null,column?.dataset.spotterFile||null);}
  document.querySelectorAll('.dragging,.spotter-drop-target,.spotter-drop-before').forEach(node=>node.classList.remove('dragging','spotter-drop-target','spotter-drop-before'));
  spotterDrag.ghost?.remove();Object.assign(spotterDrag,{kv:null,from:null,pointerId:null,ghost:null});
 }
-function spotterMoveKartInQueue(kv,from,beforeKv=null){
+function spotterMoveKartInQueue(kv,from,beforeKv=null,targetFile=null){
  let item=null;
  if(from==='queue'){
   const index=spotterState.queue.findIndex(entry=>entry.kv===kv&&entry.status==='available');if(index<0)return;
@@ -294,6 +296,7 @@ function spotterMoveKartInQueue(kv,from,beforeKv=null){
   const index=spotterState.maintenance.findIndex(entry=>entry.kv===kv);if(index<0)return;
   [item]=spotterState.maintenance.splice(index,1);item.status='available';item.reinsertedAt=Date.now();
  }
+ if(targetFile)item.queueFile=Math.max(1,Math.min(spotterState.mode,Number(targetFile)||1));
  let target=beforeKv?spotterState.queue.findIndex(entry=>entry.kv===beforeKv):-1;
  if(target<0)target=spotterState.queue.length;
  // Une carte verte ne peut pas passer devant une carte rouge déjà attribuée.
@@ -308,27 +311,36 @@ function spotterMoveKartToMaintenance(kv,from){
  const [item]=spotterState.queue.splice(index,1);item.status='maintenance';item.enteredAt=Date.now();spotterState.maintenance.push(item);
  spotterLogMovement('manual_maintenance',{kv});saveSpotterFoundation();spotterRenderCurrent();
 }
+function spotterRenderQueueColumns(){
+ const count=Math.max(1,Math.min(3,Number(spotterState.mode)||1));
+ const columns=[];
+ for(let file=1;file<=count;file+=1){
+  const items=(spotterState.queue||[]).filter(item=>(Number(item.queueFile)||1)===file);
+  columns.push(`<div class="spotter-file-column" data-spotter-file="${file}"><div class="spotter-file-title">FILE ${file}</div><div class="spotter-file-list" data-spotter-drop-zone="queue">${items.length?items.map(spotterQueueCard).join(''):'<div class="spotter-empty spotter-file-empty">File vide</div>'}<div class="spotter-queue-end-drop" data-spotter-drop-end="queue" aria-label="Déposer en fin de file"><span>FIN DE FILE</span></div></div></div>`);
+ }
+ return `<div class="spotter-queues-layout queues-${count}">${columns.join('')}</div>`;
+}
 function renderSpotterFoundation(forceStep){
  const root=document.getElementById('spotterApp');if(!root)return;
  const step=forceStep||(spotterState.configured?(spotterState.recalibrating?'recalibrate':'live'):'mode');
  root.innerHTML=`<div class="spotter-shell">
   <div class="spotter-top-accent" aria-hidden="true"></div>${spotterCommandBar(step)}
   <div class="spotter-step ${step==='mode'?'active':''}" id="spotterModeStep">
-   <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option active" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Disponible</small></button><button class="spotter-mode-option" type="button" disabled><strong>2</strong><span>Files</span><small>Bientôt</small></button><button class="spotter-mode-option" type="button" disabled><strong>3</strong><span>Files</span><small>Bientôt</small></button></div></div></section>
+   <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option ${spotterState.mode===1?'active':''}" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Verticale</small></button><button class="spotter-mode-option ${spotterState.mode===2?'active':''}" type="button" onclick="setSpotterMode(2)"><strong>2</strong><span>Files</span><small>Côte à côte</small></button><button class="spotter-mode-option ${spotterState.mode===3?'active':''}" type="button" onclick="setSpotterMode(3)"><strong>3</strong><span>Files</span><small>Côte à côte</small></button></div></div></section>
   </div>
   <div class="spotter-step ${step==='queue'?'active':''}" id="spotterQueueStep">
-   <section class="spotter-card"><div class="spotter-card-head"><h2>Initialiser la file</h2><span>${spotterState.setupKarts.length} kart(s)</span></div><div class="spotter-card-body"><p class="spotter-intro">Saisissez les karts présents dans la file au départ. Velocity attribue automatiquement les identifiants KV dans cet ordre.</p><div id="spotterSetupRows">${spotterState.setupKarts.map((kart,index)=>`<div class="spotter-setup-row"><div class="spotter-kv">${spotterPadKv(index)}</div><input autocomplete="off" value="${spotterEscape(kart)}" placeholder="Nom du kart" oninput="updateSpotterSetupKart(${index},this.value)"><button class="spotter-remove" type="button" onclick="removeSpotterSetupKart(${index})" aria-label="Supprimer">×</button></div>`).join('')}</div><button class="spotter-add-row" type="button" onclick="addSpotterSetupKart()">＋ AJOUTER UN KART</button><button id="spotterLaunchButton" class="spotter-primary" type="button" onclick="launchSpotterFoundation()" ${spotterState.setupKarts.some(Boolean)?'':'disabled'}>LANCER LE SPOTTER</button></div></section>
+   <section class="spotter-card"><div class="spotter-card-head"><h2>Initialiser ${spotterState.mode>1?'les files':'la file'}</h2><span>${spotterState.setupKarts.length} kart(s)</span></div><div class="spotter-card-body"><p class="spotter-intro">Saisissez les karts présents au départ. Velocity les répartit automatiquement dans ${spotterState.mode} file${spotterState.mode>1?'s':''} verticale${spotterState.mode>1?'s':''} et attribue les identifiants KV dans cet ordre.</p><div id="spotterSetupRows">${spotterState.setupKarts.map((kart,index)=>`<div class="spotter-setup-row"><div class="spotter-kv">${spotterPadKv(index)}</div><input autocomplete="off" value="${spotterEscape(kart)}" placeholder="Nom du kart" oninput="updateSpotterSetupKart(${index},this.value)"><button class="spotter-remove" type="button" onclick="removeSpotterSetupKart(${index})" aria-label="Supprimer">×</button></div>`).join('')}</div><button class="spotter-add-row" type="button" onclick="addSpotterSetupKart()">＋ AJOUTER UN KART</button><button id="spotterLaunchButton" class="spotter-primary" type="button" onclick="launchSpotterFoundation()" ${spotterState.setupKarts.some(Boolean)?'':'disabled'}>LANCER LE SPOTTER</button></div></section>
   </div>
   <div class="spotter-step ${step==='live'?'active':''}" id="spotterLiveStep">
    ${spotterState.freeMode?`<div class="spotter-free-status"><strong>MODE AUTO — SUIVI ESTIMÉ</strong><span>Depuis ${new Date(Number(spotterState.freeStartedAt||Date.now())).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} · ${spotterState.freePitIns} entrée(s) · ${spotterState.freePitOuts} sortie(s)</span></div>`:''}
-   <section class="spotter-card spotter-queue-panel"><div class="spotter-card-body"><div class="spotter-queue" data-spotter-drop-zone="queue">${spotterState.queue.length?spotterState.queue.map(spotterQueueCard).join(''):'<div class="spotter-empty">Aucun kart dans la file.</div>'}<div class="spotter-queue-end-drop" data-spotter-drop-end="queue" aria-label="Déposer en fin de file"><span>FIN DE FILE</span></div></div></div></section>
+   <section class="spotter-card spotter-queue-panel"><div class="spotter-card-body">${spotterRenderQueueColumns()}</div></section>
    <section class="spotter-card"><div class="spotter-card-body"><div class="spotter-section-title"><span>Karts entrants</span><span class="spotter-badge">${spotterState.incoming.length}</span></div>${spotterState.incoming.length?`<div class="spotter-incoming-grid">${spotterState.incoming.map(spotterIncomingCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart entrant à valider.</div>'}</div></section>
    <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 Maintenance</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en maintenance.</div>'}</div></section>
    <div class="spotter-footer-actions"><button class="spotter-secondary" type="button" onclick="renderSpotterFoundation('queue')">MODIFIER LA FILE</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
   </div>
   <div class="spotter-step ${step==='recalibrate'?'active':''}" id="spotterRecalibrateStep">
    <section class="spotter-card spotter-recalibrate-card"><div class="spotter-card-body"><h2>RECALER LA FILE</h2><p>Le mode Auto a continué à suivre la file, mais les attributions restent estimées.</p><div class="spotter-recalibrate-summary"><span>${spotterState.freePitIns} PIT IN</span><span>${spotterState.freePitOuts} PIT OUT</span><span>${spotterFreeDuration()}</span></div></div></section>
-   <section class="spotter-card spotter-queue-panel"><div class="spotter-card-body"><div class="spotter-queue" data-spotter-drop-zone="queue">${spotterState.queue.length?spotterState.queue.map(spotterQueueCard).join(''):'<div class="spotter-empty">Aucun kart dans la file.</div>'}<div class="spotter-queue-end-drop" data-spotter-drop-end="queue"><span>FIN DE FILE</span></div></div></div></section>
+   <section class="spotter-card spotter-queue-panel"><div class="spotter-card-body">${spotterRenderQueueColumns()}</div></section>
    <button class="spotter-primary spotter-confirm-recalibration" type="button" onclick="spotterConfirmRecalibration()">✓ VALIDER LE RECALAGE</button>
    <section class="spotter-card"><div class="spotter-card-body"><div class="spotter-section-title"><span>Karts entrants</span><span class="spotter-badge">${spotterState.incoming.length}</span></div>${spotterState.incoming.length?`<div class="spotter-incoming-grid">${spotterState.incoming.map(spotterIncomingCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart entrant à valider.</div>'}</div></section>
    <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 Maintenance</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en maintenance.</div>'}</div></section>

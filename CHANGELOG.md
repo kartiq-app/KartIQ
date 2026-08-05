@@ -1,5 +1,14 @@
 # Changelog
 
+## V7.2.10 — Files multiples Spotter
+
+- Activation des modes 1, 2 et 3 files.
+- Chaque file reste verticale, avec les karts les uns sous les autres.
+- En mode 3 files : File 1 | File 2 | File 3 sur toute la largeur.
+- Recentrage des textes dans la moitié droite de chaque carte, entre le kart et le bord.
+- Conservation des cartes carrées et du demi-kart latéral fourni.
+
+
 ## V7.2.9 — File verticale Spotter
 
 - Affichage de la file de karts en colonne verticale.
