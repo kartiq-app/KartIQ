@@ -1,5 +1,14 @@
 # Changelog
 
+## V7.2.26 — Appui long mobile stable
+
+- La carte ne grossit plus brièvement dès le premier contact.
+- Après 450 ms, le halo vert et le léger agrandissement apparaissent et restent actifs jusqu’au relâchement.
+- La carte source ne rétrécit plus lorsque le clone flottant est créé.
+- Les synchronisations Desktop/serveur ne reconstruisent plus l’écran pendant un appui long ou un déplacement.
+- Le clone reste visible et stable tant que le doigt demeure posé.
+- Le fonctionnement Desktop reste inchangé.
+
 ## V7.2.25 — Clone mobile uniforme
 
 - Le clone flottant reprend exactement la largeur et la hauteur mesurées sur la carte sélectionnée.

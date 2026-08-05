@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.25';
+const SPOTTER_APP_RELEASE='7.2.26';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -97,7 +97,7 @@ function spotterApplyRemoteSnapshot(remote){
   spotterState.freePitIns=Number(remote.pit_ins)||0;
   spotterState.freePitOuts=Number(remote.pit_outs)||0;
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
-  if(document.body.classList.contains('current-spotter'))spotterRenderCurrent();
+  if(document.body.classList.contains('current-spotter')&&!spotterDrag?.active&&!spotterDrag?.timer)spotterRenderCurrent();
  }finally{spotterApplyingRemote=false}
 }
 async function spotterPullSharedState(){
@@ -384,7 +384,7 @@ function spotterDragSource(kv,from){
 }
 function spotterCancelPendingDrag(){
  if(spotterDrag.timer){clearTimeout(spotterDrag.timer);spotterDrag.timer=null}
- spotterDrag.card?.classList.remove('spotter-holding');
+ spotterDrag.card?.classList.remove('spotter-pressing','spotter-holding');
 }
 function spotterMoveGhost(x,y){
  if(!spotterDrag.ghost)return;
@@ -428,12 +428,14 @@ function spotterActivateDrag(){
  const card=spotterDrag.card;if(!card)return;
  spotterDrag.active=true;
  spotterDrag.timer=null;
+ card.classList.remove('spotter-pressing');
+ card.classList.add('spotter-holding');
  const rect=card.getBoundingClientRect();
  spotterDrag.originalParent=card.parentElement;
  spotterDrag.originalNext=card.nextSibling;
  spotterDrag.placeholder=spotterCreatePlaceholder(rect);
  card.parentElement.insertBefore(spotterDrag.placeholder,card);
- card.classList.add('dragging','drag-ready');
+ card.classList.add('dragging','drag-ready','spotter-held');
  spotterDrag.ghost=spotterCreateGhost(card,rect);
  spotterMoveGhost(spotterDrag.lastX,spotterDrag.lastY);
  document.body.classList.add('spotter-drag-active');
@@ -450,7 +452,7 @@ function spotterStartDrag(event,kv,from){
   lastX:event.clientX,lastY:event.clientY,active:false,card,target:null,
   ghost:null,placeholder:null,originalParent:null,originalNext:null
  });
- card.classList.add('spotter-holding');
+ card.classList.add('spotter-pressing');
  try{card.setPointerCapture(event.pointerId)}catch(_){}
  spotterDrag.timer=setTimeout(spotterActivateDrag,450);
  document.addEventListener('pointermove',spotterOnDragMove,{passive:false});
@@ -551,7 +553,7 @@ function spotterEndDrag(){
   else spotterRestoreOriginalCard();
  }
  spotterClearDropHighlights();
- spotterDrag.card?.classList.remove('dragging','drag-ready','spotter-holding');
+ spotterDrag.card?.classList.remove('dragging','drag-ready','spotter-holding','spotter-held','spotter-pressing');
  spotterDrag.ghost?.remove();
  spotterDrag.placeholder?.remove();
  document.body.classList.remove('spotter-drag-active');

@@ -1,4 +1,4 @@
-# Velocity V7.2.25 — Clone mobile uniforme
+# Velocity V7.2.26 — Appui long mobile stable
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 

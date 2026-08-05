@@ -1665,3 +1665,35 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
     box-sizing:border-box!important;
   }
 }
+
+
+/* Velocity V7.2.26 — appui long mobile stable */
+.spotter-queue-card.available.spotter-draggable.spotter-pressing{
+  transform:none!important;
+  box-shadow:0 0 0 1px rgba(53,208,127,.18)!important;
+}
+.spotter-queue-card.available.spotter-draggable.spotter-holding,
+.spotter-queue-card.available.spotter-draggable.spotter-held{
+  transform:scale(1.02)!important;
+  box-shadow:
+    0 0 0 3px rgba(53,208,127,.55),
+    0 0 24px rgba(53,208,127,.72)!important;
+}
+.spotter-queue-card.available.spotter-draggable.dragging.spotter-held{
+  opacity:0!important;
+  transform:scale(1.02)!important;
+}
+.spotter-drag-ghost.drag-ready{
+  opacity:.98!important;
+  transform-origin:center center!important;
+}
+@media(max-width:899px){
+  .spotter-drag-ghost.drag-ready{
+    outline:3px solid #35d07f!important;
+    outline-offset:2px!important;
+    box-shadow:
+      0 0 0 5px rgba(53,208,127,.22),
+      0 0 28px rgba(53,208,127,.82),
+      0 16px 36px rgba(0,0,0,.58)!important;
+  }
+}
