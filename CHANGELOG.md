@@ -1,5 +1,14 @@
 # Changelog
 
+## V7.2.14 — Maintenance et déplacement Spotter
+
+- Bouton Maintenance rouge, réduit et remplacé par une icône d’avertissement.
+- Halo vert autour de la carte saisie et de la carte mobile pendant le déplacement.
+- La carte mobile suit directement le doigt ou la souris.
+- Les karts en maintenance utilisent la même carte pleine largeur que les karts entrants.
+- Sélection exclusive de la file avant remise en circulation.
+- Confirmation obligatoire avant de remettre un kart en maintenance dans la file choisie.
+
 ## V7.2.13 — UX Spotter et validation par file
 
 - Appui long de 500 ms sur la poignée avant d’autoriser le déplacement d’une carte.

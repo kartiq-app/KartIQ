@@ -777,3 +777,60 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
  .spotter-incoming-buttons{grid-template-columns:minmax(0,2.2fr) minmax(72px,1fr);gap:5px}
  .spotter-incoming-buttons button{min-height:40px}
 }
+
+
+/* Velocity V7.2.14 — maintenance, confirmation et halo de déplacement */
+.spotter-incoming-buttons{
+  grid-template-columns:minmax(0,1fr) clamp(40px,10vw,54px)!important;
+}
+.spotter-incoming-buttons .spotter-maintenance-btn{
+  width:100%!important;
+  min-width:0!important;
+  padding:0!important;
+  border:1px solid #ff4a4a!important;
+  background:#c41224!important;
+  color:#fff!important;
+  font-size:clamp(20px,5.5vw,27px)!important;
+  line-height:1!important;
+  box-shadow:0 0 14px rgba(225,18,36,.28)!important;
+}
+.spotter-incoming-buttons .spotter-maintenance-btn:active{
+  transform:scale(.96);
+  background:#e11224!important;
+}
+.spotter-maintenance-grid{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:10px!important;
+}
+.spotter-maintenance-action-card{
+  width:100%!important;
+}
+.spotter-maintenance-action-card .spotter-incoming-info{
+  background:linear-gradient(180deg,rgba(225,18,36,.18),rgba(225,18,36,.035))!important;
+}
+.spotter-maintenance-action-card .maintenance-return-buttons{
+  display:block!important;
+}
+.spotter-maintenance-action-card .maintenance-return-buttons .spotter-validate{
+  width:100%!important;
+}
+.spotter-draggable.drag-ready,
+.spotter-drag-ghost.drag-ready{
+  outline:2px solid #35d07f!important;
+  outline-offset:2px!important;
+  box-shadow:0 0 0 4px rgba(53,208,127,.18),0 0 24px rgba(53,208,127,.8),0 16px 38px rgba(0,0,0,.55)!important;
+}
+.spotter-draggable.dragging{
+  opacity:.16!important;
+}
+.spotter-drag-ghost{
+  opacity:1!important;
+  pointer-events:none!important;
+  transition:none!important;
+  will-change:left,top!important;
+}
+@media(max-width:370px){
+ .spotter-incoming-buttons{grid-template-columns:minmax(0,1fr) 38px!important}
+ .spotter-incoming-buttons .spotter-maintenance-btn{font-size:19px!important}
+}
