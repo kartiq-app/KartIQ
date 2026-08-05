@@ -1,4 +1,9 @@
-# Velocity V7.2.0 — Connexion Velocity ↔ Spotter
+# Velocity V7.2.1 — AUTO gris et messagerie agrandie
+
+- Bouton AUTO gris, aligné sur le traitement du bouton Classement virtuel.
+- Champ de messagerie pilote plus haut et texte agrandi.
+
+# Velocity V7.2.1 — Connexion Velocity ↔ Spotter
 
 - Synchronisation serveur de la file FIFO entre Spotter et Analyzer.
 - Score et confiance affichés dans Spotter depuis le moteur Velocity existant, sans nouvel algorithme.
