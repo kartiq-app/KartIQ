@@ -478,3 +478,37 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
   .spotter-queue,.spotter-incoming-grid,.spotter-maintenance-grid{gap:8px!important}
   .spotter-queue-card,.spotter-queue-card.incoming{padding:10px 8px 10px 49%!important;gap:5px!important}
 }
+
+
+/* Velocity V7.2.9 — une file = une colonne verticale de cartes carrées */
+.spotter-queue{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-auto-flow:row!important;
+  align-items:start!important;
+  justify-items:center!important;
+  gap:7px!important;
+  width:100%!important;
+}
+.spotter-queue .spotter-queue-card,
+.spotter-queue .spotter-queue-end-drop{
+  width:min(31.5%,158px)!important;
+  max-width:158px!important;
+}
+.spotter-queue .spotter-queue-card{
+  aspect-ratio:1/1!important;
+}
+.spotter-queue .spotter-queue-end-drop{
+  grid-column:auto!important;
+  min-height:32px!important;
+}
+@media(max-width:370px){
+  .spotter-queue{gap:5px!important}
+  .spotter-queue .spotter-queue-card,
+  .spotter-queue .spotter-queue-end-drop{width:min(31.5%,104px)!important;max-width:104px!important}
+}
+@media(min-width:700px){
+  .spotter-queue{gap:9px!important}
+  .spotter-queue .spotter-queue-card,
+  .spotter-queue .spotter-queue-end-drop{width:min(31.5%,190px)!important;max-width:190px!important}
+}

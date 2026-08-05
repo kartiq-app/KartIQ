@@ -1,3 +1,13 @@
+# Changelog
+
+## V7.2.9 — File verticale Spotter
+
+- Affichage de la file de karts en colonne verticale.
+- Les karts d’une même file sont désormais placés les uns sous les autres.
+- Conservation des cartes carrées avec le demi-kart à gauche et les informations à droite.
+- Dimensionnement prévu pour accueillir jusqu’à trois files côte à côte.
+- Mise à jour de la version, du cache et du service worker.
+
 # Velocity V7.2.8 — Cartes Spotter carrées
 
 - Cartes carrées conservant trois karts par rangée sur la largeur du Spotter.
