@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.26';
+const SPOTTER_APP_RELEASE='7.2.27';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -389,11 +389,13 @@ function spotterCancelPendingDrag(){
 function spotterMoveGhost(x,y){
  if(!spotterDrag.ghost)return;
  const mobile=window.matchMedia('(max-width:899px)').matches;
- const width=Number(spotterDrag.ghost.dataset.lockedWidth)||spotterDrag.ghost.getBoundingClientRect().width;
- const height=Number(spotterDrag.ghost.dataset.lockedHeight)||spotterDrag.ghost.getBoundingClientRect().height;
+ const width=Number(spotterDrag.ghost.dataset.lockedWidth)||0;
+ const height=Number(spotterDrag.ghost.dataset.lockedHeight)||0;
  const offsetY=mobile?height*.82:height/2;
  const scale=mobile?1.02:1.05;
- spotterDrag.ghost.style.transform=`translate3d(${x-width/2}px,${y-offsetY}px,0) scale(${scale})`;
+ spotterDrag.ghost.style.setProperty('left',`${x-width/2}px`,'important');
+ spotterDrag.ghost.style.setProperty('top',`${y-offsetY}px`,'important');
+ spotterDrag.ghost.style.setProperty('transform',`scale(${scale})`,'important');
 }
 function spotterClearDropHighlights(){
  document.querySelectorAll('.spotter-file-column.spotter-file-active,.spotter-maintenance.spotter-drop-target')
@@ -407,20 +409,40 @@ function spotterCreatePlaceholder(rect){
  return placeholder;
 }
 function spotterCreateGhost(card,rect){
- const ghost=card.cloneNode(true);
  const width=Math.round(rect.width*100)/100;
  const height=Math.round(rect.height*100)/100;
- ghost.classList.remove('dragging','spotter-holding');
- ghost.classList.add('spotter-drag-ghost','drag-ready');
- ghost.removeAttribute('onpointerdown');
+ const ghost=document.createElement('div');
+ ghost.className='spotter-drag-preview';
  ghost.dataset.lockedWidth=String(width);
  ghost.dataset.lockedHeight=String(height);
- Object.assign(ghost.style,{
-  width:`${width}px`,minWidth:`${width}px`,maxWidth:`${width}px`,
-  height:`${height}px`,minHeight:`${height}px`,maxHeight:`${height}px`,
-  aspectRatio:'auto',boxSizing:'border-box',margin:'0',
-  flex:'0 0 auto',position:'fixed',left:'0',top:'0'
- });
+ ghost.innerHTML=card.innerHTML;
+ ghost.querySelectorAll('button,[onpointerdown]').forEach(node=>node.remove());
+ const computed=getComputedStyle(card);
+ ghost.style.setProperty('position','fixed','important');
+ ghost.style.setProperty('left','0px','important');
+ ghost.style.setProperty('top','0px','important');
+ ghost.style.setProperty('width',`${width}px`,'important');
+ ghost.style.setProperty('min-width',`${width}px`,'important');
+ ghost.style.setProperty('max-width',`${width}px`,'important');
+ ghost.style.setProperty('height',`${height}px`,'important');
+ ghost.style.setProperty('min-height',`${height}px`,'important');
+ ghost.style.setProperty('max-height',`${height}px`,'important');
+ ghost.style.setProperty('box-sizing','border-box','important');
+ ghost.style.setProperty('margin','0','important');
+ ghost.style.setProperty('padding',computed.padding,'important');
+ ghost.style.setProperty('border',computed.border,'important');
+ ghost.style.setProperty('border-radius',computed.borderRadius,'important');
+ ghost.style.setProperty('background',computed.background,'important');
+ ghost.style.setProperty('color',computed.color,'important');
+ ghost.style.setProperty('display',computed.display==='none'?'flex':computed.display,'important');
+ ghost.style.setProperty('flex-direction',computed.flexDirection,'important');
+ ghost.style.setProperty('align-items',computed.alignItems,'important');
+ ghost.style.setProperty('justify-content',computed.justifyContent,'important');
+ ghost.style.setProperty('gap',computed.gap,'important');
+ ghost.style.setProperty('overflow','hidden','important');
+ ghost.style.setProperty('pointer-events','none','important');
+ ghost.style.setProperty('z-index','100000','important');
+ ghost.style.setProperty('transform-origin','center center','important');
  document.body.appendChild(ghost);
  return ghost;
 }

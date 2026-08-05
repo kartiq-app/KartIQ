@@ -1,5 +1,14 @@
 # Changelog
 
+## V7.2.27 — Aperçu drag corrigé
+
+- Suppression du clone complet de la carte qui pouvait hériter du layout Spotter et s’étendre sur toute la largeur.
+- Création d’un aperçu flottant isolé, sans les classes responsables de la mise en page.
+- Largeur et hauteur verrouillées avec priorité CSS sur les dimensions exactes de la carte source.
+- Positionnement par coordonnées fixes plutôt que par une transformation de translation héritée.
+- L’aperçu est retiré systématiquement au relâchement ou à l’annulation du déplacement.
+- Le fonctionnement Desktop et smartphone conserve le halo vert et le suivi du pointeur.
+
 ## V7.2.26 — Appui long mobile stable
 
 - La carte ne grossit plus brièvement dès le premier contact.

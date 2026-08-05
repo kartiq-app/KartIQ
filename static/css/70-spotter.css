@@ -1697,3 +1697,25 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
       0 16px 36px rgba(0,0,0,.58)!important;
   }
 }
+
+
+/* Velocity V7.2.27 — aperçu de déplacement isolé du layout */
+.spotter-drag-preview{
+  position:fixed!important;
+  pointer-events:none!important;
+  z-index:100000!important;
+  opacity:.98!important;
+  outline:3px solid #35d07f!important;
+  outline-offset:2px!important;
+  box-shadow:
+    0 0 0 5px rgba(53,208,127,.22),
+    0 0 28px rgba(53,208,127,.82),
+    0 16px 36px rgba(0,0,0,.58)!important;
+  transition:none!important;
+  will-change:left,top,transform!important;
+}
+.spotter-drag-preview::before,
+.spotter-drag-preview::after{
+  box-sizing:border-box!important;
+}
+.spotter-drag-preview .spotter-drag-handle{display:none!important}
