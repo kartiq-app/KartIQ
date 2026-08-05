@@ -1,7 +1,7 @@
-/* Velocity V7.1.0 — Moteur FIFO Spotter */
+/* Velocity V7.1.1 — Correctif initialisation FIFO Spotter */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
 const spotterState={
- version:2,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
+ version:3,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false
 };
 function spotterPadKv(index){return `KV${String(index+1).padStart(2,'0')}`}
@@ -20,6 +20,11 @@ function spotterEnsureSetupDefaults(){
  if(!spotterState.assignments||typeof spotterState.assignments!=='object')spotterState.assignments={};
  if(!Array.isArray(spotterState.movementLog))spotterState.movementLog=[];
  if(!spotterState.lastDriverStatus||typeof spotterState.lastDriverStatus!=='object')spotterState.lastDriverStatus={};
+ // Nettoie les cartes de test héritées de la Foundation V7.0.x. Elles n'avaient
+ // ni équipe ni KV retourné exploitables par le moteur FIFO V7.1.
+ if(!Array.isArray(spotterState.incoming))spotterState.incoming=[];
+ spotterState.incoming=spotterState.incoming.filter(item=>item&&item.id&&item.team&&item.returnedKv&&item.source!=='dev');
+ spotterState.version=3;
  const all=[...(spotterState.queue||[]),...(spotterState.maintenance||[]),...Object.values(spotterState.assignments||{})];
  const max=all.reduce((value,item)=>Math.max(value,spotterKvNumber(item?.kv)),0);
  spotterState.nextKvNumber=Math.max(Number(spotterState.nextKvNumber)||1,max+1);
@@ -32,7 +37,7 @@ function loadSpotterFoundation(){
  spotterEnsureSetupDefaults();renderSpotterFoundation();
 }
 function saveSpotterFoundation(){
- localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:2,savedAt:new Date().toISOString(),state:spotterState}));
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:3,savedAt:new Date().toISOString(),state:spotterState}));
 }
 function openSpotterSetup(){spotterState.configured=false;saveSpotterFoundation();renderSpotterFoundation('mode')}
 function setSpotterMode(mode){if(Number(mode)!==1)return;spotterState.mode=1;saveSpotterFoundation();renderSpotterFoundation('queue')}
@@ -81,6 +86,10 @@ function spotterAddIncoming(team,driver=null,{source='apex'}={}){
  const key=String(team||'').trim();if(!key)return false;
  if(spotterState.incoming.some(item=>item.team===key)||spotterState.queue.some(item=>item.status==='reserved'&&item.reservedTeam===key))return false;
  const assignment=spotterEnsureAssignment(key,driver);
+ // Une ancienne sauvegarde ne doit jamais pouvoir réutiliser le KV d'un kart
+ // déjà présent dans la file ou en maintenance.
+ const occupied=new Set([...(spotterState.queue||[]),...(spotterState.maintenance||[])].map(item=>item?.kv).filter(Boolean));
+ if(occupied.has(assignment.kv))assignment.kv=spotterAllocateKv();
  const metrics=spotterMetricsForDriver(driver||spotterFindDriver(key));
  assignment.score=metrics.score??assignment.score;assignment.confidence=metrics.confidence??assignment.confidence;
  spotterState.incoming.push({id:`${source}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,team:key,name:key,returnedKv:assignment.kv,returnedKart:assignment.apexKart,score:assignment.score,confidence:assignment.confidence,pitInAt:Date.now(),status:'incoming',source});

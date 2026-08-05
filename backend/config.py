@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.1.0"
-APP_RELEASE_NAME = "MOTEUR FIFO SPOTTER"
+APP_VERSION = "7.1.1"
+APP_RELEASE_NAME = "CORRECTIF INITIALISATION FIFO SPOTTER"
 
 
 def _circuit_sort_key(circuit):

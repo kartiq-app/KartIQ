@@ -1,3 +1,10 @@
+## V7.1.1 — Correctif initialisation FIFO Spotter
+
+- Suppression automatique des anciens karts entrants de test hérités de la V7.0.x au chargement.
+- Les cartes entrantes obsolètes ou incomplètes ne sont plus affichées et ne peuvent plus bloquer les boutons Valider/Maintenance.
+- Protection contre la collision d'identifiants KV issue d'une ancienne sauvegarde locale.
+- Chronomètre des stands affiché en bleu.
+
 ## V7.1.0 — Moteur FIFO Spotter
 - Validation des karts entrants avec réservation automatique du premier kart disponible.
 - Ajout du kart rendu en fin de file ou en maintenance.

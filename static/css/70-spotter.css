@@ -90,7 +90,7 @@ body.current-spotter header{display:none}
   .spotter-queue-card,.spotter-queue-card.incoming{width:min(28vw,104px)!important}
 }
 
-/* Velocity V7.1.0 — moteur FIFO */
+/* Velocity V7.1.1 — correctif moteur FIFO */
 .spotter-queue-card.reserved{background:linear-gradient(135deg,#b41221,#650a12);box-shadow:0 8px 18px rgba(180,18,33,.24)}
 .spotter-queue-card.reserved small{font-size:9px;line-height:1.15;color:rgba(255,255,255,.82);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .spotter-incoming-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:100%;margin-top:1px}
@@ -102,3 +102,6 @@ body.current-spotter header{display:none}
 .spotter-queue-card.incoming{justify-content:center}
 .spotter-queue-card.incoming .spotter-pit-time{margin-top:-3px}
 @media(max-width:440px){.spotter-incoming-actions button{height:25px;font-size:15px}.spotter-queue-card.reserved small{font-size:8px}}
+
+/* Chronomètre des stands */
+.spotter-pit-time{color:#38a9ff!important;text-shadow:0 0 10px rgba(56,169,255,.28)}
