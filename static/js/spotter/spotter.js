@@ -1,4 +1,4 @@
-/* Velocity V7.1.5 — Filet endurance et barre Spotter compacte */
+/* Velocity V7.1.6 — Filet endurance et barre Spotter compacte */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
 const spotterState={
  version:4,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,

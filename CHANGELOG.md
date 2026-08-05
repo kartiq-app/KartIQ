@@ -1,3 +1,9 @@
+# Velocity V7.1.6 — Filet Endurance portrait dans Spotter
+
+- Suppression du filet orange spécifique ajouté en V7.1.5.
+- Reprise du traitement visuel exact du filet supérieur du mode Endurance en portrait : épaisseur de 3 px et coins supérieurs arrondis à 14 px.
+- Barre Menu / SORTIE / Paramètres et moteur FIFO inchangés.
+
 # V7.1.5 — Filet Endurance et barre Spotter compacte
 
 - suppression complète du bandeau orange entourant la zone SORTIE ;
