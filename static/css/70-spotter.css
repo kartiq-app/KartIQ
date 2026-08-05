@@ -121,3 +121,27 @@ body.current-spotter .spotter-screen{border-top:4px solid #f59e0b;padding-top:ca
 .spotter-queue-end-drop{width:min(29vw,118px);min-height:34px;border:1px dashed #3c4655;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#727c8d;font-family:'F1 Regular',Arial,sans-serif;font-size:8px;letter-spacing:.12em;opacity:.72;touch-action:none}
 .spotter-queue-end-drop.spotter-drop-target{color:#fff;border-color:#fff;background:rgba(255,255,255,.08);opacity:1;outline:none}
 @media(max-width:370px){.spotter-queue-end-drop{width:min(28vw,104px)}}
+
+
+/* Velocity V7.1.4 — bandeau SORTIE intégré, compact et arrondi */
+body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env(safe-area-inset-top,0px) + 5px)!important}
+.spotter-shell{gap:7px!important}
+.spotter-exit-band{
+  width:100%;min-height:68px;box-sizing:border-box;
+  border:3px solid #ff8a00;border-radius:12px;
+  background:linear-gradient(180deg,rgba(255,138,0,.08),rgba(255,138,0,.015));
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 9px 6px;
+}
+.spotter-exit-tools{display:flex;align-items:center;gap:7px}
+.spotter-exit-band .spotter-back,.spotter-exit-band .spotter-icon-btn{
+  width:38px;min-width:38px;height:38px;border-radius:9px;font-size:17px;
+  background:rgba(5,7,11,.76);border-color:rgba(255,255,255,.18)
+}
+.spotter-exit-direction{margin-left:auto;min-width:86px;text-align:center;align-self:stretch;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;color:#fff}
+.spotter-exit-direction span{font-family:'F1 Regular',Arial,sans-serif;font-size:13px;letter-spacing:.12em;line-height:1.15}
+.spotter-exit-direction b{color:#ff8a00;font-size:22px;line-height:1;margin-top:2px}
+.spotter-step.active#spotterLiveStep{display:flex;flex-direction:column;gap:7px}
+.spotter-queue-panel{margin-top:0!important}
+.spotter-queue-panel .spotter-card-body{padding-top:8px!important}
+@media(min-width:700px){body.current-spotter .spotter-screen{padding-top:10px!important}}

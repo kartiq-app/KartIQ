@@ -1,3 +1,11 @@
+# V7.1.4 — Bandeau SORTIE Spotter
+
+- intégration de « SORTIE » et de la flèche directement dans le bandeau orange ;
+- bandeau orange arrondi, inspiré du mode Endurance portrait ;
+- suppression du vide supérieur résiduel ;
+- rapprochement immédiat de la première carte sous la zone de sortie ;
+- conservation des commandes Accueil et Paramètres dans le bandeau.
+
 # V7.1.3 — Ajustements interface FIFO Spotter
 
 - suppression du titre « Spotter » en haut de l’écran ;
