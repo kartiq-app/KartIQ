@@ -1,5 +1,14 @@
 # Changelog
 
+## V7.2.16 — Mise en page Desktop Spotter
+
+- Les cartes de kart conservent exactement la même taille en mode 1, 2 ou 3 files.
+- Le texte reste contenu et centré dans la partie droite de chaque carte, y compris avec 3 files.
+- Nouveau titre Desktop « Spotter » à la même hauteur que le titre « Endurance » de l’Analyzer.
+- Suppression de l’ancien filet Spotter et ajout du filet orange sous le nouveau titre.
+- Les files sont rapprochées et occupent désormais environ 60 % de la largeur.
+- La colonne Karts entrants et Maintenance est agrandie à environ 40 % de la largeur.
+
 ## V7.2.15 — Desktop Spotter, annulation et synchronisation
 
 - Desktop Spotter sur toute la largeur avec une répartition 75 % pour les files et 25 % pour le panneau latéral.

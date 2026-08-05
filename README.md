@@ -1,4 +1,4 @@
-# Velocity V7.2.15 — Desktop Spotter, annulation et synchronisation
+# Velocity V7.2.16 — Mise en page Desktop Spotter
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 
