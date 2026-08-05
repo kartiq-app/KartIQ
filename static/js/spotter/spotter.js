@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.10';
+const SPOTTER_APP_RELEASE='7.2.11';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -251,8 +251,10 @@ function spotterStartDrag(event,kv,from){
  if(!source||!spotterQueueMovable(source))return;
  event.preventDefault();
  spotterDrag.kv=kv;spotterDrag.from=from;spotterDrag.pointerId=event.pointerId;
- const card=event.currentTarget;card.classList.add('dragging');
- try{card.setPointerCapture(event.pointerId)}catch(_){ }
+ event.stopPropagation();
+ const handle=event.currentTarget;
+ const card=handle.closest('.spotter-queue-card');if(!card)return;card.classList.add('dragging');
+ try{handle.setPointerCapture(event.pointerId)}catch(_){ }
  const ghost=card.cloneNode(true);ghost.classList.add('spotter-drag-ghost');ghost.style.width=`${card.getBoundingClientRect().width}px`;
  document.body.appendChild(ghost);spotterDrag.ghost=ghost;spotterMoveGhost(event.clientX,event.clientY);
  document.addEventListener('pointermove',spotterOnDragMove,{passive:false});
@@ -350,16 +352,16 @@ function renderSpotterFoundation(forceStep){
 function spotterOriginLabel(item){return item?.lastTeam&&item.lastTeam!=='Initialisation'?String(item.lastTeam):`Kart ${item?.apexKart||'—'}`}
 function spotterQueueCard(item){
  const score=item.score==null?'—':item.score,confidence=item.confidence==null?'—':`${item.confidence}%`;
- if(item.status==='reserved')return `<div class="spotter-queue-card reserved ${item.estimated?'estimated':''}"><strong>${spotterEscape(item.reservedTeam)}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span>${spotterEscape(item.kv)}</span><span>Score : ${score}</span><span>Conf. : ${confidence}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
- return `<div class="spotter-queue-card available spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','queue')"><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span>${spotterEscape(item.kv)}</span><span>Score : ${score}</span><span>Conf. : ${confidence}</span></div></div>`;
+ if(item.status==='reserved')return `<div class="spotter-queue-card reserved ${item.estimated?'estimated':''}"><strong>${spotterEscape(item.reservedTeam)}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
+ return `<div class="spotter-queue-card available spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}"><button class="spotter-drag-handle" type="button" aria-label="Déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','queue')">⠿</button><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${score}</span><span class="spotter-confidence">Conf. : ${confidence}</span></div></div>`;
 }
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
 function updateSpotterLiveTimers(){document.querySelectorAll('[data-spotter-pit-start]').forEach(node=>{node.textContent=spotterFormatDuration(Date.now()-Number(node.dataset.spotterPitStart||Date.now()))})}
 function spotterIncomingCard(item){
- return `<div class="spotter-queue-card incoming"><strong>${spotterEscape(item.name||item.team)}</strong><div class="spotter-card-stats"><span>${spotterEscape(item.returnedKv||'—')}</span><span>Score : ${item.score??'—'}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div><div class="spotter-incoming-actions"><button type="button" class="spotter-validate" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',false)" aria-label="Valider">✓</button><button type="button" class="spotter-maintenance-btn" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',true)" aria-label="Maintenance">⚠</button></div></div>`;
+ return `<div class="spotter-queue-card incoming"><strong>${spotterEscape(item.name||item.team)}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.returnedKv||'—')}</span><span class="spotter-score">Score : ${item.score??'—'}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div><div class="spotter-incoming-actions"><button type="button" class="spotter-validate" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',false)" aria-label="Valider">✓</button><button type="button" class="spotter-maintenance-btn" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',true)" aria-label="Maintenance">⚠</button></div></div>`;
 }
 function spotterMaintenanceCard(item){
- return `<div class="spotter-queue-card maintenance spotter-draggable" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','maintenance')"><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span>${spotterEscape(item.kv)}</span><span>Score : ${item.score??'—'}</span></div><button type="button" class="spotter-reinsert" onclick="event.stopPropagation();spotterReinsertMaintenance('${spotterEscapeJs(item.kv)}')">↩ FIN DE FILE</button></div>`;
+ return `<div class="spotter-queue-card maintenance spotter-draggable"><button class="spotter-drag-handle" type="button" aria-label="Déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.kv)}','maintenance')">⠿</button><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-kv-value">${spotterEscape(item.kv)}</span><span class="spotter-score">Score : ${item.score??'—'}</span></div><button type="button" class="spotter-reinsert" onclick="event.stopPropagation();spotterReinsertMaintenance('${spotterEscapeJs(item.kv)}')">↩ FIN DE FILE</button></div>`;
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}

@@ -1,4 +1,4 @@
-# Velocity V7.2.10 — Cartes Spotter carrées
+# Velocity V7.2.11 — Cartes Spotter carrées
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 

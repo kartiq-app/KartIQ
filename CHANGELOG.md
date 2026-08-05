@@ -1,5 +1,14 @@
 # Changelog
 
+## V7.2.11 — Poignées et lisibilité Spotter
+
+- Le déplacement d’un kart démarre uniquement depuis une poignée dédiée.
+- Le glissement vertical sur le reste de la carte fait défiler la page sans déplacer le kart.
+- Textes Score et Conf. agrandis de 50 %.
+- Nom d’équipe agrandi de 50 %, limité à deux lignes puis tronqué.
+- Identifiant KV masqué sur smartphone.
+- Temps restant agrandi de 25 %.
+
 ## V7.2.10 — Files multiples Spotter
 
 - Activation des modes 1, 2 et 3 files.

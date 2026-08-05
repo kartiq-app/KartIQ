@@ -651,3 +651,55 @@ body.current-spotter .spotter-shell{
   .spotter-file-list{gap:9px!important}
   .spotter-file-list .spotter-queue-card{padding:9px 7px 9px 48%!important;gap:4px!important}
 }
+
+
+/* Velocity V7.2.11 — poignée de déplacement et lisibilité mobile */
+.spotter-file-list .spotter-queue-card{
+  position:relative!important;
+  touch-action:pan-y!important;
+}
+.spotter-drag-handle{
+  position:absolute!important;
+  z-index:4!important;
+  top:4px!important;
+  right:4px!important;
+  width:24px!important;
+  height:24px!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.22)!important;
+  border-radius:7px!important;
+  background:rgba(5,7,11,.78)!important;
+  color:#fff!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:15px!important;
+  line-height:1!important;
+  cursor:grab!important;
+  touch-action:none!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+}
+.spotter-drag-handle:active{cursor:grabbing!important;background:rgba(255,255,255,.16)!important}
+.spotter-file-list .spotter-queue-card strong{
+  font-size:clamp(9px,2.75vw,16px)!important;
+  line-height:1.03!important;
+  -webkit-line-clamp:2!important;
+}
+.spotter-file-list .spotter-card-stats .spotter-score,
+.spotter-file-list .spotter-card-stats .spotter-confidence{
+  font-size:clamp(7.5px,2vw,12px)!important;
+  line-height:1.05!important;
+}
+.spotter-file-list .spotter-pit-time{
+  font-size:clamp(10px,2.75vw,16px)!important;
+}
+@media(max-width:699px){
+  .spotter-file-list .spotter-kv-value,
+  .spotter-incoming-grid .spotter-kv-value,
+  .spotter-maintenance-grid .spotter-kv-value{display:none!important}
+}
+@media(max-width:370px){
+  .spotter-drag-handle{top:2px!important;right:2px!important;width:20px!important;height:20px!important;font-size:13px!important}
+  .spotter-file-list .spotter-queue-card strong{font-size:clamp(8px,2.55vw,13px)!important}
+}
