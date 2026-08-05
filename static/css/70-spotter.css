@@ -290,7 +290,7 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
   bottom:-1px;
   height:47%;
   pointer-events:none;
-  background:url("../assets/spotter/kart-full.png") center bottom/100% auto no-repeat;
+  background:url("../assets/spotter/kart-front.png") center bottom/100% auto no-repeat;
   opacity:.92;
   filter:drop-shadow(0 0 4px rgba(255,255,255,.10));
 }
@@ -336,22 +336,51 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
  .spotter-queue-card{padding-bottom:63px!important}
 }
 
-/* Velocity V7.2.6 — kart complet sous les informations */
-.spotter-queue-card{
-  padding:9px 8px 66px!important;
+
+/* Velocity V7.2.7 — demi-kart vertical à gauche, informations à droite */
+.spotter-queue-card,
+.spotter-queue-card.incoming{
+  width:min(88vw,330px)!important;
+  aspect-ratio:2.18/1!important;
+  min-height:142px!important;
+  padding:12px 12px 12px 50%!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
 }
 .spotter-queue-card::after{
   left:0!important;
-  right:0!important;
+  right:auto!important;
+  top:4px!important;
   bottom:4px!important;
-  height:62px!important;
-  background:url("../assets/spotter/kart-full.png") center bottom/62px 62px no-repeat!important;
-  opacity:.94!important;
-  filter:drop-shadow(0 0 3px rgba(255,255,255,.10))!important;
+  width:48%!important;
+  height:auto!important;
+  background:url("../assets/spotter/kart-front.png") right center/auto 96% no-repeat!important;
+  opacity:.93!important;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.12))!important;
 }
-.spotter-queue-card.reserved::after,.spotter-queue-card.incoming::after{opacity:.82!important}
-.spotter-queue-card.maintenance::after{opacity:.76!important}
+.spotter-queue-card strong{
+  min-height:0!important;
+  justify-content:center!important;
+  text-align:center!important;
+  font-size:clamp(11px,3.1vw,15px)!important;
+}
+.spotter-card-stats{
+  width:100%!important;
+  text-align:center!important;
+  gap:3px!important;
+  font-size:clamp(9px,2.45vw,11px)!important;
+}
+.spotter-card-stats span:first-child{
+  font-size:clamp(15px,4.2vw,21px)!important;
+}
+.spotter-pit-time{font-size:clamp(13px,3.7vw,18px)!important}
+.spotter-incoming-actions{width:min(100%,118px)!important}
+.spotter-queue-end-drop{width:min(88vw,330px)!important}
+.spotter-queue-card.reserved::after,.spotter-queue-card.incoming::after{opacity:.80!important}
+.spotter-queue-card.maintenance::after{opacity:.74!important}
 @media(max-width:370px){
- .spotter-queue-card{padding-bottom:60px!important}
- .spotter-queue-card::after{height:56px!important;background-size:56px 56px!important;bottom:3px!important}
+ .spotter-queue-card,.spotter-queue-card.incoming,.spotter-queue-end-drop{width:min(90vw,306px)!important}
+ .spotter-queue-card,.spotter-queue-card.incoming{min-height:132px!important;padding-left:49%!important}
+ .spotter-queue-card::after{width:47%!important;background-size:auto 92%!important}
 }

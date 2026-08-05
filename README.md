@@ -1,4 +1,4 @@
-# Velocity V7.2.4 — Couleurs dynamiques des deltas
+# Velocity V7.2.7 — Demi-kart latéral du Spotter
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 

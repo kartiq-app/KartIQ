@@ -1,10 +1,10 @@
-# Velocity V7.2.6 — Kart complet dans le Spotter
+# Velocity V7.2.7 — Demi-kart latéral du Spotter
 
-- Suppression du précédent visuel partiel du kart dans les cartes.
-- Intégration du nouveau kart complet fourni, détouré sur fond transparent.
-- Positionnement du kart en petit et centré dans la partie basse de chaque carte.
-- Conservation des textes et informations dans la partie haute pour préserver la lisibilité.
-- Mise à jour du numéro de version affiché sur la page d’accueil.
+- Remplace le kart placé en bas par une moitié de kart verticale sur le côté gauche de chaque carte.
+- Réserve la partie droite aux informations afin d'améliorer la lisibilité.
+- Transforme les cartes carrées en cartes horizontales plus adaptées au mode Spotter.
+- Conserve les couleurs et les actions des états disponible, réservé, entrant et maintenance.
+- Met à jour la version affichée sur la page d'accueil et le cache de l'application.
 
 # Velocity V7.2.5 — Cartes-karts du Spotter
 
