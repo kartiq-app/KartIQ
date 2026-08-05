@@ -384,3 +384,97 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
  .spotter-queue-card,.spotter-queue-card.incoming{min-height:132px!important;padding-left:49%!important}
  .spotter-queue-card::after{width:47%!important;background-size:auto 92%!important}
 }
+
+/* Velocity V7.2.8 — cartes Spotter carrées, demi-kart à gauche, textes à droite */
+.spotter-queue,
+.spotter-incoming-grid,
+.spotter-maintenance-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:stretch!important;
+  justify-items:stretch!important;
+  gap:6px!important;
+  width:100%!important;
+}
+.spotter-queue-card,
+.spotter-queue-card.incoming{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  aspect-ratio:1/1!important;
+  box-sizing:border-box!important;
+  padding:7px 5px 7px 49%!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:3px!important;
+  text-align:center!important;
+}
+.spotter-queue-card::after{
+  left:0!important;
+  right:auto!important;
+  top:0!important;
+  bottom:0!important;
+  width:47%!important;
+  height:100%!important;
+  background:url("../assets/spotter/kart-front.png") left center/auto 100% no-repeat!important;
+  opacity:.94!important;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.12))!important;
+}
+.spotter-queue-card strong{
+  width:100%!important;
+  min-height:0!important;
+  font-size:clamp(7px,2.25vw,12px)!important;
+  line-height:1.05!important;
+  -webkit-line-clamp:2!important;
+}
+.spotter-queue-card small{
+  width:100%!important;
+  font-size:clamp(6px,1.65vw,8px)!important;
+  line-height:1.02!important;
+}
+.spotter-card-stats{
+  width:100%!important;
+  gap:1px!important;
+  font-size:clamp(6px,1.75vw,9px)!important;
+  line-height:1.05!important;
+}
+.spotter-card-stats span:first-child{
+  font-size:clamp(10px,3.15vw,17px)!important;
+  line-height:1!important;
+}
+.spotter-pit-time{
+  font-size:clamp(9px,2.7vw,14px)!important;
+  line-height:1!important;
+}
+.spotter-incoming-actions{
+  width:100%!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:3px!important;
+}
+.spotter-incoming-actions button{
+  height:22px!important;
+  min-width:0!important;
+  font-size:13px!important;
+}
+.spotter-reinsert{
+  width:100%!important;
+  padding:4px 2px!important;
+  font-size:clamp(5px,1.45vw,7px)!important;
+  line-height:1.05!important;
+}
+.spotter-queue-end-drop{
+  grid-column:1/-1!important;
+  width:100%!important;
+  min-height:32px!important;
+}
+@media(max-width:370px){
+  .spotter-queue,.spotter-incoming-grid,.spotter-maintenance-grid{gap:4px!important}
+  .spotter-queue-card,.spotter-queue-card.incoming{padding:5px 3px 5px 49%!important}
+  .spotter-queue-card::after{width:46%!important}
+}
+@media(min-width:700px){
+  .spotter-shell{width:min(100%,620px)!important}
+  .spotter-queue,.spotter-incoming-grid,.spotter-maintenance-grid{gap:8px!important}
+  .spotter-queue-card,.spotter-queue-card.incoming{padding:10px 8px 10px 49%!important;gap:5px!important}
+}

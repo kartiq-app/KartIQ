@@ -1,3 +1,11 @@
+# Velocity V7.2.8 — Cartes Spotter carrées
+
+- Cartes carrées conservant trois karts par rangée sur la largeur du Spotter.
+- Demi-kart placé à gauche sur toute la hauteur de chaque carte.
+- Informations regroupées et redimensionnées dans la moitié droite.
+- Remplacement de l’ancien visuel du kart par le fichier fourni.
+- Mise à jour de la version, du cache et du service worker.
+
 # Velocity V7.2.7 — Demi-kart latéral du Spotter
 
 - Remplace le kart placé en bas par une moitié de kart verticale sur le côté gauche de chaque carte.
