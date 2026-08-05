@@ -1,5 +1,13 @@
 # Changelog
 
+## V7.2.19 — Correction Desktop Spotter
+
+- Le titre Spotter retrouve exactement le style orange, le corps et la hauteur du libellé Endurance dans Analyzer.
+- Suppression de la barre mobile dupliquée « Live | ↩ | Auto | ⚙ | Quick Change » en version Desktop.
+- Conservation d’une seule barre de commandes Desktop.
+- Suppression des anciens boutons Modifier la file et Réinitialiser placés en bas de la page Desktop.
+- Fond supérieur conservé en noir comme dans Analyzer.
+
 ## V7.2.18 — Commandes Desktop Spotter
 
 - Flèche d’annulation Desktop remplacée par une flèche de retour horizontale.

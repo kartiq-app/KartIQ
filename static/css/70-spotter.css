@@ -1339,3 +1339,28 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
     color:#6ff0aa!important;
   }
 }
+
+
+/* Velocity V7.2.19 — correction de l'en-tête et suppression des doublons Desktop */
+@media(min-width:900px){
+  .spotter-desktop-heading{
+    display:flex!important;align-items:center!important;gap:14px!important;
+    min-height:58px!important;height:58px!important;margin:0!important;
+    padding:0 0 12px!important;border-bottom:2px solid #ff7a00!important;
+    background:#05070b!important;box-sizing:border-box!important;
+  }
+  .spotter-desktop-heading span{
+    font-family:Arial,sans-serif!important;font-size:13px!important;line-height:1!important;
+    color:#ff8a1f!important;font-weight:800!important;letter-spacing:.16em!important;
+    text-transform:uppercase!important;
+  }
+  body.current-spotter .spotter-command-mobile,
+  body.current-spotter .spotter-command-bar.spotter-command-mobile,
+  body.current-spotter .spotter-command-mobile.live-mode,
+  body.current-spotter .spotter-command-mobile.free-active{
+    display:none!important;visibility:hidden!important;height:0!important;min-height:0!important;
+    margin:0!important;padding:0!important;overflow:hidden!important;
+  }
+  body.current-spotter .spotter-command-desktop{display:flex!important}
+  body.current-spotter .spotter-footer-actions{display:none!important}
+}
