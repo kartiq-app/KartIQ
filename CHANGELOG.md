@@ -1,5 +1,13 @@
 # Changelog
 
+## V7.2.25 — Clone mobile uniforme
+
+- Le clone flottant reprend exactement la largeur et la hauteur mesurées sur la carte sélectionnée.
+- Les dimensions minimale, maximale et le ratio sont verrouillés afin d’éviter tout redimensionnement responsive.
+- Le clone ne dépend plus du contenu ou du type de carte.
+- L’agrandissement mobile est uniformisé à 2 % pour toutes les cartes.
+- Le comportement Desktop reste inchangé.
+
 ## V7.2.24 — Calibrage du déplacement mobile
 
 - Le kart déplacé est affiché légèrement au-dessus du doigt sur smartphone afin de garder la destination visible.

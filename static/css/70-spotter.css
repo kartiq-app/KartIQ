@@ -1638,3 +1638,30 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
     background:rgba(53,208,127,.055)!important;
   }
 }
+
+
+/* Velocity V7.2.25 — clone mobile verrouillé à la taille de la carte source */
+.spotter-drag-ghost{
+  aspect-ratio:auto!important;
+  box-sizing:border-box!important;
+  flex:none!important;
+  margin:0!important;
+  inset:auto!important;
+  left:0!important;
+  top:0!important;
+  transition:none!important;
+}
+@media(max-width:899px){
+  .spotter-drag-ghost{
+    width:var(--spotter-locked-width,auto)!important;
+    height:var(--spotter-locked-height,auto)!important;
+    transform-origin:center center!important;
+  }
+  .spotter-drag-ghost.spotter-queue-card{
+    aspect-ratio:auto!important;
+  }
+  .spotter-drag-ghost::before,
+  .spotter-drag-ghost::after{
+    box-sizing:border-box!important;
+  }
+}

@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.24';
+const SPOTTER_APP_RELEASE='7.2.25';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -389,8 +389,11 @@ function spotterCancelPendingDrag(){
 function spotterMoveGhost(x,y){
  if(!spotterDrag.ghost)return;
  const mobile=window.matchMedia('(max-width:899px)').matches;
- const offsetY=mobile?spotterDrag.ghost.offsetHeight*.82:spotterDrag.ghost.offsetHeight/2;
- spotterDrag.ghost.style.transform=`translate3d(${x-spotterDrag.ghost.offsetWidth/2}px,${y-offsetY}px,0) scale(1.05)`;
+ const width=Number(spotterDrag.ghost.dataset.lockedWidth)||spotterDrag.ghost.getBoundingClientRect().width;
+ const height=Number(spotterDrag.ghost.dataset.lockedHeight)||spotterDrag.ghost.getBoundingClientRect().height;
+ const offsetY=mobile?height*.82:height/2;
+ const scale=mobile?1.02:1.05;
+ spotterDrag.ghost.style.transform=`translate3d(${x-width/2}px,${y-offsetY}px,0) scale(${scale})`;
 }
 function spotterClearDropHighlights(){
  document.querySelectorAll('.spotter-file-column.spotter-file-active,.spotter-maintenance.spotter-drop-target')
@@ -405,12 +408,19 @@ function spotterCreatePlaceholder(rect){
 }
 function spotterCreateGhost(card,rect){
  const ghost=card.cloneNode(true);
+ const width=Math.round(rect.width*100)/100;
+ const height=Math.round(rect.height*100)/100;
  ghost.classList.remove('dragging','spotter-holding');
  ghost.classList.add('spotter-drag-ghost','drag-ready');
  ghost.removeAttribute('onpointerdown');
- ghost.style.width=`${rect.width}px`;
- ghost.style.height=`${rect.height}px`;
- ghost.style.margin='0';
+ ghost.dataset.lockedWidth=String(width);
+ ghost.dataset.lockedHeight=String(height);
+ Object.assign(ghost.style,{
+  width:`${width}px`,minWidth:`${width}px`,maxWidth:`${width}px`,
+  height:`${height}px`,minHeight:`${height}px`,maxHeight:`${height}px`,
+  aspectRatio:'auto',boxSizing:'border-box',margin:'0',
+  flex:'0 0 auto',position:'fixed',left:'0',top:'0'
+ });
  document.body.appendChild(ghost);
  return ghost;
 }
