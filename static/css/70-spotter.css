@@ -747,3 +747,33 @@ body.spotter-drag-active{user-select:none;-webkit-user-select:none}
 @media(max-width:370px){
  .spotter-drag-handle{top:50%!important;right:1px!important;width:16px!important;height:30px!important;transform:translateY(-50%)!important;font-size:12px!important}
 }
+
+/* Velocity V7.2.13 — appui long et validation des karts entrants */
+.spotter-drag-handle{touch-action:pan-y!important;transition:color .15s ease,transform .15s ease!important}
+.spotter-drag-handle.holding{color:#35d07f!important;transform:translateY(-50%) scale(1.08)!important}
+.spotter-queue-end-drop{display:none!important}
+.spotter-incoming-grid{display:flex!important;flex-direction:column!important;gap:10px!important}
+.spotter-incoming-card{width:100%;min-height:126px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);border:1px solid rgba(255,255,255,.13);border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#11151d,#090c12);box-shadow:0 8px 22px rgba(0,0,0,.28)}
+.spotter-incoming-info{min-width:0;padding:12px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;border-right:1px solid rgba(255,255,255,.10);background:linear-gradient(180deg,rgba(225,18,36,.13),rgba(225,18,36,.025))}
+.spotter-incoming-info strong{width:100%;font-family:'F1 Regular',Arial,sans-serif;font-size:clamp(13px,3.8vw,20px);line-height:1.08;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.spotter-incoming-info .spotter-kv-value{font-size:clamp(10px,2.7vw,14px);color:#aeb5c2}
+.spotter-incoming-info .spotter-score{font-size:clamp(10px,2.7vw,14px);font-weight:800}
+.spotter-incoming-info .spotter-pit-time{font-size:clamp(16px,4.5vw,24px)!important;font-weight:900;color:#fff}
+.spotter-incoming-control{min-width:0;padding:10px;display:grid;grid-template-rows:1fr auto;gap:10px}
+.spotter-file-choices{display:flex;align-items:center;justify-content:space-evenly;gap:8px}
+.spotter-file-choice{width:clamp(50px,14vw,68px);aspect-ratio:1;border-radius:50%;border:2px solid #555d6b;background:#171c25;color:#fff;font-family:'F1 Torque',Arial,sans-serif;font-size:clamp(21px,6vw,32px);font-weight:900;box-shadow:inset 0 0 0 2px rgba(0,0,0,.28)}
+.spotter-file-choice.active{border-color:#35d07f;background:#159255;color:#fff;box-shadow:0 0 0 3px rgba(53,208,127,.18),0 0 18px rgba(53,208,127,.36)}
+.spotter-incoming-buttons{display:grid;grid-template-columns:minmax(0,2.35fr) minmax(86px,1fr);gap:8px;align-items:stretch}
+.spotter-incoming-buttons button{min-height:46px;border-radius:10px;font-family:'F1 Regular',Arial,sans-serif;font-weight:900;letter-spacing:.035em}
+.spotter-incoming-buttons .spotter-validate{border:1px solid #35413c;background:#25302b;color:#7f8b85;font-size:clamp(13px,3.6vw,18px)}
+.spotter-incoming-buttons .spotter-validate.ready{border-color:#35d07f;background:#159255;color:#fff;box-shadow:0 0 16px rgba(53,208,127,.24)}
+.spotter-incoming-buttons .spotter-validate:disabled{opacity:.65}
+.spotter-incoming-buttons .spotter-maintenance-btn{border:1px solid #b35b18;background:#73320d;color:#fff;font-size:clamp(8px,2.25vw,11px);padding-inline:6px}
+@media(max-width:370px){
+ .spotter-incoming-card{min-height:112px}
+ .spotter-incoming-info{padding:8px 5px;gap:4px}
+ .spotter-incoming-control{padding:7px;gap:7px}
+ .spotter-file-choice{width:44px;font-size:20px}
+ .spotter-incoming-buttons{grid-template-columns:minmax(0,2.2fr) minmax(72px,1fr);gap:5px}
+ .spotter-incoming-buttons button{min-height:40px}
+}

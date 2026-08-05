@@ -1,4 +1,4 @@
-# Velocity V7.2.12 — Déplacement précis des cartes Spotter
+# Velocity V7.2.13 — UX Spotter et validation par file
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 

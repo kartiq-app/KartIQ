@@ -1,5 +1,15 @@
 # Changelog
 
+## V7.2.13 — UX Spotter et validation par file
+
+- Appui long de 500 ms sur la poignée avant d’autoriser le déplacement d’une carte.
+- Le glissement avant l’appui long conserve le défilement normal de la page.
+- Suppression de la case visuelle « Fin de file » ; la zone d’insertion reste visible sous la dernière carte.
+- Nouvelle carte de kart entrant sur toute la largeur : informations sur 1/3, commandes sur 2/3.
+- Sélection exclusive de la file avec de grands boutons circulaires 1, 2 et 3.
+- Bouton Valider vert et principal ; bouton Maintenance plus petit sur la même ligne.
+- Le kart validé est ajouté en dernière position de la file sélectionnée.
+
 ## V7.2.12 — Déplacement précis des cartes Spotter
 
 - Suppression du préfixe « Kart » dans les noms affichés.
