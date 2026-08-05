@@ -1,4 +1,4 @@
-/* Velocity V7.1.7 — Mode FREE et recalage FIFO */
+/* Velocity V7.1.8 — Recalage FIFO stable */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
@@ -149,7 +149,7 @@ function spotterValidateIncoming(id,toMaintenance=false,{silent=false,estimated=
 function spotterReinsertMaintenance(kv){
  const index=spotterState.maintenance.findIndex(item=>item.kv===kv);if(index<0)return;
  const [item]=spotterState.maintenance.splice(index,1);item.status='available';item.reinsertedAt=Date.now();spotterState.queue.push(item);
- spotterLogMovement('maintenance_reinsert',{kv});saveSpotterFoundation();renderSpotterFoundation('live');
+ spotterLogMovement('maintenance_reinsert',{kv});saveSpotterFoundation();spotterRenderCurrent();
 }
 function spotterProcessPitOut(team,{source='apex'}={}){
  const key=String(team||'').trim();const index=spotterState.queue.findIndex(item=>item.status==='reserved'&&item.reservedTeam===key);if(index<0)return false;
@@ -159,7 +159,7 @@ function spotterProcessPitOut(team,{source='apex'}={}){
  spotterLogMovement('pit_out',{team:key,kv:assigned.kv,source,estimated:Boolean(spotterState.freeMode||assigned.estimated)});saveSpotterFoundation();renderSpotterFoundation('live');return true;
 }
 function spotterMonitorApex(){
- if(!spotterState.configured)return;
+ if(!spotterState.configured||spotterState.recalibrating)return;
  const drivers=(window.state?.drivers||[]).filter(driver=>spotterDriverKey(driver));
  if(!drivers.length)return;
  if(!spotterState.monitorPrimed){
@@ -198,6 +198,8 @@ function spotterCommandBar(step){
  if(step==='live')return `<div class="spotter-command-bar live-mode"><button class="spotter-back" type="button" onclick="showHome()" aria-label="Retour accueil">☰</button><span class="spotter-live-state">LIVE</span><div class="spotter-command-title">SORTIE</div><button class="spotter-free-button" type="button" onclick="spotterActivateFree()">FREE</button><button class="spotter-icon-btn" type="button" onclick="openSpotterSetup()" aria-label="Configurer">⚙</button></div>`;
  return `<div class="spotter-command-bar"><button class="spotter-back" type="button" onclick="showHome()" aria-label="Retour accueil">☰</button><div class="spotter-command-title">SORTIE</div><button class="spotter-icon-btn" type="button" onclick="openSpotterSetup()" aria-label="Configurer">⚙</button></div>`;
 }
+
+function spotterRenderCurrent(){renderSpotterFoundation(spotterState.recalibrating?'recalibrate':'live')}
 
 const spotterDrag={kv:null,from:null,pointerId:null,ghost:null};
 function spotterQueueMovable(item){return item&&item.status==='available'}
@@ -258,13 +260,13 @@ function spotterMoveKartInQueue(kv,from,beforeKv=null){
  const firstAvailable=spotterState.queue.findIndex(entry=>entry.status==='available');
  if(firstAvailable>=0)target=Math.max(target,firstAvailable);
  spotterState.queue.splice(target,0,item);
- spotterLogMovement('manual_reorder',{kv,from,to:'queue',beforeKv});saveSpotterFoundation();renderSpotterFoundation('live');
+ spotterLogMovement('manual_reorder',{kv,from,to:'queue',beforeKv});saveSpotterFoundation();spotterRenderCurrent();
 }
 function spotterMoveKartToMaintenance(kv,from){
  if(from!=='queue')return;
  const index=spotterState.queue.findIndex(entry=>entry.kv===kv&&entry.status==='available');if(index<0)return;
  const [item]=spotterState.queue.splice(index,1);item.status='maintenance';item.enteredAt=Date.now();spotterState.maintenance.push(item);
- spotterLogMovement('manual_maintenance',{kv});saveSpotterFoundation();renderSpotterFoundation('live');
+ spotterLogMovement('manual_maintenance',{kv});saveSpotterFoundation();spotterRenderCurrent();
 }
 function renderSpotterFoundation(forceStep){
  const root=document.getElementById('spotterApp');if(!root)return;
@@ -287,8 +289,9 @@ function renderSpotterFoundation(forceStep){
   <div class="spotter-step ${step==='recalibrate'?'active':''}" id="spotterRecalibrateStep">
    <section class="spotter-card spotter-recalibrate-card"><div class="spotter-card-body"><h2>RECALER LA FILE</h2><p>Le suivi automatique a continué pendant votre absence, mais les attributions sont estimées.</p><div class="spotter-recalibrate-summary"><span>${spotterState.freePitIns} PIT IN</span><span>${spotterState.freePitOuts} PIT OUT</span><span>${spotterFreeDuration()}</span></div></div></section>
    <section class="spotter-card spotter-queue-panel"><div class="spotter-card-body"><div class="spotter-queue" data-spotter-drop-zone="queue">${spotterState.queue.length?spotterState.queue.map(spotterQueueCard).join(''):'<div class="spotter-empty">Aucun kart dans la file.</div>'}<div class="spotter-queue-end-drop" data-spotter-drop-end="queue"><span>FIN DE FILE</span></div></div></div></section>
-   <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 Maintenance</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en maintenance.</div>'}</div></section>
    <button class="spotter-primary spotter-confirm-recalibration" type="button" onclick="spotterConfirmRecalibration()">✓ VALIDER LE RECALAGE</button>
+   <section class="spotter-card"><div class="spotter-card-body"><div class="spotter-section-title"><span>Karts entrants</span><span class="spotter-badge">${spotterState.incoming.length}</span></div>${spotterState.incoming.length?`<div class="spotter-incoming-grid">${spotterState.incoming.map(spotterIncomingCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart entrant à valider.</div>'}</div></section>
+   <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 Maintenance</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en maintenance.</div>'}</div></section>
   </div>
  </div>`;
 }

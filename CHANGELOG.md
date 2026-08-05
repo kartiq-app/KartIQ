@@ -1,4 +1,8 @@
-# Velocity V7.1.7 — Mode FREE Spotter
+# Velocity V7.1.8 — Recalage FIFO stable
+
+- Le glisser-déposer conserve désormais l’écran RECALER LA FILE.
+- Le suivi Apex est suspendu pendant le recalage.
+- Le bouton VALIDER LE RECALAGE est placé au-dessus de Karts entrants.
 
 - Nouvelle barre : Menu | LIVE | SORTIE | FREE | Paramètres.
 - LIVE et FREE utilisent la police standard ; SORTIE conserve F1 Regular.

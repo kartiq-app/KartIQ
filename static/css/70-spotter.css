@@ -192,3 +192,13 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
 .spotter-confirm-recalibration{margin-top:0}
 #spotterRecalibrateStep.active{display:flex;flex-direction:column;gap:7px}
 @media(max-width:370px){.spotter-command-bar.live-mode{grid-template-columns:38px 38px minmax(68px,1fr) 38px 38px;gap:3px}.spotter-live-state,.spotter-free-button{font-size:10px}.spotter-command-title{font-size:12px}}
+
+/* Velocity V7.1.8 — recalage stable et validation visible */
+#spotterRecalibrateStep .spotter-confirm-recalibration{
+  position:sticky;
+  top:calc(env(safe-area-inset-top, 0px) + 54px);
+  z-index:40;
+  width:100%;
+  margin:0;
+  box-shadow:0 8px 22px rgba(0,0,0,.34),0 0 16px rgba(255,138,0,.18);
+}

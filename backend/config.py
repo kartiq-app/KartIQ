@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.1.7"
-APP_RELEASE_NAME = "MODE FREE SPOTTER"
+APP_VERSION = "7.1.8"
+APP_RELEASE_NAME = "RECALAGE FIFO STABLE"
 
 
 def _circuit_sort_key(circuit):

@@ -1,4 +1,4 @@
-const CACHE = 'velocity-v7-1-7';
+const CACHE = 'velocity-v7-1-8';
 
 const ASSETS = [
   '/',
