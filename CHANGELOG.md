@@ -1,3 +1,11 @@
+# V7.1.3 — Ajustements interface FIFO Spotter
+
+- suppression du titre « Spotter » en haut de l’écran ;
+- ajout du filet orange du mode Endurance ;
+- ajout d’une zone de dépôt explicite en fin de file pour le glisser-déposer ;
+- affichage direct du nom de l’ancienne équipe, sans le préfixe « Kart de » ;
+- conservation des cartes rouges verrouillées et du moteur FIFO V7.1.2.
+
 # V7.1.2 — Réinitialisation Spotter et réordonnancement tactile
 
 - migration contrôlée : les anciennes cartes de test et réservations V7.1.1 ne sont plus reprises ;

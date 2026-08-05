@@ -1,4 +1,4 @@
-/* Velocity V7.1.2 — Réinitialisation contrôlée et réordonnancement tactile FIFO */
+/* Velocity V7.1.3 — En-tête endurance, dépôt fin de file et libellés équipes */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
 const spotterState={
  version:4,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
@@ -188,7 +188,9 @@ function spotterOnDragMove(event){
  const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
  if(maintenance){maintenance.classList.add('spotter-drop-target');return}
  const queue=element?.closest('[data-spotter-drop-zone="queue"]');
+ const endZone=element?.closest('[data-spotter-drop-end="queue"]');
  const card=element?.closest('[data-spotter-queue-kv]');
+ if(endZone){endZone.classList.add('spotter-drop-target');return}
  if(card&&card.dataset.spotterQueueKv!==spotterDrag.kv)card.classList.add('spotter-drop-before');
  else if(queue)queue.classList.add('spotter-drop-target');
 }
@@ -197,8 +199,10 @@ function spotterEndDrag(event){
  const element=document.elementFromPoint(event.clientX,event.clientY);
  const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
  const queueCard=element?.closest('[data-spotter-queue-kv]');
+ const queueEnd=element?.closest('[data-spotter-drop-end="queue"]');
  const queue=element?.closest('[data-spotter-drop-zone="queue"]');
  if(maintenance)spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);
+ else if(queueEnd)spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,null);
  else if(queueCard||queue)spotterMoveKartInQueue(spotterDrag.kv,spotterDrag.from,queueCard?.dataset.spotterQueueKv||null);
  document.querySelectorAll('.dragging,.spotter-drop-target,.spotter-drop-before').forEach(node=>node.classList.remove('dragging','spotter-drop-target','spotter-drop-before'));
  spotterDrag.ghost?.remove();Object.assign(spotterDrag,{kv:null,from:null,pointerId:null,ghost:null});
@@ -230,7 +234,7 @@ function renderSpotterFoundation(forceStep){
  const root=document.getElementById('spotterApp');if(!root)return;
  const step=forceStep||(spotterState.configured?'live':'mode');
  root.innerHTML=`<div class="spotter-shell">
-  <div class="spotter-topbar"><button class="spotter-back" type="button" onclick="showHome()" aria-label="Retour accueil">☰</button><div class="spotter-title">Spotter</div><button class="spotter-icon-btn" type="button" onclick="openSpotterSetup()" aria-label="Configurer">⚙</button></div>
+  <div class="spotter-topbar"><button class="spotter-back" type="button" onclick="showHome()" aria-label="Retour accueil">☰</button><div class="spotter-topbar-spacer" aria-hidden="true"></div><button class="spotter-icon-btn" type="button" onclick="openSpotterSetup()" aria-label="Configurer">⚙</button></div>
   <div class="spotter-step ${step==='mode'?'active':''}" id="spotterModeStep">
    <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option active" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Disponible</small></button><button class="spotter-mode-option" type="button" disabled><strong>2</strong><span>Files</span><small>Bientôt</small></button><button class="spotter-mode-option" type="button" disabled><strong>3</strong><span>Files</span><small>Bientôt</small></button></div></div></section>
   </div>
@@ -239,14 +243,14 @@ function renderSpotterFoundation(forceStep){
   </div>
   <div class="spotter-step ${step==='live'?'active':''}" id="spotterLiveStep">
    <div class="spotter-flow-label">SORTIE</div><div class="spotter-flow-arrow">▲</div>
-   <section class="spotter-card spotter-queue-panel"><div class="spotter-card-body"><div class="spotter-queue" data-spotter-drop-zone="queue">${spotterState.queue.length?spotterState.queue.map(spotterQueueCard).join(''):'<div class="spotter-empty">Aucun kart dans la file.</div>'}</div></div></section>
+   <section class="spotter-card spotter-queue-panel"><div class="spotter-card-body"><div class="spotter-queue" data-spotter-drop-zone="queue">${spotterState.queue.length?spotterState.queue.map(spotterQueueCard).join(''):'<div class="spotter-empty">Aucun kart dans la file.</div>'}<div class="spotter-queue-end-drop" data-spotter-drop-end="queue" aria-label="Déposer en fin de file"><span>FIN DE FILE</span></div></div></div></section>
    <section class="spotter-card"><div class="spotter-card-body"><div class="spotter-section-title"><span>Karts entrants</span><span class="spotter-badge">${spotterState.incoming.length}</span></div>${spotterState.incoming.length?`<div class="spotter-incoming-grid">${spotterState.incoming.map(spotterIncomingCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart entrant à valider.</div>'}</div></section>
    <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 Maintenance</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en maintenance.</div>'}</div></section>
    <div class="spotter-footer-actions"><button class="spotter-secondary" type="button" onclick="renderSpotterFoundation('queue')">MODIFIER LA FILE</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
   </div>
  </div>`;
 }
-function spotterOriginLabel(item){return item?.lastTeam&&item.lastTeam!=='Initialisation'?`Kart de ${item.lastTeam}`:`Kart ${item?.apexKart||'—'}`}
+function spotterOriginLabel(item){return item?.lastTeam&&item.lastTeam!=='Initialisation'?String(item.lastTeam):`Kart ${item?.apexKart||'—'}`}
 function spotterQueueCard(item){
  const score=item.score==null?'—':item.score,confidence=item.confidence==null?'—':`${item.confidence}%`;
  if(item.status==='reserved')return `<div class="spotter-queue-card reserved"><strong>${spotterEscape(item.reservedTeam)}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span>${spotterEscape(item.kv)}</span><span>Score : ${score}</span><span>Conf. : ${confidence}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
