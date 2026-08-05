@@ -1,3 +1,10 @@
+# Velocity V7.2.5 — Cartes-karts du Spotter
+
+- Remplacement visuel des carrés du Spotter par des cartes sombres intégrant l’avant d’un kart en partie basse.
+- Conservation des états fonctionnels avec contours dynamiques : vert disponible, rouge réservé/entrant, orange maintenance.
+- Réorganisation des informations au-dessus du pare-chocs pour améliorer l’identification immédiate des karts.
+- Visuel optimisé sur fond transparent pour les écrans mobiles.
+
 # Velocity V7.2.4 — Couleurs dynamiques des deltas
 
 - Rétablit les couleurs vert / orange des deltas dans Analyzer.
