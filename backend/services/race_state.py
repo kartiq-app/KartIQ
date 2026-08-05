@@ -90,6 +90,7 @@ class RaceStateService:
             "time_remaining_updated_at_ms": None,
             "time_remaining_end_at_ms": None,
             "apex_laps_remaining": "—",
+            "current_lap": 0,
             "total_laps": 0,
             "session_best": {"driver": "—", "lap": "—"},
             "fastest_last_lap": {"driver": "—", "lap": "—"},
@@ -480,7 +481,16 @@ class RaceStateService:
             session_total_laps = 0
         if session_total_laps > 0:
             self.state["total_laps"] = session_total_laps
-            completed_laps = min(session_total_laps, leader_laps)
+            # Pour une course au nombre de tours, dyn1|text|Giro X/Y est plus
+            # fiable que le compteur individuel du leader, notamment au départ
+            # et pendant les trames partielles.
+            session_current_lap = session.get("current_lap")
+            try:
+                session_current_lap = int(session_current_lap)
+            except (TypeError, ValueError):
+                session_current_lap = leader_laps
+            completed_laps = min(session_total_laps, max(0, session_current_lap))
+            self.state["current_lap"] = completed_laps
             self.state["apex_laps_remaining"] = f"{completed_laps}/{session_total_laps} TOURS"
             # Une cible de tours explicite prévaut sur tout ancien compte à rebours
             # encore présent dans le cache de la session précédente.
@@ -489,8 +499,10 @@ class RaceStateService:
             self.state["time_remaining_updated_at_ms"] = None
             self.state["time_remaining_end_at_ms"] = None
         elif leader_laps > 0:
+            self.state["current_lap"] = leader_laps
             self.state["apex_laps_remaining"] = f"TOUR {leader_laps}"
         else:
+            self.state["current_lap"] = 0
             self.state["apex_laps_remaining"] = "—"
 
         for event in interpreted_events or []:

@@ -72,7 +72,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.2'),
+  appVersion:String(state?.version||'7.2.3'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -109,6 +109,17 @@ function ingestApexCountdown(frame){
  const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|countdown\|(\d+)/g)];
  if(!matches.length)return false;
  return syncRemainingFromApex(Number(matches[matches.length-1][1]),{direct:true});
+}
+function ingestApexLapProgress(frame){
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|text\|[^\r\n]*?(?:giro|giri|tour|tours|lap|laps)\s*(\d+)\s*\/\s*(\d+)/gi)];
+ if(!matches.length)return false;
+ const match=matches[matches.length-1];
+ const current=Math.max(0,Number(match[1])||0),total=Math.max(0,Number(match[2])||0);
+ if(!total)return false;
+ state={...(state||{}),current_lap:current,total_laps:total,apex_laps_remaining:`${Math.min(current,total)}/${total} TOURS`,time_remaining:'—',time_remaining_ms:null,time_remaining_updated_at_ms:null,time_remaining_end_at_ms:null};
+ remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownUsesHours=false;remainingCountdownDirectSyncAt=0;
+ updateRemainingDisplay();
+ return true;
 }
 function syncRemainingFromState(nextState){
  if(Number(nextState?.total_laps)>0){remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownUsesHours=false;remainingCountdownDirectSyncAt=0;updateRemainingDisplay();return}
@@ -168,6 +179,11 @@ function formatMainRemainingDisplay(ms,fallback='—'){
  const sourceMs=Number.isFinite(ms)?ms:parseRemainingTextMilliseconds(fallback);
  return Number.isFinite(sourceMs)?formatLandscapeRemainingMilliseconds(sourceMs):(fallback||'—');
 }
+function raceCurrentLap(){
+ const direct=Number(state?.current_lap);
+ if(Number.isFinite(direct)&&direct>=0)return Math.floor(direct);
+ return raceLeaderLaps();
+}
 function raceLeaderLaps(){
  const values=(state?.drivers||[]).map(driver=>Number(driver?.laps)).filter(Number.isFinite);
  return values.length?Math.max(0,...values):0;
@@ -180,7 +196,7 @@ function raceUsesLapTarget(){return raceTotalLaps()>0}
 function formatRaceLapProgress(){
  const total=raceTotalLaps();
  if(!total)return '';
- const completed=Math.min(total,raceLeaderLaps());
+ const completed=Math.min(total,raceCurrentLap());
  return `${completed}/${total} tours`;
 }
 function mainSessionProgressDisplay(){
@@ -336,7 +352,8 @@ function connectApexBrowser(force=false){
   const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);
   if(!isCurrentConnection())return;
   recordApexFrameReceived(frame,circuit.id);
-  ingestApexCountdown(frame);
+  const lapProgressFrame=ingestApexLapProgress(frame);
+  if(!lapProgressFrame)ingestApexCountdown(frame);
   ingestApexMapEvents(frame,circuit.id);
   try{
    const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});

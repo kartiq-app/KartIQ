@@ -1,4 +1,6 @@
-# Velocity V7.2.2 — Affichage des courses au nombre de tours
+# Velocity V7.2.3 — Détection Apex dyn1 des courses au nombre de tours
+
+Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 
 - Synchronisation serveur de la file FIFO entre Spotter et Analyzer.
 - Score et confiance affichés dans Spotter depuis le moteur Velocity existant, sans nouvel algorithme.

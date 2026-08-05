@@ -32,19 +32,51 @@ class ProtocolEngine:
         self.remaining_ms: int | None = None
         self.remaining_updated_at_ms: int | None = None
         self.remaining_end_at_ms: int | None = None
+        self.current_lap: int | None = None
         self.total_laps: int | None = None
+        self.lap_progress_updated_at_ms: int | None = None
         self.comments_raw: str = ""
         self.comments_updated_at_ms: int | None = None
 
     def observe_frame(self, frame: str, grid: Any | None, updates: list[Any]) -> None:
         self.frames += 1
-        # Apex publie le temps restant sous la forme dyn1|countdown|<millisecondes>.
-        countdowns = re.findall(r"(?:^|\n)dyn1\|countdown\|(\d+)", frame)
-        if countdowns:
-            received_at_ms = int(time.time() * 1000)
+        received_at_ms = int(time.time() * 1000)
+
+        # Les courses au nombre de tours peuvent publier la progression comme
+        # texte localisé, par exemple :
+        #   dyn1|text|Giro 1/8
+        #   dyn1|text|Tour 7/8
+        #   dyn1|text|Lap 5/10
+        # Cette information est la source de vérité pour le tour courant ET la
+        # cible de tours ; elle prévaut sur un ancien compte à rebours mémorisé.
+        lap_progresses = re.findall(
+            r"(?:^|[\r\n])dyn1\|text\|[^\r\n]*?"
+            r"(?:giro|giri|tour|tours|lap|laps)\s*(\d+)\s*/\s*(\d+)",
+            frame,
+            re.IGNORECASE,
+        )
+        if lap_progresses:
+            current, target = (int(value) for value in lap_progresses[-1])
+            if target > 0:
+                self.current_lap = max(0, current)
+                self.total_laps = target
+                self.lap_progress_updated_at_ms = received_at_ms
+                self.remaining_ms = None
+                self.remaining_updated_at_ms = None
+                self.remaining_end_at_ms = None
+
+        # Apex publie le temps restant sous la forme
+        # dyn1|countdown|<millisecondes>. On ne l'applique que si la même trame
+        # ne vient pas d'annoncer une course au nombre de tours.
+        countdowns = re.findall(r"(?:^|[\r\n])dyn1\|countdown\|(\d+)", frame)
+        if countdowns and not lap_progresses:
             self.remaining_ms = max(0, int(countdowns[-1]))
             self.remaining_updated_at_ms = received_at_ms
             self.remaining_end_at_ms = received_at_ms + self.remaining_ms
+            self.current_lap = None
+            self.total_laps = None
+            self.lap_progress_updated_at_ms = None
+
         # Les courses au nombre de tours publient selon les configurations Apex
         # une cible explicite sous plusieurs noms dynamiques. On ne retient que
         # ces clés structurées afin de ne pas confondre la cible avec le compteur
@@ -58,6 +90,7 @@ class ProtocolEngine:
             target = int(lap_targets[-1])
             if target > 0:
                 self.total_laps = target
+                self.lap_progress_updated_at_ms = received_at_ms
         # La zone « Commentaires » Apex est publiée via com||... .
         # On conserve uniquement une valeur non vide afin qu'une trame partielle
         # ne supprime pas accidentellement la dernière information reçue.
@@ -181,7 +214,9 @@ class ProtocolEngine:
             "remaining_updated_at_ms": self.remaining_updated_at_ms if countdown_fresh else None,
             "remaining_end_at_ms": self.remaining_end_at_ms if countdown_fresh else None,
             "countdown_fresh": countdown_fresh,
+            "current_lap": self.current_lap,
             "total_laps": self.total_laps,
+            "lap_progress_updated_at_ms": self.lap_progress_updated_at_ms,
         }
         snap["comments"] = {
             "raw": self.comments_raw,

@@ -1,3 +1,12 @@
+# Velocity V7.2.3 — Détection dyn1 des courses au nombre de tours
+
+- Décode les trames Apex `dyn1|text|Giro X/Y`.
+- Prend aussi en charge `Giri`, `Tour`, `Tours`, `Lap` et `Laps`.
+- Utilise directement le tour courant et le total fournis par Apex.
+- Supprime tout ancien compte à rebours lorsqu'une progression en tours est reçue.
+- Met à jour l'affichage `X/Y tours` dans Sprint, Qualifications, Endurance, Focus et Analyzer.
+- Conserve le moteur de course, la Heat Map et le classement général inchangés.
+
 # Velocity V7.2.2 — Courses au nombre de tours
 
 - détection d'une cible de tours Apex explicite ;

@@ -57,6 +57,7 @@ STATE = {
     "time_remaining_updated_at_ms": None,
     "time_remaining_end_at_ms": None,
     "apex_laps_remaining": "—",
+    "current_lap": 0,
     "total_laps": 0,
     "session_best": {"driver": "—", "lap": "—"},
     "fastest_last_lap": {"driver": "—", "lap": "—"},
