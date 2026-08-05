@@ -105,3 +105,11 @@ body.current-spotter header{display:none}
 
 /* Chronomètre des stands */
 .spotter-pit-time{color:#38a9ff!important;text-shadow:0 0 10px rgba(56,169,255,.28)}
+
+/* Velocity V7.1.2 — glisser-déposer tactile et souris */
+.spotter-draggable{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.spotter-draggable:active,.spotter-draggable.dragging{cursor:grabbing;opacity:.38}
+.spotter-drag-ghost{position:fixed!important;z-index:99999!important;pointer-events:none!important;transform:translate(-50%,-50%) scale(1.05);opacity:.95;box-shadow:0 18px 40px rgba(0,0,0,.55)!important;margin:0!important}
+.spotter-drop-before{box-shadow:0 -4px 0 #fff,0 8px 18px rgba(0,0,0,.25)!important}
+.spotter-drop-target{outline:2px dashed #fff;outline-offset:4px}
+.spotter-maintenance.spotter-drop-target{background:rgba(204,109,0,.14)}

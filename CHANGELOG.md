@@ -1,4 +1,13 @@
-## V7.1.1 — Correctif initialisation FIFO Spotter
+# V7.1.2 — Réinitialisation Spotter et réordonnancement tactile
+
+- migration contrôlée : les anciennes cartes de test et réservations V7.1.1 ne sont plus reprises ;
+- retour automatique au menu de configuration lors du premier lancement de la V7.1.2 ;
+- glisser-déposer des karts verts à la souris ou au doigt pour réordonner la file ;
+- déplacement direct d’un kart vert vers Maintenance ;
+- réinsertion d’un kart de Maintenance à n’importe quelle place de la file ;
+- les cartes rouges déjà attribuées restent verrouillées.
+
+## V7.1.2 — Correctif initialisation FIFO Spotter
 
 - Suppression automatique des anciens karts entrants de test hérités de la V7.0.x au chargement.
 - Les cartes entrantes obsolètes ou incomplètes ne sont plus affichées et ne peuvent plus bloquer les boutons Valider/Maintenance.

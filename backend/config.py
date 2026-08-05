@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.1.1"
+APP_VERSION = "7.1.2"
 APP_RELEASE_NAME = "CORRECTIF INITIALISATION FIFO SPOTTER"
 
 
