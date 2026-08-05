@@ -1177,3 +1177,14 @@ body.analyzer-debrief-open{overflow:hidden}
 .analyzer-driver-message-status.success{color:#35d889}.analyzer-driver-message-status.error{color:#ff6262}.analyzer-driver-message-status.sending{color:#ff9b32}
 @media(max-width:700px){.analyzer-rules-message-stack{grid-column:auto;min-height:220px}.analyzer-driver-message-row{grid-template-columns:minmax(105px,1fr) auto auto;gap:4px}.analyzer-driver-message-input-wrap{max-width:none}.analyzer-driver-message-urgent{font-size:7px}#analyzerDriverMessageSend{padding:0 8px;font-size:8px}}
 
+
+
+/* Velocity V7.1.10 — harmonisation de la messagerie pilote */
+.analyzer-driver-message-title-row{align-items:center!important;min-height:18px}
+.analyzer-driver-message-icon{display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:15px!important;line-height:1!important}
+.analyzer-driver-message-title{font-size:13px!important;line-height:1.2!important;font-weight:900!important;letter-spacing:.12em!important;color:#8e97a8!important;margin:0!important;vertical-align:middle!important}
+.analyzer-driver-message-row{grid-template-columns:minmax(0,1fr) auto auto!important;gap:7px!important}
+.analyzer-driver-message-input-wrap{width:100%!important;max-width:none!important}
+.analyzer-driver-message-urgent{font-size:9px!important;font-weight:950!important;min-height:30px;align-items:center!important}
+.analyzer-driver-message-urgent input{width:15px;height:15px;margin:0}
+@media(max-width:700px){.analyzer-driver-message-title{font-size:13px!important}.analyzer-driver-message-urgent{font-size:8px!important}.analyzer-driver-message-row{grid-template-columns:minmax(0,1fr) auto auto!important}}

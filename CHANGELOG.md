@@ -1,3 +1,12 @@
+# Velocity V7.1.10 — Configuration Spotter et messagerie pilote
+
+- À la première ouverture du Spotter après chaque nouvelle version, le menu de configuration est affiché avant le lancement de la session.
+- Le bouton AUTO reçoit un traitement visuel de bouton pour indiquer clairement qu'il est cliquable.
+- Le titre MESSAGERIE PILOTE reprend exactement la taille et l'alignement de CONFORMITÉ RÈGLEMENTAIRE.
+- L'emoji et le titre sont centrés sur la même ligne.
+- Le champ de 25 caractères utilise toute la largeur disponible à côté du bouton ENVOYER.
+- URGENT adopte la même taille visuelle que ENVOYER.
+
 # Velocity V7.1.9 — Mode Auto et messagerie pilote
 
 - Le mode FREE du Spotter devient le mode AUTO dans toute l’interface.

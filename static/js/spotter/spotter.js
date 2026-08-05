@@ -1,5 +1,6 @@
-/* Velocity V7.1.9 — Mode Auto et messagerie pilote */
+/* Velocity V7.1.10 — Configuration Spotter et messagerie pilote */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
+const SPOTTER_APP_RELEASE='7.1.10';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -43,14 +44,25 @@ function loadSpotterFoundation(){
   // de configuration, puis les sessions V7.1.2 sont conservées normalement.
   if(saved?.version>=4&&saved?.state){
    Object.assign(spotterState,saved.state);
+   // À la première ouverture du Spotter après chaque mise à jour, on repasse
+   // par la configuration. L'état précédent reste chargé jusqu'au lancement
+   // explicite d'une nouvelle session.
+   if(saved.appRelease!==SPOTTER_APP_RELEASE){
+    spotterState.configured=false;
+    spotterState.freeMode=false;
+    spotterState.recalibrating=false;
+    spotterState.freeNeedsRecalibration=false;
+   }
   }else if(saved){
    localStorage.removeItem(SPOTTER_STORAGE_KEY);
   }
  }catch(_){localStorage.removeItem(SPOTTER_STORAGE_KEY)}
- spotterEnsureSetupDefaults();renderSpotterFoundation();
+ spotterEnsureSetupDefaults();
+ saveSpotterFoundation();
+ renderSpotterFoundation();
 }
 function saveSpotterFoundation(){
- localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,savedAt:new Date().toISOString(),state:spotterState}));
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
 }
 function openSpotterSetup(){spotterState.configured=false;saveSpotterFoundation();renderSpotterFoundation('mode')}
 function setSpotterMode(mode){if(Number(mode)!==1)return;spotterState.mode=1;saveSpotterFoundation();renderSpotterFoundation('queue')}

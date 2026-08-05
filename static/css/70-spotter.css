@@ -202,3 +202,9 @@ body.current-spotter .spotter-screen{border-top:0!important;padding-top:calc(env
   margin:0;
   box-shadow:0 8px 22px rgba(0,0,0,.34),0 0 16px rgba(255,138,0,.18);
 }
+
+
+/* Velocity V7.1.10 — bouton AUTO clairement interactif */
+.spotter-free-button{border:1px solid rgba(255,138,0,.9)!important;background:rgba(255,138,0,.13)!important;color:#ff9a1f!important;padding:0 9px!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)!important}
+.spotter-free-button:hover,.spotter-free-button:focus-visible{background:rgba(255,138,0,.24)!important;outline:none!important}
+.spotter-free-button:active{transform:translateY(1px);background:rgba(255,138,0,.32)!important}
