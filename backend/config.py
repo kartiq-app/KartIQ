@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.0.0"
+APP_VERSION = "7.0.1"
 APP_RELEASE_NAME = "SPOTTER FOUNDATION"
 
 

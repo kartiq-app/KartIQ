@@ -1,3 +1,11 @@
+# V7.0.1 — Ajustements Spotter Foundation
+
+- Accueil mobile compacté de 5 %.
+- Cinq modes sur une ligne en desktop et paysage, ordre : Qualifications, Sprint, Endurance, Spotter, Analyzer.
+- Simplification de l’écran Spotter.
+- Valeurs initiales X, Y, Z puis A, B, C… pour les karts de la file.
+- Cartes carrées et ajout d’un simulateur de kart entrant dans les outils développeur.
+
 # V7.0.0 — Spotter Foundation
 
 - Ajout du mode **SPOTTER** sur la Home et dans la navigation.
