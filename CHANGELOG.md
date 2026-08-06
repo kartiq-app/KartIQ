@@ -1,3 +1,9 @@
+## V7.2.53 — Nouveau traitement graphique du titre Velocity dans Analyzer
+
+- Suppression du traitement spécial de l’ancien en-tête Velocity.
+- Titre VELOCITY aligné graphiquement sur HEAT MAP, STANDS et CLASSEMENT GÉNÉRAL.
+- Fonction de tri conservée à droite du titre.
+
 ## V7.2.52 — Nouvelle session Spotter vierge à chaque version
 
 - Ignore le cache local Spotter d’une version précédente.

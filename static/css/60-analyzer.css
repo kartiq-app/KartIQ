@@ -1446,3 +1446,42 @@ body.spotter-drag-active #analyzerSpotterFiles{
 }
 
 /* Velocity V7.2.52 — synchronisation Spotter et hauteur Retour alignée */
+
+
+/* Velocity V7.2.53 — titre VELOCITY aligné sur les autres cartes Analyzer */
+.analyzer-velocity-title{
+  min-height:54px!important;
+  padding:0 14px!important;
+  margin:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  border-bottom:1px solid #323945!important;
+  background:#151a23!important;
+}
+.analyzer-velocity-title .analyzer-static-ranking-tab{
+  position:static!important;
+  isolation:auto!important;
+  overflow:visible!important;
+  width:max-content!important;
+  max-width:max-content!important;
+  min-height:0!important;
+  height:auto!important;
+  padding:8px 11px!important;
+  border:1px solid #ff7a00!important;
+  border-radius:7px!important;
+  background:#2b1b0c!important;
+  color:#ff9b32!important;
+  box-shadow:inset 0 -2px #ff7a00!important;
+  font-family:var(--font-torque,Arial,sans-serif)!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  letter-spacing:.03em!important;
+}
+.analyzer-velocity-title .analyzer-static-ranking-tab::before,
+.analyzer-velocity-title .analyzer-static-ranking-tab::after{content:none!important;display:none!important}
+@media(max-width:700px){
+  .analyzer-velocity-title{flex-direction:row!important;align-items:center!important}
+  .analyzer-velocity-title .analyzer-static-ranking-tab{font-size:9px!important;padding:7px 8px!important}
+}
