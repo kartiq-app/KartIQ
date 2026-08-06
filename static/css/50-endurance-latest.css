@@ -901,7 +901,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* Velocity V7.2.43 — Messagerie pilote : espacement du bandeau */
+/* Velocity V7.2.44 — Messagerie pilote : espacement du bandeau */
 .driver-message-overlay{
  position:fixed;inset:0;z-index:10050;background:#000;color:#fff;display:none;
  grid-template-rows:auto 1fr;will-change:transform,opacity;

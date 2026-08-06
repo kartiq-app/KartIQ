@@ -1,4 +1,4 @@
-## V7.2.43
+## V7.2.44
 - Ajout d’un espacement supplémentaire entre le titre MESSAGE et les triangles rouges pour éviter tout chevauchement.
 
 ## V7.2.42
