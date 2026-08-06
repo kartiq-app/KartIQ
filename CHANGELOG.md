@@ -1,3 +1,9 @@
+## V7.2.52 — Nouvelle session Spotter vierge à chaque version
+
+- Ignore le cache local Spotter d’une version précédente.
+- Ignore les états distants Spotter provenant d’une ancienne version.
+- Une nouvelle version démarre vide, puis se synchronise uniquement avec les appareils ouverts sur cette même version.
+
 
 ## V7.2.51 — Synchronisation Spotter smartphone / desktop
 - Aligne la version de protocole Spotter sur la version réelle de l’application afin que les configurations créées sur smartphone soient acceptées par le serveur.

@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.51';
+const SPOTTER_APP_RELEASE='7.2.52';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -83,6 +83,8 @@ function spotterUndoLastAction(){
 }
 function spotterApplyRemoteSnapshot(remote){
  if(!remote||typeof remote!=='object'||remote.client_id===SPOTTER_CLIENT_ID)return;
+ // Un état d'une ancienne version ne doit jamais restaurer une ancienne session.
+ if(String(remote.app_release||'')!==SPOTTER_APP_RELEASE)return;
  const currentCircuit=String(window.state?.circuit_id||window.state?.selected_circuit||'');
  if(remote.circuit_id&&currentCircuit&&String(remote.circuit_id)!==currentCircuit)return;
  const updated=Number(remote.updated_at_ms)||0;
@@ -123,9 +125,11 @@ function loadSpotterFoundation(){
   // Migration V7.1.2 : les sauvegardes V7.1.1 et antérieures peuvent contenir
   // des cartes rouges et événements de test. On repart une seule fois du menu
   // de configuration, puis les sessions V7.1.2 sont conservées normalement.
-  if(saved?.version>=4&&saved?.state){
+  if(saved?.version>=4&&saved?.state&&String(saved.appRelease||'')===SPOTTER_APP_RELEASE){
    Object.assign(spotterState,saved.state);
   }else if(saved){
+   // Chaque nouvelle version démarre avec une session Spotter vierge.
+   // La synchronisation distante de la même version pourra ensuite la remplir.
    localStorage.removeItem(SPOTTER_STORAGE_KEY);
   }
  }catch(_){localStorage.removeItem(SPOTTER_STORAGE_KEY)}
