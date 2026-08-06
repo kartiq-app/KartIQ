@@ -722,11 +722,17 @@ def reset_race_state_for_new_circuit(circuit_id):
 
 @app.post("/api/circuit")
 def set_circuit():
-    circuit_id = request.get_json(force=True).get("circuit_id")
-    if circuit_id not in {c["id"] for c in load_circuits()}:
-        return jsonify(ok=False), 400
-    reset_race_state_for_new_circuit(circuit_id)
-    return jsonify(ok=True)
+    body = request.get_json(force=True, silent=True) or {}
+    circuit_id = str(body.get("circuit_id") or "").strip()
+    circuits = {str(c.get("id") or "").strip(): c for c in load_circuits()}
+    if not circuit_id or circuit_id not in circuits:
+        return jsonify(ok=False, error="Circuit inconnu dans la configuration du serveur."), 400
+    try:
+        reset_race_state_for_new_circuit(circuit_id)
+    except Exception as error:
+        app.logger.exception("Erreur pendant la sélection du circuit %s", circuit_id)
+        return jsonify(ok=False, error=f"Initialisation du circuit impossible : {error}"), 500
+    return jsonify(ok=True, circuit_id=circuit_id, circuit_name=circuits[circuit_id].get("name"))
 
 
 

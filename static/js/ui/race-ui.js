@@ -218,30 +218,53 @@ function reconnectLive(){connectApexBrowser(true)}
 async function changeCircuit(){
  if(!circuitSelectElement?.value||circuitChangeInProgress)return;
  const nextCircuitId=String(circuitSelectElement.value);
- circuitChangeInProgress=true;pendingCircuitId=nextCircuitId;
+ const previousCircuitId=String(state?.circuit_id||'');
+ circuitChangeInProgress=true;
+ pendingCircuitId=nextCircuitId;
  circuitSelectElement.disabled=true;
+ document.getElementById('homeCircuit')?.classList.remove('needs-selection');
  try{
-  if(typeof analyzerBeforeCircuitChange==='function')analyzerBeforeCircuitChange();
-  document.getElementById('homeCircuit')?.classList.remove('needs-selection');
-  closeApexBrowserSocket();
+  // La sélection serveur est l'unique opération critique. Les nettoyages locaux
+  // ne doivent jamais transformer une erreur annexe en faux refus de circuit.
+  const response=await fetch('/api/circuit',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({circuit_id:nextCircuitId}),
+   cache:'no-store'
+  });
+  let payload=null;
+  try{payload=await response.json()}catch(_){payload=null}
+  if(!response.ok||payload?.ok===false){
+   throw new Error(payload?.error||`Circuit refusé (${response.status})`);
+  }
+
+  // Le serveur a confirmé le circuit : on nettoie maintenant l'ancien affichage.
+  try{if(typeof analyzerBeforeCircuitChange==='function')analyzerBeforeCircuitChange()}catch(error){console.warn('[Velocity] Sauvegarde Analyzer ignorée pendant le changement de circuit',error)}
+  try{closeApexBrowserSocket()}catch(error){console.warn('[Velocity] Fermeture WebSocket navigateur ignorée',error)}
   apexBrowserCircuitId=null;
   rowLapSignatures.clear();
-  endurancePitStatuses.clear();enduranceOutUntil.clear();
-  lastCrossEvent=null;lastGenericEvent=null;
-  crossingOverlay.classList.remove('show');genericOverlay.classList.remove('show');top8PitOverlay.classList.remove('show');
-  remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownDirectSyncAt=0;
+  endurancePitStatuses.clear();
+  enduranceOutUntil.clear();
+  lastCrossEvent=null;
+  lastGenericEvent=null;
+  crossingOverlay?.classList.remove('show');
+  genericOverlay?.classList.remove('show');
+  top8PitOverlay?.classList.remove('show');
+  remainingCountdownMs=null;
+  remainingCountdownPerfAt=0;
+  remainingCountdownDirectSyncAt=0;
   state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
   render();
-  const response=await fetch('/api/circuit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({circuit_id:nextCircuitId})});
-  if(!response.ok)throw new Error(`Circuit refusé (${response.status})`);
   await load();
-  if(typeof analyzerAfterCircuitChange==='function')analyzerAfterCircuitChange();
+  try{if(typeof analyzerAfterCircuitChange==='function')analyzerAfterCircuitChange()}catch(error){console.warn('[Velocity] Réinitialisation Analyzer ignorée après changement de circuit',error)}
  }catch(error){
-  console.error('[Velocity] Changement de circuit impossible :',error);
-  await load();
-  alert('Impossible de sélectionner ce circuit. Réessayez après actualisation.');
+  console.error('[Velocity] Changement de circuit refusé :',error);
+  pendingCircuitId='';
+  if(circuitSelectElement)circuitSelectElement.value=previousCircuitId;
+  alert(`Impossible de sélectionner ce circuit.${error?.message?`\n${error.message}`:''}`);
  }finally{
-  circuitChangeInProgress=false;pendingCircuitId='';
+  circuitChangeInProgress=false;
+  pendingCircuitId='';
   if(circuitSelectElement)circuitSelectElement.disabled=false;
   render();
  }

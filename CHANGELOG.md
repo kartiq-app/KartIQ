@@ -1,4 +1,4 @@
-## V7.2.61 — Trafic devant continu et indépendant des tours
+## V7.2.62 — Trafic devant continu et indépendant des tours
 
 - Conservation des cercles de trafic dans le DOM pour éviter les disparitions à chaque rafraîchissement.
 - Déplacement fluide et immédiat selon l'écart estimé.
