@@ -1,7 +1,24 @@
 
+const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
 function setFocusLandscapeLock(active){
-  document.documentElement.classList.toggle('focus-landscape-locked',Boolean(active));
-  document.body.classList.toggle('focus-landscape-locked',Boolean(active));
+  // iPhone/iPad : aucun fallback CSS, iOS conserve son orientation native.
+  // Android : le verrouillage est demandé via Screen Orientation API dans les fonctions Focus.
+  document.documentElement.classList.remove('focus-landscape-locked');
+  document.body.classList.remove('focus-landscape-locked');
+}
+async function lockFocusOrientationForAndroid(){
+  if(!isAndroidDevice)return false;
+  try{
+    if(screen.orientation?.lock){
+      await screen.orientation.lock('landscape');
+      return true;
+    }
+  }catch(error){console.warn('Verrouillage paysage Android indisponible',error)}
+  return false;
+}
+function unlockFocusOrientationForAndroid(){
+  if(!isAndroidDevice)return;
+  try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(error){console.warn('Déverrouillage orientation Android',error)}
 }
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
 let stateLoadInFlight=false;
@@ -77,7 +94,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.57'),
+  appVersion:String(state?.version||'7.2.58'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},

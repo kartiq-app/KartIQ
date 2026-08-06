@@ -1,3 +1,10 @@
+## V7.2.58 — Verrouillage paysage Android uniquement
+
+- Suppression complète du fallback de rotation CSS sur iPhone/iPad.
+- Les modes Focus suivent de nouveau l’orientation native d’iOS.
+- Verrouillage paysage natif activé uniquement sur Android via Screen Orientation API.
+- Déverrouillage automatique à la fermeture des modes Focus Qualification, Sprint et Endurance.
+
 ## V7.2.57 — Verrouillage paysage des modes Focus sur iPhone
 
 - Le layout paysage reste figé dans les modes Focus Qualification, Sprint et Endurance.

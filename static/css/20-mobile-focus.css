@@ -122,37 +122,3 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 .qual-focus-best-block{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;max-width:100%;text-align:center}.qual-focus-best-label{font-family:var(--font-main);font-size:clamp(14px,2.4vh,28px);font-weight:950;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.qual-focus-fastest{margin-top:clamp(8px,1.5vh,18px);font-family:var(--font-driver);font-size:clamp(28px,6vh,72px);font-weight:850;line-height:1.05;text-transform:uppercase;overflow-wrap:anywhere}.qual-focus-best-time{margin-top:clamp(8px,1.5vh,18px);font-family:var(--font-time);font-size:clamp(42px,9vh,110px);font-weight:700;line-height:.9;color:var(--purple);white-space:nowrap}
 @media(max-width:680px) and (orientation:portrait){.qual-focus-position{font-size:clamp(58px,14vw,100px)}.qual-focus-followed-name{font-size:clamp(18px,4.6vw,34px)}.qual-focus-delta{font-size:clamp(72px,18vw,130px)}.qual-focus-remaining{font-size:clamp(40px,10vw,75px)}.qual-focus-laps{font-size:clamp(24px,6vw,45px)}.qual-focus-fastest{font-size:clamp(20px,5vw,40px)}.qual-focus-best-label{font-size:clamp(11px,3vw,18px)}.qual-focus-best-time{font-size:clamp(30px,8vw,56px)}.qual-focus-close{width:40px;height:40px;font-size:23px}}
 @media(max-width:680px){.qual-focus-launch{font-size:8px;letter-spacing:.03em;padding:4px 2px}.qual-delta-content{padding:3px 4px}.qual-delta-focus-cell .qual-delta{margin-top:0}}
-
-
-
-
-/* Velocity V7.2.57 — verrouillage visuel paysage des modes Focus sur iPhone.
-   Safari peut refuser screen.orientation.lock(); dans ce cas, si le viewport
-   repasse en portrait, seul l'overlay Focus est pivoté et conserve le layout paysage. */
-@media (orientation:portrait){
-  html.focus-landscape-locked,
-  body.focus-landscape-locked{
-    overflow:hidden!important;
-    overscroll-behavior:none!important;
-  }
-  body.focus-landscape-locked #sprintFocus.show,
-  body.focus-landscape-locked #enduranceFocus.show,
-  body.focus-landscape-locked #qualificationFocus.show{
-    position:fixed!important;
-    top:50%!important;
-    left:50%!important;
-    right:auto!important;
-    bottom:auto!important;
-    width:100vh!important;
-    height:100vw!important;
-    min-width:100vh!important;
-    min-height:100vw!important;
-    transform:translate(-50%,-50%) rotate(90deg)!important;
-    transform-origin:center center!important;
-    padding:
-      env(safe-area-inset-left)
-      env(safe-area-inset-top)
-      env(safe-area-inset-right)
-      env(safe-area-inset-bottom)!important;
-  }
-}
