@@ -1,4 +1,8 @@
-## V7.2.58 — Verrouillage paysage Android uniquement
+## V7.2.59 — Radar et trafic devant
+- Palette des cercles harmonisée entre Radar classique et plein écran.
+- Ajout de la ligne Trafic devant sur 10 secondes avec numéro de kart et couleur de rythme.
+
+## V7.2.59 — Verrouillage paysage Android uniquement
 
 - Suppression complète du fallback de rotation CSS sur iPhone/iPad.
 - Les modes Focus suivent de nouveau l’orientation native d’iOS.
