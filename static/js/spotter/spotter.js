@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.45';
+const SPOTTER_APP_RELEASE='7.2.46';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -45,6 +45,8 @@ const SPOTTER_CLIENT_ID=sessionStorage.getItem('velocity_spotter_client_id')||`s
 sessionStorage.setItem('velocity_spotter_client_id',SPOTTER_CLIENT_ID);
 let spotterApplyingRemote=false;
 let spotterLastRemoteUpdate=0;
+let spotterUiStep=null;
+let spotterSessionOpened=false;
 
 function spotterClone(value){return JSON.parse(JSON.stringify(value??null))}
 function spotterUndoState(){
@@ -97,7 +99,7 @@ function spotterApplyRemoteSnapshot(remote){
   spotterState.freePitIns=Number(remote.pit_ins)||0;
   spotterState.freePitOuts=Number(remote.pit_outs)||0;
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
-  if(document.body.classList.contains('current-spotter')&&!spotterDrag?.active&&!spotterDrag?.timer)spotterRenderCurrent();
+  if(document.body.classList.contains('current-spotter')&&!spotterDrag?.active&&!spotterDrag?.timer&&!['mode','queue'].includes(spotterUiStep))spotterRenderCurrent();
  }finally{spotterApplyingRemote=false}
 }
 async function spotterPullSharedState(){
@@ -154,8 +156,14 @@ function saveSpotterFoundation(){
  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  spotterScheduleSharedSync();
 }
-function openSpotterSetup(){spotterState.configured=false;saveSpotterFoundation();renderSpotterFoundation('mode')}
-function setSpotterMode(mode){const count=Math.max(1,Math.min(3,Number(mode)||1));spotterState.mode=count;saveSpotterFoundation();renderSpotterFoundation('queue')}
+function openSpotterSetup(){spotterUiStep='mode';renderSpotterFoundation('mode')}
+function spotterEditQueueSetup(){spotterUiStep='queue';renderSpotterFoundation('queue')}
+function spotterEnterMode(){
+ const mobile=window.matchMedia?.('(max-width: 899px)')?.matches;
+ if(mobile&&!spotterSessionOpened){spotterSessionOpened=true;spotterUiStep='mode';renderSpotterFoundation('mode');return}
+ spotterSessionOpened=true;renderSpotterFoundation(spotterState.configured?(spotterState.recalibrating?'recalibrate':'live'):'mode');
+}
+function setSpotterMode(mode){const count=Math.max(1,Math.min(3,Number(mode)||1));spotterState.mode=count;saveSpotterFoundation();spotterUiStep='queue';renderSpotterFoundation('queue')}
 function addSpotterSetupKart(){spotterState.setupKarts.push(spotterDefaultKartName(spotterState.setupKarts.length));renderSpotterFoundation('queue');setTimeout(()=>document.querySelector('.spotter-setup-row:last-of-type input')?.focus(),0)}
 function removeSpotterSetupKart(index){if(spotterState.setupKarts.length<=1)return;spotterState.setupKarts.splice(index,1);renderSpotterFoundation('queue')}
 function updateSpotterSetupKart(index,value){spotterState.setupKarts[index]=String(value||'').trim().slice(0,18);saveSpotterFoundation();const btn=document.getElementById('spotterLaunchButton');if(btn)btn.disabled=!spotterState.setupKarts.some(Boolean)}
@@ -180,12 +188,12 @@ function launchSpotterFoundation(){
  if(!karts.length)return;
  const seeded=spotterSeedGridAssignments(karts.length+1);
  spotterState.queue=karts;spotterState.incoming=[];spotterState.maintenance=[];spotterState.assignments=seeded.assignments;spotterState.nextKvNumber=seeded.next;spotterState.movementLog=[];spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;spotterState.freeMode=false;spotterState.freeStartedAt=null;spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.configured=true;
- saveSpotterFoundation();renderSpotterFoundation('live');
+ saveSpotterFoundation();spotterUiStep='live';renderSpotterFoundation('live');
 }
 function resetSpotterFoundation(){
  if(!confirm('Réinitialiser la configuration Spotter ?'))return;
  Object.assign(spotterState,{mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,configured:false});
- saveSpotterFoundation();renderSpotterFoundation('mode');
+ saveSpotterFoundation();spotterUiStep='mode';renderSpotterFoundation('mode');
 }
 function spotterAllocateKv(){const kv=spotterKvFromNumber(spotterState.nextKvNumber);spotterState.nextKvNumber+=1;return kv}
 function spotterFindDriver(team){return (window.state?.drivers||[]).find(driver=>spotterDriverKey(driver)===String(team||''))||null}
@@ -371,7 +379,7 @@ function spotterCommandBar(step){
  return mobile+desktop;
 }
 
-function spotterRenderCurrent(){renderSpotterFoundation(spotterState.recalibrating?'recalibrate':'live')}
+function spotterRenderCurrent(){spotterUiStep=spotterState.recalibrating?'recalibrate':'live';renderSpotterFoundation(spotterUiStep)}
 
 const spotterDrag={
  kv:null,from:null,pointerId:null,ghost:null,placeholder:null,timer:null,
@@ -649,6 +657,7 @@ function spotterRenderQueueColumns(){
 function renderSpotterFoundation(forceStep){
  const root=document.getElementById('spotterApp');if(!root)return;
  const step=forceStep||(spotterState.configured?(spotterState.recalibrating?'recalibrate':'live'):'mode');
+ spotterUiStep=step;
  root.innerHTML=`<div class="spotter-shell">
   <div class="spotter-top-accent" aria-hidden="true"></div>
   <div class="spotter-desktop-heading"><span>SPOTTER</span></div>
@@ -670,7 +679,7 @@ function renderSpotterFoundation(forceStep){
      <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 Maintenance</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en maintenance.</div>'}</div></section>
     </aside>
    </div>
-   <div class="spotter-footer-actions"><button class="spotter-secondary" type="button" onclick="renderSpotterFoundation('queue')">MODIFIER LA FILE</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
+   <div class="spotter-footer-actions"><button class="spotter-secondary" type="button" onclick="spotterEditQueueSetup()">MODIFIER LA FILE</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
   </div>
   <div class="spotter-step ${step==='recalibrate'?'active':''}" id="spotterRecalibrateStep">
    <div class="spotter-recalibrate-desktop-layout">
