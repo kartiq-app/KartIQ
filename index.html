@@ -218,54 +218,22 @@
           </div>
         </section>
 
-        <div id="analyzerSpotterStack" class="analyzer-spotter-stack" style="display:flex!important">
-        <section class="panel analyzer-panel analyzer-spotter-panel" aria-labelledby="analyzerSpotterTitle">
-          <div class="analyzer-panel-title analyzer-spotter-title">
-            <span id="analyzerSpotterTitle">FILES DE KARTS</span>
-            <small>État partagé avec Spotter Desktop et smartphone</small>
-          </div>
-
-          <div class="analyzer-spotter-actions" role="toolbar" aria-label="Commandes Spotter">
-            <button class="analyzer-spotter-undo" type="button" onclick="analyzerSpotterUndo()" aria-label="Annuler la dernière action" title="Annuler la dernière action">↶</button>
-            <button type="button" onclick="analyzerSpotterPrepare()">PRÉPARER LA ZONE QUICK CHANGE</button>
-            <button id="analyzerSpotterAutoButton" type="button" onclick="analyzerSpotterToggleAuto()">AUTO</button>
-            <button type="button" onclick="analyzerSpotterModifyQueue()">MODIFIER LA FILE</button>
-            <button class="analyzer-spotter-reset" type="button" onclick="analyzerSpotterReset()">RÉINITIALISER</button>
-          </div>
-
-          <div id="analyzerSpotterQueues" class="analyzer-spotter-queues">
-            <div class="analyzer-empty">Chargement des files Spotter…</div>
-          </div>
-        </section>
-
-        <section class="panel analyzer-panel analyzer-spotter-incoming-panel" aria-labelledby="analyzerSpotterIncomingTitle">
-          <div class="analyzer-panel-title">
-            <span id="analyzerSpotterIncomingTitle">KARTS ENTRANTS</span>
-            <span id="analyzerSpotterIncomingCount" class="analyzer-spotter-count">0</span>
-          </div>
-          <div id="analyzerSpotterIncoming" class="analyzer-spotter-list">
-            <div class="analyzer-empty">Aucun kart entrant à valider.</div>
-          </div>
-        </section>
-
-        <section class="panel analyzer-panel analyzer-spotter-maintenance-panel" aria-labelledby="analyzerSpotterMaintenanceTitle" data-spotter-drop-zone="maintenance">
-          <div class="analyzer-panel-title">
-            <span id="analyzerSpotterMaintenanceTitle">MAINTENANCE</span>
-            <span id="analyzerSpotterMaintenanceCount" class="analyzer-spotter-count">0</span>
-          </div>
-          <div id="analyzerSpotterMaintenance" class="analyzer-spotter-list">
-            <div class="analyzer-empty">Aucun kart en maintenance.</div>
-          </div>
-        </section>
-
-        </div>
-
         <section class="panel analyzer-panel opportunity-card analyzer-opportunity-panel" id="analyzerOpportunityCard">
           <div class="analyzer-panel-title"><span>OPPORTUNITÉ DE QUICK CHANGE</span></div>
           <div class="analyzer-opportunity-body">
             <div class="opportunity-score"><strong id="analyzerOpportunityScore">—</strong><span>/100</span></div>
             <div><div class="opportunity-advice" id="analyzerAdvice">En attente de données Apex…</div><div class="opportunity-detail" id="analyzerAdviceDetail">—</div></div>
           </div>
+        </section>
+
+        <section class="panel analyzer-queue-panel analyzer-queue-panel-compact" aria-labelledby="kartQueuesTitle">
+          <div class="endurance-queue-header">
+            <div><div id="kartQueuesTitle" class="endurance-queue-title">QUICK CHANGE — FILES DE KARTS</div><div class="analyzer-queue-subtitle">Le premier kart de chaque file est le choix immédiatement disponible.</div></div>
+            <div class="queue-count-control"><span>Files</span><button type="button" data-queue-count="1" onclick="setKartQueueCount(1)">1</button><button type="button" data-queue-count="2" onclick="setKartQueueCount(2)">2</button><button type="button" data-queue-count="3" onclick="setKartQueueCount(3)">3</button></div>
+          </div>
+          <div id="kartQueues" class="kart-queues"></div>
+          <div class="queue-actions"><div id="queueSelectionLabel" class="queue-actions-label">Cliquez sur un kart pour le déplacer ou le retirer.</div><button id="queueAdvanceBtn" class="queue-action advance" type="button" onclick="moveSelectedQueueKart(-1)" disabled>← AVANCER</button><button id="queueBackBtn" class="queue-action back" type="button" onclick="moveSelectedQueueKart(1)" disabled>RECULER →</button><button id="queueRemoveBtn" class="queue-action remove" type="button" onclick="removeSelectedQueueKart()" disabled>✕ RETIRER</button><button class="queue-action reset" type="button" onclick="resetKartQueues()">RÉINITIALISER</button></div>
+          <div class="queue-recommendation"><span>CHOIX CONSEILLÉ</span><strong id="analyzerQueueAdvice">Ajoutez les karts présents dans les files</strong></div>
         </section>
 
         <section class="panel analyzer-panel analyzer-forecast-panel">

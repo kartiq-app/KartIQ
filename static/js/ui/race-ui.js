@@ -17,29 +17,10 @@ function endurancePitBadge(driver){
  if(until&&until<=now)enduranceOutUntil.delete(key);
  return '';
 }
-const velocityTableRenderCache=new Map();
 function rows(target,cols){
- const el=document.getElementById(target);if(!el)return;
- const prepared=(state.drivers||[]).map(d=>{
-  const key=d.driver||String(d.pos);
-  const lapSignature=String(d.laps)+'|'+String(d.last);
-  const signatureKey=target+'|'+key;
-  const previousSignature=rowLapSignatures.get(signatureKey);
-  const className='clickable'+(d.driver===state.followed_driver?' followed':'')+((target==='qualifTable'||target==='enduranceTable')&&previousSignature&&previousSignature!==lapSignature?' lap-flash':'');
-  const html=cols(d);
-  rowLapSignatures.set(signatureKey,lapSignature);
-  return {d,key,className,html};
- });
- const renderSignature=prepared.map(row=>`${row.key}|${row.className}|${row.html}`).join('§');
- if(velocityTableRenderCache.get(target)===renderSignature)return;
- velocityTableRenderCache.set(target,renderSignature);
-
- const previousRects=new Map([...el.querySelectorAll('tr[data-driver]')].map(tr=>[tr.dataset.driver,tr.getBoundingClientRect()]));
+ const el=document.getElementById(target);const previousRects=new Map([...el.querySelectorAll('tr[data-driver]')].map(tr=>[tr.dataset.driver,tr.getBoundingClientRect()]));
  const fragment=document.createDocumentFragment();
- prepared.forEach(({d,key,className,html})=>{
-  const tr=document.createElement('tr');
-  tr.dataset.driver=key;tr.className=className;tr.onclick=()=>followDriver(d.driver);tr.innerHTML=html;fragment.appendChild(tr);
- });
+ state.drivers.forEach(d=>{const tr=document.createElement('tr');const key=d.driver||String(d.pos);const signature=String(d.laps)+'|'+String(d.last);const signatureKey=target+'|'+key;const previousSignature=rowLapSignatures.get(signatureKey);tr.dataset.driver=key;tr.className='clickable'+(d.driver===state.followed_driver?' followed':'')+((target==='qualifTable'||target==='enduranceTable')&&previousSignature&&previousSignature!==signature?' lap-flash':'');tr.onclick=()=>followDriver(d.driver);tr.innerHTML=cols(d);fragment.appendChild(tr);rowLapSignatures.set(signatureKey,signature)});
  el.replaceChildren(fragment);
  requestAnimationFrame(()=>{[...el.querySelectorAll('tr[data-driver]')].forEach(tr=>{const oldRect=previousRects.get(tr.dataset.driver);if(!oldRect)return;const newRect=tr.getBoundingClientRect();const dy=oldRect.top-newRect.top;if(Math.abs(dy)>1){tr.style.transition='none';tr.style.transform=`translateY(${dy}px)`;requestAnimationFrame(()=>{tr.style.transition='transform .48s cubic-bezier(.22,.8,.2,1)';tr.style.transform='translateY(0)'})}})});
 }
