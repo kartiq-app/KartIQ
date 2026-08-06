@@ -1,3 +1,11 @@
+## V7.2.36 — Correctif Messagerie Pilote en mode Focus
+
+- Message affiché en plein écran sur fond noir avec une très grande police en Qualification, Sprint et Endurance.
+- Overlay partagé par les trois modes Focus et placé au-dessus de toute l’interface.
+- Disparition automatique maintenue après 15 secondes.
+- Message urgent délivré immédiatement.
+- Message non urgent délivré au prochain passage du pilote suivi sur la ligne de chronométrage.
+
 ## V7.2.34 — Affichage version Home
 
 - Correction de la version affichée sur la page d’accueil : Velocity v7.2.34.

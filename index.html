@@ -386,9 +386,6 @@
       </div>
     </div>
   </div>
-  <div class="endurance-driver-message-overlay" id="enduranceDriverMessageOverlay" aria-live="assertive" aria-atomic="true">
-    <div class="endurance-driver-message-text" id="enduranceDriverMessageText">—</div>
-  </div>
   <div class="endurance-penalty-banner" id="endurancePenaltyBanner" aria-live="assertive" aria-atomic="true">
     <div class="endurance-penalty-banner-label">PÉNALITÉ</div>
     <div class="endurance-penalty-banner-name" id="endurancePenaltyBannerName">—</div>
@@ -411,6 +408,9 @@
   </div>
 </div>
 
+<div class="driver-message-overlay" id="driverMessageOverlay" aria-live="assertive" aria-atomic="true" aria-hidden="true">
+  <div class="driver-message-text" id="driverMessageText">—</div>
+</div>
 <div class="analyzer-map-focus" id="analyzerMapFocus" aria-hidden="true">
   <button class="analyzer-map-focus-close" type="button" onclick="closeAnalyzerMapFocus()" aria-label="Fermer">×</button>
   <div class="analyzer-map-focus-main">

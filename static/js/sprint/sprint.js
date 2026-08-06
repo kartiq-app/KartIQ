@@ -326,21 +326,29 @@ function renderEndurancePenaltyAlert(list,f){
 }
 
 
-function renderEnduranceDriverMessage(){
- const host=document.getElementById('enduranceDriverMessageOverlay');
- const text=document.getElementById('enduranceDriverMessageText');
+function renderDriverMessageOverlay(){
+ const host=document.getElementById('driverMessageOverlay');
+ const text=document.getElementById('driverMessageText');
  if(!host||!text)return;
  const message=state?.driver_message;
  const delivered=Number(message?.delivered_at_ms);
  const duration=Number(message?.duration_ms)||15000;
- const active=Boolean(message?.message&&Number.isFinite(delivered)&&Date.now()-delivered>=0&&Date.now()-delivered<duration);
+ const elapsed=Date.now()-delivered;
+ const focusActive=Boolean(
+  document.getElementById('sprintFocus')?.classList.contains('show')||
+  document.getElementById('qualificationFocus')?.classList.contains('show')||
+  document.getElementById('enduranceFocus')?.classList.contains('show')
+ );
+ const active=Boolean(focusActive&&message?.message&&Number.isFinite(delivered)&&elapsed>=0&&elapsed<duration);
  host.classList.toggle('show',active);
+ host.setAttribute('aria-hidden',active?'false':'true');
  if(active)text.textContent=message.message;
+ else text.textContent='—';
 }
+
 
 function renderEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay?.classList.contains('show'))return;
- renderEnduranceDriverMessage();
  const f=state.followed||{};
  renderEndurancePitState(f);
  const endurancePenaltyList=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));

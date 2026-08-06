@@ -72,7 +72,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.34'),
+  appVersion:String(state?.version||'7.2.36'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -211,6 +211,7 @@ function updateRemainingDisplay(){
  const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
+ if(typeof renderDriverMessageOverlay==='function')renderDriverMessageOverlay();
  renderQualificationFocus();
  renderSprintFocus();
  renderEnduranceFocus();
