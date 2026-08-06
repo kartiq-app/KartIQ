@@ -1429,7 +1429,8 @@ body.analyzer-debrief-open{overflow:hidden}
 .analyzer-spotter-actions .analyzer-spotter-undo.spotter-undo-button{
   width:52px!important;
   min-width:52px!important;
-  height:44px!important;
+  min-height:36px!important;
+  height:36px!important;
   padding:0!important;
   border:1px solid #536071!important;
   border-radius:11px!important;
@@ -1443,3 +1444,5 @@ body.analyzer-debrief-open{overflow:hidden}
 body.spotter-drag-active #analyzerSpotterFiles{
   pointer-events:auto;
 }
+
+/* Velocity V7.2.51 — synchronisation Spotter et hauteur Retour alignée */

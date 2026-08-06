@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.49';
+const SPOTTER_APP_RELEASE='7.2.51';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -150,7 +150,14 @@ async function spotterPushSharedState(){
  spotterPushInFlight=true;spotterPushQueued=false;
  try{
   const response=await fetch('/api/spotter-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({spotter:spotterSharedSnapshot()})});
-  if(response.ok){const payload=await response.json();spotterLastRemoteUpdate=Math.max(spotterLastRemoteUpdate,Number(payload?.updated_at_ms)||0)}
+  if(response.ok){
+   const payload=await response.json();
+   spotterLastRemoteUpdate=Math.max(spotterLastRemoteUpdate,Number(payload?.updated_at_ms)||0);
+  }else{
+   const payload=await response.json().catch(()=>({}));
+   console.warn('[Spotter] État partagé refusé',response.status,payload);
+   if(response.status===409)await spotterPullSharedState();
+  }
  }catch(error){console.warn('[Spotter] Synchronisation serveur impossible',error)}
  finally{spotterPushInFlight=false;if(spotterPushQueued)spotterScheduleSharedSync()}
 }

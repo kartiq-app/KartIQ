@@ -1,10 +1,10 @@
-# Velocity V7.2.50
 
-- Bouton d’annulation/retour de la carte STANDS aligné sur le style Spotter.
-- Gel du rafraîchissement Analyzer pendant le glisser-déposer pour supprimer le clignotement sur ordinateur.
-- Taille des cartes Spotter constante sur smartphone pour 1, 2 ou 3 files, avec centrage automatique des configurations à 1 ou 2 files.
-
-## V7.2.50
+## V7.2.51 — Synchronisation Spotter smartphone / desktop
+- Aligne la version de protocole Spotter sur la version réelle de l’application afin que les configurations créées sur smartphone soient acceptées par le serveur.
+- Le Spotter desktop et la carte STANDS de l’Analyzer récupèrent désormais le nouvel état partagé au lieu de conserver l’ancien état.
+- En cas de client obsolète, l’application recharge l’état serveur au lieu d’échouer silencieusement.
+- Le bouton Retour de STANDS adopte la même hauteur que les autres boutons de la ligne d’actions.
+## V7.2.49
 
 - Correction de l’affichage des trois files Spotter dans la carte FILES de l’Analyzer.
 - Le nombre de files utilise désormais `queue_mode`, avec détection de secours depuis `queueFile`.
