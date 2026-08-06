@@ -21,6 +21,7 @@ function unlockFocusOrientationForAndroid(){
   try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(error){console.warn('Déverrouillage orientation Android',error)}
 }
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
+let circuitChangeInProgress=false,pendingCircuitId='';
 let stateLoadInFlight=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
@@ -94,7 +95,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.59'),
+  appVersion:String(state?.version||'7.2.60'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -251,6 +252,8 @@ async function load(){
   const response=await fetch('/api/state',{cache:'no-store'});
   if(!response.ok)throw new Error(`État Velocity indisponible (${response.status})`);
   const nextState=await response.json();
+  // Pendant un changement de circuit, ignorer les anciens états encore en transit.
+  if(circuitChangeInProgress&&pendingCircuitId&&String(nextState?.circuit_id||'')!==String(pendingCircuitId))return;
   syncRemainingFromState(nextState);
   state=nextState;
   if(!(state.drivers||[]).length){autoBriceFollowApplied=false;manualFollowOverride=false}

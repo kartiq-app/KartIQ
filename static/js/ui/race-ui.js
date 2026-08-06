@@ -189,7 +189,7 @@ function renderDeveloperRecorder(){
 function render(){
  renderDeveloperRecorder();
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);if(circuitNameElement)circuitNameElement.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
- const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelectElement.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}circuitSelectElement.value=state.circuit_id||'';
+ const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelectElement.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}if(circuitSelectElement){const displayedCircuit=circuitChangeInProgress&&pendingCircuitId?pendingCircuitId:(state.circuit_id||'');if(circuitSelectElement.value!==displayedCircuit)circuitSelectElement.value=displayedCircuit;circuitSelectElement.disabled=!!circuitChangeInProgress}
  const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
  const showRankingKart=rankingHasKartColumn();
  document.querySelector('#qualification .qual-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);
@@ -216,22 +216,35 @@ function render(){
 }
 function reconnectLive(){connectApexBrowser(true)}
 async function changeCircuit(){
- if(!circuitSelectElement?.value)return;
- if(typeof analyzerBeforeCircuitChange==='function')analyzerBeforeCircuitChange();
- const nextCircuitId=circuitSelectElement.value;
- document.getElementById('homeCircuit')?.classList.remove('needs-selection');
- // Coupe d'abord l'ancienne piste afin qu'aucune trame tardive ne puisse être envoyée.
- closeApexBrowserSocket();
- apexBrowserCircuitId=null;
- rowLapSignatures.clear();
- endurancePitStatuses.clear();enduranceOutUntil.clear();
- lastCrossEvent=null;lastGenericEvent=null;
- crossingOverlay.classList.remove('show');genericOverlay.classList.remove('show');top8PitOverlay.classList.remove('show');
- remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownDirectSyncAt=0;
- state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
- render();
- await api('/api/circuit',{circuit_id:nextCircuitId});
- if(typeof analyzerAfterCircuitChange==='function')analyzerAfterCircuitChange();
+ if(!circuitSelectElement?.value||circuitChangeInProgress)return;
+ const nextCircuitId=String(circuitSelectElement.value);
+ circuitChangeInProgress=true;pendingCircuitId=nextCircuitId;
+ circuitSelectElement.disabled=true;
+ try{
+  if(typeof analyzerBeforeCircuitChange==='function')analyzerBeforeCircuitChange();
+  document.getElementById('homeCircuit')?.classList.remove('needs-selection');
+  closeApexBrowserSocket();
+  apexBrowserCircuitId=null;
+  rowLapSignatures.clear();
+  endurancePitStatuses.clear();enduranceOutUntil.clear();
+  lastCrossEvent=null;lastGenericEvent=null;
+  crossingOverlay.classList.remove('show');genericOverlay.classList.remove('show');top8PitOverlay.classList.remove('show');
+  remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownDirectSyncAt=0;
+  state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
+  render();
+  const response=await fetch('/api/circuit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({circuit_id:nextCircuitId})});
+  if(!response.ok)throw new Error(`Circuit refusé (${response.status})`);
+  await load();
+  if(typeof analyzerAfterCircuitChange==='function')analyzerAfterCircuitChange();
+ }catch(error){
+  console.error('[Velocity] Changement de circuit impossible :',error);
+  await load();
+  alert('Impossible de sélectionner ce circuit. Réessayez après actualisation.');
+ }finally{
+  circuitChangeInProgress=false;pendingCircuitId='';
+  if(circuitSelectElement)circuitSelectElement.disabled=false;
+  render();
+ }
 }function followSelected(){api('/api/follow',{driver:driverSelect.value})}function testCrossing(){api('/api/test-crossing',{lap:lapValue.value})}function addPenalty(){api('/api/add-penalty',{driver:driverSelect.value,penalty:penaltyValue.value})}function moveDriver(){api('/api/move',{driver:driverSelect.value,pos:movePos.value})}function addQuickChange(){api('/api/add-quick-change',{previous_team:qcTeam.value,pace_rank:qcRank.value,kart:qcKart.value,avg5:qcAvg.value,kart_delta:'--'})}function popQuickChange(){api('/api/pop-quick-change')}function testTop8PitEntry(){api('/api/test-top8-pit-entry')}function clearAlert(){genericOverlay.classList.remove('show');api('/api/clear-alert')}function clearTop8Alert(){top8PitOverlay.classList.remove('show');api('/api/clear-alert')}
 document.getElementById('iphoneFrame').addEventListener('load',resetPreviewViewport);
 document.getElementById('iphonePreview').addEventListener('click',e=>{if(e.target.id==='iphonePreview')toggleIphonePreview(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('sprintFocus')?.classList.contains('show'))closeSprintFocus();else if(document.getElementById('qualificationFocus')?.classList.contains('show'))closeQualificationFocus();else toggleIphonePreview(false)}});

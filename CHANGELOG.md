@@ -1,3 +1,8 @@
+## V7.2.60 — Correctif sélection des circuits
+- Verrouille le sélecteur pendant le changement de circuit.
+- Ignore les anciens états serveur encore en transit.
+- Empêche le retour automatique vers le circuit précédent.
+
 ## V7.2.59 — Radar et trafic devant
 - Palette des cercles harmonisée entre Radar classique et plein écran.
 - Ajout de la ligne Trafic devant sur 10 secondes avec numéro de kart et couleur de rythme.
