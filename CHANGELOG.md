@@ -1,5 +1,16 @@
 # Changelog
 
+## V7.2.29 — Cartes Spotter dans Analyzer
+
+- Suppression de la carte Vague de Quick Change.
+- Suppression de l’ancienne carte Spotter — File FIFO.
+- Ajout de la vraie carte des files issue du mode Spotter.
+- Ajout de la carte Karts entrants sous les files.
+- Ajout de la carte Maintenance sous les karts entrants.
+- Ajout des commandes ↶, Préparer la zone Quick Change, Auto/Reprendre, Modifier la file et Réinitialiser.
+- Synchronisation avec le même état que Spotter Desktop et smartphone.
+- La carte Opportunité de Quick Change est conservée et utilise désormais les vraies files Spotter pour évaluer les karts disponibles.
+
 ## V7.2.28 — Verrouillage du scroll mobile
 
 - Le défilement de la page reste autorisé avant la validation de l’appui long.

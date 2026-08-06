@@ -1,4 +1,4 @@
-# Velocity V7.2.28 — Verrouillage du scroll mobile
+# Velocity V7.2.29 — Cartes Spotter dans Analyzer
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 
