@@ -1,3 +1,8 @@
+
+function setFocusLandscapeLock(active){
+  document.documentElement.classList.toggle('focus-landscape-locked',Boolean(active));
+  document.body.classList.toggle('focus-landscape-locked',Boolean(active));
+}
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
 let stateLoadInFlight=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
@@ -72,7 +77,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.56'),
+  appVersion:String(state?.version||'7.2.57'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},

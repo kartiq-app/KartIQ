@@ -124,3 +124,35 @@ body.kartiq-fullscreen .fullscreen-float-controls{display:flex}
 @media(max-width:680px){.qual-focus-launch{font-size:8px;letter-spacing:.03em;padding:4px 2px}.qual-delta-content{padding:3px 4px}.qual-delta-focus-cell .qual-delta{margin-top:0}}
 
 
+
+
+/* Velocity V7.2.57 — verrouillage visuel paysage des modes Focus sur iPhone.
+   Safari peut refuser screen.orientation.lock(); dans ce cas, si le viewport
+   repasse en portrait, seul l'overlay Focus est pivoté et conserve le layout paysage. */
+@media (orientation:portrait){
+  html.focus-landscape-locked,
+  body.focus-landscape-locked{
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+  }
+  body.focus-landscape-locked #sprintFocus.show,
+  body.focus-landscape-locked #enduranceFocus.show,
+  body.focus-landscape-locked #qualificationFocus.show{
+    position:fixed!important;
+    top:50%!important;
+    left:50%!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:100vh!important;
+    height:100vw!important;
+    min-width:100vh!important;
+    min-height:100vw!important;
+    transform:translate(-50%,-50%) rotate(90deg)!important;
+    transform-origin:center center!important;
+    padding:
+      env(safe-area-inset-left)
+      env(safe-area-inset-top)
+      env(safe-area-inset-right)
+      env(safe-area-inset-bottom)!important;
+  }
+}

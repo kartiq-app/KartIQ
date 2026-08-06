@@ -1,4 +1,11 @@
-## V7.2.56 — Mise à jour des circuits Apex Timing
+## V7.2.57 — Verrouillage paysage des modes Focus sur iPhone
+
+- Le layout paysage reste figé dans les modes Focus Qualification, Sprint et Endurance.
+- Ajout d'un verrouillage visuel de secours lorsque Safari refuse l'API d'orientation.
+- Les changements d'inclinaison du téléphone n'activent plus la mise en page portrait du Focus.
+- Le comportement responsive normal est restauré à la fermeture du mode Focus.
+
+## V7.2.57 — Mise à jour des circuits Apex Timing
 
 - Suppression de RKC - Karting Paris et La Briqueterie Les Étards (entrées génériques).
 - Ajout de RKC - Karting Paris 1200 m et 900 m.
@@ -6,7 +13,7 @@
 - Ajout de Goodwill Karting (Belgique), Solokart (France) et KartCenter Campillos (Espagne).
 - Mise à jour des ports WebSocket, URLs live, pays et coordonnées météo.
 
-## V7.2.56 — Mode Test Endurance : validation réseau
+## V7.2.57 — Mode Test Endurance : validation réseau
 
 - Coupures automatiques basées sur le temps simulé.
 - Fréquence et durée réglables.
@@ -14,12 +21,12 @@
 - État réseau et compteurs visibles en direct.
 - Rapport JSON enrichi : coupures, réussites, échecs et durées d’indisponibilité.
 
-## V7.2.56 — Mode Test Endurance dans Analyzer
+## V7.2.57 — Mode Test Endurance dans Analyzer
 
 - Ajout du simulateur longue durée isolé, métriques en direct et export du rapport JSON.
 - Suspension du flux réel pendant le test et restauration automatique à l’arrêt.
 
-## V7.2.56 — Nouveau traitement graphique du titre Velocity dans Analyzer
+## V7.2.57 — Nouveau traitement graphique du titre Velocity dans Analyzer
 
 - Suppression du traitement spécial de l’ancien en-tête Velocity.
 - Titre VELOCITY aligné graphiquement sur HEAT MAP, STANDS et CLASSEMENT GÉNÉRAL.
