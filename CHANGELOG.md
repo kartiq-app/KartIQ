@@ -1,3 +1,11 @@
+## V7.2.61 — Trafic devant continu et indépendant des tours
+
+- Conservation des cercles de trafic dans le DOM pour éviter les disparitions à chaque rafraîchissement.
+- Déplacement fluide et immédiat selon l'écart estimé.
+- Suppression des filtres de classement et de nombre de tours.
+- Estimation de la position physique entre deux passages de ligne.
+- Tolérance à 10,5 s pour éviter le clignotement à la limite des 10 secondes.
+
 ## V7.2.60 — Correctif sélection des circuits
 - Verrouille le sélecteur pendant le changement de circuit.
 - Ignore les anciens états serveur encore en transit.

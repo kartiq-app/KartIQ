@@ -29,6 +29,12 @@ let analyzerLastSessionSaveAt=0;
 let analyzerSessionAutosaveTimer=null;
 let analyzerSessionRestoreLock=false;
 
+// Trafic devant : suivi persistant des passages de ligne et des cercles DOM.
+const analyzerTrafficMotion=new Map();
+const analyzerTrafficNodes=new Map();
+const ANALYZER_TRAFFIC_HYSTERESIS_SECONDS=10.5;
+
+
 
 const ANALYZER_WEATHER_REFRESH_MS=300000;
 let analyzerWeatherCircuitId='';
@@ -890,27 +896,103 @@ function analyzerRenderFollowedPerformance(followed){
  chronoEl.textContent=`${rankText} | ${lapText}`;
 }
 
+function analyzerTrafficLapSeconds(driver){
+ const candidates=[driver?.last,driver?.best,driver?.avg5,driver?.average];
+ for(const value of candidates){
+  const seconds=typeof parseLap==='function'?parseLap(value):null;
+  if(Number.isFinite(seconds)&&seconds>20&&seconds<300)return seconds;
+ }
+ return 60;
+}
+function analyzerTrafficKey(driver){
+ const kart=String(driver?.kart||driver?.kart_number||'').trim();
+ return kart?`kart:${kart}`:`driver:${String(driver?.driver||driver?.team||driver?.pos||'unknown')}`;
+}
+function analyzerTrafficUpdateMotion(drivers){
+ const now=performance.now();
+ const liveKeys=new Set();
+ (drivers||[]).forEach(driver=>{
+  if(!driver||driver.status==='pit')return;
+  const key=analyzerTrafficKey(driver),laps=Number(driver.laps),lapSeconds=analyzerTrafficLapSeconds(driver);
+  liveKeys.add(key);
+  const previous=analyzerTrafficMotion.get(key);
+  if(!previous){
+   analyzerTrafficMotion.set(key,{key,laps:Number.isFinite(laps)?laps:0,crossedAt:now,lapSeconds,ready:false,lastSeen:now});
+   return;
+  }
+  previous.lastSeen=now;
+  previous.lapSeconds=Number.isFinite(lapSeconds)?previous.lapSeconds*.7+lapSeconds*.3:previous.lapSeconds;
+  if(Number.isFinite(laps)&&laps!==previous.laps){
+   if(laps>previous.laps){previous.crossedAt=now;previous.ready=true}
+   previous.laps=laps;
+  }
+ });
+ analyzerTrafficMotion.forEach((value,key)=>{if(!liveKeys.has(key)&&now-value.lastSeen>15000)analyzerTrafficMotion.delete(key)});
+}
+function analyzerTrafficPhase(driver,now){
+ const motion=analyzerTrafficMotion.get(analyzerTrafficKey(driver));
+ if(!motion||!motion.ready||!Number.isFinite(motion.lapSeconds)||motion.lapSeconds<=0)return null;
+ const elapsed=Math.max(0,(now-motion.crossedAt)/1000);
+ return (elapsed%motion.lapSeconds)/motion.lapSeconds;
+}
+function analyzerTrafficPhysicalGap(followed,driver,now){
+ // Priorité à une estimation de position physique cyclique, indépendante du classement et du nombre de tours.
+ const followedPhase=analyzerTrafficPhase(followed,now),driverPhase=analyzerTrafficPhase(driver,now);
+ if(Number.isFinite(followedPhase)&&Number.isFinite(driverPhase)){
+  const fraction=(driverPhase-followedPhase+1)%1;
+  if(fraction>.0005)return fraction*analyzerTrafficLapSeconds(followed);
+ }
+ // Repli pendant le premier tour d'observation : écart Apex direct quand il est exploitable.
+ if(typeof directRaceGap==='function'){
+  const direct=directRaceGap(followed,driver);
+  if(Number.isFinite(direct)&&direct>=0)return direct;
+  const reverse=directRaceGap(driver,followed);
+  if(Number.isFinite(reverse)&&reverse>=0){
+   const lap=analyzerTrafficLapSeconds(followed);
+   return Math.max(0,lap-reverse);
+  }
+ }
+ return null;
+}
 function analyzerTrafficAhead(followed){
- if(!followed||!Number.isFinite(Number(followed.pos)))return [];
- const followedLaps=Number(followed.laps);
- const pace=analyzerMapPaceData(state.drivers||[]);
- return (state.drivers||[])
-  .filter(driver=>driver&&driver.driver!==followed.driver&&driver.status!=='pit'&&Number(driver.pos)<Number(followed.pos))
-  .map(driver=>({driver,gap:typeof directRaceGap==='function'?directRaceGap(followed,driver):null,category:pace.map.get(driver)?.category||'slow'}))
-  .filter(item=>Number.isFinite(item.gap)&&item.gap>=0&&item.gap<=10&&(!Number.isFinite(followedLaps)||!Number.isFinite(Number(item.driver.laps))||Number(item.driver.laps)===followedLaps))
+ if(!followed)return [];
+ const drivers=state.drivers||[],now=performance.now(),pace=analyzerMapPaceData(drivers);
+ analyzerTrafficUpdateMotion(drivers);
+ return drivers
+  .filter(driver=>driver&&driver.driver!==followed.driver&&driver.status!=='pit')
+  .map(driver=>({driver,gap:analyzerTrafficPhysicalGap(followed,driver,now),category:pace.map.get(driver)?.category||'slow',key:analyzerTrafficKey(driver)}))
+  .filter(item=>Number.isFinite(item.gap)&&item.gap>0&&item.gap<=ANALYZER_TRAFFIC_HYSTERESIS_SECONDS)
   .sort((a,b)=>a.gap-b.gap);
 }
 function analyzerRenderTrafficAhead(followed){
  const host=document.getElementById('analyzerTrafficDots'),count=document.getElementById('analyzerTrafficCount');
  if(!host||!count)return;
- const traffic=analyzerTrafficAhead(followed);
+ const traffic=analyzerTrafficAhead(followed),activeKeys=new Set();
  count.textContent=`${traffic.length} KART${traffic.length>1?'S':''}`;
- host.innerHTML=traffic.map(item=>{
+ traffic.forEach(item=>{
+  activeKeys.add(item.key);
+  let node=analyzerTrafficNodes.get(item.key);
+  if(!node){
+   node=document.createElement('span');
+   node.className='analyzer-traffic-dot';
+   node.dataset.trafficKey=item.key;
+   node.style.opacity='0';
+   host.appendChild(node);
+   analyzerTrafficNodes.set(item.key,node);
+   requestAnimationFrame(()=>{node.style.opacity='1'});
+  }
   const left=Math.max(0,Math.min(100,item.gap*10));
-  const kart=analyzerEscape(analyzerSimulationKartLabel(item.driver));
-  const title=analyzerEscape(`${item.driver.driver} · +${item.gap.toFixed(3)} s`);
-  return `<span class="analyzer-traffic-dot pace-${item.category}" style="left:${left.toFixed(2)}%" title="${title}">${kart}</span>`;
- }).join('');
+  node.className=`analyzer-traffic-dot pace-${item.category}`;
+  node.textContent=analyzerSimulationKartLabel(item.driver);
+  node.title=`${item.driver.driver} · +${item.gap.toFixed(3)} s`;
+  node.style.left=`${left.toFixed(2)}%`;
+  node.style.opacity=item.gap<=10?'1':String(Math.max(0,(ANALYZER_TRAFFIC_HYSTERESIS_SECONDS-item.gap)/.5));
+ });
+ analyzerTrafficNodes.forEach((node,key)=>{
+  if(activeKeys.has(key))return;
+  node.style.opacity='0';
+  setTimeout(()=>{if(!activeKeys.has(key)){node.remove();analyzerTrafficNodes.delete(key)}},220);
+ });
 }
 
 function openAnalyzerMapFocus(){const o=document.getElementById('analyzerMapFocus');if(!o)return;o.classList.add('show');o.setAttribute('aria-hidden','false');document.body.classList.add('analyzer-map-focus-open');analyzerRenderMapFocus()}
@@ -1657,7 +1739,7 @@ function analyzerTestLog(message,type='info'){const t=window.velocityEnduranceTe
 function openAnalyzerEnduranceTest(){document.getElementById('analyzerEnduranceTestModal')?.classList.add('show');analyzerTestRefreshDashboard()}
 function closeAnalyzerEnduranceTest(){document.getElementById('analyzerEnduranceTestModal')?.classList.remove('show')}
 function analyzerTestDriver(index){const lap=54+(index%11)*.17;return {pos:index+1,apex:index+1,apex_row:index+1,kart:String(10+index),driver:`ÉQUIPE TEST ${String(index+1).padStart(2,'0')}`,pilot:`PILOTE ${index+1}`,laps:0,last:formatApexMilliseconds(lap*1000),best:formatApexMilliseconds((lap-.25)*1000),gap:index?`+${(index*.42).toFixed(3)}`:'—',interval:index?`+${(.25+(index%5)*.08).toFixed(3)}`:'—',pit_stops:0,status:'track',penalty:'—',track_time:'00:00',on_track:'00:00',average_lap:lap,lap_times:[],current_stint_laps:[],stints:[],pit_history:[]}}
-function analyzerTestBuildState(){const t=window.velocityEnduranceTest;return {...(t.backup||{}),version:'7.2.60 TEST',connection:t.networkConnected?'TEST CONNECTÉ':'TEST COUPÉ',connected:t.networkConnected,circuit_id:'velocity-test-endurance',followed_driver:t.drivers[0]?.driver||'',drivers:t.drivers,time_remaining:analyzerTestFormatDuration(Math.max(0,t.durationMs-t.simulatedMs)),time_remaining_ms:Math.max(0,t.durationMs-t.simulatedMs),live:{status:t.networkConnected?'test':'reconnecting',messages:t.updates,parsed_updates:t.updates,last_message_at:new Date().toISOString()},spotter:{configured:false,queue:[],maintenance:[],incoming:[]}}}
+function analyzerTestBuildState(){const t=window.velocityEnduranceTest;return {...(t.backup||{}),version:'7.2.61 TEST',connection:t.networkConnected?'TEST CONNECTÉ':'TEST COUPÉ',connected:t.networkConnected,circuit_id:'velocity-test-endurance',followed_driver:t.drivers[0]?.driver||'',drivers:t.drivers,time_remaining:analyzerTestFormatDuration(Math.max(0,t.durationMs-t.simulatedMs)),time_remaining_ms:Math.max(0,t.durationMs-t.simulatedMs),live:{status:t.networkConnected?'test':'reconnecting',messages:t.updates,parsed_updates:t.updates,last_message_at:new Date().toISOString()},spotter:{configured:false,queue:[],maintenance:[],incoming:[]}}}
 function analyzerTestNextCutDelayMs(){const t=window.velocityEnduranceTest;if(t.incidentFrequency==='random')return (20+Math.random()*70)*60000;return Math.max(1,Number(t.incidentFrequency)||30)*60000}
 function analyzerTestScheduleNextCut(){const t=window.velocityEnduranceTest;t.nextCutAtMs=t.simulatedMs+analyzerTestNextCutDelayMs();analyzerTestLog(`Prochaine coupure prévue vers ${analyzerTestFormatDuration(t.nextCutAtMs)} simulées.`)}
 function analyzerTestStartNetworkCut(source='automatique'){const t=window.velocityEnduranceTest;if(!t.active||!t.networkConnected)return false;t.networkConnected=false;t.networkCuts++;t.reconnectAttempts++;t.networkCutStartedAt=Date.now();analyzerTestLog(`Coupure réseau ${source} déclenchée (${t.incidentDurationSec} s).`,'warning');state=analyzerTestBuildState();render();analyzerTestRefreshDashboard();clearTimeout(t.networkRestoreTimer);t.networkRestoreTimer=setTimeout(()=>analyzerTestRestoreNetwork(),Math.max(1000,t.incidentDurationSec*1000));return true}
