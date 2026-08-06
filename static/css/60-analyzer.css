@@ -1518,10 +1518,10 @@ body.spotter-drag-active #analyzerSpotterFiles{
 @media(max-width:700px){.analyzer-test-network-config{grid-template-columns:1fr}.analyzer-test-actions{display:grid;grid-template-columns:1fr}.analyzer-test-actions button{width:100%}}
 
 
-/* Velocity V7.2.64 — palette Radar unifiée et trafic circulaire */
+/* Velocity V7.2.65 — palette Radar unifiée et trafic circulaire */
 :root{--pace-fastest:#a855f7;--pace-excellent:#3b82f6;--pace-good:#22c55e;--pace-medium:#eab308;--pace-average:#f97316;--pace-slow:#ef4444}
 .analyzer-traffic{margin-top:16px;padding-top:12px;border-top:1px solid #303744;min-width:0}
-.analyzer-traffic-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;color:#858f9d;font-size:10px;font-weight:900;letter-spacing:.08em}
+.analyzer-traffic-head{display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:9px;color:#858f9d;font-size:10px;font-weight:900;letter-spacing:.08em}
 .analyzer-traffic-head b{color:#fff;font-size:10px;white-space:nowrap}
 .analyzer-traffic-line{display:block;min-height:58px}
 .analyzer-traffic-track{position:relative;height:58px;min-width:0;margin:0 15px}
@@ -1529,10 +1529,12 @@ body.spotter-drag-active #analyzerSpotterFiles{
 .analyzer-traffic-axis:before,.analyzer-traffic-axis:after{content:'';position:absolute;top:-5px;width:2px;height:12px;background:#9aa4b1}.analyzer-traffic-axis:before{left:0}.analyzer-traffic-axis:after{right:0}
 .analyzer-traffic-dots{position:absolute;left:0;right:0;top:24px;height:0}
 .analyzer-traffic-dot{position:absolute;top:0;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.8);color:#fff;font:900 10px/1 var(--font-time);box-shadow:0 0 0 2px #0b0d10;z-index:3;transition:left .18s linear,background .2s ease,opacity .2s ease}
+.analyzer-traffic-dot::after{content:attr(data-traffic-tooltip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);display:none;white-space:nowrap;padding:6px 9px;border:1px solid #56606e;border-radius:6px;background:#11151b;color:#fff;font:800 11px/1.2 var(--font-ui);letter-spacing:0;box-shadow:0 6px 18px rgba(0,0,0,.45);pointer-events:none;z-index:20}
+.analyzer-traffic-dot:hover::after,.analyzer-traffic-dot:focus-visible::after{display:block}
 .analyzer-traffic-dot.pace-fastest{background:var(--pace-fastest)}.analyzer-traffic-dot.pace-excellent{background:var(--pace-excellent)}.analyzer-traffic-dot.pace-good{background:var(--pace-good)}.analyzer-traffic-dot.pace-medium{background:var(--pace-medium);color:#111}.analyzer-traffic-dot.pace-average{background:var(--pace-average)}.analyzer-traffic-dot.pace-slow{background:var(--pace-slow)}
 .analyzer-traffic-followed{position:absolute;left:50%;top:24px;transform:translate(-50%,-62%);width:58px;height:auto;z-index:4;pointer-events:none;filter:drop-shadow(0 0 2px #000)}
-.analyzer-traffic-tick{position:absolute;top:42px;transform:translateX(-50%);color:#778290;font-size:8px;font-weight:800}
+.analyzer-traffic-tick{position:absolute;top:42px;transform:translateX(-50%);color:#778290;font-size:12px;font-weight:800}
 .analyzer-traffic-tick:before{content:'';position:absolute;left:50%;top:-17px;width:1px;height:8px;background:#717b88;transform:translateX(-50%)}
 .analyzer-traffic-tick.tm10{left:0;transform:none}.analyzer-traffic-tick.tm10:before{left:0;transform:none}.analyzer-traffic-tick.tm8{left:10%}.analyzer-traffic-tick.tm6{left:20%}.analyzer-traffic-tick.tm4{left:30%}.analyzer-traffic-tick.tm2{left:40%}
 .analyzer-traffic-tick.tp2{left:60%}.analyzer-traffic-tick.tp4{left:70%}.analyzer-traffic-tick.tp6{left:80%}.analyzer-traffic-tick.tp8{left:90%}.analyzer-traffic-tick.tp10{right:0;left:auto;transform:none}.analyzer-traffic-tick.tp10:before{right:0;left:auto;transform:none}
-@media(max-width:700px){.analyzer-traffic-dot{width:25px;height:25px;font-size:9px}.analyzer-traffic-track{margin:0 10px}.analyzer-traffic-followed{width:50px}.analyzer-traffic-tick{font-size:7px}}
+@media(max-width:700px){.analyzer-traffic-dot{width:25px;height:25px;font-size:9px}.analyzer-traffic-track{margin:0 10px}.analyzer-traffic-followed{width:50px}.analyzer-traffic-tick{font-size:10.5px}}

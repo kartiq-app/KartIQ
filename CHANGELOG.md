@@ -1,4 +1,4 @@
-## V7.2.64 — Ligne Trafic complète autour du pilote suivi
+## V7.2.65 — Ligne Trafic complète autour du pilote suivi
 
 - Renommage de « TRAFIC DEVANT » en « TRAFIC ».
 - Visuel de kart de profil fourni, utilisé uniquement pour le pilote suivi au centre.
