@@ -1,5 +1,5 @@
-## V7.2.41
-- Bandeau MESSAGE avec flèches rouges ⮞ animées sur toute la largeur.
+## V7.2.42
+- Bandeau MESSAGE avec flèches rouges ► animées sur toute la largeur.
 - Entrée du message depuis la gauche et sortie vers la droite après 15 secondes.
 
 ## V7.2.40 — Messages pilote sur 2 ou 3 lignes équilibrées

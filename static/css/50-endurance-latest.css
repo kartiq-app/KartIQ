@@ -901,7 +901,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* Velocity V7.2.41 — Messagerie pilote : flèches rouges et transitions latérales */
+/* Velocity V7.2.42 — Messagerie pilote : flèches rouges et transitions latérales */
 .driver-message-overlay{
  position:fixed;inset:0;z-index:10050;background:#000;color:#fff;display:none;
  grid-template-rows:auto 1fr;will-change:transform,opacity;
