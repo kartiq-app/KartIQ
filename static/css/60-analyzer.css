@@ -1358,3 +1358,31 @@ body.analyzer-debrief-open{overflow:hidden}
   .analyzer-spotter-actions{justify-content:flex-start}
   .analyzer-spotter-actions button{flex:1 1 auto}
 }
+
+/* Velocity V7.2.45 — réutilisation stricte du design Spotter dans Analyzer */
+#analyzerSpotterFiles.analyzer-spotter-files{
+  padding:8px!important;
+  overflow:visible!important;
+}
+#analyzerSpotterFiles .spotter-queues-layout{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  grid-template-columns:repeat(var(--spotter-files,1),minmax(0,1fr))!important;
+}
+#analyzerSpotterIncoming.analyzer-spotter-list,
+#analyzerSpotterMaintenance.analyzer-spotter-list{
+  padding:10px!important;
+  overflow:visible!important;
+}
+#analyzerSpotterIncoming .spotter-incoming-grid,
+#analyzerSpotterMaintenance .spotter-maintenance-grid{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:10px!important;
+}
+#analyzerSpotterIncoming .spotter-incoming-card,
+#analyzerSpotterMaintenance .spotter-incoming-card{
+  width:100%!important;
+  max-width:none!important;
+}

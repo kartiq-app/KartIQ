@@ -1009,23 +1009,36 @@ function analyzerRenderSpotterCards(){
  if(!filesHost&&!incomingHost&&!maintenanceHost)return;
  if(autoButton){autoButton.classList.toggle('active',spotter?.mode==='auto');autoButton.textContent=spotter?.mode==='auto'?'AUTO ✓':'AUTO';}
  if(!spotter?.configured){
-  if(filesHost)filesHost.innerHTML='<div class="analyzer-empty">Configuration Spotter en attente.</div>';
-  if(incomingHost)incomingHost.innerHTML='<div class="analyzer-empty">Aucun kart entrant à valider.</div>';
-  if(maintenanceHost)maintenanceHost.innerHTML='<div class="analyzer-empty">Aucun kart en maintenance.</div>';
+  if(filesHost)filesHost.innerHTML='<div class="spotter-empty">Configuration Spotter en attente.</div>';
+  if(incomingHost)incomingHost.innerHTML='<div class="spotter-empty">Aucun kart entrant à valider.</div>';
+  if(maintenanceHost)maintenanceHost.innerHTML='<div class="spotter-empty">Aucun kart en maintenance.</div>';
   if(incomingCount)incomingCount.textContent='0';
   if(maintenanceCount)maintenanceCount.textContent='0';
   return;
  }
+ const count=Math.max(1,Math.min(3,Number(spotter.mode)||1));
  const queue=Array.isArray(spotter.queue)?spotter.queue:[];
- const grouped=new Map();
- queue.forEach(item=>{const file=Math.max(1,Number(item.queueFile)||1);if(!grouped.has(file))grouped.set(file,[]);grouped.get(file).push(item)});
- if(filesHost)filesHost.innerHTML=grouped.size?[...grouped.entries()].sort((a,b)=>a[0]-b[0]).map(([file,items])=>`<section class="analyzer-spotter-file"><h4>FILE ${queueLetter(file-1)}</h4><div>${items.map((item,index)=>{const reserved=item.status==='reserved';const title=reserved?(item.reservedTeam||'Attribué'):(item.lastTeam&&item.lastTeam!=='Initialisation'?item.lastTeam:`Kart ${item.apexKart||'—'}`);return `<article class="analyzer-spotter-kart ${reserved?'reserved':'available'}"><span>${index+1}</span><strong>${analyzerEscape(title)}</strong><small>${analyzerEscape(item.kv||'—')} · ${reserved?'ATTRIBUÉ':'DISPONIBLE'}</small><b>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</b></article>`}).join('')}</div></section>`).join(''):'<div class="analyzer-empty">File Spotter vide.</div>';
+ if(filesHost){
+  const columns=[];
+  for(let file=1;file<=count;file+=1){
+   const items=queue.filter(item=>(Number(item.queueFile)||1)===file);
+   const cards=items.length
+    ?items.map(item=>typeof spotterQueueCard==='function'?spotterQueueCard(item):'').join('')
+    :'<div class="spotter-empty spotter-file-empty">File vide</div>';
+   columns.push(`<div class="spotter-file-column" data-spotter-file="${file}"><div class="spotter-file-title">FILE ${file}</div><div class="spotter-file-list" data-spotter-drop-zone="queue">${cards}</div></div>`);
+  }
+  filesHost.innerHTML=`<div class="spotter-queues-layout queues-${count}">${columns.join('')}</div>`;
+ }
  const incoming=Array.isArray(spotter.incoming)?spotter.incoming:[];
  if(incomingCount)incomingCount.textContent=String(incoming.length);
- if(incomingHost)incomingHost.innerHTML=incoming.length?incoming.map(item=>`<article class="analyzer-spotter-kart incoming"><strong>${analyzerEscape(item.lastTeam||item.team||item.apexKart||'Kart entrant')}</strong><small>${analyzerEscape(item.kv||'—')} · À VALIDER</small><b>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</b></article>`).join(''):'<div class="analyzer-empty">Aucun kart entrant à valider.</div>';
+ if(incomingHost)incomingHost.innerHTML=incoming.length
+  ?`<div class="spotter-incoming-grid">${incoming.map(item=>typeof spotterIncomingCard==='function'?spotterIncomingCard(item):'').join('')}</div>`
+  :'<div class="spotter-empty">Aucun kart entrant à valider.</div>';
  const maintenance=Array.isArray(spotter.maintenance)?spotter.maintenance:[];
  if(maintenanceCount)maintenanceCount.textContent=String(maintenance.length);
- if(maintenanceHost)maintenanceHost.innerHTML=maintenance.length?maintenance.map(item=>`<article class="analyzer-spotter-kart maintenance"><strong>${analyzerEscape(item.lastTeam||item.apexKart||'Kart')}</strong><small>${analyzerEscape(item.kv||'—')} · MAINTENANCE</small><b>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</b></article>`).join(''):'<div class="analyzer-empty">Aucun kart en maintenance.</div>';
+ if(maintenanceHost)maintenanceHost.innerHTML=maintenance.length
+  ?`<div class="spotter-maintenance-grid">${maintenance.map(item=>typeof spotterMaintenanceCard==='function'?spotterMaintenanceCard(item):'').join('')}</div>`
+  :'<div class="spotter-empty">Aucun kart en maintenance.</div>';
 }
 
 
