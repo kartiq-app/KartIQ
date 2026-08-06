@@ -21,7 +21,9 @@ const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,m
 const ANALYZER_SESSIONS_INDEX_KEY='kartiq-analyzer-sessions-index-v1';
 const ANALYZER_ACTIVE_SESSION_KEY='kartiq-analyzer-active-session-v1';
 const ANALYZER_SESSION_PREFIX='kartiq-analyzer-session-v1:';
-const ANALYZER_AUTOSAVE_MS=5000;
+const ANALYZER_AUTOSAVE_MS=15000;
+const ANALYZER_STORAGE_CLEANUP_KEY='velocity-analyzer-storage-cleanup-v3';
+const ANALYZER_MAX_SESSION_INDEX=10;
 let analyzerKartSort='none';
 let analyzerActiveSessionId=null;
 let analyzerSessionCircuitId=null;
@@ -129,6 +131,42 @@ function ensureAnalyzerWeather(){
  if(!analyzerWeatherTimer)analyzerWeatherTimer=setInterval(()=>loadAnalyzerWeather(),ANALYZER_WEATHER_REFRESH_MS);
 }
 
+
+function analyzerStorageCompactLearning(source=analyzerLearning){
+ const teams={};
+ Object.entries(source?.teams||{}).forEach(([key,item])=>{
+  if(!item||typeof item!=='object')return;
+  const current=item.currentRelay?{...item.currentRelay,laps:(item.currentRelay.laps||[]).slice(-20),lapNumbers:(item.currentRelay.lapNumbers||[]).slice(-20),bestLaps:(item.currentRelay.bestLaps||[]).slice(0,3)}:null;
+  teams[key]={...item,stints:(item.stints||[]).slice(-8),relays:(item.relays||[]).slice(-8).map(relay=>({...relay,laps:(relay.laps||[]).slice(-20),lapNumbers:(relay.lapNumbers||[]).slice(-20),bestLaps:(relay.bestLaps||[]).slice(0,3)})),currentRelay:current};
+ });
+ return {teams,startedAt:Number(source?.startedAt)||Date.now()};
+}
+function analyzerStoragePurgeLegacySessions(){
+ try{
+  const keys=[];for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key&&key.startsWith(ANALYZER_SESSION_PREFIX))keys.push(key)}
+  keys.forEach(key=>localStorage.removeItem(key));
+  localStorage.removeItem(ANALYZER_SESSIONS_INDEX_KEY);localStorage.removeItem(ANALYZER_ACTIVE_SESSION_KEY);
+ }catch(error){console.warn('[Velocity Analyzer] Nettoyage stockage impossible',error)}
+}
+function analyzerStorageSafeSet(key,value,{retryCleanup=true}={}){
+ try{localStorage.setItem(key,value);return true}catch(error){
+  const quota=error?.name==='QuotaExceededError'||error?.name==='NS_ERROR_DOM_QUOTA_REACHED'||error?.code===22;
+  if(quota&&retryCleanup){analyzerStoragePurgeLegacySessions();try{localStorage.setItem(key,value);return true}catch(second){console.warn('[Velocity Analyzer] Quota localStorage dépassé après nettoyage',second)}}
+  else console.warn('[Velocity Analyzer] Écriture localStorage impossible',error);
+  return false;
+ }
+}
+function analyzerStorageCleanupOnce(){
+ try{
+  if(localStorage.getItem(ANALYZER_STORAGE_CLEANUP_KEY)==='1')return;
+  const learning=analyzerStorageCompactLearning(JSON.parse(localStorage.getItem(ANALYZER_LEARNING_KEY)||'{"teams":{}}'));
+  analyzerStoragePurgeLegacySessions();
+  analyzerStorageSafeSet(ANALYZER_LEARNING_KEY,JSON.stringify(learning),{retryCleanup:false});
+  analyzerStorageSafeSet(ANALYZER_STORAGE_CLEANUP_KEY,'1',{retryCleanup:false});
+  console.info('[Velocity Analyzer] Anciennes sessions lourdes supprimées et apprentissage compacté.');
+ }catch(error){analyzerStoragePurgeLegacySessions();try{localStorage.removeItem(ANALYZER_LEARNING_KEY);localStorage.setItem(ANALYZER_STORAGE_CLEANUP_KEY,'1')}catch(_){}console.warn('[Velocity Analyzer] Réinitialisation du stockage',error)}
+}
+
 function analyzerSessionSafeId(value){return String(value||'circuit').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase()||'circuit'}
 function analyzerSessionCircuit(){return String(state?.circuit_id||'').trim()}
 function analyzerSessionCircuitName(circuitId=analyzerSessionCircuit()){
@@ -138,13 +176,13 @@ function analyzerSessionCircuitName(circuitId=analyzerSessionCircuit()){
 function analyzerSessionReadIndex(){
  try{const value=JSON.parse(localStorage.getItem(ANALYZER_SESSIONS_INDEX_KEY)||'[]');return Array.isArray(value)?value:[]}catch(_){return []}
 }
-function analyzerSessionWriteIndex(index){try{localStorage.setItem(ANALYZER_SESSIONS_INDEX_KEY,JSON.stringify(index))}catch(_){}}
+function analyzerSessionWriteIndex(index){analyzerStorageSafeSet(ANALYZER_SESSIONS_INDEX_KEY,JSON.stringify((index||[]).slice(0,ANALYZER_MAX_SESSION_INDEX)))}
 function analyzerSessionRead(id){if(!id)return null;try{return JSON.parse(localStorage.getItem(ANALYZER_SESSION_PREFIX+id)||'null')}catch(_){return null}}
 function analyzerSessionMetadata(session){return {id:session.id,name:session.name,circuitId:session.circuitId,circuitName:session.circuitName,createdAt:session.createdAt,updatedAt:session.updatedAt,status:session.status||'active',version:session.version||1}}
 function analyzerSessionUpdateIndex(session){
  const index=analyzerSessionReadIndex().filter(item=>item.id!==session.id);
  index.unshift(analyzerSessionMetadata(session));
- analyzerSessionWriteIndex(index.slice(0,30));
+ analyzerSessionWriteIndex(index.slice(0,ANALYZER_MAX_SESSION_INDEX));
 }
 function analyzerSessionDefaultName(circuitId){
  const date=new Date();
@@ -156,8 +194,9 @@ function analyzerSessionSnapshot(reason='autosave'){
  const previous=analyzerSessionRead(analyzerActiveSessionId)||{};
  return {
   ...previous,
-  version:2,
-  appVersion:'6.13.9',
+  version:3,
+  appVersion:'7.2.63',
+  learning:undefined,
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
   circuitId,
@@ -167,7 +206,6 @@ function analyzerSessionSnapshot(reason='autosave'){
   status:previous.status||'active',
   saveReason:reason,
   rules:{...analyzerRules},
-  learning:JSON.parse(JSON.stringify(analyzerLearning||{teams:{},startedAt:Date.now()})),
   queues:{count:kartQueueState?.count||1,queues:(kartQueueState?.queues||[[]]).map(queue=>[...queue])},
   followedDriver:state?.followed_driver||'',
   analyzerSort,
@@ -181,8 +219,8 @@ function analyzerUpdateSessionBadge(text,className=''){
 function analyzerSaveSession(reason='autosave'){
  const snapshot=analyzerSessionSnapshot(reason);if(!snapshot)return false;
  try{
-  localStorage.setItem(ANALYZER_SESSION_PREFIX+snapshot.id,JSON.stringify(snapshot));
-  localStorage.setItem(ANALYZER_ACTIVE_SESSION_KEY,snapshot.id);
+  if(!analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+snapshot.id,JSON.stringify(snapshot)))return false;
+  analyzerStorageSafeSet(ANALYZER_ACTIVE_SESSION_KEY,snapshot.id);
   analyzerSessionUpdateIndex(snapshot);
   analyzerLastSessionSaveAt=snapshot.updatedAt;
   const time=new Date(snapshot.updatedAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -196,13 +234,12 @@ function analyzerApplySession(session,{notify=true}={}){
  analyzerActiveSessionId=session.id;
  analyzerSessionCircuitId=session.circuitId;
  analyzerRules={...ANALYZER_DEFAULT_RULES,...(session.rules||{})};
- analyzerLearning={teams:{},startedAt:Date.now(),...(session.learning||{})};
  analyzerSort=session.analyzerSort||'position';
  if(session.queues&&typeof normalizeKartQueueState==='function'){
   kartQueueState=normalizeKartQueueState(session.queues);
   saveKartQueues();renderKartQueues();
  }
- try{localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));localStorage.setItem(ANALYZER_LEARNING_KEY,JSON.stringify(analyzerLearning));localStorage.setItem(ANALYZER_ACTIVE_SESSION_KEY,session.id)}catch(_){}
+ analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveLearning();analyzerStorageSafeSet(ANALYZER_ACTIVE_SESSION_KEY,session.id);
  analyzerSessionRestoreLock=false;
  if(notify)analyzerUpdateSessionBadge('SESSION RESTAURÉE','restored');
  const sort=document.getElementById('analyzerSort');if(sort)sort.value=analyzerSort;
@@ -214,8 +251,8 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:2,appVersion:'6.13.9',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},learning:reset?{teams:{},startedAt:now}:JSON.parse(JSON.stringify(analyzerLearning)),queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
- localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
+ const session={version:3,appVersion:'7.2.63',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ if(!analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session)))return null;analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
  if(analyzerSessionRestoreLock)return;
@@ -244,13 +281,13 @@ function renderAnalyzerSessions(){
 }
 function newAnalyzerSession(){const name=window.prompt('Nom de la nouvelle session :',analyzerSessionDefaultName(analyzerSessionCircuit()));if(name===null)return;analyzerCreateSession({name:String(name).trim()||null,reset:true});renderAnalyzerSessions();closeAnalyzerSessions()}
 function resumeAnalyzerSession(id){const session=analyzerSessionRead(id);if(!session)return;if(session.circuitId!==analyzerSessionCircuit()){window.alert(`Cette session appartient au circuit « ${session.circuitName} ». Sélectionnez d’abord ce circuit sur la page d’accueil.`);return}if(analyzerActiveSessionId)analyzerSaveSession('before-resume');session.status='active';analyzerApplySession(session);analyzerSaveSession('resume');renderAnalyzerSessions();closeAnalyzerSessions()}
-function archiveAnalyzerSession(id){const session=analyzerSessionRead(id);if(!session)return;session.status=session.status==='archived'?'active':'archived';session.updatedAt=Date.now();localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);renderAnalyzerSessions()}
+function archiveAnalyzerSession(id){const session=analyzerSessionRead(id);if(!session)return;session.status=session.status==='archived'?'active':'archived';session.updatedAt=Date.now();analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);renderAnalyzerSessions()}
 function deleteAnalyzerSession(id){if(!window.confirm('Supprimer définitivement cette session Analyzer ?'))return;localStorage.removeItem(ANALYZER_SESSION_PREFIX+id);analyzerSessionWriteIndex(analyzerSessionReadIndex().filter(meta=>meta.id!==id));if(id===analyzerActiveSessionId){analyzerActiveSessionId=null;analyzerSessionCircuitId=null;localStorage.removeItem(ANALYZER_ACTIVE_SESSION_KEY);analyzerCreateSession({reset:true})}renderAnalyzerSessions()}
 function exportAnalyzerSession(){analyzerSaveSession('export');const session=analyzerSessionRead(analyzerActiveSessionId);if(!session)return;const blob=new Blob([JSON.stringify(session,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Velocity_Session_${analyzerSessionSafeId(session.name)}_${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function triggerAnalyzerSessionImport(){document.getElementById('analyzerSessionImport')?.click()}
 async function importAnalyzerSession(event){
  const file=event?.target?.files?.[0];if(!file)return;
- try{const session=JSON.parse(await file.text());if(!session?.id||!session?.circuitId||!session?.learning)throw new Error('Format de session invalide');session.id=`${analyzerSessionSafeId(session.circuitId)}-${Date.now().toString(36)}`;session.name=(session.name||'Session importée')+' — import';session.createdAt=Date.now();session.updatedAt=Date.now();session.status='active';localStorage.setItem(ANALYZER_SESSION_PREFIX+session.id,JSON.stringify(session));analyzerSessionUpdateIndex(session);if(session.circuitId===analyzerSessionCircuit())analyzerApplySession(session);renderAnalyzerSessions();window.alert('Session importée avec succès.')}catch(error){window.alert('Import impossible : '+error.message)}finally{event.target.value=''}
+ try{const session=JSON.parse(await file.text());if(!session?.id||!session?.circuitId)throw new Error('Format de session invalide');session.id=`${analyzerSessionSafeId(session.circuitId)}-${Date.now().toString(36)}`;session.name=(session.name||'Session importée')+' — import';session.createdAt=Date.now();session.updatedAt=Date.now();session.status='active';delete session.learning;session.version=3;session.appVersion='7.2.63';if(!analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+session.id,JSON.stringify(session)))throw new Error('Stockage local insuffisant');analyzerSessionUpdateIndex(session);if(session.circuitId===analyzerSessionCircuit())analyzerApplySession(session);renderAnalyzerSessions();window.alert('Session importée avec succès.')}catch(error){window.alert('Import impossible : '+error.message)}finally{event.target.value=''}
 }
 let analyzerRules={...ANALYZER_DEFAULT_RULES};
 let analyzerSort='position';
@@ -473,10 +510,11 @@ function analyzerFormatDuration(seconds,{signed=false,compact=false}={}){
 function analyzerNumeric(value,fallback=0){const n=Number(String(value??'').replace(',','.'));return Number.isFinite(n)?n:fallback}
 function analyzerTeamKey(driver){return String(driver?.apex_row??driver?.driver??driver?.pos??'unknown')}
 function analyzerLoad(){
+ analyzerStorageCleanupOnce();
  try{analyzerRules={...ANALYZER_DEFAULT_RULES,...JSON.parse(localStorage.getItem(ANALYZER_RULES_KEY)||'{}')}}catch(_){analyzerRules={...ANALYZER_DEFAULT_RULES}}
  try{analyzerLearning={teams:{},startedAt:Date.now(),...JSON.parse(localStorage.getItem(ANALYZER_LEARNING_KEY)||'{}')}}catch(_){analyzerLearning={teams:{},startedAt:Date.now()}}
 }
-function analyzerSaveLearning(){try{localStorage.setItem(ANALYZER_LEARNING_KEY,JSON.stringify(analyzerLearning))}catch(_){}}
+function analyzerSaveLearning(){analyzerLearning=analyzerStorageCompactLearning(analyzerLearning);analyzerStorageSafeSet(ANALYZER_LEARNING_KEY,JSON.stringify(analyzerLearning))}
 function analyzerMedian(values){
  const sorted=(values||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b);
  if(!sorted.length)return null;
@@ -1177,9 +1215,9 @@ function closeAnalyzerRules(){document.getElementById('analyzerRulesModal')?.cla
 function saveAnalyzerRules(event){
  event?.preventDefault();
  analyzerRules={raceHours:analyzerNumeric(document.getElementById('ruleRaceHours')?.value,24),requiredStops:analyzerNumeric(document.getElementById('ruleRequiredStops')?.value,28),minStintMinutes:analyzerNumeric(document.getElementById('ruleMinStint')?.value,10),maxStintMinutes:analyzerNumeric(document.getElementById('ruleMaxStint')?.value,60),minPitSeconds:analyzerNumeric(document.getElementById('ruleMinPit')?.value,150),pitCloseMinutes:analyzerNumeric(document.getElementById('rulePitClose')?.value,30),safetyMarginMinutes:analyzerNumeric(document.getElementById('ruleSafetyMargin')?.value,2),driversCount:analyzerNumeric(document.getElementById('ruleDriversCount')?.value,6),driverMinimumMinutes:analyzerNumeric(document.getElementById('ruleDriverMinimum')?.value,210)};
- localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-update');closeAnalyzerRules();renderAnalyzer();
+ analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-update');closeAnalyzerRules();renderAnalyzer();
 }
-function resetAnalyzerRules(){analyzerRules={...ANALYZER_DEFAULT_RULES};localStorage.setItem(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-reset');openAnalyzerRules();renderAnalyzer()}
+function resetAnalyzerRules(){analyzerRules={...ANALYZER_DEFAULT_RULES};analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-reset');openAnalyzerRules();renderAnalyzer()}
 function resetAnalyzerLearning(){if(!window.confirm('Effacer l’historique des relais et les karts virtuels appris par Analyzer ?'))return;analyzerLearning={teams:{},startedAt:Date.now()};analyzerSaveLearning();analyzerSaveSession('learning-reset');renderAnalyzer()}
 
 
@@ -1739,7 +1777,7 @@ function analyzerTestLog(message,type='info'){const t=window.velocityEnduranceTe
 function openAnalyzerEnduranceTest(){document.getElementById('analyzerEnduranceTestModal')?.classList.add('show');analyzerTestRefreshDashboard()}
 function closeAnalyzerEnduranceTest(){document.getElementById('analyzerEnduranceTestModal')?.classList.remove('show')}
 function analyzerTestDriver(index){const lap=54+(index%11)*.17;return {pos:index+1,apex:index+1,apex_row:index+1,kart:String(10+index),driver:`ÉQUIPE TEST ${String(index+1).padStart(2,'0')}`,pilot:`PILOTE ${index+1}`,laps:0,last:formatApexMilliseconds(lap*1000),best:formatApexMilliseconds((lap-.25)*1000),gap:index?`+${(index*.42).toFixed(3)}`:'—',interval:index?`+${(.25+(index%5)*.08).toFixed(3)}`:'—',pit_stops:0,status:'track',penalty:'—',track_time:'00:00',on_track:'00:00',average_lap:lap,lap_times:[],current_stint_laps:[],stints:[],pit_history:[]}}
-function analyzerTestBuildState(){const t=window.velocityEnduranceTest;return {...(t.backup||{}),version:'7.2.62 TEST',connection:t.networkConnected?'TEST CONNECTÉ':'TEST COUPÉ',connected:t.networkConnected,circuit_id:'velocity-test-endurance',followed_driver:t.drivers[0]?.driver||'',drivers:t.drivers,time_remaining:analyzerTestFormatDuration(Math.max(0,t.durationMs-t.simulatedMs)),time_remaining_ms:Math.max(0,t.durationMs-t.simulatedMs),live:{status:t.networkConnected?'test':'reconnecting',messages:t.updates,parsed_updates:t.updates,last_message_at:new Date().toISOString()},spotter:{configured:false,queue:[],maintenance:[],incoming:[]}}}
+function analyzerTestBuildState(){const t=window.velocityEnduranceTest;return {...(t.backup||{}),version:'7.2.63 TEST',connection:t.networkConnected?'TEST CONNECTÉ':'TEST COUPÉ',connected:t.networkConnected,circuit_id:'velocity-test-endurance',followed_driver:t.drivers[0]?.driver||'',drivers:t.drivers,time_remaining:analyzerTestFormatDuration(Math.max(0,t.durationMs-t.simulatedMs)),time_remaining_ms:Math.max(0,t.durationMs-t.simulatedMs),live:{status:t.networkConnected?'test':'reconnecting',messages:t.updates,parsed_updates:t.updates,last_message_at:new Date().toISOString()},spotter:{configured:false,queue:[],maintenance:[],incoming:[]}}}
 function analyzerTestNextCutDelayMs(){const t=window.velocityEnduranceTest;if(t.incidentFrequency==='random')return (20+Math.random()*70)*60000;return Math.max(1,Number(t.incidentFrequency)||30)*60000}
 function analyzerTestScheduleNextCut(){const t=window.velocityEnduranceTest;t.nextCutAtMs=t.simulatedMs+analyzerTestNextCutDelayMs();analyzerTestLog(`Prochaine coupure prévue vers ${analyzerTestFormatDuration(t.nextCutAtMs)} simulées.`)}
 function analyzerTestStartNetworkCut(source='automatique'){const t=window.velocityEnduranceTest;if(!t.active||!t.networkConnected)return false;t.networkConnected=false;t.networkCuts++;t.reconnectAttempts++;t.networkCutStartedAt=Date.now();analyzerTestLog(`Coupure réseau ${source} déclenchée (${t.incidentDurationSec} s).`,'warning');state=analyzerTestBuildState();render();analyzerTestRefreshDashboard();clearTimeout(t.networkRestoreTimer);t.networkRestoreTimer=setTimeout(()=>analyzerTestRestoreNetwork(),Math.max(1000,t.incidentDurationSec*1000));return true}
@@ -1749,5 +1787,5 @@ function startAnalyzerEnduranceTest(){const t=window.velocityEnduranceTest;if(t.
 function analyzerTestTick(){const t=window.velocityEnduranceTest;if(!t.active)return;const step=1000*t.speed;t.simulatedMs+=step;t.updates+=1;const pits=Boolean(document.getElementById('analyzerTestPits')?.checked),penalties=Boolean(document.getElementById('analyzerTestPenalties')?.checked),incidents=Boolean(document.getElementById('analyzerTestIncidents')?.checked);if(incidents&&t.networkConnected&&t.simulatedMs>=t.nextCutAtMs)analyzerTestStartNetworkCut('automatique');if(t.networkConnected){t.drivers.forEach((d,i)=>{const lapSeconds=54+(i%11)*.17+Math.sin((t.simulatedMs/60000)+i)*.12;const previousLaps=d.laps||0,newLaps=Math.floor(t.simulatedMs/(lapSeconds*1000));if(newLaps>previousLaps){for(let n=previousLaps;n<newLaps;n++){const value=lapSeconds+(Math.random()-.5)*.35;d.lap_times.push(value);d.current_stint_laps.push(value);if(d.lap_times.length>2200)d.lap_times.splice(0,d.lap_times.length-2200);if(d.current_stint_laps.length>80)d.current_stint_laps.shift();t.laps++}d.laps=newLaps;d.last=formatApexMilliseconds(d.lap_times.at(-1)*1000);const best=Math.min(...d.lap_times);d.best=formatApexMilliseconds(best*1000);d.average_lap=d.current_stint_laps.reduce((a,b)=>a+b,0)/d.current_stint_laps.length}d.track_time=analyzerTestFormatDuration(t.simulatedMs);d.on_track=d.track_time;if(pits&&t.simulatedMs>0&&Math.floor(t.simulatedMs/1800000)>d.pit_stops+(i%3)){d.pit_stops++;d.status='pit';d.pit_history.push({lap:d.laps,duration:150+(i%20)});d.current_stint_laps=[];t.stops++;setTimeout(()=>{if(t.active)d.status='track'},Math.max(80,250/t.speed))}if(penalties&&t.updates%900===0&&i===t.updates/900%t.teams)d.penalty='5 s'});t.drivers.sort((a,b)=>(b.laps-a.laps)||((a.average_lap||999)-(b.average_lap||999))).forEach((d,i)=>{d.pos=i+1;d.gap=i?`+${((i*.37)+(t.simulatedMs/3600000)*(i*.02)).toFixed(3)}`:'—'})}state=analyzerTestBuildState();render();analyzerTestRefreshDashboard();if(t.durationMs&&t.simulatedMs>=t.durationMs){analyzerTestLog('Durée cible atteinte. Test terminé.');stopAnalyzerEnduranceTest(false)}}
 function analyzerTestRefreshDashboard(){const t=window.velocityEnduranceTest;const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value};set('analyzerTestElapsed',analyzerTestFormatDuration(t.simulatedMs));set('analyzerTestRealElapsed',t.startedAt?analyzerTestFormatDuration(Date.now()-t.startedAt):'00:00:00');set('analyzerTestLaps',t.laps.toLocaleString('fr-FR'));set('analyzerTestUpdates',t.updates.toLocaleString('fr-FR'));set('analyzerTestStops',t.stops.toLocaleString('fr-FR'));set('analyzerTestCuts',String(t.networkCuts));set('analyzerTestReconnects',`${t.reconnectSuccess}/${t.reconnectAttempts}`);set('analyzerTestNetworkState',t.networkConnected?'CONNECTÉ':'COUPURE EN COURS');set('analyzerTestErrors',String(t.errors.length));const mem=performance?.memory?.usedJSHeapSize;set('analyzerTestMemory',Number.isFinite(mem)?`${Math.round(mem/1048576)} Mo`:'Indisponible');const progress=t.durationMs?Math.min(100,t.simulatedMs/t.durationMs*100):0;set('analyzerTestProgress',t.durationMs?`${progress.toFixed(1)} %`:'ILLIMITÉ');const row=document.querySelector('.analyzer-test-status-row'),stateEl=document.getElementById('analyzerTestState');if(row){row.classList.toggle('error',t.errors.length>0);row.classList.toggle('warning',!t.networkConnected)}if(stateEl)stateEl.textContent=t.errors.length?'● ERREURS DÉTECTÉES':(!t.networkConnected?'● RECONNEXION EN COURS':'● STABLE')}
 function stopAnalyzerEnduranceTest(manual=true){const t=window.velocityEnduranceTest;if(!t.active)return;clearInterval(t.timer);clearTimeout(t.networkRestoreTimer);t.timer=null;t.networkRestoreTimer=null;if(!t.networkConnected){const downtime=Date.now()-t.networkCutStartedAt;t.lastDowntimeMs=downtime;t.totalDowntimeMs+=downtime;t.maxDowntimeMs=Math.max(t.maxDowntimeMs,downtime);t.reconnectFailures++;analyzerTestLog('Test arrêté pendant une coupure : reconnexion non validée.','error')}t.active=false;if(manual)analyzerTestLog('Test arrêté manuellement.');state=t.backup||{};t.backup=null;document.getElementById('analyzerTestConfiguration').hidden=false;document.getElementById('analyzerTestDashboard').hidden=false;render();load();analyzerTestRefreshDashboard()}
-function exportAnalyzerEnduranceTestReport(){const t=window.velocityEnduranceTest,payload={type:'velocity-endurance-stability-test',version:'7.2.59',exportedAt:new Date().toISOString(),active:t.active,configuration:{teams:t.teams,speed:t.speed,durationMs:t.durationMs,networkSimulation:Boolean(document.getElementById('analyzerTestIncidents')?.checked),incidentFrequency:t.incidentFrequency,incidentDurationSec:t.incidentDurationSec},results:{realElapsedMs:t.startedAt?Date.now()-t.startedAt:0,simulatedMs:t.simulatedMs,laps:t.laps,updates:t.updates,stops:t.stops,networkCuts:t.networkCuts,reconnectAttempts:t.reconnectAttempts,reconnectSuccess:t.reconnectSuccess,reconnectFailures:t.reconnectFailures,totalDowntimeMs:t.totalDowntimeMs,maxDowntimeMs:t.maxDowntimeMs,lastDowntimeMs:t.lastDowntimeMs,averageDowntimeMs:t.reconnectSuccess?t.totalDowntimeMs/t.reconnectSuccess:0,errors:t.errors},log:t.log};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Velocity_Test_Endurance_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportAnalyzerEnduranceTestReport(){const t=window.velocityEnduranceTest,payload={type:'velocity-endurance-stability-test',version:'7.2.63',exportedAt:new Date().toISOString(),active:t.active,configuration:{teams:t.teams,speed:t.speed,durationMs:t.durationMs,networkSimulation:Boolean(document.getElementById('analyzerTestIncidents')?.checked),incidentFrequency:t.incidentFrequency,incidentDurationSec:t.incidentDurationSec},results:{realElapsedMs:t.startedAt?Date.now()-t.startedAt:0,simulatedMs:t.simulatedMs,laps:t.laps,updates:t.updates,stops:t.stops,networkCuts:t.networkCuts,reconnectAttempts:t.reconnectAttempts,reconnectSuccess:t.reconnectSuccess,reconnectFailures:t.reconnectFailures,totalDowntimeMs:t.totalDowntimeMs,maxDowntimeMs:t.maxDowntimeMs,lastDowntimeMs:t.lastDowntimeMs,averageDowntimeMs:t.reconnectSuccess?t.totalDowntimeMs/t.reconnectSuccess:0,errors:t.errors},log:t.log};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Velocity_Test_Endurance_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 window.addEventListener('error',event=>{const t=window.velocityEnduranceTest;if(!t.active)return;t.errors.push({at:new Date().toISOString(),message:event.message,source:event.filename,line:event.lineno});analyzerTestLog(`Erreur JS : ${event.message}`,'error');analyzerTestRefreshDashboard()});window.addEventListener('unhandledrejection',event=>{const t=window.velocityEnduranceTest;if(!t.active)return;const message=String(event.reason?.message||event.reason||'Promesse rejetée');t.errors.push({at:new Date().toISOString(),message});analyzerTestLog(`Promesse rejetée : ${message}`,'error');analyzerTestRefreshDashboard()});document.addEventListener('DOMContentLoaded',()=>document.getElementById('analyzerEnduranceTestModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerEnduranceTestModal')closeAnalyzerEnduranceTest()}));

@@ -1,3 +1,11 @@
+## V7.2.63 — Nettoyage et sécurisation du stockage local Analyzer
+
+- Suppression automatique des anciennes sessions Analyzer lourdes.
+- Les sessions ne dupliquent plus l’historique complet des relais.
+- Apprentissage compacté et limité.
+- Écriture localStorage protégée contre les dépassements de quota.
+- La sélection d’un circuit ne peut plus être bloquée par une erreur de stockage.
+
 ## V7.2.62 — Trafic devant continu et indépendant des tours
 
 - Conservation des cercles de trafic dans le DOM pour éviter les disparitions à chaque rafraîchissement.
