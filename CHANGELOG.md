@@ -1,4 +1,12 @@
-## V7.2.66 — Velocity Lab
+## V7.2.67 — Velocity Lab : comparaison compacte et lisible
+
+- Colonnes du tableau comparatif fortement resserrées pour rapprocher les karts.
+- Largeur fixe compacte des colonnes et réduction des paddings horizontaux.
+- Taille des textes du comparatif fortement augmentée (environ ×3 selon les lignes).
+- Valeurs brutes agrandies et noms d'équipe autorisés à revenir à la ligne dans l'en-tête.
+- Aucun changement de l'algorithme Velocity Engine V1.0 ni des pondérations officielles.
+
+## V7.2.67 — Velocity Lab
 
 - Ajout de **Velocity Lab** dans le footer de l’Analyzer.
 - Page plein écran fermable à tout moment avec la croix en haut à droite.
