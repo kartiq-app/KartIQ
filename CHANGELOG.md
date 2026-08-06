@@ -1,4 +1,4 @@
-## V7.2.48
+## V7.2.49
 
 - Correction de l’affichage des trois files Spotter dans la carte FILES de l’Analyzer.
 - Le nombre de files utilise désormais `queue_mode`, avec détection de secours depuis `queueFile`.

@@ -1007,7 +1007,12 @@ function analyzerRenderSpotterCards(){
  const maintenanceCount=document.getElementById('analyzerSpotterMaintenanceCount');
  const autoButton=document.getElementById('analyzerSpotterAutoButton');
  if(!filesHost&&!incomingHost&&!maintenanceHost)return;
- if(autoButton){autoButton.classList.toggle('active',spotter?.mode==='auto');autoButton.textContent=spotter?.mode==='auto'?'AUTO ✓':'AUTO';}
+ if(autoButton){
+  const isAuto=spotter?.mode==='auto'||Boolean(spotter?.free_started_at);
+  autoButton.classList.toggle('active',isAuto);
+  autoButton.classList.toggle('resume',isAuto);
+  autoButton.textContent=isAuto?'▶ REPRENDRE':'AUTO';
+ }
  if(!spotter?.configured){
   if(filesHost)filesHost.innerHTML='<div class="spotter-empty">Configuration Spotter en attente.</div>';
   if(incomingHost)incomingHost.innerHTML='<div class="spotter-empty">Aucun kart entrant à valider.</div>';
@@ -1020,6 +1025,9 @@ function analyzerRenderSpotterCards(){
  const count=Math.max(1,Math.min(3,Number(spotter.queue_mode)||inferredQueueCount||1));
  const queue=Array.isArray(spotter.queue)?spotter.queue:[];
  if(filesHost){
+  const recalibrationNotice=spotter?.recalibrating
+   ? `<div class="analyzer-spotter-recalibration"><strong>VALIDER LE RECALAGE</strong><span>Vérifiez l’ordre réel des karts dans les stands, puis validez le recalage.</span><button type="button" onclick="spotterConfirmRecalibration()">VALIDER LE RECALAGE</button></div>`
+   : '';
   const columns=[];
   for(let file=1;file<=count;file+=1){
    const items=queue.filter(item=>(Number(item.queueFile)||1)===file);
@@ -1028,7 +1036,7 @@ function analyzerRenderSpotterCards(){
     :'<div class="spotter-empty spotter-file-empty">File vide</div>';
    columns.push(`<div class="spotter-file-column" data-spotter-file="${file}"><div class="spotter-file-title">FILE ${file}</div><div class="spotter-file-list" data-spotter-drop-zone="queue">${cards}</div></div>`);
   }
-  filesHost.innerHTML=`<div class="spotter-queues-layout queues-${count}">${columns.join('')}</div>`;
+  filesHost.innerHTML=`${recalibrationNotice}<div class="spotter-queues-layout queues-${count}">${columns.join('')}</div>`;
  }
  const incoming=Array.isArray(spotter.incoming)?spotter.incoming:[];
  if(incomingCount)incomingCount.textContent=String(incoming.length);
