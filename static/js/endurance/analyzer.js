@@ -960,7 +960,6 @@ function renderAnalyzer(){
  analyzerRenderPitSimulator();
  renderAnalyzerQueueAdvice();
  analyzerRenderSpotterSync();
- analyzerRenderSpotterCards();
 }
 
 // V7.2 — état partagé par le module Spotter. Velocity reste l'unique source
@@ -997,32 +996,7 @@ function analyzerRenderSpotterSync(){
  const advice=document.getElementById('analyzerQueueAdvice');if(advice){const first=(spotter.queue||[]).find(item=>item.status==='available');advice.textContent=first?`${first.lastTeam&&first.lastTeam!=='Initialisation'?first.lastTeam:'Kart '+(first.apexKart||'—')} · ${first.kv} · Score ${first.score??'—'}`:'Aucun kart disponible';}
 }
 
-function analyzerRenderSpotterCards(){
- const spotter=analyzerSpotterState();
- const filesHost=document.getElementById('analyzerSpotterFiles');
- const incomingHost=document.getElementById('analyzerSpotterIncoming');
- const maintenanceHost=document.getElementById('analyzerSpotterMaintenance');
- const incomingCount=document.getElementById('analyzerSpotterIncomingCount');
- const maintenanceCount=document.getElementById('analyzerSpotterMaintenanceCount');
- const autoButton=document.getElementById('analyzerSpotterAutoButton');
- if(autoButton){autoButton.classList.toggle('active',spotter?.mode==='auto');autoButton.textContent=spotter?.mode==='auto'?'AUTO ✓':'AUTO';}
- if(!spotter?.configured){
-  if(filesHost)filesHost.innerHTML='<div class="analyzer-empty">Configuration Spotter en attente.</div>';
-  if(incomingHost)incomingHost.innerHTML='<div class="analyzer-empty">Aucun kart entrant à valider.</div>';
-  if(maintenanceHost)maintenanceHost.innerHTML='<div class="analyzer-empty">Aucun kart en maintenance.</div>';
-  if(incomingCount)incomingCount.textContent='0';if(maintenanceCount)maintenanceCount.textContent='0';return;
- }
- const queue=Array.isArray(spotter.queue)?spotter.queue:[];
- const grouped=new Map();
- queue.forEach(item=>{const file=Math.max(1,Number(item.queueFile)||1);if(!grouped.has(file))grouped.set(file,[]);grouped.get(file).push(item)});
- if(filesHost)filesHost.innerHTML=grouped.size?[...grouped.entries()].sort((a,b)=>a[0]-b[0]).map(([file,items])=>`<section class="analyzer-spotter-file"><h4>FILE ${queueLetter(file-1)}</h4><div>${items.map((item,index)=>{const reserved=item.status==='reserved';const title=reserved?(item.reservedTeam||'Attribué'):(item.lastTeam&&item.lastTeam!=='Initialisation'?item.lastTeam:`Kart ${item.apexKart||'—'}`);return `<article class="analyzer-spotter-kart ${reserved?'reserved':'available'}"><span>${index+1}</span><strong>${analyzerEscape(title)}</strong><small>${analyzerEscape(item.kv||'—')} · ${reserved?'ATTRIBUÉ':'DISPONIBLE'}</small><b>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</b></article>`}).join('')}</div></section>`).join(''):'<div class="analyzer-empty">File Spotter vide.</div>';
- const incoming=Array.isArray(spotter.incoming)?spotter.incoming:[];
- if(incomingCount)incomingCount.textContent=String(incoming.length);
- if(incomingHost)incomingHost.innerHTML=incoming.length?incoming.map(item=>`<article class="analyzer-spotter-kart incoming"><strong>${analyzerEscape(item.lastTeam||item.team||item.apexKart||'Kart entrant')}</strong><small>${analyzerEscape(item.kv||'—')} · À VALIDER</small><b>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</b></article>`).join(''):'<div class="analyzer-empty">Aucun kart entrant à valider.</div>';
- const maintenance=Array.isArray(spotter.maintenance)?spotter.maintenance:[];
- if(maintenanceCount)maintenanceCount.textContent=String(maintenance.length);
- if(maintenanceHost)maintenanceHost.innerHTML=maintenance.length?maintenance.map(item=>`<article class="analyzer-spotter-kart maintenance"><strong>${analyzerEscape(item.lastTeam||item.apexKart||'Kart')}</strong><small>${analyzerEscape(item.kv||'—')} · MAINTENANCE</small><b>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</b></article>`).join(''):'<div class="analyzer-empty">Aucun kart en maintenance.</div>';
-}
+
 
 function renderAnalyzerQueueAdvice(){
  const el=document.getElementById('analyzerQueueAdvice');if(!el)return;

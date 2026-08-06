@@ -1,3 +1,10 @@
+# Velocity 7.2.33 — Retrait des cartes Spotter de l’Analyzer
+
+- Suppression des cartes Analyzer « Files de karts », « Karts entrants » et « Maintenance ».
+- Suppression du rendu JavaScript associé à ces trois cartes.
+- Aucun changement apporté au mode Spotter lui-même.
+- Version de cache/service worker mise à jour pour forcer le chargement des nouveaux fichiers.
+
 # Velocity 7.2.32 — Nettoyage Analyzer et affichage Spotter
 
 - Suppression de la carte « VAGUE DE QUICK CHANGE » de la page Analyzer.
