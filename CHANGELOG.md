@@ -1,3 +1,8 @@
+# Velocity 7.2.31 — Suppression carte Quick Change
+
+- Suppression de la carte « QUICK CHANGE — FILES DE KARTS » de la page Analyzer.
+- Les nouvelles cartes synchronisées avec le mode Spotter restent inchangées.
+
 # Velocity 7.2.30 — Correctif sélection circuit
 
 - Restauration du bloc Analyzer supprimé accidentellement en 7.2.29.

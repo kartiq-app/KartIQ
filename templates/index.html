@@ -226,16 +226,6 @@
           </div>
         </section>
 
-        <section class="panel analyzer-queue-panel analyzer-queue-panel-compact" aria-labelledby="kartQueuesTitle">
-          <div class="endurance-queue-header">
-            <div><div id="kartQueuesTitle" class="endurance-queue-title">QUICK CHANGE — FILES DE KARTS</div><div class="analyzer-queue-subtitle">Le premier kart de chaque file est le choix immédiatement disponible.</div></div>
-            <div class="queue-count-control"><span>Files</span><button type="button" data-queue-count="1" onclick="setKartQueueCount(1)">1</button><button type="button" data-queue-count="2" onclick="setKartQueueCount(2)">2</button><button type="button" data-queue-count="3" onclick="setKartQueueCount(3)">3</button></div>
-          </div>
-          <div id="kartQueues" class="kart-queues"></div>
-          <div class="queue-actions"><div id="queueSelectionLabel" class="queue-actions-label">Cliquez sur un kart pour le déplacer ou le retirer.</div><button id="queueAdvanceBtn" class="queue-action advance" type="button" onclick="moveSelectedQueueKart(-1)" disabled>← AVANCER</button><button id="queueBackBtn" class="queue-action back" type="button" onclick="moveSelectedQueueKart(1)" disabled>RECULER →</button><button id="queueRemoveBtn" class="queue-action remove" type="button" onclick="removeSelectedQueueKart()" disabled>✕ RETIRER</button><button class="queue-action reset" type="button" onclick="resetKartQueues()">RÉINITIALISER</button></div>
-          <div class="queue-recommendation"><span>CHOIX CONSEILLÉ</span><strong id="analyzerQueueAdvice">Ajoutez les karts présents dans les files</strong></div>
-        </section>
-
         <section class="panel analyzer-panel analyzer-forecast-panel">
           <div class="analyzer-panel-title"><span>OPPORTUNITÉS DE QUICK CHANGE</span><small>Arrêts attendus selon le temps en piste et le règlement</small></div>
           <div id="analyzerForecast" class="analyzer-forecast-list"><div class="analyzer-empty">En attente de données…</div></div>
