@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.28';
+const SPOTTER_APP_RELEASE='7.2.30';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -45,6 +45,18 @@ const SPOTTER_CLIENT_ID=sessionStorage.getItem('velocity_spotter_client_id')||`s
 sessionStorage.setItem('velocity_spotter_client_id',SPOTTER_CLIENT_ID);
 let spotterApplyingRemote=false;
 let spotterLastRemoteUpdate=0;
+let spotterLastRemoteSemanticSignature='';
+function spotterRemoteSemanticSignature(remote){
+ if(!remote||typeof remote!=='object')return '';
+ return JSON.stringify({
+  configured:Boolean(remote.configured),mode:remote.mode,queue_mode:Number(remote.queue_mode)||1,
+  queue:remote.queue||[],maintenance:remote.maintenance||[],incoming:remote.incoming||[],
+  assignments:remote.assignments||{},movement_log:remote.movement_log||[],
+  incoming_queue_selections:remote.incoming_queue_selections||{},
+  free_started_at:remote.free_started_at||null,pit_ins:Number(remote.pit_ins)||0,
+  pit_outs:Number(remote.pit_outs)||0,recalibrating:Boolean(remote.recalibrating)
+ });
+}
 
 function spotterClone(value){return JSON.parse(JSON.stringify(value??null))}
 function spotterUndoState(){
@@ -81,6 +93,9 @@ function spotterApplyRemoteSnapshot(remote){
  const updated=Number(remote.updated_at_ms)||0;
  if(updated<=spotterLastRemoteUpdate)return;
  spotterLastRemoteUpdate=updated;
+ const semanticSignature=spotterRemoteSemanticSignature(remote);
+ if(semanticSignature&&semanticSignature===spotterLastRemoteSemanticSignature)return;
+ spotterLastRemoteSemanticSignature=semanticSignature;
  spotterApplyingRemote=true;
  try{
   if(Number.isFinite(Number(remote.queue_mode)))spotterState.mode=Math.max(1,Math.min(3,Number(remote.queue_mode)));
@@ -758,4 +773,11 @@ function spotterMaintenanceCard(item){
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterRefreshVelocityMetrics();spotterPushSharedState()}},2000)});
+document.addEventListener('DOMContentLoaded',()=>{
+ loadSpotterFoundation();
+ spotterPullSharedState();
+ setInterval(()=>{if(!document.hidden&&document.body.classList.contains('current-spotter'))spotterPullSharedState()},750);
+ setInterval(()=>{if(!document.hidden&&document.body.classList.contains('current-spotter'))updateSpotterLiveTimers()},1000);
+ setInterval(()=>{if(!document.hidden&&document.body.classList.contains('current-spotter'))spotterMonitorApex()},750);
+ setInterval(()=>{if(!document.hidden&&spotterState.configured&&document.body.classList.contains('current-spotter')){spotterRefreshVelocityMetrics();spotterPushSharedState()}},2000);
+});

@@ -120,7 +120,7 @@ function ensureAnalyzerWeather(){
  const circuitId=analyzerSessionCircuit();
  if(circuitId!==analyzerWeatherCircuitId){analyzerWeatherData=null;analyzerWeatherLastFetch=0;loadAnalyzerWeather(true);}
  else if(circuitId&&Date.now()-analyzerWeatherLastFetch>=ANALYZER_WEATHER_REFRESH_MS)loadAnalyzerWeather();
- if(!analyzerWeatherTimer)analyzerWeatherTimer=setInterval(()=>loadAnalyzerWeather(),ANALYZER_WEATHER_REFRESH_MS);
+ if(!analyzerWeatherTimer)analyzerWeatherTimer=setInterval(()=>{if(!document.hidden&&currentMode==='endurance')loadAnalyzerWeather()},ANALYZER_WEATHER_REFRESH_MS);
 }
 
 function analyzerSessionSafeId(value){return String(value||'circuit').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase()||'circuit'}
@@ -227,7 +227,7 @@ function analyzerBeforeCircuitChange(){analyzerSaveSession('before-circuit-chang
 function analyzerAfterCircuitChange(){analyzerActiveSessionId=null;analyzerSessionCircuitId=null;setTimeout(analyzerEnsureSession,100)}
 function analyzerSessionAutosaveStart(){
  clearInterval(analyzerSessionAutosaveTimer);
- analyzerSessionAutosaveTimer=setInterval(()=>{if(analyzerActiveSessionId)analyzerSaveSession('autosave')},ANALYZER_AUTOSAVE_MS);
+ analyzerSessionAutosaveTimer=setInterval(()=>{if(!document.hidden&&analyzerActiveSessionId)analyzerSaveSession('autosave')},ANALYZER_AUTOSAVE_MS);
 }
 function openAnalyzerSessions(){renderAnalyzerSessions();document.getElementById('analyzerSessionsModal')?.classList.add('show')}
 function closeAnalyzerSessions(){document.getElementById('analyzerSessionsModal')?.classList.remove('show')}
@@ -422,7 +422,12 @@ async function simulateAnalyzerPitStop(){
  }catch(error){if(status)status.textContent=`Simulation impossible : ${error.message}`;console.warn('[KartIQ] Simulation arrêt',error)}
  finally{analyzerPitSimulationBusy=false;if(button){button.disabled=false;button.textContent='SIMULER UN ARRÊT'}}
 }
-if(!window.__kartiqPitTrackTimer){window.__kartiqPitTrackTimer=setInterval(analyzerRenderPitSimulator,100)}
+if(!window.__kartiqPitTrackTimer){
+ window.__kartiqPitTrackTimer=setInterval(()=>{
+  if(document.hidden||currentMode!=='endurance')return;
+  analyzerRenderPitSimulator();
+ },250)
+}
 
 function analyzerKartEvolution(driver,metrics){
  const key=`${analyzerActiveSessionId||analyzerSessionCircuit()}:${analyzerTeamKey(driver)}:${metrics.relayIndex}`;

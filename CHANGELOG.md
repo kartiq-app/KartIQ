@@ -1,5 +1,23 @@
 # Changelog
 
+## V7.2.30 — Horloge et temps restant permanents
+
+- L’horloge Analyzer reste mise à jour chaque seconde, quelle que soit la page affichée.
+- Le temps restant de course continue à être recalculé en permanence, même lorsque l’onglet est masqué.
+- Suppression des conditions liées à la visibilité de l’onglet et au mode courant pour ces deux données critiques.
+- Les autres optimisations de performances de la V7.2.29 sont conservées.
+
+## V7.2.29 — Optimisation des performances
+
+- Remplacement du polling fixe par un ordonnanceur adaptatif : fréquence maximale sur les écrans live, fréquence réduite sur l’accueil et lorsque l’onglet est masqué.
+- Suppression des reconstructions de tableaux lorsque les lignes affichées n’ont pas changé.
+- Cache de rendu séparé pour Qualification, Sprint et Endurance.
+- Spotter ne reconstruit plus son interface lorsque l’état serveur reçu est identique au précédent.
+- Suspension des timers Spotter lorsque la page Spotter n’est pas affichée.
+- Réduction de la fréquence du simulateur d’arrêt et suspension de ses calculs hors Analyzer.
+- Suspension des mises à jour météo, horloge Analyzer et sauvegardes automatiques inutiles lorsque l’onglet est masqué.
+- Aucun changement fonctionnel ou visuel attendu.
+
 ## V7.2.28 — Verrouillage du scroll mobile
 
 - Le défilement de la page reste autorisé avant la validation de l’appui long.
