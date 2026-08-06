@@ -1,3 +1,11 @@
+# Velocity 7.2.32 — Nettoyage Analyzer et affichage Spotter
+
+- Suppression de la carte « VAGUE DE QUICK CHANGE » de la page Analyzer.
+- Suppression de la carte « OPPORTUNITÉS DE QUICK CHANGE » de la page Analyzer.
+- Conservation de la carte singulière « OPPORTUNITÉ DE QUICK CHANGE ».
+- Correction de l’intégration des cartes Spotter dans le template réellement utilisé par Flask.
+- Affichage dans Analyzer de « FILES DE KARTS », « KARTS ENTRANTS » et « MAINTENANCE ».
+
 # Velocity 7.2.31 — Suppression carte Quick Change
 
 - Suppression de la carte « QUICK CHANGE — FILES DE KARTS » de la page Analyzer.

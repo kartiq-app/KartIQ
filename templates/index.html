@@ -226,19 +226,48 @@
           </div>
         </section>
 
-        <section class="panel analyzer-panel analyzer-forecast-panel">
-          <div class="analyzer-panel-title"><span>OPPORTUNITÉS DE QUICK CHANGE</span><small>Arrêts attendus selon le temps en piste et le règlement</small></div>
-          <div id="analyzerForecast" class="analyzer-forecast-list"><div class="analyzer-empty">En attente de données…</div></div>
-        </section>
+        <div id="analyzerSpotterCards" class="analyzer-spotter-cards">
+          <section class="panel analyzer-panel analyzer-spotter-files-panel" aria-labelledby="analyzerSpotterFilesTitle">
+            <div class="analyzer-panel-title analyzer-spotter-card-title">
+              <span id="analyzerSpotterFilesTitle">FILES DE KARTS</span>
+              <small>Synchronisé avec le mode Spotter</small>
+            </div>
+            <div class="analyzer-spotter-actions">
+              <button type="button" class="analyzer-spotter-undo" onclick="spotterUndoLastAction()" title="Annuler la dernière action" aria-label="Annuler la dernière action">↶</button>
+              <button type="button" onclick="openSpotterSetup()">PRÉPARER LA ZONE QUICK CHANGE</button>
+              <button id="analyzerSpotterAutoButton" type="button" onclick="spotterToggleAuto()">AUTO</button>
+              <button type="button" onclick="spotterModifyQueueMode()">MODIFIER LA FILE</button>
+              <button type="button" class="analyzer-spotter-reset" onclick="resetSpotterFoundation()">RÉINITIALISER</button>
+            </div>
+            <div id="analyzerSpotterFiles" class="analyzer-spotter-files">
+              <div class="analyzer-empty">Configuration Spotter en attente.</div>
+            </div>
+          </section>
+
+          <section class="panel analyzer-panel analyzer-spotter-incoming-panel" aria-labelledby="analyzerSpotterIncomingTitle">
+            <div class="analyzer-panel-title">
+              <span id="analyzerSpotterIncomingTitle">KARTS ENTRANTS</span>
+              <span id="analyzerSpotterIncomingCount" class="analyzer-spotter-count">0</span>
+            </div>
+            <div id="analyzerSpotterIncoming" class="analyzer-spotter-list">
+              <div class="analyzer-empty">Aucun kart entrant à valider.</div>
+            </div>
+          </section>
+
+          <section class="panel analyzer-panel analyzer-spotter-maintenance-panel" aria-labelledby="analyzerSpotterMaintenanceTitle">
+            <div class="analyzer-panel-title">
+              <span id="analyzerSpotterMaintenanceTitle">MAINTENANCE</span>
+              <span id="analyzerSpotterMaintenanceCount" class="analyzer-spotter-count">0</span>
+            </div>
+            <div id="analyzerSpotterMaintenance" class="analyzer-spotter-list">
+              <div class="analyzer-empty">Aucun kart en maintenance.</div>
+            </div>
+          </section>
+        </div>
+
       </aside>
     </div>
 
-    <section class="panel analyzer-panel analyzer-wave-panel">
-      <div class="analyzer-panel-title"><span>VAGUE DE QUICK CHANGE</span><small>Équipes susceptibles de rentrer dans les 10 prochaines minutes</small></div>
-      <div class="wave-big"><strong id="analyzerWaveCount">0</strong><span>équipes attendues</span></div>
-      <div id="analyzerWaveStatus" class="wave-status">Aucune vague détectée</div>
-      <div class="wave-meter"><i id="analyzerWaveMeter"></i></div>
-    </section>
     <footer class="analyzer-footer">
       <span id="analyzerSessionStatus" class="analyzer-session-status">SESSION EN ATTENTE</span>
       <button type="button" onclick="openAnalyzerSessions()">💾 SESSIONS</button>
