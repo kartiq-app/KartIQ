@@ -683,7 +683,9 @@ def update_spotter_state():
     snapshot = body.get("spotter")
     if not isinstance(snapshot, dict):
         return jsonify(ok=False, error="État Spotter invalide"), 400
-    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id"}
+    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release"}
+    if str(snapshot.get("app_release") or "") != APP_VERSION:
+        return jsonify(ok=False, error="Version Spotter obsolète", expected=APP_VERSION), 409
     clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
     clean["updated_at_ms"] = int(time.time() * 1000)
     clean["circuit_id"] = str(STATE.get("circuit_id") or "")

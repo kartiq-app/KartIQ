@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.46';
+const SPOTTER_APP_RELEASE='7.2.47';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -47,6 +47,9 @@ let spotterApplyingRemote=false;
 let spotterLastRemoteUpdate=0;
 let spotterUiStep=null;
 let spotterSessionOpened=false;
+let spotterPushInFlight=false;
+let spotterPushQueued=false;
+let spotterLocalMutationAt=0;
 
 function spotterClone(value){return JSON.parse(JSON.stringify(value??null))}
 function spotterUndoState(){
@@ -80,8 +83,11 @@ function spotterUndoLastAction(){
 }
 function spotterApplyRemoteSnapshot(remote){
  if(!remote||typeof remote!=='object'||remote.client_id===SPOTTER_CLIENT_ID)return;
+ const currentCircuit=String(window.state?.circuit_id||window.state?.selected_circuit||'');
+ if(remote.circuit_id&&currentCircuit&&String(remote.circuit_id)!==currentCircuit)return;
  const updated=Number(remote.updated_at_ms)||0;
  if(updated<=spotterLastRemoteUpdate)return;
+ if(spotterPushInFlight||spotterPushQueued||Date.now()-spotterLocalMutationAt<1200)return;
  spotterLastRemoteUpdate=updated;
  spotterApplyingRemote=true;
  try{
@@ -119,28 +125,19 @@ function loadSpotterFoundation(){
   // de configuration, puis les sessions V7.1.2 sont conservées normalement.
   if(saved?.version>=4&&saved?.state){
    Object.assign(spotterState,saved.state);
-   // À la première ouverture du Spotter après chaque mise à jour, on repasse
-   // par la configuration. L'état précédent reste chargé jusqu'au lancement
-   // explicite d'une nouvelle session.
-   if(saved.appRelease!==SPOTTER_APP_RELEASE){
-    spotterState.configured=false;
-    spotterState.freeMode=false;
-    spotterState.recalibrating=false;
-    spotterState.freeNeedsRecalibration=false;
-   }
   }else if(saved){
    localStorage.removeItem(SPOTTER_STORAGE_KEY);
   }
  }catch(_){localStorage.removeItem(SPOTTER_STORAGE_KEY)}
  spotterEnsureSetupDefaults();
- saveSpotterFoundation();
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  renderSpotterFoundation();
 }
 let spotterSyncTimer=null;
 function spotterSharedSnapshot(){
  const clone=value=>JSON.parse(JSON.stringify(value??null));
  return {
-  configured:Boolean(spotterState.configured),
+  configured:Boolean(spotterState.configured),app_release:SPOTTER_APP_RELEASE,
   client_id:SPOTTER_CLIENT_ID,queue_mode:Number(spotterState.mode)||1,
   mode:spotterState.recalibrating?'recalibrating':(spotterState.freeMode?'auto':'live'),
   queue:clone(spotterState.queue||[]),maintenance:clone(spotterState.maintenance||[]),incoming:clone(spotterState.incoming||[]),
@@ -149,10 +146,17 @@ function spotterSharedSnapshot(){
  };
 }
 async function spotterPushSharedState(){
- try{await fetch('/api/spotter-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({spotter:spotterSharedSnapshot()})})}catch(error){console.warn('[Spotter] Synchronisation serveur impossible',error)}
+ if(spotterPushInFlight){spotterPushQueued=true;return}
+ spotterPushInFlight=true;spotterPushQueued=false;
+ try{
+  const response=await fetch('/api/spotter-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({spotter:spotterSharedSnapshot()})});
+  if(response.ok){const payload=await response.json();spotterLastRemoteUpdate=Math.max(spotterLastRemoteUpdate,Number(payload?.updated_at_ms)||0)}
+ }catch(error){console.warn('[Spotter] Synchronisation serveur impossible',error)}
+ finally{spotterPushInFlight=false;if(spotterPushQueued)spotterScheduleSharedSync()}
 }
-function spotterScheduleSharedSync(){if(spotterApplyingRemote)return;clearTimeout(spotterSyncTimer);spotterSyncTimer=setTimeout(spotterPushSharedState,80)}
+function spotterScheduleSharedSync(){if(spotterApplyingRemote)return;spotterPushQueued=true;clearTimeout(spotterSyncTimer);spotterSyncTimer=setTimeout(()=>{spotterPushQueued=false;spotterPushSharedState()},120)}
 function saveSpotterFoundation(){
+ spotterLocalMutationAt=Date.now();
  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  spotterScheduleSharedSync();
 }
@@ -767,4 +771,4 @@ function spotterMaintenanceCard(item){
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterRefreshVelocityMetrics();spotterPushSharedState()}},2000)});
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured&&spotterRefreshVelocityMetrics())saveSpotterFoundation()},2000)});

@@ -1,3 +1,9 @@
+## V7.2.47
+- Correction du conflit de synchronisation Spotter entre appareils.
+- Suppression des envois automatiques d’états locaux obsolètes.
+- Conservation de la configuration lors des mises à jour.
+- Rejet serveur des clients Spotter d’une ancienne version.
+
 ## V7.2.44
 - Ajout d’un espacement supplémentaire entre le titre MESSAGE et les triangles rouges pour éviter tout chevauchement.
 
