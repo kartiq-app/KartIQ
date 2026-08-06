@@ -1,10 +1,18 @@
-## V7.2.68 — Velocity Lab : scroll comparatif stabilisé
+## V7.2.69 — Velocity Lab : comparatif figé au clic
+
+- Le tableau détaillé n'est plus reconstruit par le rafraîchissement live toutes les ~800 ms.
+- La comparaison devient un snapshot figé au moment du clic sur **COMPARER**, afin de préserver totalement le scroll et la lecture.
+- Le classement Velocity situé au-dessus continue de se mettre à jour en live.
+- Toute nouvelle sélection puis nouveau clic sur **COMPARER** génère un snapshot actualisé.
+- Aucun changement du Velocity Engine V1.0 ni des pondérations officielles.
+
+## V7.2.69 — Velocity Lab : scroll comparatif stabilisé
 
 - Conservation de la position verticale et horizontale du tableau comparatif pendant les rafraîchissements live.
 - Le tableau ne revient plus en haut lorsqu’on descend dans les facteurs et valeurs brutes.
 - Aucun changement du Velocity Engine V1.0 ni des pondérations.
 
-## V7.2.68 — Velocity Lab : comparaison compacte et lisible
+## V7.2.69 — Velocity Lab : comparaison compacte et lisible
 
 - Colonnes du tableau comparatif fortement resserrées pour rapprocher les karts.
 - Largeur fixe compacte des colonnes et réduction des paddings horizontaux.
@@ -12,7 +20,7 @@
 - Valeurs brutes agrandies et noms d'équipe autorisés à revenir à la ligne dans l'en-tête.
 - Aucun changement de l'algorithme Velocity Engine V1.0 ni des pondérations officielles.
 
-## V7.2.68 — Velocity Lab
+## V7.2.69 — Velocity Lab
 
 - Ajout de **Velocity Lab** dans le footer de l’Analyzer.
 - Page plein écran fermable à tout moment avec la croix en haut à droite.
