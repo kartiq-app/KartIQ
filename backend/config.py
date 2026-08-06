@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.29"
-APP_RELEASE_NAME = "FILE VERTICALE SPOTTER"
+APP_VERSION = "7.2.30"
+APP_RELEASE_NAME = "CORRECTIF SÉLECTION CIRCUIT"
 
 
 def _circuit_sort_key(circuit):
