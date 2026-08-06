@@ -1,3 +1,8 @@
+## V7.2.48
+
+- Correction de l’affichage des trois files Spotter dans la carte FILES de l’Analyzer.
+- Le nombre de files utilise désormais `queue_mode`, avec détection de secours depuis `queueFile`.
+
 ## V7.2.47
 - Correction du conflit de synchronisation Spotter entre appareils.
 - Suppression des envois automatiques d’états locaux obsolètes.

@@ -1016,7 +1016,8 @@ function analyzerRenderSpotterCards(){
   if(maintenanceCount)maintenanceCount.textContent='0';
   return;
  }
- const count=Math.max(1,Math.min(3,Number(spotter.mode)||1));
+ const inferredQueueCount=(Array.isArray(spotter.queue)?spotter.queue:[]).reduce((max,item)=>Math.max(max,Number(item?.queueFile)||1),1);
+ const count=Math.max(1,Math.min(3,Number(spotter.queue_mode)||inferredQueueCount||1));
  const queue=Array.isArray(spotter.queue)?spotter.queue:[];
  if(filesHost){
   const columns=[];

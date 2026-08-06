@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.47"
+APP_VERSION = "7.2.48"
 APP_RELEASE_NAME = "CORRECTIF BLOCAGE HOME"
 
 
