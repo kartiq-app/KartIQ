@@ -1,3 +1,15 @@
+## V7.2.66 — Velocity Lab
+
+- Ajout de **Velocity Lab** dans le footer de l’Analyzer.
+- Page plein écran fermable à tout moment avec la croix en haut à droite.
+- Reprise du classement Velocity avec sélection de **2 à 5 karts**.
+- Comparaison détaillée du score officiel du relais en cours.
+- Décomposition des cinq facteurs : Rythme, Transition, Potentiel, Régularité et Échantillon.
+- Affichage des notes /100, pondérations, contributions en points et valeurs brutes.
+- Détail de la confiance et des populations de référence.
+- Velocity Lab est strictement en lecture seule : aucune pondération ni aucun score de course n’est modifié.
+- Version du moteur affichée : **Velocity Engine V1.0**.
+
 ## V7.2.65 — Ligne Trafic complète autour du pilote suivi
 
 - Renommage de « TRAFIC DEVANT » en « TRAFIC ».

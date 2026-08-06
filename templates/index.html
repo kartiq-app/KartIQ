@@ -293,7 +293,22 @@
       <button type="button" onclick="openAnalyzerRules()">⚙ RÈGLEMENT</button>
       <button type="button" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
       <button type="button" class="analyzer-test-launch" onclick="openAnalyzerEnduranceTest()">🧪 MODE TEST ENDURANCE</button>
+      <button type="button" class="velocity-lab-launch" onclick="openVelocityLab()">⚙ VELOCITY LAB</button>
     </footer>
+  </div>
+
+  <div class="velocity-lab-overlay" id="velocityLabOverlay" role="dialog" aria-modal="true" aria-labelledby="velocityLabTitle">
+    <div class="velocity-lab-page">
+      <header class="velocity-lab-head">
+        <div><span class="velocity-lab-kicker">VELOCITY ENGINE <b>V1.0</b></span><h2 id="velocityLabTitle">VELOCITY LAB</h2><p>Décomposition et comparaison du score officiel du relais en cours.</p></div>
+        <button class="velocity-lab-close" type="button" onclick="closeVelocityLab()" aria-label="Quitter Velocity Lab">×</button>
+      </header>
+      <section class="velocity-lab-ranking">
+        <div class="velocity-lab-toolbar"><div><strong>CLASSEMENT VELOCITY</strong><span id="velocityLabSelectionStatus">Sélectionnez de 2 à 5 karts</span></div><button id="velocityLabCompareButton" type="button" onclick="compareVelocityLab()" disabled>COMPARER</button></div>
+        <div id="velocityLabRanking" class="velocity-lab-ranking-wrap"><div class="analyzer-empty">Aucun relais évalué.</div></div>
+      </section>
+      <section id="velocityLabResults" class="velocity-lab-results" aria-live="polite"><div class="velocity-lab-placeholder">Sélectionnez au moins deux karts puis cliquez sur <b>COMPARER</b>.</div></section>
+    </div>
   </div>
 
   <div class="analyzer-rules-modal" id="analyzerEnduranceTestModal" role="dialog" aria-modal="true" aria-labelledby="analyzerEnduranceTestTitle">
