@@ -901,19 +901,27 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* Velocity V7.2.40 — Messagerie pilote : titre aligné sur Focus Endurance et texte contenu */
+/* Velocity V7.2.41 — Messagerie pilote : flèches rouges et transitions latérales */
 .driver-message-overlay{
  position:fixed;inset:0;z-index:10050;background:#000;color:#fff;display:none;
- grid-template-rows:auto 1fr;
+ grid-template-rows:auto 1fr;will-change:transform,opacity;
 }
-.driver-message-overlay.show{display:grid}
+.driver-message-overlay.show{display:grid;animation:driverMessageEnter .22s cubic-bezier(.2,.8,.2,1) both}
+.driver-message-overlay.leaving{display:grid;animation:driverMessageExit .32s cubic-bezier(.55,.05,.75,.35) both}
+@keyframes driverMessageEnter{from{transform:translateX(-100%);opacity:.94}to{transform:translateX(0);opacity:1}}
+@keyframes driverMessageExit{from{transform:translateX(0);opacity:1}to{transform:translateX(105%);opacity:.78}}
 .driver-message-header{
- height:54px;min-height:54px;padding:8px 16px 6px;display:grid;grid-template-columns:auto 1fr;
+ height:54px;min-height:54px;padding:8px 16px 6px;display:grid;grid-template-columns:auto minmax(0,1fr);
  align-items:center;gap:12px;color:#fff;font-size:13px;font-weight:900;
- text-transform:uppercase;letter-spacing:.08em;font-family:inherit;
+ text-transform:uppercase;letter-spacing:.08em;font-family:inherit;overflow:hidden;
 }
-.driver-message-header span{white-space:nowrap}
-.driver-message-header i{height:8px;background:#ff8a00;display:block;width:100%}
+.driver-message-header>span{white-space:nowrap}
+.driver-message-arrows{
+ min-width:0;width:calc(100% + 40px);overflow:hidden;white-space:nowrap;color:#e3222b;
+ font-size:24px;line-height:1;font-weight:900;letter-spacing:.08em;transform:translateX(-34px);
+ animation:driverMessageArrows 1.1s linear infinite;
+}
+@keyframes driverMessageArrows{from{transform:translateX(-34px)}to{transform:translateX(0)}}
 .driver-message-body{
  min-height:0;padding:clamp(18px,3vw,44px);display:flex;align-items:center;justify-content:center;
  overflow:hidden;
@@ -927,4 +935,5 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 .driver-message-line{display:block;white-space:nowrap;max-width:100%}
 @media(max-width:700px){
  .driver-message-body{padding:14px 10px 20px}
+ .driver-message-arrows{font-size:20px}
 }

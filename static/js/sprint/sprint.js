@@ -391,10 +391,13 @@ function renderDriverMessageOverlay(){
   document.getElementById('qualificationFocus')?.classList.contains('show')||
   document.getElementById('enduranceFocus')?.classList.contains('show')
  );
+ const exitDuration=320;
  const active=Boolean(focusActive&&message?.message&&Number.isFinite(delivered)&&elapsed>=0&&elapsed<duration);
+ const leaving=Boolean(focusActive&&message?.message&&Number.isFinite(delivered)&&elapsed>=duration&&elapsed<duration+exitDuration);
  host.classList.toggle('show',active);
- host.setAttribute('aria-hidden',active?'false':'true');
- if(active){
+ host.classList.toggle('leaving',leaving);
+ host.setAttribute('aria-hidden',(active||leaving)?'false':'true');
+ if(active||leaving){
   const value=String(message.message||'').trim();
   const lines=splitDriverMessageLines(value);
   text.replaceChildren(...lines.map(line=>{
