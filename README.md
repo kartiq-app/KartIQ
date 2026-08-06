@@ -1,4 +1,4 @@
-# Velocity V7.2.30 — Horloge et temps restant permanents
+# Velocity V7.2.31 — Spotter intégré dans Analyzer
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 

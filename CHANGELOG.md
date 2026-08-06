@@ -1,5 +1,15 @@
 # Changelog
 
+## V7.2.31 — Spotter intégré dans Analyzer
+
+- Ajout de la carte des files Spotter directement sous la Heat Map dans Analyzer.
+- Barre de commandes : ↶ | Préparer la zone Quick Change | Auto / Reprendre | Modifier la file | Réinitialiser.
+- Ajout de la carte Karts entrants immédiatement sous la carte des files.
+- Ajout de la carte Maintenance immédiatement sous Karts entrants.
+- État partagé en temps réel avec Spotter Desktop et smartphone.
+- Les validations, déplacements, mises en maintenance et annulations restent synchronisés entre les écrans.
+- Suppression de l’ancien module Quick Change — Files de karts de l’Analyzer.
+
 ## V7.2.30 — Horloge et temps restant permanents
 
 - L’horloge Analyzer reste mise à jour chaque seconde, quelle que soit la page affichée.

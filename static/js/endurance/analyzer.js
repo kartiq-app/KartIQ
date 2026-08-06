@@ -1371,6 +1371,127 @@ async function loadApexTeamPits(rowId,sessionId=''){
  }catch(error){if(status)status.textContent=`Erreur : ${error.message}`;if(tbody)tbody.innerHTML='<tr><td colspan="5">Impossible de charger les arrêts aux stands.</td></tr>'}
 }
 
+
+/* Velocity V7.2.31 — Spotter intégré dans Analyzer */
+let analyzerSpotterRenderSignature='';
+let analyzerSpotterRefreshBusy=false;
+
+function analyzerSpotterAvailable(){
+ return typeof spotterState!=='undefined'
+  && typeof spotterRenderQueueColumns==='function'
+  && typeof spotterIncomingCard==='function'
+  && typeof spotterMaintenanceCard==='function';
+}
+
+function analyzerSpotterSignature(){
+ if(!analyzerSpotterAvailable())return '';
+ return JSON.stringify({
+  mode:Number(spotterState.mode)||1,
+  configured:Boolean(spotterState.configured),
+  freeMode:Boolean(spotterState.freeMode),
+  recalibrating:Boolean(spotterState.recalibrating),
+  undo:Boolean(spotterState.undoSnapshot),
+  queue:spotterState.queue||[],
+  incoming:spotterState.incoming||[],
+  maintenance:spotterState.maintenance||[],
+  selections:spotterState.incomingQueueSelections||{}
+ });
+}
+
+function analyzerRenderSpotterModule(force=false){
+ const queues=document.getElementById('analyzerSpotterQueues');
+ const incoming=document.getElementById('analyzerSpotterIncoming');
+ const maintenance=document.getElementById('analyzerSpotterMaintenance');
+ if(!queues||!incoming||!maintenance)return;
+
+ if(!analyzerSpotterAvailable()){
+  queues.innerHTML='<div class="analyzer-empty">Module Spotter indisponible.</div>';
+  return;
+ }
+
+ const signature=analyzerSpotterSignature();
+ if(!force&&signature===analyzerSpotterRenderSignature)return;
+ analyzerSpotterRenderSignature=signature;
+
+ queues.innerHTML=spotterRenderQueueColumns();
+
+ const incomingItems=spotterState.incoming||[];
+ incoming.innerHTML=incomingItems.length
+  ? `<div class="spotter-incoming-grid">${incomingItems.map(spotterIncomingCard).join('')}</div>`
+  : '<div class="analyzer-empty">Aucun kart entrant à valider.</div>';
+
+ const maintenanceItems=spotterState.maintenance||[];
+ maintenance.innerHTML=maintenanceItems.length
+  ? `<div class="spotter-maintenance-grid">${maintenanceItems.map(spotterMaintenanceCard).join('')}</div>`
+  : '<div class="analyzer-empty">Aucun kart en maintenance.</div>';
+
+ const incomingCount=document.getElementById('analyzerSpotterIncomingCount');
+ const maintenanceCount=document.getElementById('analyzerSpotterMaintenanceCount');
+ if(incomingCount)incomingCount.textContent=String(incomingItems.length);
+ if(maintenanceCount)maintenanceCount.textContent=String(maintenanceItems.length);
+
+ const autoButton=document.getElementById('analyzerSpotterAutoButton');
+ if(autoButton){
+  autoButton.textContent=spotterState.freeMode?'▶ REPRENDRE':'AUTO';
+  autoButton.classList.toggle('active',Boolean(spotterState.freeMode));
+ }
+
+ const undoButton=document.querySelector('.analyzer-spotter-undo');
+ if(undoButton)undoButton.disabled=typeof spotterCanUndo==='function'?!spotterCanUndo():true;
+}
+
+async function analyzerRefreshSpotterModule(){
+ if(analyzerSpotterRefreshBusy||currentMode!=='analyzer')return;
+ analyzerSpotterRefreshBusy=true;
+ try{
+  if(typeof spotterPullSharedState==='function')await spotterPullSharedState();
+  analyzerRenderSpotterModule();
+ }finally{
+  analyzerSpotterRefreshBusy=false;
+ }
+}
+
+function analyzerSpotterRenderAfterAction(){
+ analyzerSpotterRenderSignature='';
+ requestAnimationFrame(()=>analyzerRenderSpotterModule(true));
+}
+
+function analyzerSpotterUndo(){
+ if(typeof spotterUndoLastAction!=='function')return;
+ spotterUndoLastAction();
+ analyzerSpotterRenderAfterAction();
+}
+
+function analyzerSpotterPrepare(){
+ if(typeof showMode==='function')showMode('spotter');
+ if(typeof openSpotterSetup==='function')openSpotterSetup();
+}
+
+function analyzerSpotterToggleAuto(){
+ if(typeof spotterToggleAuto!=='function')return;
+ spotterToggleAuto();
+ analyzerSpotterRenderAfterAction();
+}
+
+function analyzerSpotterModifyQueue(){
+ if(typeof spotterModifyQueueMode!=='function')return;
+ spotterModifyQueueMode();
+ analyzerSpotterRenderAfterAction();
+}
+
+function analyzerSpotterReset(){
+ if(typeof resetSpotterFoundation!=='function')return;
+ resetSpotterFoundation();
+ analyzerSpotterRenderAfterAction();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+ analyzerRenderSpotterModule(true);
+ setInterval(()=>{
+  if(!document.hidden&&currentMode==='analyzer')analyzerRefreshSpotterModule();
+ },750);
+});
+
 document.addEventListener('DOMContentLoaded',()=>{analyzerLoad();analyzerSessionAutosaveStart();document.getElementById('analyzerRulesModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerRulesModal')closeAnalyzerRules()});document.getElementById('analyzerSessionsModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerSessionsModal')closeAnalyzerSessions()});document.getElementById('apexHistoryModal')?.addEventListener('click',event=>{if(event.target.id==='apexHistoryModal')closeApexHistory()})});window.addEventListener('beforeunload',()=>analyzerSaveSession('beforeunload'));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')analyzerSaveSession('hidden')});
 
 setInterval(()=>{analyzerFormatLocalClock();analyzerUpdateRaceRemaining()},1000);
