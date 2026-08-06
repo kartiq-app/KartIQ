@@ -244,7 +244,7 @@ class RaceStateService:
         return values
 
     def sync_state_from_race(self, snapshot, interpreted_events=None):
-        """Injecte le modèle unifié Apex dans l'interface moderne KartIQ."""
+        """Injecte le modèle unifié Apex dans l'interface moderne Velocity."""
         previous_drivers = {d.get("driver"): d for d in self.state.get("drivers", [])}
         rows = snapshot.get("rows", [])
         live_drivers = []

@@ -1,17 +1,32 @@
 {
-  "name": "Velocity — Analyse karting en direct",
+  "name": "Velocity",
   "short_name": "Velocity",
   "description": "Analyse en direct des sessions Apex Timing",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["fullscreen", "standalone"],
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
   "orientation": "any",
   "background_color": "#07090e",
   "theme_color": "#07090e",
   "icons": [
-    {"src": "/static/icons/kartiq-180.png", "sizes": "180x180", "type": "image/png"},
-    {"src": "/static/icons/kartiq-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "/static/icons/kartiq-512.png", "sizes": "512x512", "type": "image/png"}
+    {
+      "src": "/static/icons/kartiq-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icons/kartiq-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icons/kartiq-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }

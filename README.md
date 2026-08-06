@@ -31,9 +31,9 @@ Cette version agrandit le radar de 25 %, ajoute une ligne de chronométrage en d
 
 ## Météo
 
-Les prévisions sont fournies par **MET Norway Locationforecast 2.0** à partir des coordonnées GPS du circuit. Le service exige un User-Agent identifiable. Pour un déploiement public, vous pouvez définir la variable d’environnement `MET_NO_USER_AGENT` avec un contact valide, par exemple `KartIQ/6.10.0 contact@example.com`.
+Les prévisions sont fournies par **MET Norway Locationforecast 2.0** à partir des coordonnées GPS du circuit. Le service exige un User-Agent identifiable. Pour un déploiement public, vous pouvez définir la variable d’environnement `MET_NO_USER_AGENT` avec un contact valide, par exemple `Velocity/6.10.0 contact@example.com`.
 
-# KartIQ V6.9.3
+# Velocity V6.9.3
 
 ## Prévisions météo horaires locales
 
@@ -47,7 +47,7 @@ La carte météo affiche les 12 prochains créneaux de 30 minutes sur une seule 
 
 La carte météo de l’Analyzer utilise les coordonnées enregistrées du circuit ou, à défaut, la recherche géographique Open-Meteo. Les données sont actualisées automatiquement toutes les cinq minutes et affichent l’état du ciel, la température, le vent, les précipitations et la prochaine période pluvieuse détectée.
 
-# KartIQ V6.3.3 — Analyzer Relais — compteur Apex
+# Velocity V6.3.3 — Analyzer Relais — compteur Apex
 
 Cette version corrige le décodage des tours Apex et conserve la page Analyzer avec deux nouvelles fonctions :
 

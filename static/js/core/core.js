@@ -225,7 +225,7 @@ async function load(){
  stateLoadInFlight=true;
  try{
   const response=await fetch('/api/state',{cache:'no-store'});
-  if(!response.ok)throw new Error(`État KartIQ indisponible (${response.status})`);
+  if(!response.ok)throw new Error(`État Velocity indisponible (${response.status})`);
   const nextState=await response.json();
   syncRemainingFromState(nextState);
   state=nextState;
@@ -234,7 +234,7 @@ async function load(){
   maybeAutoFollowBrice();
   ensureApexBrowserConnection();
  }catch(error){
-  console.warn('[KartIQ] Rafraîchissement de l’état impossible :',error);
+  console.warn('[Velocity] Rafraîchissement de l’état impossible :',error);
  }finally{
   stateLoadInFlight=false;
  }

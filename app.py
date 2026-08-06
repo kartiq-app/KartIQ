@@ -87,7 +87,7 @@ WEATHER_LOCATION_TTL_SECONDS = 86400
 
 
 def _json_urlopen(url, timeout=15):
-    req = urllib.request.Request(url, headers={"User-Agent": f"KartIQ/{APP_VERSION}"})
+    req = urllib.request.Request(url, headers={"User-Agent": f"Velocity/{APP_VERSION}"})
     with urllib.request.urlopen(req, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8", errors="replace"))
 
@@ -235,7 +235,7 @@ def _met_request(location):
     url = "https://api.met.no/weatherapi/locationforecast/2.0/complete?" + urllib.parse.urlencode(params)
     user_agent = os.environ.get(
         "MET_NO_USER_AGENT",
-        f"KartIQ/{APP_VERSION} (weather client; contact via application owner)",
+        f"Velocity/{APP_VERSION} (weather client; contact via application owner)",
     )
     req = urllib.request.Request(
         url,
@@ -538,7 +538,7 @@ def live_worker(circuit):
                 on_error=on_error,
                 on_close=on_close,
                 header=[
-                    "User-Agent: Mozilla/5.0 KartIQ/3.1",
+                    "User-Agent: Mozilla/5.0 Velocity/3.1",
                     "Cache-Control: no-cache",
                     "Pragma: no-cache",
                 ],
@@ -628,7 +628,7 @@ def _apex_http_request(circuit, command):
         "https://live-data.apex-timing.com/live-timing/commonv2/functions/request.php",
         data=encoded,
         headers={
-            "User-Agent": "Mozilla/5.0 KartIQ/6.9.3",
+            "User-Agent": "Mozilla/5.0 Velocity/6.9.3",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": circuit.get("live_url") or "https://www.apex-timing.com",
             "Referer": circuit.get("live_url") or "https://www.apex-timing.com/",
@@ -1003,7 +1003,7 @@ def export_logs():
         archive.writestr("capture_info.json", json.dumps(metadata, ensure_ascii=False, indent=2))
     memory.seek(0)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return send_file(memory, mimetype="application/zip", as_attachment=True, download_name=f"KartIQ_Apex_Logs_{stamp}.zip")
+    return send_file(memory, mimetype="application/zip", as_attachment=True, download_name=f"Velocity_Apex_Logs_{stamp}.zip")
 
 
 @app.post("/api/clear-alert")
@@ -1014,10 +1014,10 @@ def clear_alert():
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"
-    print(f"\nKartIQ V{APP_VERSION} — {APP_RELEASE_NAME}")
+    print(f"\nVelocity V{APP_VERSION} — {APP_RELEASE_NAME}")
     print(f"Application Mac : {desktop_url}")
     print(f"Application réseau : http://{local_ip()}:8200")
     print(f"Journal Apex : {LOG_FILE}")
-    print("Fermer KartIQ : Ctrl + C\n")
+    print("Fermer Velocity : Ctrl + C\n")
     threading.Timer(1.0, lambda: webbrowser.open(desktop_url)).start()
     app.run(host="0.0.0.0", port=8200, debug=False, threaded=True)

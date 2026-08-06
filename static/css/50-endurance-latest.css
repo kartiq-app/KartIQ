@@ -1,6 +1,6 @@
-/* KartIQ V5.5.0 — Endurance, Quick Change et derniers correctifs.
+/* Velocity V5.5.0 — Endurance, Quick Change et derniers correctifs.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
-/* KartIQ V4.9.0 — gestion visuelle des files de karts en Endurance */
+/* Velocity V4.9.0 — gestion visuelle des files de karts en Endurance */
 .endurance-queue-panel{grid-column:1/-1;min-width:0;padding:14px 16px 16px;border:1px solid #29384d;border-radius:12px;background:linear-gradient(180deg,#101722,#0a0f17);box-shadow:0 0 0 1px rgba(43,139,255,.08) inset}
 .endurance-queue-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .endurance-queue-title{font-size:15px;font-weight:950;letter-spacing:.05em;color:#fff}
@@ -30,7 +30,7 @@ body:not(.preview-embedded).current-endurance .endurance-queue-panel{margin-bott
 
 
 
-/* KartIQ V4.9.1 — Top 8 et Quick Change adaptés à la largeur d’un smartphone */
+/* Velocity V4.9.1 — Top 8 et Quick Change adaptés à la largeur d’un smartphone */
 @media (max-width:680px){
   body.current-endurance .right-stack,
   body.current-endurance .right-stack > .panel,
@@ -121,7 +121,7 @@ body:not(.preview-embedded).current-endurance .endurance-queue-panel{margin-bott
   body.current-endurance .quick-table th:nth-child(7),body.current-endurance .quick-table td:nth-child(7){width:16%!important}
 }
 
-/* KartIQ V5.1.2 — Couleur du meilleur dernier tour Sprint
+/* Velocity V5.1.2 — Couleur du meilleur dernier tour Sprint
    Vert par défaut ; violet uniquement s'il égale le meilleur temps absolu de la session. */
 body.current-sprint .fastest-last-time.fastest-lap-orange{color:var(--orange)!important}
 body.current-sprint .fastest-last-time.fastest-lap-green{color:var(--green)!important}
@@ -131,7 +131,7 @@ body.current-sprint .fastest-last-time.fastest-session-best{color:var(--purple)!
 .sprint-focus-fastest-last-time.fastest-session-best{color:var(--purple)!important}
 
 
-/* KartIQ V6.0.11 — identité visuelle propre au mode Endurance.
+/* Velocity V6.0.11 — identité visuelle propre au mode Endurance.
    Les signes distinctifs du dashboard Endurance sont orange #FF8A00.
    Le filet de la case Menu et les séparateurs de lignes restent gris. */
 body[data-app-mode="endurance"] #endurance .qual-strip{
@@ -160,7 +160,7 @@ body[data-app-mode="endurance"] #endurance .qual-table-wrap tbody td{
   .race-mode-card{min-width:0!important}
 }
 
-/* KartIQ V6.0.5 — accueil desktop sur une ligne.
+/* Velocity V6.0.5 — accueil desktop sur une ligne.
    Le mode Endurance utilise strictement la page et les couleurs de Qualification. */
 @media (min-width:921px){
   .race-mode-cards{
@@ -172,11 +172,11 @@ body[data-app-mode="endurance"] #endurance .qual-table-wrap tbody td{
 }
 
 
-/* KartIQ V6.0.8 — Focus Endurance copié du Focus Sprint. */
+/* Velocity V6.0.8 — Focus Endurance copié du Focus Sprint. */
 body.endurance-focus-active{overflow:hidden}
 #enduranceFocus .sprint-focus-header i{background:#FF8A00!important}
 
-/* KartIQ V6.0.12 — Correction unique : le filet vertical de la case Menu
+/* Velocity V6.0.12 — Correction unique : le filet vertical de la case Menu
    du mode Endurance reste gris, comme en Qualification et Sprint. */
 body[data-app-mode="endurance"] #endurance .qual-menu-cell{
   border-right:1px solid #29292E!important;
@@ -187,7 +187,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* KartIQ V6.0.13 — Focus Endurance métier.
+/* Velocity V6.0.13 — Focus Endurance métier.
    Le Focus Sprint reste inchangé. */
 #enduranceFocus .sprint-focus-header i{background:#FF8A00!important}
 #enduranceFocus .endurance-focus-driver{gap:clamp(4px,1vh,12px)}
@@ -230,7 +230,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* KartIQ V6.0.14 — Focus Endurance : hiérarchie visuelle et hauteur du temps restant. */
+/* Velocity V6.0.14 — Focus Endurance : hiérarchie visuelle et hauteur du temps restant. */
 #enduranceFocus .endurance-focus-main{grid-template-rows:68% 32%}
 #enduranceFocus .endurance-focus-last-rank{
   font-size:clamp(76px,18vh,200px);
@@ -250,7 +250,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-focus-last-rank{font-size:18vh}
 }
 
-/* KartIQ V6.0.15 — Focus Endurance : compacité et lisibilité. */
+/* Velocity V6.0.15 — Focus Endurance : compacité et lisibilité. */
 #enduranceFocus .endurance-focus-driver{
   display:flex;
   flex-direction:column;
@@ -304,7 +304,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-focus-neighbour-name{font-size:clamp(22px,7.6vh,40px)}
 }
 
-/* KartIQ V6.0.16 — Focus Endurance : ordre strict dans la carte pilote suivi. */
+/* Velocity V6.0.16 — Focus Endurance : ordre strict dans la carte pilote suivi. */
 #enduranceFocus .endurance-focus-driver{
   display:flex;
   flex-direction:column;
@@ -370,7 +370,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* KartIQ V6.0.17 — Focus Endurance : rang compact et anti-débordement renforcé. */
+/* Velocity V6.0.17 — Focus Endurance : rang compact et anti-débordement renforcé. */
 #enduranceFocus .endurance-focus-driver{container-type:inline-size}
 #enduranceFocus .endurance-focus-last-rank{
   display:flex;
@@ -405,7 +405,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-focus-last-rank{font-size:min(14.58vh,30cqw,146px)}
 }
 
-/* KartIQ V6.0.18 — Focus Endurance : rang +15 % et nom du pilote devant rapproché du filet. */
+/* Velocity V6.0.18 — Focus Endurance : rang +15 % et nom du pilote devant rapproché du filet. */
 #enduranceFocus .endurance-focus-last-rank{
   font-size:min(16.767vh,34.5cqw,186px)
 }
@@ -426,7 +426,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* KartIQ V6.0.20 — Focus Endurance : séquence stands IN / OUT. */
+/* Velocity V6.0.20 — Focus Endurance : séquence stands IN / OUT. */
 #enduranceFocus{position:fixed}
 #enduranceFocus .endurance-pit-overlay{
   position:absolute;
@@ -502,7 +502,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 
 
 
-/* KartIQ V6.0.21 — Focus Endurance : dernier tour coloré et temps en piste Apex. */
+/* Velocity V6.0.21 — Focus Endurance : dernier tour coloré et temps en piste Apex. */
 #enduranceFocus .endurance-focus-track-session{gap:clamp(4px,.8vh,12px)}
 #enduranceFocus .endurance-focus-track-label{
   font-family:var(--font-driver);font-size:clamp(15px,2.5vh,30px);font-weight:800;
@@ -520,7 +520,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* KartIQ V6.0.22 — Focus Sprint : carte pilote suivie alignée sur le Focus Endurance. */
+/* Velocity V6.0.22 — Focus Sprint : carte pilote suivie alignée sur le Focus Endurance. */
 #sprintFocus .sprint-followed-driver{
   container-type:inline-size;
   display:flex;
@@ -611,7 +611,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* KartIQ V6.0.23 — Focus Sprint : bloc rang strictement identique au rendu Endurance. */
+/* Velocity V6.0.23 — Focus Sprint : bloc rang strictement identique au rendu Endurance. */
 #sprintFocus .sprint-followed-last-rank{
   font-family:var(--font-time)!important;
   font-weight:400!important;
@@ -646,7 +646,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* KartIQ V6.0.28 — restauration Endurance/Analyzer et ajouts endurance ciblés. */
+/* Velocity V6.0.28 — restauration Endurance/Analyzer et ajouts endurance ciblés. */
 #endurance .endurance-stand-time-column{display:none!important}
 @media (orientation:landscape){
   body[data-app-mode="endurance"] #endurance .endurance-stand-time-column{display:table-cell!important}
@@ -655,7 +655,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 #eQDelta.sprint-followed-delta{color:#ff9f1a!important}
 
 
-/* KartIQ V6.0.29 — classement Endurance paysage aligné sur Analyzer. */
+/* Velocity V6.0.29 — classement Endurance paysage aligné sur Analyzer. */
 #endurance .endurance-landscape-ranking{display:none}
 @media (orientation:landscape){
   body[data-app-mode="endurance"] #endurance .endurance-portrait-table-wrap{display:none!important}
@@ -684,7 +684,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* KartIQ V6.0.37 — Focus Sprint commentaires Apex et ajustements Focus Endurance. */
+/* Velocity V6.0.37 — Focus Sprint commentaires Apex et ajustements Focus Endurance. */
 #sprintFocus .sprint-focus-fastest-last > span{
   max-width:none;
   overflow:visible;

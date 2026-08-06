@@ -1,4 +1,4 @@
-/* KartIQ V6.3.0 — Analyzer stratégique Endurance */
+/* Velocity V6.3.0 — Analyzer stratégique Endurance */
 .analyzer-screen{overflow:auto;background:#05070b;color:#f7f8fb;padding:0 0 32px}
 .analyzer-shell{min-height:100%;padding:16px;display:flex;flex-direction:column;gap:14px}
 .analyzer-compat-hidden{display:none!important}
@@ -211,7 +211,7 @@
 .analyzer-market-row{grid-template-columns:38px minmax(180px,1fr) 65px 70px}
 
 
-/* KartIQ V6.6.0 — tableau stratégique KartIQ */
+/* Velocity V6.6.0 — tableau stratégique Velocity */
 .analyzer-forecast-panel{grid-column:1/3}
 .analyzer-wave-panel{grid-column:3}
 .analyzer-market-panel{grid-column:1/-1;padding:0;overflow:hidden}
@@ -238,7 +238,7 @@
 @media(max-width:1050px){.analyzer-forecast-panel{grid-column:1}.analyzer-wave-panel{grid-column:2}.analyzer-market-panel{grid-column:1/-1}}
 @media(max-width:700px){.analyzer-forecast-panel,.analyzer-wave-panel,.analyzer-market-panel{grid-column:auto}.analyzer-market-panel{grid-column:1}.analyzer-kartiq-wrap{max-height:300px}.analyzer-kartiq-table{min-width:930px;font-size:10px}.analyzer-kartiq-table th,.analyzer-kartiq-table td{padding:7px 6px}.analyzer-kartiq-table .kartiq-team{max-width:220px}}
 
-/* KartIQ V6.6.1 — dashboard desktop en deux colonnes */
+/* Velocity V6.6.1 — dashboard desktop en deux colonnes */
 .analyzer-desktop-dashboard{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(430px,1fr);gap:14px;align-items:start}
 .analyzer-desktop-dashboard>.analyzer-ranking-panel{min-width:0;height:100%}
 .analyzer-strategy-column{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -270,7 +270,7 @@
   .analyzer-strategy-column .analyzer-kartiq-wrap{max-height:320px}
 }
 
-/* KartIQ V6.6.2 — alignement et compacité du double classement desktop */
+/* Velocity V6.6.2 — alignement et compacité du double classement desktop */
 @media(min-width:1400px){
   .analyzer-desktop-dashboard{
     grid-template-columns:minmax(0,1.42fr) minmax(620px,1fr);
@@ -353,7 +353,7 @@
   .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(11){width:58px;padding-left:3px;padding-right:3px}
 }
 
-/* KartIQ V6.6.4 — équipe suivie en vert dans les classements général et virtuel */
+/* Velocity V6.6.4 — équipe suivie en vert dans les classements général et virtuel */
 @media(min-width:1400px){
   /* En-têtes POS et TOP strictement de même hauteur. */
   .analyzer-ranking-table thead tr,
@@ -368,7 +368,7 @@
     vertical-align:middle;
   }
 
-  /* Les lignes KartIQ reprennent la hauteur du classement principal. */
+  /* Les lignes Velocity reprennent la hauteur du classement principal. */
   .analyzer-ranking-table tbody tr,
   .analyzer-kartiq-table tbody tr{
     height:38px;
@@ -386,7 +386,7 @@
   color:#38dc88!important;
 }
 
-/* KartIQ V6.6.5 — synchronisation stricte des hauteurs du double classement */
+/* Velocity V6.6.5 — synchronisation stricte des hauteurs du double classement */
 @media(min-width:1400px){
   /* Une seule géométrie pour les deux tableaux côte à côte. */
   .analyzer-ranking-table thead tr,
@@ -447,7 +447,7 @@
   }
 }
 
-/* KartIQ V6.6.6 — TOP 10 visible sans défilement vertical sur desktop */
+/* Velocity V6.6.6 — TOP 10 visible sans défilement vertical sur desktop */
 @media(min-width:1400px){
   .analyzer-strategy-column .analyzer-kartiq-wrap{
     max-height:none!important;
@@ -458,7 +458,7 @@
 }
 
 
-/* KartIQ V6.7.0 — colonne FIN RELAIS et tri stratégique */
+/* Velocity V6.7.0 — colonne FIN RELAIS et tri stratégique */
 .analyzer-kartiq-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .analyzer-kartiq-sort{display:flex;align-items:center;gap:7px;color:#aab2bf;font-size:10px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
 .analyzer-kartiq-sort select{height:28px;border:1px solid #323945;border-radius:6px;background:#0d1117;color:#fff;padding:0 24px 0 8px;font-size:11px;font-weight:800}
@@ -476,7 +476,7 @@
 }
 @media(max-width:700px){.analyzer-kartiq-sort{font-size:9px}.analyzer-kartiq-sort select{height:26px;font-size:10px}}
 
-/* KartIQ V6.7.1 — tableau complet sans scroll horizontal et barre de tri alignée */
+/* Velocity V6.7.1 — tableau complet sans scroll horizontal et barre de tri alignée */
 @media(min-width:1400px){
   /* Le titre et le tri occupent toute la hauteur du bandeau, comme la barre du classement principal. */
   .analyzer-strategy-column .analyzer-kartiq-title{
@@ -497,7 +497,7 @@
     flex:0 0 auto;
   }
 
-  /* Toutes les colonnes KartIQ tiennent dans la carte : aucun défilement horizontal. */
+  /* Toutes les colonnes Velocity tiennent dans la carte : aucun défilement horizontal. */
   .analyzer-strategy-column .analyzer-kartiq-wrap{
     width:100%!important;
     max-width:100%!important;
@@ -567,7 +567,7 @@
 }
 
 
-/* KartIQ V6.8.0 — simulateur d’arrêt et cercle de trafic */
+/* Velocity V6.8.0 — simulateur d’arrêt et cercle de trafic */
 .analyzer-pit-simulator-panel{padding:0;overflow:hidden}
 .analyzer-pit-simulator-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0}
 .analyzer-pit-simulator-title>span{font-size:15px}
@@ -598,7 +598,7 @@
 @media(max-width:1050px){.analyzer-pit-simulator-body{grid-template-columns:1fr}.pit-simulator-track{min-height:230px}}
 
 
-/* KartIQ V6.9.5 — prévisions météo horaires locales sur 6 créneaux */
+/* Velocity V6.9.5 — prévisions météo horaires locales sur 6 créneaux */
 .weather-card{position:relative;overflow:hidden}
 .weather-card.weather-alert{border-color:#f59e0b;box-shadow:inset 0 0 0 1px rgba(245,158,11,.18)}
 .weather-card.weather-wet{border-color:#3388d8;background:linear-gradient(145deg,#0b1420,#0b1017)}

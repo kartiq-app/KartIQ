@@ -1,4 +1,4 @@
-/* KartIQ V5.5.0 — Composants live, accueil, diagnostics et premiers modes.
+/* Velocity V5.5.0 — Composants live, accueil, diagnostics et premiers modes.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
 /* V4.3.4 — pénalités Sprint et Endurance, ordre antéchronologique. */
 .endurance-penalty-panel{min-height:120px;max-height:260px;overflow-y:auto}
@@ -44,7 +44,7 @@
 }
 
 
-/* KartIQ V2.9 — home racing affinée */
+/* Velocity V2.9 — home racing affinée */
 body.current-home{overflow:hidden!important;background:#050608!important}
 body.current-home header{display:none!important}
 body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!important}
@@ -101,7 +101,7 @@ body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!import
 }
 
 
-/* KartIQ V2.11.1 — sélection manuelle du circuit et vues desktop 100vh */
+/* Velocity V2.11.1 — sélection manuelle du circuit et vues desktop 100vh */
 .screen-enter{animation:kartiqScreenIn .2s ease-out}
 @keyframes kartiqScreenIn{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
 
@@ -231,7 +231,7 @@ body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!import
  .race-mode-cards{margin-top:10px!important}
 }
 
-/* KartIQ V2.11.3 — correctifs iPhone */
+/* Velocity V2.11.3 — correctifs iPhone */
 .endurance-main-panel{position:relative}
 .endurance-titlebar{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .endurance-remaining-box{display:inline-flex;align-items:baseline;gap:8px;white-space:nowrap;color:var(--muted);letter-spacing:.08em}
@@ -278,7 +278,7 @@ body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!import
 .live-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#758096;margin-right:6px}.live-status-dot.connected{background:var(--green);box-shadow:0 0 10px color-mix(in srgb,var(--green) 70%,transparent)}
 @media(max-width:600px){.live-diagnostics-grid{grid-template-columns:1fr 1fr}.live-frame-preview{display:none}}
 
-/* KartIQ V4.0.2 — informations de session sous le delta Sprint */
+/* Velocity V4.0.2 — informations de session sous le delta Sprint */
 .sprint-delta-cell{display:flex;flex-direction:column;align-items:center;justify-content:center}
 .sprint-session-info{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:5px;font-family:var(--font-time)!important;font-size:23px;line-height:1;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
 .sprint-session-separator{color:var(--muted);font-size:.8em}
@@ -295,7 +295,7 @@ body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!import
   .lap-flash{animation:none!important}
 }
 
-/* KartIQ V4.1.4 — Sprint desktop : pilote au-dessus du temps et delta P1 vert */
+/* Velocity V4.1.4 — Sprint desktop : pilote au-dessus du temps et delta P1 vert */
 body:not(.preview-embedded).current-sprint .fastest-last-block{
   display:flex!important;
   flex-direction:column!important;
@@ -336,7 +336,7 @@ body:not(.preview-embedded).current-sprint .fastest-last-time{
 .pit-status-badge.pit-out{background:#16a34a}
 @keyframes pitBadgePulse{0%,100%{opacity:1}50%{opacity:.66}}
 
-/* KartIQ V4.2.1 — indicateurs IN / OUT en Endurance */
+/* Velocity V4.2.1 — indicateurs IN / OUT en Endurance */
 .endurance-main-panel{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
 .endurance-table-wrap{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-gutter:stable}
 .endurance-table-wrap table{width:100%;table-layout:fixed}

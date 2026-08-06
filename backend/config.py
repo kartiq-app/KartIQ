@@ -1,4 +1,4 @@
-"""Configuration applicative et catalogue des circuits KartIQ."""
+"""Configuration applicative et catalogue des circuits Velocity."""
 
 from pathlib import Path
 import json

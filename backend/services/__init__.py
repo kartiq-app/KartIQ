@@ -1,1 +1,1 @@
-"""Services métier KartIQ."""
+"""Services métier Velocity."""
