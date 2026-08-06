@@ -1,3 +1,8 @@
+## V7.2.34 — Correctif blocage Home
+- Correction de la référence JavaScript résiduelle vers la carte supprimée `analyzerForecast`.
+- La sélection des circuits sur la Home n’est plus interrompue par l’Analyzer.
+- Les cartes Spotter restent absentes de la page Analyzer.
+
 # Velocity 7.2.33 — Retrait des cartes Spotter de l’Analyzer
 
 - Suppression des cartes Analyzer « Files de karts », « Karts entrants » et « Maintenance ».
