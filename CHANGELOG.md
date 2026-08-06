@@ -1,3 +1,13 @@
+## V7.2.64 — Ligne Trafic complète autour du pilote suivi
+
+- Renommage de « TRAFIC DEVANT » en « TRAFIC ».
+- Visuel de kart de profil fourni, utilisé uniquement pour le pilote suivi au centre.
+- Karts situés de -10 s derrière à +10 s devant, sans filtre de tours ou de classement.
+- Cercles colorés avec numéro conservés pour tous les autres karts.
+- Graduations 2, 4, 6, 8 et 10 sous la ligne, de chaque côté.
+- Suppression du libellé « PILOTE » pour utiliser toute la largeur disponible.
+- Déplacement continu des mêmes cercles afin d’éviter les disparitions intempestives.
+
 ## V7.2.63 — Nettoyage et sécurisation du stockage local Analyzer
 
 - Suppression automatique des anciennes sessions Analyzer lourdes.
