@@ -1,5 +1,15 @@
 # Changelog
 
+## V7.2.32 — Affichage Spotter Analyzer corrigé
+
+- Le bloc Spotter est désormais affiché de manière permanente directement sous la Heat Map.
+- Ajout d’un conteneur visible regroupant Files de karts, Karts entrants et Maintenance.
+- Rendu déclenché à chaque mise à jour réelle de l’Analyzer, en plus de la synchronisation périodique.
+- Lecture directe de l’état partagé via `/api/spotter-state`.
+- Affichage de secours intégré si les fonctions visuelles du Spotter ne sont pas encore disponibles.
+- Styles prioritaires empêchant le bloc d’être masqué ou réduit à une hauteur nulle.
+- Conservation des commandes ↶, Préparer la zone Quick Change, Auto/Reprendre, Modifier la file et Réinitialiser.
+
 ## V7.2.31 — Spotter intégré dans Analyzer
 
 - Ajout de la carte des files Spotter directement sous la Heat Map dans Analyzer.

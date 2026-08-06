@@ -1342,3 +1342,92 @@ body.analyzer-debrief-open{overflow:hidden}
     flex:1 1 auto;
   }
 }
+
+
+/* Velocity V7.2.32 — visibilité garantie du Spotter sous la Heat Map */
+#analyzerSpotterStack.analyzer-spotter-stack{
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  flex-direction:column!important;
+  gap:14px!important;
+  position:relative!important;
+  order:initial!important;
+}
+#analyzerSpotterStack>.analyzer-panel{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  width:100%!important;
+  min-height:80px!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+#analyzerSpotterQueues,
+#analyzerSpotterIncoming,
+#analyzerSpotterMaintenance{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  min-height:52px!important;
+}
+.analyzer-spotter-fallback-queues{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  gap:10px;
+}
+.analyzer-spotter-fallback-file{
+  width:132px;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.analyzer-spotter-fallback-file>b{
+  text-align:center;
+  color:#f59e0b;
+  font-size:10px;
+}
+.analyzer-spotter-fallback-card{
+  min-height:94px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;
+  padding:9px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:5px;
+  background:#111720;
+  color:#fff;
+}
+.analyzer-spotter-fallback-card.reserved{background:#541018}
+.analyzer-spotter-fallback-card strong{font-size:11px}
+.analyzer-spotter-fallback-card small,
+.analyzer-spotter-fallback-card span{font-size:8px;color:#c7cbd2}
+.analyzer-spotter-fallback-row{
+  width:100%;
+  min-height:62px;
+  box-sizing:border-box;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:9px;
+  padding:8px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:#111720;
+}
+.analyzer-spotter-fallback-row>div{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.analyzer-spotter-fallback-row small{color:#f59e0b;font-size:9px}
+.analyzer-spotter-fallback-row strong{font-size:11px}
+.analyzer-spotter-fallback-row>span{font-size:10px;color:#c7cbd2}

@@ -897,6 +897,7 @@ function analyzerRenderMapFocus(){
  if(ranking)ranking.innerHTML=order.map(cat=>{const rows=drivers.filter(d=>(pace.map.get(d)?.category||'slow')===cat).sort((a,b)=>(pace.map.get(a)?.lap??9999)-(pace.map.get(b)?.lap??9999));return `<section class="map-focus-group"><h3>${labels[cat]}</h3><div class="map-focus-head"><span>ÉQUIPE</span><span>DERNIER TEMPS</span><span>FIN RELAIS</span></div>${rows.map(d=>`<div class="map-focus-row${d.driver===state.followed_driver?' followed':''}"><span>${analyzerEscape(d.driver)}</span><b>${analyzerEscape(d.last||'—')}</b><b>${analyzerEscape(analyzerRelayEndLabel(d))}</b></div>`).join('')||'<div class="map-focus-empty">—</div>'}</section>`}).join('');
 }
 function renderAnalyzer(){
+ analyzerRenderSpotterModule();
  ensureAnalyzerWeather();
  if(!document.getElementById('analyzerTable'))return;
  analyzerEnsureSession();
@@ -1372,79 +1373,149 @@ async function loadApexTeamPits(rowId,sessionId=''){
 }
 
 
-/* Velocity V7.2.31 — Spotter intégré dans Analyzer */
+/* Velocity V7.2.32 — Spotter Analyzer rendu de façon fiable */
 let analyzerSpotterRenderSignature='';
 let analyzerSpotterRefreshBusy=false;
+let analyzerSpotterApiState=null;
 
-function analyzerSpotterAvailable(){
- return typeof spotterState!=='undefined'
-  && typeof spotterRenderQueueColumns==='function'
-  && typeof spotterIncomingCard==='function'
-  && typeof spotterMaintenanceCard==='function';
+function analyzerSpotterSourceState(){
+ if(typeof spotterState!=='undefined'&&spotterState&&typeof spotterState==='object')return spotterState;
+ return analyzerSpotterApiState;
 }
 
 function analyzerSpotterSignature(){
- if(!analyzerSpotterAvailable())return '';
+ const source=analyzerSpotterSourceState();
+ if(!source)return 'empty';
  return JSON.stringify({
-  mode:Number(spotterState.mode)||1,
-  configured:Boolean(spotterState.configured),
-  freeMode:Boolean(spotterState.freeMode),
-  recalibrating:Boolean(spotterState.recalibrating),
-  undo:Boolean(spotterState.undoSnapshot),
-  queue:spotterState.queue||[],
-  incoming:spotterState.incoming||[],
-  maintenance:spotterState.maintenance||[],
-  selections:spotterState.incomingQueueSelections||{}
+  mode:Number(source.mode||source.queue_mode)||1,
+  configured:Boolean(source.configured),
+  freeMode:Boolean(source.freeMode||source.mode==='auto'),
+  recalibrating:Boolean(source.recalibrating||source.mode==='recalibrating'),
+  undo:Boolean(source.undoSnapshot),
+  queue:source.queue||[],
+  incoming:source.incoming||[],
+  maintenance:source.maintenance||[],
+  selections:source.incomingQueueSelections||source.incoming_queue_selections||{}
  });
 }
 
+function analyzerSpotterFallbackQueueColumns(source){
+ const count=Math.max(1,Math.min(3,Number(source?.mode||source?.queue_mode)||1));
+ const queue=Array.isArray(source?.queue)?source.queue:[];
+ const columns=[];
+ for(let file=1;file<=count;file++){
+  const items=queue.filter(item=>(Number(item.queueFile)||1)===file);
+  const cards=items.map(item=>{
+   const name=item.status==='reserved'
+    ? (item.reservedTeam||item.currentTeam||'—')
+    : (item.lastTeam&&item.lastTeam!=='Initialisation'?item.lastTeam:(item.apexKart||item.kv||'—'));
+   return `<div class="analyzer-spotter-fallback-card ${item.status==='reserved'?'reserved':'available'}">
+    <strong>${analyzerEscape(name)}</strong>
+    <small>${analyzerEscape(item.kv||'—')}</small>
+    <span>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':item.confidence+'%'}</span>
+   </div>`;
+  }).join('');
+  columns.push(`<div class="analyzer-spotter-fallback-file"><b>FILE ${file}</b>${cards||'<div class="analyzer-empty">File vide</div>'}</div>`);
+ }
+ return `<div class="analyzer-spotter-fallback-queues">${columns.join('')}</div>`;
+}
+
+function analyzerSpotterFallbackIncomingCard(item){
+ const teamNumber=typeof spotterTeamNumber==='function'?spotterTeamNumber(item):(item.teamNumber??item.number??'—');
+ const teamName=item.name||item.team||'—';
+ return `<div class="analyzer-spotter-fallback-row">
+  <div><small>${analyzerEscape(teamNumber)}</small><strong>${analyzerEscape(teamName)}</strong></div>
+  <span>${analyzerEscape(item.returnedKv||'—')}</span>
+ </div>`;
+}
+
+function analyzerSpotterFallbackMaintenanceCard(item){
+ return `<div class="analyzer-spotter-fallback-row">
+  <div><strong>${analyzerEscape(item.lastTeam||item.apexKart||item.kv||'—')}</strong></div>
+  <span>${analyzerEscape(item.kv||'—')}</span>
+ </div>`;
+}
+
 function analyzerRenderSpotterModule(force=false){
+ const stack=document.getElementById('analyzerSpotterStack');
  const queues=document.getElementById('analyzerSpotterQueues');
  const incoming=document.getElementById('analyzerSpotterIncoming');
  const maintenance=document.getElementById('analyzerSpotterMaintenance');
- if(!queues||!incoming||!maintenance)return;
+ if(!stack||!queues||!incoming||!maintenance)return;
 
- if(!analyzerSpotterAvailable()){
-  queues.innerHTML='<div class="analyzer-empty">Module Spotter indisponible.</div>';
-  return;
- }
+ stack.style.setProperty('display','flex','important');
+ stack.style.setProperty('visibility','visible','important');
+ stack.style.setProperty('opacity','1','important');
+
+ const source=analyzerSpotterSourceState()||{
+  mode:1,queue:[],incoming:[],maintenance:[],configured:false
+ };
 
  const signature=analyzerSpotterSignature();
  if(!force&&signature===analyzerSpotterRenderSignature)return;
  analyzerSpotterRenderSignature=signature;
 
- queues.innerHTML=spotterRenderQueueColumns();
+ if(typeof spotterRenderQueueColumns==='function'&&typeof spotterState!=='undefined'){
+  queues.innerHTML=spotterRenderQueueColumns();
+ }else{
+  queues.innerHTML=analyzerSpotterFallbackQueueColumns(source);
+ }
 
- const incomingItems=spotterState.incoming||[];
- incoming.innerHTML=incomingItems.length
-  ? `<div class="spotter-incoming-grid">${incomingItems.map(spotterIncomingCard).join('')}</div>`
-  : '<div class="analyzer-empty">Aucun kart entrant à valider.</div>';
+ const incomingItems=Array.isArray(source.incoming)?source.incoming:[];
+ if(typeof spotterIncomingCard==='function'&&typeof spotterState!=='undefined'){
+  incoming.innerHTML=incomingItems.length
+   ? `<div class="spotter-incoming-grid">${incomingItems.map(spotterIncomingCard).join('')}</div>`
+   : '<div class="analyzer-empty">Aucun kart entrant à valider.</div>';
+ }else{
+  incoming.innerHTML=incomingItems.length
+   ? incomingItems.map(analyzerSpotterFallbackIncomingCard).join('')
+   : '<div class="analyzer-empty">Aucun kart entrant à valider.</div>';
+ }
 
- const maintenanceItems=spotterState.maintenance||[];
- maintenance.innerHTML=maintenanceItems.length
-  ? `<div class="spotter-maintenance-grid">${maintenanceItems.map(spotterMaintenanceCard).join('')}</div>`
-  : '<div class="analyzer-empty">Aucun kart en maintenance.</div>';
+ const maintenanceItems=Array.isArray(source.maintenance)?source.maintenance:[];
+ if(typeof spotterMaintenanceCard==='function'&&typeof spotterState!=='undefined'){
+  maintenance.innerHTML=maintenanceItems.length
+   ? `<div class="spotter-maintenance-grid">${maintenanceItems.map(spotterMaintenanceCard).join('')}</div>`
+   : '<div class="analyzer-empty">Aucun kart en maintenance.</div>';
+ }else{
+  maintenance.innerHTML=maintenanceItems.length
+   ? maintenanceItems.map(analyzerSpotterFallbackMaintenanceCard).join('')
+   : '<div class="analyzer-empty">Aucun kart en maintenance.</div>';
+ }
 
  const incomingCount=document.getElementById('analyzerSpotterIncomingCount');
  const maintenanceCount=document.getElementById('analyzerSpotterMaintenanceCount');
  if(incomingCount)incomingCount.textContent=String(incomingItems.length);
  if(maintenanceCount)maintenanceCount.textContent=String(maintenanceItems.length);
 
+ const autoActive=Boolean(source.freeMode||source.mode==='auto');
  const autoButton=document.getElementById('analyzerSpotterAutoButton');
  if(autoButton){
-  autoButton.textContent=spotterState.freeMode?'▶ REPRENDRE':'AUTO';
-  autoButton.classList.toggle('active',Boolean(spotterState.freeMode));
+  autoButton.textContent=autoActive?'▶ REPRENDRE':'AUTO';
+  autoButton.classList.toggle('active',autoActive);
  }
 
  const undoButton=document.querySelector('.analyzer-spotter-undo');
- if(undoButton)undoButton.disabled=typeof spotterCanUndo==='function'?!spotterCanUndo():true;
+ if(undoButton){
+  undoButton.disabled=typeof spotterCanUndo==='function'?!spotterCanUndo():false;
+ }
 }
 
 async function analyzerRefreshSpotterModule(){
- if(analyzerSpotterRefreshBusy||currentMode!=='analyzer')return;
+ if(analyzerSpotterRefreshBusy)return;
  analyzerSpotterRefreshBusy=true;
  try{
-  if(typeof spotterPullSharedState==='function')await spotterPullSharedState();
+  const response=await fetch('/api/spotter-state',{cache:'no-store'});
+  if(response.ok){
+   const payload=await response.json();
+   analyzerSpotterApiState=payload?.spotter||null;
+   if(typeof spotterApplyRemoteSnapshot==='function'&&payload?.spotter){
+    spotterApplyRemoteSnapshot(payload.spotter);
+   }
+  }
+  analyzerRenderSpotterModule();
+ }catch(error){
+  console.warn('[Analyzer Spotter] Synchronisation indisponible',error);
   analyzerRenderSpotterModule();
  }finally{
   analyzerSpotterRefreshBusy=false;
@@ -1454,39 +1525,33 @@ async function analyzerRefreshSpotterModule(){
 function analyzerSpotterRenderAfterAction(){
  analyzerSpotterRenderSignature='';
  requestAnimationFrame(()=>analyzerRenderSpotterModule(true));
+ setTimeout(analyzerRefreshSpotterModule,120);
 }
 
 function analyzerSpotterUndo(){
- if(typeof spotterUndoLastAction!=='function')return;
- spotterUndoLastAction();
+ if(typeof spotterUndoLastAction==='function')spotterUndoLastAction();
  analyzerSpotterRenderAfterAction();
 }
-
 function analyzerSpotterPrepare(){
  if(typeof showMode==='function')showMode('spotter');
  if(typeof openSpotterSetup==='function')openSpotterSetup();
 }
-
 function analyzerSpotterToggleAuto(){
- if(typeof spotterToggleAuto!=='function')return;
- spotterToggleAuto();
+ if(typeof spotterToggleAuto==='function')spotterToggleAuto();
  analyzerSpotterRenderAfterAction();
 }
-
 function analyzerSpotterModifyQueue(){
- if(typeof spotterModifyQueueMode!=='function')return;
- spotterModifyQueueMode();
+ if(typeof spotterModifyQueueMode==='function')spotterModifyQueueMode();
  analyzerSpotterRenderAfterAction();
 }
-
 function analyzerSpotterReset(){
- if(typeof resetSpotterFoundation!=='function')return;
- resetSpotterFoundation();
+ if(typeof resetSpotterFoundation==='function')resetSpotterFoundation();
  analyzerSpotterRenderAfterAction();
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
  analyzerRenderSpotterModule(true);
+ analyzerRefreshSpotterModule();
  setInterval(()=>{
   if(!document.hidden&&currentMode==='analyzer')analyzerRefreshSpotterModule();
  },750);

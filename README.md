@@ -1,4 +1,4 @@
-# Velocity V7.2.31 — Spotter intégré dans Analyzer
+# Velocity V7.2.32 — Affichage Spotter Analyzer corrigé
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.
 
