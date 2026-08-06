@@ -1,4 +1,4 @@
-## V7.2.39 — Messages pilote sur 2 ou 3 lignes équilibrées
+## V7.2.40 — Messages pilote sur 2 ou 3 lignes équilibrées
 
 - Répartition automatique du message sur deux lignes pour les messages standards.
 - Passage automatique sur trois lignes pour les messages longs.

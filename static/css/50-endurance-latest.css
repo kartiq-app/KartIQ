@@ -901,39 +901,30 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* Velocity V7.2.39 — Messages pilote répartis sur 2 ou 3 lignes équilibrées */
+/* Velocity V7.2.40 — Messagerie pilote : titre aligné sur Focus Endurance et texte contenu */
 .driver-message-overlay{
  position:fixed;inset:0;z-index:10050;background:#000;color:#fff;display:none;
- grid-template-rows:auto 1fr;font-family:"F1 Torque","Arial Black",sans-serif;
+ grid-template-rows:auto 1fr;
 }
 .driver-message-overlay.show{display:grid}
 .driver-message-header{
- min-height:78px;padding:12px 28px 8px;display:grid;grid-template-columns:auto 1fr;
- align-items:center;gap:22px;color:#fff;font-size:clamp(18px,2.2vw,34px);font-weight:900;
- text-transform:uppercase;letter-spacing:.04em;
+ height:54px;min-height:54px;padding:8px 16px 6px;display:grid;grid-template-columns:auto 1fr;
+ align-items:center;gap:12px;color:#fff;font-size:13px;font-weight:900;
+ text-transform:uppercase;letter-spacing:.08em;font-family:inherit;
 }
 .driver-message-header span{white-space:nowrap}
 .driver-message-header i{height:8px;background:#ff8a00;display:block;width:100%}
 .driver-message-body{
- min-height:0;padding:clamp(24px,4vw,72px);display:flex;align-items:center;justify-content:center;
+ min-height:0;padding:clamp(18px,3vw,44px);display:flex;align-items:center;justify-content:center;
  overflow:hidden;
 }
 .driver-message-text{
- width:100%;max-width:96vw;display:flex;flex-direction:column;align-items:center;justify-content:center;
- gap:.08em;text-align:center;text-transform:uppercase;font-family:"F1 Torque","Arial Black",sans-serif;
- font-size:clamp(52px,10.5vw,176px);font-weight:700;line-height:.92;letter-spacing:.015em;
- overflow-wrap:normal;word-break:keep-all;
+ width:100%;height:100%;max-width:100%;max-height:100%;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:.06em;text-align:center;text-transform:uppercase;
+ font-family:"F1 Torque","Arial Black",sans-serif;font-weight:700;line-height:.92;letter-spacing:.015em;
+ overflow:hidden;
 }
 .driver-message-line{display:block;white-space:nowrap;max-width:100%}
-.driver-message-text.message-three-lines{font-size:clamp(42px,8.1vw,138px);line-height:.9}
-.driver-message-text.message-two-lines{font-size:clamp(50px,10vw,170px)}
-.driver-message-text.message-one-line{font-size:clamp(64px,13vw,210px)}
 @media(max-width:700px){
- .driver-message-header{min-height:54px;padding:8px 16px 6px;font-size:13px;gap:12px}
- .driver-message-header i{height:8px}
- .driver-message-body{padding:18px 12px 24px}
- .driver-message-text{font-size:clamp(38px,12.8vw,88px);line-height:.94}
- .driver-message-text.message-three-lines{font-size:clamp(31px,10.4vw,72px);line-height:.92}
- .driver-message-text.message-two-lines{font-size:clamp(38px,12.8vw,88px)}
- .driver-message-text.message-one-line{font-size:clamp(48px,16vw,104px)}
+ .driver-message-body{padding:14px 10px 20px}
 }

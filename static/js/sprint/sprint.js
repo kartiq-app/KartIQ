@@ -352,6 +352,32 @@ function splitDriverMessageLines(value){
  return lines.filter(Boolean);
 }
 
+
+function fitDriverMessageText(text,lineCount){
+ if(!text)return;
+ const host=text.parentElement;
+ if(!host)return;
+ const maxWidth=Math.max(1,host.clientWidth-4);
+ const maxHeight=Math.max(1,host.clientHeight-4);
+ let size=Math.min(
+  lineCount>=3?Math.min(maxHeight/3.05,maxWidth/7):
+  lineCount===2?Math.min(maxHeight/2.05,maxWidth/5.2):
+  Math.min(maxHeight*.82,maxWidth/3.2),
+  220
+ );
+ size=Math.max(18,Math.floor(size));
+ text.style.fontSize=size+'px';
+ for(let i=0;i<80;i++){
+  const tooWide=[...text.children].some(line=>line.scrollWidth>maxWidth);
+  const tooTall=text.scrollHeight>maxHeight;
+  if(!tooWide&&!tooTall)break;
+  size-=2;
+  if(size<=18){size=18;break}
+  text.style.fontSize=size+'px';
+ }
+ text.style.fontSize=size+'px';
+}
+
 function renderDriverMessageOverlay(){
  const host=document.getElementById('driverMessageOverlay');
  const text=document.getElementById('driverMessageText');
@@ -380,8 +406,10 @@ function renderDriverMessageOverlay(){
   text.classList.toggle('message-three-lines',lines.length>=3);
   text.classList.toggle('message-two-lines',lines.length===2);
   text.classList.toggle('message-one-line',lines.length===1);
+  fitDriverMessageText(text,lines.length);
  }else{
   text.textContent='—';
+  text.style.removeProperty('font-size');
   text.classList.remove('message-one-line','message-two-lines','message-three-lines');
  }
 }
