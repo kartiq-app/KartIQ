@@ -1,4 +1,10 @@
-## V7.2.49
+# Velocity V7.2.50
+
+- Bouton d’annulation/retour de la carte STANDS aligné sur le style Spotter.
+- Gel du rafraîchissement Analyzer pendant le glisser-déposer pour supprimer le clignotement sur ordinateur.
+- Taille des cartes Spotter constante sur smartphone pour 1, 2 ou 3 files, avec centrage automatique des configurations à 1 ou 2 files.
+
+## V7.2.50
 
 - Correction de l’affichage des trois files Spotter dans la carte FILES de l’Analyzer.
 - Le nombre de files utilise désormais `queue_mode`, avec détection de secours depuis `queueFile`.

@@ -999,6 +999,7 @@ function analyzerRenderSpotterSync(){
 
 
 function analyzerRenderSpotterCards(){
+ if((typeof spotterDrag!=='undefined'&&(spotterDrag.active||spotterDrag.timer))||document.body.classList.contains('spotter-drag-active'))return;
  const spotter=analyzerSpotterState();
  const filesHost=document.getElementById('analyzerSpotterFiles');
  const incomingHost=document.getElementById('analyzerSpotterIncoming');

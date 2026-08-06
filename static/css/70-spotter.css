@@ -1768,3 +1768,28 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
   grid-template-columns:minmax(72px,.9fr) minmax(42px,.65fr) 58px minmax(78px,1fr) minmax(44px,.7fr)!important;
  }
 }
+
+
+/* Velocity V7.2.50 — taille mobile constante et centrage des files */
+@media(max-width:899px){
+  .spotter-queues-layout{
+    --spotter-mobile-card:min(28vw,104px);
+    grid-template-columns:repeat(var(--spotter-files,1),var(--spotter-mobile-card))!important;
+    width:max-content!important;
+    max-width:100%!important;
+    margin-inline:auto!important;
+    justify-content:center!important;
+  }
+  .spotter-queues-layout.queues-1,
+  .spotter-queues-layout.queues-2,
+  .spotter-queues-layout.queues-3{
+    max-width:100%!important;
+    margin-inline:auto!important;
+  }
+  .spotter-file-list .spotter-queue-card,
+  .spotter-file-list .spotter-queue-end-drop{
+    width:var(--spotter-mobile-card)!important;
+    min-width:var(--spotter-mobile-card)!important;
+    max-width:var(--spotter-mobile-card)!important;
+  }
+}

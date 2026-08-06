@@ -1423,3 +1423,23 @@ body.analyzer-debrief-open{overflow:hidden}
  .analyzer-spotter-recalibration span,.analyzer-spotter-recalibration button{grid-column:1;grid-row:auto}
  .analyzer-spotter-actions #analyzerSpotterAutoButton.resume{flex:0 0 auto;min-width:118px}
 }
+
+
+/* Velocity V7.2.50 — contrôle Retour identique au Spotter et drag stable */
+.analyzer-spotter-actions .analyzer-spotter-undo.spotter-undo-button{
+  width:52px!important;
+  min-width:52px!important;
+  height:44px!important;
+  padding:0!important;
+  border:1px solid #536071!important;
+  border-radius:11px!important;
+  background:#111720!important;
+  color:#fff!important;
+  font-size:30px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.025),0 6px 16px rgba(0,0,0,.28)!important;
+}
+body.spotter-drag-active #analyzerSpotterFiles{
+  pointer-events:auto;
+}
