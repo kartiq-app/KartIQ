@@ -1,3 +1,16 @@
+## V7.2.38 — Police F1 Torque pour la Messagerie Pilote
+
+- Le message délivré au pilote utilise désormais la police F1 Torque.
+- Le texte est automatiquement converti en capitales pour une lecture immédiate.
+- La taille s'adapte à la longueur du message afin de rester lisible en plein écran.
+- Le bandeau MESSAGE, la temporisation de 15 secondes et les règles urgent/non urgent sont conservés.
+
+## V7.2.37 — Habillage du message pilote
+
+- Ajout du bandeau « MESSAGE » inspiré du mode Focus Endurance.
+- Ajout d’un filet orange sur toute la largeur disponible.
+- Conservation de l’affichage plein écran, de la grande police et de la disparition après 15 secondes.
+
 ## V7.2.36 — Correctif Messagerie Pilote en mode Focus
 
 - Message affiché en plein écran sur fond noir avec une très grande police en Qualification, Sprint et Endurance.

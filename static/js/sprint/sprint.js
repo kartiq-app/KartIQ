@@ -342,8 +342,15 @@ function renderDriverMessageOverlay(){
  const active=Boolean(focusActive&&message?.message&&Number.isFinite(delivered)&&elapsed>=0&&elapsed<duration);
  host.classList.toggle('show',active);
  host.setAttribute('aria-hidden',active?'false':'true');
- if(active)text.textContent=message.message;
- else text.textContent='—';
+ if(active){
+  const value=String(message.message||'').trim();
+  text.textContent=value;
+  text.classList.toggle('message-medium',value.length>12&&value.length<=20);
+  text.classList.toggle('message-long',value.length>20);
+ }else{
+  text.textContent='—';
+  text.classList.remove('message-medium','message-long');
+ }
 }
 
 

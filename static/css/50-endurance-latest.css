@@ -901,15 +901,33 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* Velocity V7.2.36 — Messagerie pilote plein écran commune aux trois modes Focus */
+/* Velocity V7.2.38 — Message pilote en F1 Torque avec taille adaptative */
 .driver-message-overlay{
- position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;
- padding:clamp(24px,6vw,96px);box-sizing:border-box;background:#000;color:#fff;
- text-align:center;overflow:hidden;
+ position:fixed;inset:0;z-index:100000;display:none;grid-template-rows:auto minmax(0,1fr);
+ box-sizing:border-box;background:#000;color:#fff;text-align:center;overflow:hidden;
 }
-.driver-message-overlay.show{display:flex}
+.driver-message-overlay.show{display:grid}
+.driver-message-header{
+ min-height:54px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;
+ gap:12px;padding:8px 16px 6px;box-sizing:border-box;font-size:13px;font-weight:900;
+ letter-spacing:.08em;text-transform:uppercase;text-align:left;
+}
+.driver-message-header span{white-space:nowrap}
+.driver-message-header i{height:8px;background:#ff8a00;display:block;width:100%}
+.driver-message-body{
+ min-height:0;display:flex;align-items:center;justify-content:center;
+ padding:clamp(24px,6vw,96px);box-sizing:border-box;overflow:hidden;
+}
 .driver-message-text{
- width:100%;max-width:1400px;font-weight:950;font-size:clamp(42px,9vw,150px);
- line-height:1.02;letter-spacing:.01em;overflow-wrap:anywhere;text-transform:none;
+ width:100%;max-width:1400px;font-family:var(--font-driver,"F1 Torque","Arial Narrow",Arial,sans-serif);
+ font-weight:900;font-size:clamp(42px,9vw,150px);line-height:1.02;letter-spacing:.01em;
+ overflow-wrap:anywhere;text-transform:uppercase;
 }
-@media(max-width:700px){.driver-message-overlay{padding:24px}.driver-message-text{font-size:clamp(34px,12vw,82px)}}
+.driver-message-text.message-medium{font-size:clamp(38px,7.5vw,124px)}
+.driver-message-text.message-long{font-size:clamp(30px,5.8vw,96px);line-height:1.08}
+@media(max-width:700px){
+ .driver-message-header{min-height:54px;padding:8px 16px 6px;font-size:13px;gap:12px}
+ .driver-message-header i{height:8px}
+ .driver-message-body{padding:24px}
+ .driver-message-text{font-size:clamp(34px,12vw,82px)}
+}
