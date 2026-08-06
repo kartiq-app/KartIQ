@@ -1485,3 +1485,24 @@ body.spotter-drag-active #analyzerSpotterFiles{
   .analyzer-velocity-title{flex-direction:row!important;align-items:center!important}
   .analyzer-velocity-title .analyzer-static-ranking-tab{font-size:9px!important;padding:7px 8px!important}
 }
+
+
+/* Velocity V7.2.54 — Mode Test Endurance */
+.analyzer-footer .analyzer-test-launch{margin-left:auto;border-color:#8d2027;color:#ffb0b5}
+.analyzer-test-card{width:min(920px,94vw)}
+.analyzer-test-configuration{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.analyzer-test-configuration>label{display:grid;gap:7px;font-size:12px;font-weight:900;letter-spacing:.06em;color:#aaa}
+.analyzer-test-configuration select{width:100%;min-height:42px;background:#111;color:#fff;border:1px solid #444;border-radius:5px;padding:0 10px}
+.analyzer-test-options{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:16px;padding:14px;border:1px solid #333;background:#111}
+.analyzer-test-options label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#ddd}
+.analyzer-test-start{grid-column:1/-1;min-height:46px}
+.analyzer-test-dashboard{margin:18px 0}
+.analyzer-test-status-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#101a13;border-left:4px solid #38c764}
+.analyzer-test-status-row strong{color:#55df7c}.analyzer-test-status-row.error{background:#201013;border-color:#e32b36}.analyzer-test-status-row.error strong{color:#ff626b}
+.analyzer-test-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.analyzer-test-metrics>div{display:grid;gap:5px;padding:12px;background:#111;border:1px solid #333}
+.analyzer-test-metrics span{font-size:10px;font-weight:900;letter-spacing:.07em;color:#888}.analyzer-test-metrics b{font-size:18px;color:#fff}
+.analyzer-test-log{height:190px;overflow:auto;background:#080808;border:1px solid #333;padding:10px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#bbb}
+.analyzer-test-log div{border-bottom:1px solid #181818;padding:3px 0}.analyzer-test-log time{color:#db2029;margin-right:10px}
+.analyzer-test-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}.analyzer-test-actions button{min-height:40px}.analyzer-test-actions .danger{border-color:#9b252b;color:#ff8e94}
+@media(max-width:700px){.analyzer-test-configuration{grid-template-columns:1fr}.analyzer-test-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.analyzer-test-options{display:grid}.analyzer-footer .analyzer-test-launch{margin-left:0}}

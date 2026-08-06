@@ -280,7 +280,30 @@
       <button type="button" onclick="triggerAnalyzerSessionImport()">⇧ IMPORTER</button>
       <button type="button" onclick="openAnalyzerRules()">⚙ RÈGLEMENT</button>
       <button type="button" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
+      <button type="button" class="analyzer-test-launch" onclick="openAnalyzerEnduranceTest()">🧪 MODE TEST ENDURANCE</button>
     </footer>
+  </div>
+
+  <div class="analyzer-rules-modal" id="analyzerEnduranceTestModal" role="dialog" aria-modal="true" aria-labelledby="analyzerEnduranceTestTitle">
+    <div class="analyzer-rules-card analyzer-test-card">
+      <div class="analyzer-rules-head"><div><span>VALIDATION LONGUE DURÉE</span><h2 id="analyzerEnduranceTestTitle">Mode Test Endurance</h2></div><button type="button" onclick="closeAnalyzerEnduranceTest()" aria-label="Fermer">×</button></div>
+      <div id="analyzerTestConfiguration" class="analyzer-test-configuration">
+        <label>Durée<select id="analyzerTestDuration"><option value="1">1 heure</option><option value="6">6 heures</option><option value="12">12 heures</option><option value="24" selected>24 heures</option><option value="0">Illimité</option></select></label>
+        <label>Vitesse<select id="analyzerTestSpeed"><option value="1">Temps réel</option><option value="10">×10</option><option value="60" selected>×60</option></select></label>
+        <label>Équipes<select id="analyzerTestTeams"><option value="10">10 équipes</option><option value="20">20 équipes</option><option value="30">30 équipes</option><option value="40" selected>40 équipes</option></select></label>
+        <div class="analyzer-test-options"><label><input id="analyzerTestPits" type="checkbox" checked> Arrêts et changements de kart</label><label><input id="analyzerTestPenalties" type="checkbox" checked> Pénalités occasionnelles</label><label><input id="analyzerTestIncidents" type="checkbox" checked> Coupures et reprises simulées</label></div>
+        <button type="button" class="primary analyzer-test-start" onclick="startAnalyzerEnduranceTest()">▶ DÉMARRER LE TEST</button>
+      </div>
+      <div id="analyzerTestDashboard" class="analyzer-test-dashboard" hidden>
+        <div class="analyzer-test-status-row"><strong id="analyzerTestState">● STABLE</strong><span id="analyzerTestProgress">0 %</span></div>
+        <div class="analyzer-test-metrics">
+          <div><span>Durée simulée</span><b id="analyzerTestElapsed">00:00:00</b></div><div><span>Durée réelle</span><b id="analyzerTestRealElapsed">00:00:00</b></div><div><span>Tours traités</span><b id="analyzerTestLaps">0</b></div><div><span>Mises à jour</span><b id="analyzerTestUpdates">0</b></div><div><span>Arrêts</span><b id="analyzerTestStops">0</b></div><div><span>Reconnexions</span><b id="analyzerTestReconnects">0/0</b></div><div><span>Mémoire</span><b id="analyzerTestMemory">Indisponible</b></div><div><span>Erreurs JS</span><b id="analyzerTestErrors">0</b></div>
+        </div>
+        <div class="analyzer-test-log" id="analyzerTestLog" aria-live="polite"></div>
+        <div class="analyzer-test-actions"><button type="button" onclick="exportAnalyzerEnduranceTestReport()">⇩ RAPPORT JSON</button><button type="button" class="danger" onclick="stopAnalyzerEnduranceTest()">■ ARRÊTER LE TEST</button></div>
+      </div>
+      <div class="analyzer-rules-note">Le test utilise des données synthétiques isolées. À l’arrêt, Velocity restaure automatiquement la course réelle et ne sauvegarde pas les données simulées dans les sessions Analyzer.</div>
+    </div>
   </div>
 
   <div class="analyzer-compat-hidden" aria-hidden="true"><span id="liveDiagStatus"></span><span id="liveDiagMessages"></span><span id="liveDiagParsed"></span><span id="liveDiagLast"></span><span id="liveDiagPreview"></span><span id="liveStatusDot"></span><div id="paceTop8"></div><div id="endurancePenalties"></div><table><tbody id="quickTable"></tbody></table><table><tbody id="enduranceTable"></tbody></table></div>
