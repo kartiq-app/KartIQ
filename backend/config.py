@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.33"
-APP_RELEASE_NAME = "CORRECTIF SÉLECTION CIRCUIT"
+APP_VERSION = "7.2.34"
+APP_RELEASE_NAME = "CORRECTIF BLOCAGE HOME"
 
 
 def _circuit_sort_key(circuit):

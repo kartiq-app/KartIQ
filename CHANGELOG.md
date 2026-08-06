@@ -1,3 +1,8 @@
+## V7.2.34 — Affichage version Home
+
+- Correction de la version affichée sur la page d’accueil : Velocity v7.2.34.
+- Alignement du cache et du module Spotter sur la version 7.2.34.
+
 ## V7.2.34 — Correctif blocage Home
 - Correction de la référence JavaScript résiduelle vers la carte supprimée `analyzerForecast`.
 - La sélection des circuits sur la Home n’est plus interrompue par l’Analyzer.
