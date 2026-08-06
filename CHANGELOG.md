@@ -1,3 +1,10 @@
+# Velocity 7.2.30 — Correctif sélection circuit
+
+- Restauration du bloc Analyzer supprimé accidentellement en 7.2.29.
+- Correction de l’erreur JavaScript globale qui bloquait la sélection des circuits sur la Home.
+- Conservation des nouvelles cartes Spotter : files, karts entrants et maintenance.
+- Aucun fichier supplémentaire ajouté à l’archive.
+
 # Changelog
 
 ## V7.2.29 — Cartes Spotter dans Analyzer

@@ -137,8 +137,6 @@ body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!import
 }
 .home-circuit:focus-within,.home-circuit:hover{border-color:#e10600!important;box-shadow:0 0 0 1px rgba(225,6,0,.18),0 14px 38px rgba(0,0,0,.38)!important}
 .home-circuit.needs-selection{animation:circuitPrompt .36s ease}
-.home-circuit.circuit-error{border-color:#ff4d4f!important;box-shadow:0 0 0 1px rgba(255,77,79,.3),0 14px 38px rgba(0,0,0,.38)!important}
-.home-circuit select:disabled{opacity:.7;cursor:progress}
 @keyframes circuitPrompt{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
 .race-mode-cards{margin-top:28px!important}
 .race-mode-card.mode-locked{opacity:.44;filter:saturate(.35);cursor:not-allowed}
