@@ -1,3 +1,10 @@
+## V7.2.39 — Messages pilote sur 2 ou 3 lignes équilibrées
+
+- Répartition automatique du message sur deux lignes pour les messages standards.
+- Passage automatique sur trois lignes pour les messages longs.
+- Conservation de la police F1 Torque et agrandissement maximal du texte.
+- Affichage centré et équilibré pour une lecture immédiate en piste.
+
 ## V7.2.38 — Police F1 Torque pour la Messagerie Pilote
 
 - Le message délivré au pilote utilise désormais la police F1 Torque.

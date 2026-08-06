@@ -326,6 +326,32 @@ function renderEndurancePenaltyAlert(list,f){
 }
 
 
+function splitDriverMessageLines(value){
+ const words=String(value||'').trim().toUpperCase().split(/\s+/).filter(Boolean);
+ if(words.length<=1)return words.length?words:['—'];
+ const lineCount=words.length>=7||words.join(' ').length>34?3:2;
+ const lines=[];
+ let start=0;
+ for(let lineIndex=0;lineIndex<lineCount;lineIndex++){
+  const remainingLines=lineCount-lineIndex;
+  const remainingWords=words.length-start;
+  if(remainingLines===1){lines.push(words.slice(start).join(' '));break}
+  let bestEnd=start+1;
+  let bestScore=Infinity;
+  const totalRemainingLength=words.slice(start).join(' ').length;
+  const target=totalRemainingLength/remainingLines;
+  const maxEnd=words.length-(remainingLines-1);
+  for(let end=start+1;end<=maxEnd;end++){
+   const candidate=words.slice(start,end).join(' ');
+   const score=Math.abs(candidate.length-target);
+   if(score<bestScore){bestScore=score;bestEnd=end}
+  }
+  lines.push(words.slice(start,bestEnd).join(' '));
+  start=bestEnd;
+ }
+ return lines.filter(Boolean);
+}
+
 function renderDriverMessageOverlay(){
  const host=document.getElementById('driverMessageOverlay');
  const text=document.getElementById('driverMessageText');
@@ -344,12 +370,19 @@ function renderDriverMessageOverlay(){
  host.setAttribute('aria-hidden',active?'false':'true');
  if(active){
   const value=String(message.message||'').trim();
-  text.textContent=value;
-  text.classList.toggle('message-medium',value.length>12&&value.length<=20);
-  text.classList.toggle('message-long',value.length>20);
+  const lines=splitDriverMessageLines(value);
+  text.replaceChildren(...lines.map(line=>{
+   const span=document.createElement('span');
+   span.className='driver-message-line';
+   span.textContent=line;
+   return span;
+  }));
+  text.classList.toggle('message-three-lines',lines.length>=3);
+  text.classList.toggle('message-two-lines',lines.length===2);
+  text.classList.toggle('message-one-line',lines.length===1);
  }else{
   text.textContent='—';
-  text.classList.remove('message-medium','message-long');
+  text.classList.remove('message-one-line','message-two-lines','message-three-lines');
  }
 }
 
