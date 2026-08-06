@@ -1,3 +1,6 @@
+## V7.2.43
+- Ajout d’un espacement supplémentaire entre le titre MESSAGE et les triangles rouges pour éviter tout chevauchement.
+
 ## V7.2.42
 - Bandeau MESSAGE avec flèches rouges ► animées sur toute la largeur.
 - Entrée du message depuis la gauche et sortie vers la droite après 15 secondes.
