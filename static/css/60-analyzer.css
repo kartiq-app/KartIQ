@@ -1506,3 +1506,13 @@ body.spotter-drag-active #analyzerSpotterFiles{
 .analyzer-test-log div{border-bottom:1px solid #181818;padding:3px 0}.analyzer-test-log time{color:#db2029;margin-right:10px}
 .analyzer-test-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}.analyzer-test-actions button{min-height:40px}.analyzer-test-actions .danger{border-color:#9b252b;color:#ff8e94}
 @media(max-width:700px){.analyzer-test-configuration{grid-template-columns:1fr}.analyzer-test-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.analyzer-test-options{display:grid}.analyzer-footer .analyzer-test-launch{margin-left:0}}
+
+/* Velocity V7.2.55 — Validation réseau du Mode Test */
+.analyzer-test-network-config{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:14px;border:1px solid #3a2b13;background:#151108}
+.analyzer-test-network-config label{display:grid;gap:7px;font-size:12px;font-weight:900;letter-spacing:.06em;color:#c6b58d}
+.analyzer-test-network-config select{width:100%;min-height:42px;background:#111;color:#fff;border:1px solid #555;border-radius:5px;padding:0 10px}
+.analyzer-test-status-row.warning{background:#201b0e;border-color:#e0a22e}
+.analyzer-test-status-row.warning strong{color:#ffc04c}
+.analyzer-test-actions .warning{border-color:#b67a19;color:#ffc14d}
+.analyzer-test-log .warning{color:#ffc14d}.analyzer-test-log .success{color:#64df86}.analyzer-test-log .error{color:#ff747d}
+@media(max-width:700px){.analyzer-test-network-config{grid-template-columns:1fr}.analyzer-test-actions{display:grid;grid-template-columns:1fr}.analyzer-test-actions button{width:100%}}

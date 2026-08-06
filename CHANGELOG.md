@@ -1,9 +1,17 @@
-## V7.2.54 — Mode Test Endurance dans Analyzer
+## V7.2.55 — Mode Test Endurance : validation réseau
+
+- Coupures automatiques basées sur le temps simulé.
+- Fréquence et durée réglables.
+- Bouton pour forcer une coupure immédiatement.
+- État réseau et compteurs visibles en direct.
+- Rapport JSON enrichi : coupures, réussites, échecs et durées d’indisponibilité.
+
+## V7.2.55 — Mode Test Endurance dans Analyzer
 
 - Ajout du simulateur longue durée isolé, métriques en direct et export du rapport JSON.
 - Suspension du flux réel pendant le test et restauration automatique à l’arrêt.
 
-## V7.2.54 — Nouveau traitement graphique du titre Velocity dans Analyzer
+## V7.2.55 — Nouveau traitement graphique du titre Velocity dans Analyzer
 
 - Suppression du traitement spécial de l’ancien en-tête Velocity.
 - Titre VELOCITY aligné graphiquement sur HEAT MAP, STANDS et CLASSEMENT GÉNÉRAL.

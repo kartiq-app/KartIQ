@@ -292,15 +292,19 @@
         <label>Vitesse<select id="analyzerTestSpeed"><option value="1">Temps réel</option><option value="10">×10</option><option value="60" selected>×60</option></select></label>
         <label>Équipes<select id="analyzerTestTeams"><option value="10">10 équipes</option><option value="20">20 équipes</option><option value="30">30 équipes</option><option value="40" selected>40 équipes</option></select></label>
         <div class="analyzer-test-options"><label><input id="analyzerTestPits" type="checkbox" checked> Arrêts et changements de kart</label><label><input id="analyzerTestPenalties" type="checkbox" checked> Pénalités occasionnelles</label><label><input id="analyzerTestIncidents" type="checkbox" checked> Coupures et reprises simulées</label></div>
+        <div class="analyzer-test-network-config">
+          <label>Fréquence des coupures<select id="analyzerTestIncidentFrequency"><option value="15">Toutes les 15 min simulées</option><option value="30" selected>Toutes les 30 min simulées</option><option value="60">Toutes les 60 min simulées</option><option value="random">Aléatoire (20 à 90 min)</option></select></label>
+          <label>Durée de coupure<select id="analyzerTestIncidentDuration"><option value="5">5 secondes réelles</option><option value="15" selected>15 secondes réelles</option><option value="30">30 secondes réelles</option><option value="60">60 secondes réelles</option></select></label>
+        </div>
         <button type="button" class="primary analyzer-test-start" onclick="startAnalyzerEnduranceTest()">▶ DÉMARRER LE TEST</button>
       </div>
       <div id="analyzerTestDashboard" class="analyzer-test-dashboard" hidden>
         <div class="analyzer-test-status-row"><strong id="analyzerTestState">● STABLE</strong><span id="analyzerTestProgress">0 %</span></div>
         <div class="analyzer-test-metrics">
-          <div><span>Durée simulée</span><b id="analyzerTestElapsed">00:00:00</b></div><div><span>Durée réelle</span><b id="analyzerTestRealElapsed">00:00:00</b></div><div><span>Tours traités</span><b id="analyzerTestLaps">0</b></div><div><span>Mises à jour</span><b id="analyzerTestUpdates">0</b></div><div><span>Arrêts</span><b id="analyzerTestStops">0</b></div><div><span>Reconnexions</span><b id="analyzerTestReconnects">0/0</b></div><div><span>Mémoire</span><b id="analyzerTestMemory">Indisponible</b></div><div><span>Erreurs JS</span><b id="analyzerTestErrors">0</b></div>
+          <div><span>Durée simulée</span><b id="analyzerTestElapsed">00:00:00</b></div><div><span>Durée réelle</span><b id="analyzerTestRealElapsed">00:00:00</b></div><div><span>Tours traités</span><b id="analyzerTestLaps">0</b></div><div><span>Mises à jour</span><b id="analyzerTestUpdates">0</b></div><div><span>Arrêts</span><b id="analyzerTestStops">0</b></div><div><span>Coupures</span><b id="analyzerTestCuts">0</b></div><div><span>Reconnexions</span><b id="analyzerTestReconnects">0/0</b></div><div><span>État réseau</span><b id="analyzerTestNetworkState">CONNECTÉ</b></div><div><span>Mémoire</span><b id="analyzerTestMemory">Indisponible</b></div><div><span>Erreurs JS</span><b id="analyzerTestErrors">0</b></div>
         </div>
         <div class="analyzer-test-log" id="analyzerTestLog" aria-live="polite"></div>
-        <div class="analyzer-test-actions"><button type="button" onclick="exportAnalyzerEnduranceTestReport()">⇩ RAPPORT JSON</button><button type="button" class="danger" onclick="stopAnalyzerEnduranceTest()">■ ARRÊTER LE TEST</button></div>
+        <div class="analyzer-test-actions"><button type="button" class="warning" onclick="forceAnalyzerTestNetworkCut()">⚡ FORCER UNE COUPURE</button><button type="button" onclick="exportAnalyzerEnduranceTestReport()">⇩ RAPPORT JSON</button><button type="button" class="danger" onclick="stopAnalyzerEnduranceTest()">■ ARRÊTER LE TEST</button></div>
       </div>
       <div class="analyzer-rules-note">Le test utilise des données synthétiques isolées. À l’arrêt, Velocity restaure automatiquement la course réelle et ne sauvegarde pas les données simulées dans les sessions Analyzer.</div>
     </div>
