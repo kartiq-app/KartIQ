@@ -1,4 +1,12 @@
-# Velocity V7.2.90 — Stabilité affichage Spotter
+# Velocity V7.2.91 — Fin de session : révocation Team Manager
+
+- Un rôle **Team Manager autorisé** dans la fiche d’un membre ne donne plus aucun accès permanent à Velocity.
+- Seul un rôle **Team Manager actif** dans une Session Course ouvre l’application complète.
+- À la fin de la session, tous les membres invités — Pilote, Spotter ou Team Manager — reviennent à l’écran « En attente d’affectation… ».
+- Le propriétaire / navigateur TM non associé à un membre invité conserve son accès normal à Velocity.
+- Aucun changement sur les rôles autorisés permanents : ils restent disponibles pour une future affectation.
+
+# Velocity V7.2.91 — Stabilité affichage Spotter
 
 - Le polling des droits Team continue toutes les 3 secondes mais ne relance plus le rendu lorsque l’état d’accès est inchangé.
 - Spotter n’est plus démonté/réaffiché à chaque réponse de `/api/device/session`.
