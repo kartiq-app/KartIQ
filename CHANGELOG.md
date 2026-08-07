@@ -1,4 +1,13 @@
-# Velocity V7.2.77 — Spotter alimenté par les entrées Apex
+# Velocity V7.2.78 — Spotter : filtrage des sessions terminées
+
+## V7.2.78 — IN Apex vs entrée opérationnelle Spotter
+
+- Heat Map inchangée : tous les karts signalés `IN` par Apex restent visibles dans la Pit Lane, y compris sur une session terminée.
+- Spotter distingue désormais un état `IN` historique d'une entrée aux stands à traiter.
+- Au démarrage de Spotter, les karts déjà `IN` ne sont injectés dans **Karts entrants** que si la session est encore active.
+- Pendant une session active, toute transition piste → `IN` continue d'alimenter automatiquement **Karts entrants**.
+- Une session terminée avec toute la grille laissée `IN` par Apex ne remplit plus artificiellement le workflow Quick Change.
+- Détection d'activité compatible avec courses au temps et au nombre de tours, avec repli sur la présence de karts réellement en piste.
 
 ## V7.2.77 — Raccordement live Spotter / Apex
 

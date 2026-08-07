@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.77';
+const SPOTTER_APP_RELEASE='7.2.78';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -197,6 +197,30 @@ function spotterDriverPitState(driver){
  const status=String(driver?.status||'unknown').toLowerCase();
  return status==='pit'||Boolean(spotterApexMapEntry(driver)?.inPit)?'pit':'track';
 }
+// Spotter ne doit pas confondre « kart actuellement IN » avec « nouvelle entrée
+// opérationnelle à traiter ». Une session terminée depuis longtemps peut laisser
+// toute la grille Apex en IN : la Heat Map doit continuer à le montrer, mais cela
+// ne doit pas remplir artificiellement Karts entrants.
+function spotterSessionIsActive(){
+ const live=spotterLiveState()||{};
+ const drivers=(live.drivers||[]).filter(driver=>spotterDriverKey(driver));
+ const totalLaps=Number(live.total_laps),currentLap=Number(live.current_lap);
+ if(Number.isFinite(totalLaps)&&totalLaps>0&&Number.isFinite(currentLap))return currentLap<totalLaps;
+ const remainingMs=Number(live.time_remaining_ms);
+ if(Number.isFinite(remainingMs))return remainingMs>0;
+ const raw=String(live.time_remaining||'').trim();
+ const parts=raw.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
+ if(parts){
+  const seconds=parts[3]===undefined?(Number(parts[1])*60+Number(parts[2])):(Number(parts[1])*3600+Number(parts[2])*60+Number(parts[3]));
+  if(Number.isFinite(seconds))return seconds>0;
+ }
+ // Pour les sessions sans cible temps/tours exploitable, la présence d'au moins
+ // un kart réellement en piste est le meilleur indicateur disponible d'activité.
+ if(drivers.some(driver=>spotterDriverPitState(driver)!=='pit'))return true;
+ // Toute la grille est IN et aucun compteur actif n'est disponible : on traite
+ // la session comme inactive pour Spotter uniquement.
+ return false;
+}
 function spotterMetricsForDriver(driver){
  let score=null,confidence=null;
  try{if(typeof analyzerKartScore==='function')score=analyzerKartScore(driver)}catch(_){ }
@@ -334,12 +358,14 @@ function spotterMonitorApex(){
  if(!drivers.length)return;
  if(!spotterState.monitorPrimed){
   let primedChange=false;
+  const sessionActive=spotterSessionIsActive();
   drivers.forEach(driver=>{
    const team=spotterDriverKey(driver),status=spotterDriverPitState(driver);
    spotterState.lastDriverStatus[team]=status;
-   // Si Spotter démarre alors que le kart est déjà dans la pit lane, on ne
-   // doit pas attendre une nouvelle transition : il devient entrant tout de suite.
-   if(status==='pit')primedChange=spotterAddIncoming(team,driver,{source:'apex'})||primedChange;
+   // Si Spotter démarre pendant une session ACTIVE alors que le kart est déjà
+   // dans la pit lane, il devient entrant immédiatement. En revanche, une session
+   // terminée avec toute la grille laissée IN par Apex ne remplit pas Spotter.
+   if(sessionActive&&status==='pit')primedChange=spotterAddIncoming(team,driver,{source:'apex'})||primedChange;
   });
   spotterState.monitorPrimed=true;
   saveSpotterFoundation();
@@ -347,9 +373,10 @@ function spotterMonitorApex(){
   return;
  }
  let changed=spotterRefreshVelocityMetrics();
+ const sessionActive=spotterSessionIsActive();
  drivers.forEach(driver=>{
   const team=spotterDriverKey(driver),status=spotterDriverPitState(driver),previous=spotterState.lastDriverStatus[team];
-  if(previous&&previous!=='pit'&&status==='pit')changed=spotterAddIncoming(team,driver,{source:'apex'})||changed;
+  if(sessionActive&&previous&&previous!=='pit'&&status==='pit')changed=spotterAddIncoming(team,driver,{source:'apex'})||changed;
   if(previous==='pit'&&status==='track')changed=spotterProcessPitOut(team,{source:'apex'})||changed;
   spotterState.lastDriverStatus[team]=status;
  });
