@@ -270,6 +270,7 @@ async function changeCircuit(){
   try{if(typeof analyzerBeforeCircuitChange==='function')analyzerBeforeCircuitChange()}catch(error){console.warn('[Velocity] Sauvegarde Analyzer ignorée pendant le changement de circuit',error)}
   try{closeApexBrowserSocket()}catch(error){console.warn('[Velocity] Fermeture WebSocket navigateur ignorée',error)}
   apexBrowserCircuitId=null;
+  try{if(typeof analyzerResetTrafficState==='function')analyzerResetTrafficState()}catch(error){console.warn('[Velocity] Réinitialisation Trafic ignorée pendant le changement de circuit',error)}
   rowLapSignatures.clear();
   rankingLapAnimations.clear();
   endurancePitStatuses.clear();

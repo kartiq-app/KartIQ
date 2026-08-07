@@ -1,3 +1,15 @@
+# Velocity V7.2.83 — Trafic : dead zone ajustée au kart
+
+- Dead zone de la ligne Trafic calée sur la largeur réelle du visuel du kart avec seulement 1 px de marge.
+- À 0,00 s, le bord du cercle adverse est placé juste derrière/devant le pare-chocs sans chevauchement.
+- Suppression du double trait vertical aux extrémités : seul le terminateur de l’axe reste visible.
+- Les graduations continuent d’utiliser la projection symétrique -10 s / +10 s autour de la dead zone.
+
+7.2.83 — TRAFIC : RESET AU CHANGEMENT DE CIRCUIT
+- Purge complète de l'état Trafic au changement de piste : phases/interpolations, cercles persistants et DOM.
+- Nouveau circuit = ligne Trafic vierge avant réception des nouvelles données Apex.
+- Aucun changement du calcul des écarts ni de la dead zone V7.2.81.
+
 # Velocity V7.2.81 — Dead zone centrale de la ligne TRAFIC
 
 - Le kart suivi occupe désormais une zone centrale infranchissable par les cercles adverses.
