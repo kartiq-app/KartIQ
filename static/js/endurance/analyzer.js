@@ -195,7 +195,7 @@ function analyzerSessionSnapshot(reason='autosave'){
  return {
   ...previous,
   version:3,
-  appVersion:'7.2.73',
+  appVersion:'7.2.74',
   learning:undefined,
   id:analyzerActiveSessionId,
   name:previous.name||analyzerSessionDefaultName(circuitId),
@@ -251,7 +251,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:3,appVersion:'7.2.73',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
+ const session={version:3,appVersion:'7.2.74',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  if(!analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session)))return null;analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -287,7 +287,7 @@ function exportAnalyzerSession(){analyzerSaveSession('export');const session=ana
 function triggerAnalyzerSessionImport(){document.getElementById('analyzerSessionImport')?.click()}
 async function importAnalyzerSession(event){
  const file=event?.target?.files?.[0];if(!file)return;
- try{const session=JSON.parse(await file.text());if(!session?.id||!session?.circuitId)throw new Error('Format de session invalide');session.id=`${analyzerSessionSafeId(session.circuitId)}-${Date.now().toString(36)}`;session.name=(session.name||'Session importée')+' — import';session.createdAt=Date.now();session.updatedAt=Date.now();session.status='active';delete session.learning;session.version=3;session.appVersion='7.2.73';if(!analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+session.id,JSON.stringify(session)))throw new Error('Stockage local insuffisant');analyzerSessionUpdateIndex(session);if(session.circuitId===analyzerSessionCircuit())analyzerApplySession(session);renderAnalyzerSessions();window.alert('Session importée avec succès.')}catch(error){window.alert('Import impossible : '+error.message)}finally{event.target.value=''}
+ try{const session=JSON.parse(await file.text());if(!session?.id||!session?.circuitId)throw new Error('Format de session invalide');session.id=`${analyzerSessionSafeId(session.circuitId)}-${Date.now().toString(36)}`;session.name=(session.name||'Session importée')+' — import';session.createdAt=Date.now();session.updatedAt=Date.now();session.status='active';delete session.learning;session.version=3;session.appVersion='7.2.74';if(!analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+session.id,JSON.stringify(session)))throw new Error('Stockage local insuffisant');analyzerSessionUpdateIndex(session);if(session.circuitId===analyzerSessionCircuit())analyzerApplySession(session);renderAnalyzerSessions();window.alert('Session importée avec succès.')}catch(error){window.alert('Import impossible : '+error.message)}finally{event.target.value=''}
 }
 let analyzerRules={...ANALYZER_DEFAULT_RULES};
 let analyzerSort='position';
@@ -1405,6 +1405,12 @@ let apexPreviousSessions=[];
 let apexHistorySelectedRowId=null;
 let apexHistorySelectedSession='';
 let apexHistoricalTeams=[];
+function updateApexHistoricalDebriefButton(){
+ const button=document.getElementById('apexHistoryDebriefButton');if(!button)return;
+ const enabled=Boolean(apexHistorySelectedSession&&apexHistorySelectedRowId&&apexHistoricalTeams.length);
+ button.hidden=!apexHistorySelectedSession;button.disabled=!enabled;
+ button.textContent=enabled?'GÉNÉRER LE DÉBRIEF':'SÉLECTIONNEZ UNE ÉQUIPE';
+}
 
 function apexHistoryCircuitId(){return String(state?.circuit_id||'')}
 async function apexHistoryRequest(command){
@@ -1441,7 +1447,7 @@ async function loadApexPreviousSessions(){
   apexPreviousSessions=parseApexPreviousSessions(await apexHistoryRequest('S#'));
   if(status)status.textContent=apexPreviousSessions.length?`${apexPreviousSessions.length} session(s) disponible(s).`:'Aucune ancienne session disponible.';
   if(host)host.innerHTML=apexPreviousSessions.length?apexPreviousSessions.map(session=>`<button type="button" class="apex-history-session-row" onclick="selectApexPreviousSession('${analyzerEscape(session.id)}')"><span>${analyzerEscape(session.name)}</span><small>ID ${analyzerEscape(session.id)}</small><b>CONSULTER</b></button>`).join(''):'<div class="analyzer-empty">Aucun historique Apex pour le moment.</div>';
-  refreshApexHistorySessionSelect();
+  refreshApexHistorySessionSelect();updateApexHistoricalDebriefButton();
  }catch(error){if(status)status.textContent='Historique indisponible';if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(error.message)}</div>`}
 }
 function refreshApexHistorySessionSelect(){
@@ -1457,7 +1463,8 @@ async function selectApexPreviousSession(id){
  const currentName=document.getElementById('apexHistoryTeamName')?.textContent||'';
  const matched=apexHistoricalTeams.find(team=>normalizeApexTeamName(team.name)===normalizeApexTeamName(currentName));
  if(matched){apexHistorySelectedRowId=matched.rowId;setApexHistoryTeamHeader(matched);reloadApexTeamLaps()}
- else document.getElementById('apexHistoryLapsStatus').textContent='Sélectionnez une équipe de cette session ci-dessus.';
+ else{apexHistorySelectedRowId=null;document.getElementById('apexHistoryLapsStatus').textContent='Sélectionnez une équipe de cette session ci-dessus.'}
+ updateApexHistoricalDebriefButton();
 }
 function openApexTeamLaps(rowId){
  if(!rowId){window.alert('Identifiant Apex de cette équipe indisponible.');return}
@@ -1471,7 +1478,7 @@ function openApexTeamLaps(rowId){
 }
 async function reloadApexTeamLaps(){
  const select=document.getElementById('apexHistorySessionSelect'),nextSession=String(select?.value||'');
- if(nextSession!==apexHistorySelectedSession){apexHistorySelectedSession=nextSession;if(nextSession)await loadApexHistoricalTeams(nextSession);else{apexHistoricalTeams=[];renderApexHistoricalTeams()}}
+ if(nextSession!==apexHistorySelectedSession){apexHistorySelectedSession=nextSession;if(nextSession)await loadApexHistoricalTeams(nextSession);else{apexHistoricalTeams=[];renderApexHistoricalTeams()}updateApexHistoricalDebriefButton()}
  if(apexHistorySelectedRowId)loadApexTeamLaps(apexHistorySelectedRowId,apexHistorySelectedSession);
 }
 
@@ -1498,7 +1505,7 @@ function renderApexHistoricalTeams(){
  host.innerHTML=apexHistoricalTeams.length?`<div class="apex-history-teams-title">ÉQUIPES DE LA SESSION</div><div class="apex-history-team-buttons">${apexHistoricalTeams.map(team=>`<button type="button" onclick="openApexHistoricalTeam(${team.rowId},'${encodeURIComponent(team.name)}','${encodeURIComponent(team.kart)}')"><b>${analyzerEscape(team.kart||'—')}</b><span>${analyzerEscape(team.name)}</span></button>`).join('')}</div>`:'<div class="analyzer-empty">Classement historique indisponible.</div>';
 }
 function setApexHistoryTeamHeader(team){const name=team?.name||'Équipe',kart=`KART ${team?.kart||'—'}`;document.getElementById('apexHistoryTeamName').textContent=name;document.getElementById('apexHistoryTeamKart').textContent=kart;document.getElementById('apexHistoryPitsTeamName').textContent=name;document.getElementById('apexHistoryPitsTeamKart').textContent=kart}
-function openApexHistoricalTeam(rowId,name,kart){apexHistorySelectedRowId=Number(rowId);setApexHistoryTeamHeader({name:decodeURIComponent(name),kart:decodeURIComponent(kart)});reloadApexTeamLaps()}
+function openApexHistoricalTeam(rowId,name,kart){apexHistorySelectedRowId=Number(rowId);setApexHistoryTeamHeader({name:decodeURIComponent(name),kart:decodeURIComponent(kart)});updateApexHistoricalDebriefButton();reloadApexTeamLaps()}
 
 function apexProtocolNumber(value){
  const n=parseInt(String(value??'').replace(/[a-zA-Z]/g,''),10);
@@ -1785,9 +1792,9 @@ function analyzerDebriefRelays(laps,pits){
  }
  return relays;
 }
-async function analyzerDebriefLoadTeam(driver){
+async function analyzerDebriefLoadTeam(driver,sessionId=''){
  const rowId=Number(driver?.apex_row)||0;if(!rowId)throw new Error(`Identifiant STATS indisponible pour ${driver?.driver||'une équipe'}`);
- const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(rowId,'',null),fetchAllApexTeamPits(rowId,'',null).catch(()=>[])]);
+ const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(rowId,sessionId,null),fetchAllApexTeamPits(rowId,sessionId,null).catch(()=>[])]);
  const clean=analyzerDebriefCleanLaps(laps,pits),seconds=clean.map(l=>l.seconds),pitDurations=(pits||[]).map(p=>Math.max(0,(p.pitOutMs||0)-(p.pitInMs||0))/1000).filter(v=>v>0);
  return {driver,name:driver.driver||`Équipe ${rowId}`,position:Number(driver.pos)||999,laps,pits,clean,relays:analyzerDebriefRelays(clean,pits),best:seconds.length?Math.min(...seconds):NaN,average:analyzerDebriefAverage(seconds),median:analyzerDebriefMedian(seconds),std:analyzerDebriefStd(seconds),pitAverage:analyzerDebriefAverage(pitDurations),pitStd:analyzerDebriefStd(pitDurations),pitCount:pits.length};
 }
@@ -1832,16 +1839,16 @@ function analyzerDebriefIsIntermediate(){
  if(Number.isFinite(parsed))return parsed>0;
  return true;
 }
-function renderAnalyzerDebrief(team,all){
+function renderAnalyzerDebrief(team,all,context={}){
  const host=document.getElementById('analyzerDebriefContent'),status=document.getElementById('analyzerDebriefStatus'),pdfButton=document.getElementById('analyzerDebriefPdfButton');if(!host)return;
  const n=all.length,paceRank=analyzerDebriefRank(all,'average',team.average),bestRank=analyzerDebriefRank(all,'best',team.best),consistencyRank=analyzerDebriefRank(all,'std',team.std),pitRank=analyzerDebriefRank(all,'pitAverage',team.pitAverage);
  const ranking=all.slice().sort((a,b)=>(a.average||999)-(b.average||999));
- analyzerDebriefReport={team,all,ranking,generatedAt:new Date(),isIntermediate:analyzerDebriefIsIntermediate(),circuit:analyzerWeatherData?.circuit_name||analyzerWeatherData?.location?.name||analyzerSessionCircuitName()||''};
+ analyzerDebriefReport={team,all,ranking,generatedAt:new Date(),isIntermediate:context.historical?false:analyzerDebriefIsIntermediate(),historical:Boolean(context.historical),sessionId:String(context.sessionId||''),sessionName:String(context.sessionName||''),circuit:analyzerWeatherData?.circuit_name||analyzerWeatherData?.location?.name||analyzerSessionCircuitName()||''};
  if(status){status.classList.add('ready');status.style.display='none'}
  if(pdfButton)pdfButton.disabled=false;
  host.innerHTML=`
   <section class="debrief-hero">
-   <div class="debrief-card debrief-team"><span>Équipe suivie</span><strong>${analyzerEscape(team.name)}</strong><small class="debrief-pill">Débrief ${analyzerDebriefReport.isIntermediate?'intermédiaire':'final'}</small>${analyzerDebriefReport.circuit?`<small class="debrief-track">Piste : ${analyzerEscape(analyzerDebriefReport.circuit)}</small>`:''}</div>
+   <div class="debrief-card debrief-team"><span>${analyzerDebriefReport.historical?'Équipe analysée':'Équipe suivie'}</span><strong>${analyzerEscape(team.name)}</strong><small class="debrief-pill">${analyzerDebriefReport.historical?'Débrief session historique':`Débrief ${analyzerDebriefReport.isIntermediate?'intermédiaire':'final'}`}</small>${analyzerDebriefReport.sessionName?`<small class="debrief-track">Session : ${analyzerEscape(analyzerDebriefReport.sessionName)}</small>`:''}${analyzerDebriefReport.circuit?`<small class="debrief-track">Piste : ${analyzerEscape(analyzerDebriefReport.circuit)}</small>`:''}</div>
    <div class="debrief-card"><span>Rythme moyen</span><strong>${analyzerDebriefFmtSeconds(team.average)}</strong></div>
    <div class="debrief-card"><span>Meilleur tour</span><strong>${analyzerDebriefFmtSeconds(team.best)}</strong></div>
    <div class="debrief-card"><span>Régularité</span><strong>${analyzerDebriefRegularityLabel(team.std)}</strong></div>
@@ -1857,6 +1864,30 @@ function renderAnalyzerDebrief(team,all){
   <section class="debrief-section"><h3>ARRÊTS AUX STANDS</h3><div class="debrief-grid"><div class="debrief-metric"><span>Nombre</span><b>${team.pitCount}</b></div><div class="debrief-metric"><span>Temps moyen</span><b>${analyzerDebriefFmtPit(team.pitAverage)}</b></div><div class="debrief-metric"><span>Dispersion</span><b>${Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'}</b></div><div class="debrief-metric"><span>Rang plateau</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div></div></section>
   <section class="debrief-section"><h3>CLASSEMENT DU RYTHME MOYEN</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RANG</th><th>ÉQUIPE</th><th>MOYENNE</th><th>MEILLEUR</th><th>RÉGULARITÉ</th><th>PITS</th><th>MOY. PIT</th></tr></thead><tbody>${ranking.map((x,i)=>`<tr class="${x===team?'debrief-followed-row':''}"><td>${i+1}</td><td>${analyzerEscape(x.name)}</td><td>${analyzerDebriefFmtSeconds(x.average)}</td><td>${analyzerDebriefFmtSeconds(x.best)}</td><td>${analyzerDebriefRegularityLabel(x.std)}</td><td>${x.pitCount}</td><td>${analyzerDebriefFmtPit(x.pitAverage)}</td></tr>`).join('')}</tbody></table></div></section>
   <section class="debrief-section"><h3>CONCLUSION</h3><div class="debrief-verdict">${analyzerDebriefVerdict(team,all)}</div></section>`;
+}
+async function openAnalyzerHistoricalDebrief(){
+ if(analyzerDebriefBusy)return;
+ const sessionId=String(apexHistorySelectedSession||'');
+ if(!sessionId){window.alert('Sélectionnez d’abord une ancienne session Apex.');return}
+ if(!apexHistoricalTeams.length)await loadApexHistoricalTeams(sessionId);
+ const selected=apexHistoricalTeams.find(team=>Number(team.rowId)===Number(apexHistorySelectedRowId));
+ if(!selected){window.alert('Sélectionnez une équipe de la session avant de générer le débrief.');return}
+ const modal=document.getElementById('analyzerDebriefModal'),status=document.getElementById('analyzerDebriefStatus'),host=document.getElementById('analyzerDebriefContent'),pdfButton=document.getElementById('analyzerDebriefPdfButton'),historyButton=document.getElementById('apexHistoryDebriefButton');
+ if(!modal)return;modal.classList.add('show');document.body.classList.add('analyzer-debrief-open');if(host)host.innerHTML='';if(pdfButton)pdfButton.disabled=true;analyzerDebriefReport=null;analyzerDebriefSetProgress(0,1);
+ analyzerDebriefBusy=true;if(historyButton)historyButton.disabled=true;
+ try{
+  const drivers=apexHistoricalTeams.map((team,index)=>({apex_row:Number(team.rowId),driver:team.name||`Équipe ${team.rowId}`,pos:index+1,apex:team.kart||''})).filter(driver=>driver.apex_row>0);
+  const results=[];
+  for(let i=0;i<drivers.length;i++){
+   try{results.push(await analyzerDebriefLoadTeam(drivers[i],sessionId))}catch(error){console.warn('[Débrief historique]',drivers[i]?.driver,error)}
+   analyzerDebriefSetProgress(i+1,drivers.length);
+  }
+  const team=results.find(x=>Number(x.driver?.apex_row)===Number(selected.rowId))||results.find(x=>normalizeApexTeamName(x.name)===normalizeApexTeamName(selected.name));
+  if(!team)throw new Error('Impossible de charger les données de l’équipe sélectionnée dans cette session.');
+  const sessionName=apexPreviousSessions.find(s=>String(s.id)===sessionId)?.name||`Session ${sessionId}`;
+  await new Promise(resolve=>setTimeout(resolve,180));
+  renderAnalyzerDebrief(team,results.filter(x=>Number.isFinite(x.average)),{historical:true,sessionId,sessionName});
+ }catch(error){if(status){status.textContent=`Débrief historique indisponible : ${error.message}`;status.classList.add('error');status.style.display='block'}}finally{analyzerDebriefBusy=false;updateApexHistoricalDebriefButton()}
 }
 async function openAnalyzerDebrief(){
  if(analyzerDebriefBusy)return;
@@ -1905,13 +1936,13 @@ async function exportAnalyzerDebriefPdf(){
  if(button){button.disabled=true;button.textContent='GÉNÉRATION…'}
  try{
   const pages=[],team=report.team,all=report.all,n=all.length,paceRank=analyzerDebriefRank(all,'average',team.average),bestRank=analyzerDebriefRank(all,'best',team.best),consistencyRank=analyzerDebriefRank(all,'std',team.std),pitRank=analyzerDebriefRank(all,'pitAverage',team.pitAverage);
-  let page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,report.isIntermediate?'DÉBRIEF INTERMÉDIAIRE':'DÉBRIEF FINAL',`Rapport généré par votre Master Chef 🧑🏾‍🍳 le ${report.generatedAt.toLocaleString('fr-FR')}`);analyzerDebriefPdfMetricGrid(page,[{label:'Rythme moyen',value:analyzerDebriefFmtSeconds(team.average)},{label:'Meilleur tour',value:analyzerDebriefFmtSeconds(team.best)},{label:'Régularité',value:analyzerDebriefRegularityLabel(team.std)},{label:'Arrêts',value:team.pitCount},{label:'Vitesse pure',value:analyzerDebriefOrdinal(bestRank,n)},{label:'Rythme moyen',value:analyzerDebriefOrdinal(paceRank,n)},{label:'Régularité',value:analyzerDebriefOrdinal(consistencyRank,n)},{label:'Stands',value:team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}]);analyzerDebriefPdfSection(page,'SYNTHÈSE');analyzerDebriefPdfParagraph(page,analyzerDebriefVerdictText(team,all));pages.push(page);
+  let page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,report.historical?'DÉBRIEF SESSION':(report.isIntermediate?'DÉBRIEF INTERMÉDIAIRE':'DÉBRIEF FINAL'),`${report.sessionName?report.sessionName+' — ':''}Rapport généré par votre Master Chef 🧑🏾‍🍳 le ${report.generatedAt.toLocaleString('fr-FR')}`);analyzerDebriefPdfMetricGrid(page,[{label:'Rythme moyen',value:analyzerDebriefFmtSeconds(team.average)},{label:'Meilleur tour',value:analyzerDebriefFmtSeconds(team.best)},{label:'Régularité',value:analyzerDebriefRegularityLabel(team.std)},{label:'Arrêts',value:team.pitCount},{label:'Vitesse pure',value:analyzerDebriefOrdinal(bestRank,n)},{label:'Rythme moyen',value:analyzerDebriefOrdinal(paceRank,n)},{label:'Régularité',value:analyzerDebriefOrdinal(consistencyRank,n)},{label:'Stands',value:team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}]);analyzerDebriefPdfSection(page,'SYNTHÈSE');analyzerDebriefPdfParagraph(page,analyzerDebriefVerdictText(team,all));pages.push(page);
   const relayRows=team.relays.map(r=>{const c=analyzerDebriefRelayComparison(r,team,all);return [`R${r.index}`,r.laps,analyzerDebriefRelayPosition(c.rank,c.total),`${r.from}-${r.to}`,analyzerDebriefFmtSeconds(r.best),analyzerDebriefFmtSeconds(r.average),analyzerDebriefFmtConstance(c.constance)]});
   for(let i=0;i<Math.max(1,Math.ceil(relayRows.length/18));i++){page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,'ANALYSE DES RELAIS',relayRows.length?`Relais ${i*18+1} à ${Math.min(relayRows.length,(i+1)*18)}`:'Aucun relais exploitable');analyzerDebriefPdfTable(page,['RELAIS','TOURS','POS.','FENÊTRE','MEILLEUR','MOYENNE','CONSTANCE'],relayRows.slice(i*18,(i+1)*18),[105,100,120,140,180,180,190]);pages.push(page)}
   const rankRows=report.ranking.map((x,i)=>[i+1,x.name,analyzerDebriefFmtSeconds(x.average),analyzerDebriefFmtSeconds(x.best),analyzerDebriefRegularityLabel(x.std),x.pitCount,analyzerDebriefFmtPit(x.pitAverage)]);
   for(let i=0;i<Math.max(1,Math.ceil(rankRows.length/20));i++){page=analyzerDebriefPdfCreatePage();analyzerDebriefPdfHeader(page,report,'COMPARAISON DU PLATEAU',`Classement du rythme moyen — ${n} équipes analysées`);if(i===0){analyzerDebriefPdfSection(page,'ARRÊTS AUX STANDS');analyzerDebriefPdfMetricGrid(page,[{label:'Nombre',value:team.pitCount},{label:'Temps moyen',value:analyzerDebriefFmtPit(team.pitAverage)},{label:'Dispersion',value:Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'},{label:'Rang plateau',value:team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}]);analyzerDebriefPdfSection(page,'RYTHME MOYEN')}analyzerDebriefPdfTable(page,['RANG','ÉQUIPE','MOYENNE','MEILLEUR','RÉGULARITÉ','PITS','MOY. PIT'],rankRows.slice(i*20,(i+1)*20),[80,310,150,150,190,80,140],44);pages.push(page)}
   pages.forEach((p,i)=>analyzerDebriefPdfFooter(p,i+1,pages.length));
-  const jpegs=pages.map(({canvas})=>{const url=canvas.toDataURL('image/jpeg',.92);return {width:canvas.width,height:canvas.height,bytes:analyzerDebriefPdfDataUrlBytes(url)}}),pdf=analyzerDebriefPdfBuild(jpegs),blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`Debrief_${analyzerDebriefPdfSafeName(team.name)}_${new Date().toISOString().slice(0,10)}.pdf`;document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  const jpegs=pages.map(({canvas})=>{const url=canvas.toDataURL('image/jpeg',.92);return {width:canvas.width,height:canvas.height,bytes:analyzerDebriefPdfDataUrlBytes(url)}}),pdf=analyzerDebriefPdfBuild(jpegs),blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`Debrief_${report.historical?'Session_'+analyzerDebriefPdfSafeName(report.sessionName)+'_':''}${analyzerDebriefPdfSafeName(team.name)}_${new Date().toISOString().slice(0,10)}.pdf`;document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
  }catch(error){console.error('[PDF Debrief]',error);window.alert(`Impossible de générer le PDF : ${error.message}`)}finally{if(button){button.disabled=false;button.textContent='EXPORTER EN PDF'}}
 }
 document.addEventListener('DOMContentLoaded',()=>document.getElementById('analyzerDebriefModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerDebriefModal')closeAnalyzerDebrief()}));
@@ -1961,7 +1992,7 @@ function analyzerTestDriver(index){
  const pilotOffsets=[-.18,.04,.21,-.07].map((v,j)=>v+(((index+j)%5)-2)*.012);
  return {testIndex:index,pos:index+1,apex:index+1,apex_row:index+1,kart:String(10+index),driver:`ÉQUIPE TEST ${teamNo}`,pilot:pilotRoster[0],pilotRoster,pilotOffsets,pilotIndex:0,laps:0,last:formatApexMilliseconds(lap*1000),best:formatApexMilliseconds((lap-.25)*1000),gap:index?`+${(index*.42).toFixed(3)}`:'—',interval:index?`+${(.25+(index%5)*.08).toFixed(3)}`:'—',pit_stops:0,status:'track',penalty:'—',track_time:'00:00',on_track:'00:00',average_lap:lap,lap_times:[],current_stint_laps:[],stints:[],pit_history:[]}
 }
-function analyzerTestBuildState(){const t=window.velocityEnduranceTest;const currentFollowed=String(state?.followed_driver||'');const followed=t.drivers.some(d=>d.driver===currentFollowed)?currentFollowed:(t.drivers[0]?.driver||'');return {...(t.backup||{}),version:'7.2.73 TEST',connection:t.networkConnected?'TEST CONNECTÉ':'TEST COUPÉ',connected:t.networkConnected,circuit_id:'velocity-test-endurance',followed_driver:followed,followed:t.drivers.find(d=>d.driver===followed)||null,drivers:t.drivers,time_remaining:analyzerTestFormatDuration(Math.max(0,t.durationMs-t.simulatedMs)),time_remaining_ms:Math.max(0,t.durationMs-t.simulatedMs),live:{status:t.networkConnected?'test':'reconnecting',messages:t.updates,parsed_updates:t.updates,last_message_at:new Date().toISOString()},spotter:{configured:false,queue:[],maintenance:[],incoming:[]}}}
+function analyzerTestBuildState(){const t=window.velocityEnduranceTest;const currentFollowed=String(state?.followed_driver||'');const followed=t.drivers.some(d=>d.driver===currentFollowed)?currentFollowed:(t.drivers[0]?.driver||'');return {...(t.backup||{}),version:'7.2.74 TEST',connection:t.networkConnected?'TEST CONNECTÉ':'TEST COUPÉ',connected:t.networkConnected,circuit_id:'velocity-test-endurance',followed_driver:followed,followed:t.drivers.find(d=>d.driver===followed)||null,drivers:t.drivers,time_remaining:analyzerTestFormatDuration(Math.max(0,t.durationMs-t.simulatedMs)),time_remaining_ms:Math.max(0,t.durationMs-t.simulatedMs),live:{status:t.networkConnected?'test':'reconnecting',messages:t.updates,parsed_updates:t.updates,last_message_at:new Date().toISOString()},spotter:{configured:false,queue:[],maintenance:[],incoming:[]}}}
 function analyzerTestNextCutDelayMs(){const t=window.velocityEnduranceTest;if(t.incidentFrequency==='random')return (20+Math.random()*70)*60000;return Math.max(1,Number(t.incidentFrequency)||30)*60000}
 function analyzerTestScheduleNextCut(){const t=window.velocityEnduranceTest;t.nextCutAtMs=t.simulatedMs+analyzerTestNextCutDelayMs();analyzerTestLog(`Prochaine coupure prévue vers ${analyzerTestFormatDuration(t.nextCutAtMs)} simulées.`)}
 function analyzerTestStartNetworkCut(source='automatique'){const t=window.velocityEnduranceTest;if(!t.active||!t.networkConnected)return false;t.networkConnected=false;t.networkCuts++;t.reconnectAttempts++;t.networkCutStartedAt=Date.now();analyzerTestLog(`Coupure réseau ${source} déclenchée (${t.incidentDurationSec} s).`,'warning');state=analyzerTestBuildState();render();analyzerTestRefreshDashboard();clearTimeout(t.networkRestoreTimer);t.networkRestoreTimer=setTimeout(()=>analyzerTestRestoreNetwork(),Math.max(1000,t.incidentDurationSec*1000));return true}
@@ -2023,7 +2054,9 @@ function analyzerTestTick(){
 }
 function analyzerTestRefreshDashboard(){const t=window.velocityEnduranceTest;const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value};set('analyzerTestElapsed',analyzerTestFormatDuration(t.simulatedMs));set('analyzerTestRealElapsed',t.startedAt?analyzerTestFormatDuration(Date.now()-t.startedAt):'00:00:00');set('analyzerTestLaps',t.laps.toLocaleString('fr-FR'));set('analyzerTestUpdates',t.updates.toLocaleString('fr-FR'));set('analyzerTestStops',t.stops.toLocaleString('fr-FR'));set('analyzerTestCuts',String(t.networkCuts));set('analyzerTestReconnects',`${t.reconnectSuccess}/${t.reconnectAttempts}`);set('analyzerTestNetworkState',t.networkConnected?'CONNECTÉ':'COUPURE EN COURS');set('analyzerTestErrors',String(t.errors.length));const mem=performance?.memory?.usedJSHeapSize;set('analyzerTestMemory',Number.isFinite(mem)?`${Math.round(mem/1048576)} Mo`:'Indisponible');const progress=t.durationMs?Math.min(100,t.simulatedMs/t.durationMs*100):0;set('analyzerTestProgress',t.durationMs?`${progress.toFixed(1)} %`:'ILLIMITÉ');const row=document.querySelector('.analyzer-test-status-row'),stateEl=document.getElementById('analyzerTestState');if(row){row.classList.toggle('error',t.errors.length>0);row.classList.toggle('warning',!t.networkConnected)}if(stateEl)stateEl.textContent=t.errors.length?'● ERREURS DÉTECTÉES':(!t.networkConnected?'● RECONNEXION EN COURS':'● STABLE')}
 function stopAnalyzerEnduranceTest(manual=true){const t=window.velocityEnduranceTest;if(!t.active)return;clearInterval(t.timer);clearTimeout(t.networkRestoreTimer);t.timer=null;t.networkRestoreTimer=null;if(!t.networkConnected){const downtime=Date.now()-t.networkCutStartedAt;t.lastDowntimeMs=downtime;t.totalDowntimeMs+=downtime;t.maxDowntimeMs=Math.max(t.maxDowntimeMs,downtime);t.reconnectFailures++;analyzerTestLog('Test arrêté pendant une coupure : reconnexion non validée.','error')}t.active=false;if(manual)analyzerTestLog('Test arrêté manuellement.');state=t.backup||{};t.backup=null;if(t.learningBackup){analyzerLearning=t.learningBackup;t.learningBackup=null;}document.getElementById('analyzerTestConfiguration').hidden=false;document.getElementById('analyzerTestDashboard').hidden=false;render();load();analyzerTestRefreshDashboard()}
-function exportAnalyzerEnduranceTestReport(){const t=window.velocityEnduranceTest,payload={type:'velocity-endurance-stability-test',version:'7.2.73',exportedAt:new Date().toISOString(),active:t.active,configuration:{teams:t.teams,speed:t.speed,durationMs:t.durationMs,networkSimulation:Boolean(document.getElementById('analyzerTestIncidents')?.checked),incidentFrequency:t.incidentFrequency,incidentDurationSec:t.incidentDurationSec},results:{realElapsedMs:t.startedAt?Date.now()-t.startedAt:0,simulatedMs:t.simulatedMs,laps:t.laps,updates:t.updates,stops:t.stops,networkCuts:t.networkCuts,reconnectAttempts:t.reconnectAttempts,reconnectSuccess:t.reconnectSuccess,reconnectFailures:t.reconnectFailures,totalDowntimeMs:t.totalDowntimeMs,maxDowntimeMs:t.maxDowntimeMs,lastDowntimeMs:t.lastDowntimeMs,averageDowntimeMs:t.reconnectSuccess?t.totalDowntimeMs/t.reconnectSuccess:0,errors:t.errors},log:t.log};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Velocity_Test_Endurance_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportAnalyzerEnduranceTestReport(){const t=window.velocityEnduranceTest,payload={type:'velocity-endurance-stability-test',version:'7.2.74',exportedAt:new Date().toISOString(),active:t.active,configuration:{teams:t.teams,speed:t.speed,durationMs:t.durationMs,networkSimulation:Boolean(document.getElementById('analyzerTestIncidents')?.checked),incidentFrequency:t.incidentFrequency,incidentDurationSec:t.incidentDurationSec},results:{realElapsedMs:t.startedAt?Date.now()-t.startedAt:0,simulatedMs:t.simulatedMs,laps:t.laps,updates:t.updates,stops:t.stops,networkCuts:t.networkCuts,reconnectAttempts:t.reconnectAttempts,reconnectSuccess:t.reconnectSuccess,reconnectFailures:t.reconnectFailures,totalDowntimeMs:t.totalDowntimeMs,maxDowntimeMs:t.maxDowntimeMs,lastDowntimeMs:t.lastDowntimeMs,averageDowntimeMs:t.reconnectSuccess?t.totalDowntimeMs/t.reconnectSuccess:0,errors:t.errors},log:t.log};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Velocity_Test_Endurance_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 window.addEventListener('error',event=>{const t=window.velocityEnduranceTest;if(!t.active)return;t.errors.push({at:new Date().toISOString(),message:event.message,source:event.filename,line:event.lineno});analyzerTestLog(`Erreur JS : ${event.message}`,'error');analyzerTestRefreshDashboard()});window.addEventListener('unhandledrejection',event=>{const t=window.velocityEnduranceTest;if(!t.active)return;const message=String(event.reason?.message||event.reason||'Promesse rejetée');t.errors.push({at:new Date().toISOString(),message});analyzerTestLog(`Promesse rejetée : ${message}`,'error');analyzerTestRefreshDashboard()});document.addEventListener('DOMContentLoaded',()=>document.getElementById('analyzerEnduranceTestModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerEnduranceTestModal')closeAnalyzerEnduranceTest()}));
 
-/* Velocity V7.2.73 — équipes complètes Velocity/Lab + tri Delta + sélection équipe Mode Test. */
+/* Velocity V7.2.74 — équipes complètes Velocity/Lab + tri Delta + sélection équipe Mode Test. */
+
+/* Velocity V7.2.74 — Débrief complet des anciennes sessions Apex depuis STATS. */

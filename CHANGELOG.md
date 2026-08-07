@@ -1,4 +1,11 @@
-# V7.2.73 — Velocity complet, tri Delta et Mode Test suivi
+# V7.2.74 — Débrief des anciennes sessions Apex
+
+- STATS > ANCIENNES SESSIONS : sélection d’une session historique Apex puis génération d’un Débrief complet.
+- Le moteur de Débrief existant est réutilisé avec tous les tours et pits de toutes les équipes de la session sélectionnée.
+- L’équipe choisie dans la session est analysée et comparée à l’intégralité du plateau historique.
+- Export PDF du Débrief historique avec le nom de la session.
+
+# V7.2.74 — Velocity complet, tri Delta et Mode Test suivi
 
 - Classement Velocity : toutes les équipes évaluables sont désormais disponibles ; 10 lignes restent visibles et le reste est accessible par scroll vertical.
 - Nouveau tri « Delta » : les meilleurs gains corrigés (valeurs les plus négatives) remontent en tête, sans modifier la colonne TOP qui reste le rang officiel par Score.
