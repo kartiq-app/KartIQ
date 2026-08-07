@@ -1,4 +1,12 @@
-## V7.2.70 — Δ course et continuité pilote Apex
+# V7.2.71 — Fiabilisation du Δ Velocity
+
+- Isolation complète de l’apprentissage du Mode Test Endurance : un test ne peut plus réutiliser les relais mémorisés d’une session réelle ou d’un test précédent.
+- Clés d’apprentissage désormais scindées par circuit afin d’éviter les comparaisons de relais entre circuits différents partageant les mêmes identifiants Apex.
+- Le Δ n’utilise un relais précédent que s’il contient au moins 3 tours exploitables.
+- Convention conservée : Δ négatif = gain/plus rapide (vert), Δ positif = perte/plus lent (rouge), affichage au dixième.
+- Aucun changement des pondérations du Velocity Engine V1.0.
+
+## V7.2.71 — Δ course et continuité pilote Apex
 
 - Convention du Δ corrigée : négatif = plus rapide (vert), positif = plus lent (rouge).
 - Δ affiché au dixième de seconde (`-0,4`, `+0,5`).
