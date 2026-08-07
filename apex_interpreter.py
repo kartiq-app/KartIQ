@@ -83,7 +83,7 @@ class ApexInterpreter:
 
     def _row(self, row: int) -> dict[str, Any]:
         return self.rows.setdefault(row, {
-            "row": row, "position": None, "name": None, "kart": None,
+            "row": row, "position": None, "name": None, "pilot": None, "kart": None,
             "last_lap": None, "best_lap": None, "gap": None,
             "interval": None, "laps": None, "timer": None,
             "pit_timer": None, "track_timer": None,
@@ -107,15 +107,30 @@ class ApexInterpreter:
 
         apex_type = self.schema.get(col) if col is not None else None
         field = FIELD_BY_APEX_TYPE.get(apex_type or "")
+        raw_label = (self.labels.get(col) or "").strip().lower() if col is not None else ""
+        label = unicodedata.normalize("NFKD", raw_label).encode("ascii", "ignore").decode("ascii")
+        label = re.sub(r"[^a-z0-9]+", " ", label).strip()
+
+        # Certaines grilles Endurance Apex séparent l'équipe et le pilote courant.
+        # On ne considère une colonne comme PILOTE que si son libellé est explicite
+        # et qu'il ne s'agit pas du libellé combiné « Équipe / Pilote ».
+        pilot_labels = {"pilote", "pilot", "driver", "conducteur", "nom pilote", "driver name", "pilote actuel"}
+        normalized_labels = []
+        for other in self.labels.values():
+            normalized = unicodedata.normalize("NFKD", str(other or "").lower()).encode("ascii", "ignore").decode("ascii")
+            normalized_labels.append(re.sub(r"[^a-z0-9]+", " ", normalized).strip())
+        has_team_column = any(any(token in other for token in ("equipe", "team")) and not any(token in other for token in ("pilote", "pilot", "driver")) for other in normalized_labels)
+        if label in pilot_labels and has_team_column:
+            field = "pilot"
+        elif any(token in label for token in ("equipe", "team")) and not any(token in label for token in ("pilote", "pilot", "driver")):
+            field = "name"
+
         # Certaines pistes utilisent un type Apex personnalisé pour cette colonne.
         # Le libellé de grille permet alors d'identifier STANDS / PITS / ARRÊTS.
         if field is None and col is not None:
-            raw_label = (self.labels.get(col) or "").strip().lower()
             # Apex abrège souvent la colonne des pénalités en « Péna. ».
             # On retire les accents et la ponctuation pour reconnaître aussi
             # « Pena », « Pénalité », « Penalty » et « Sanction ».
-            label = unicodedata.normalize("NFKD", raw_label).encode("ascii", "ignore").decode("ascii")
-            label = re.sub(r"[^a-z0-9]+", " ", label).strip()
             if any(token in label for token in ("stand", "pit", "arret")):
                 field = "pit_stops"
             elif any(token in label for token in ("pena", "penalite", "penalty", "sanction")):
@@ -130,6 +145,8 @@ class ApexInterpreter:
                     self._emit(update.row, "lap_count", "Nouveau tour", f"Tour {parsed}", str(parsed))
         elif field == "name":
             row["name"] = value.strip() or None
+        elif field == "pilot":
+            row["pilot"] = value.strip() or None
         elif field == "penalty":
             cleaned = value.strip()
             row["penalty"] = cleaned or None

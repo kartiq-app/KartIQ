@@ -250,12 +250,13 @@ class RaceStateService:
         live_drivers = []
         for row in rows:
             name = (row.get("name") or "").strip()
+            pilot = (row.get("pilot") or "").strip()
             position = row.get("position")
-            if not name and position is None:
+            if not name and not pilot and position is None:
                 continue
             best = row.get("best_lap") or "—"
             last = row.get("last_lap") or "—"
-            driver_name = name or f"Ligne Apex {row.get('row', '?')}"
+            driver_name = name or pilot or f"Ligne Apex {row.get('row', '?')}"
             history_key = str(row.get("row") if row.get("row") is not None else driver_name)
             lap_number = row.get("laps") if row.get("laps") is not None else 0
             lap_seconds = self.time_to_seconds(last)
@@ -294,6 +295,7 @@ class RaceStateService:
             live_drivers.append({
                 "pos": position if position is not None else 999,
                 "driver": driver_name,
+                "pilot": pilot or None,
                 "apex": row.get("kart") if row.get("kart") is not None else "—",
                 "laps": lap_number,
                 "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else "—",

@@ -1,3 +1,14 @@
+## V7.2.70 — Δ course et continuité pilote Apex
+
+- Convention du Δ corrigée : négatif = plus rapide (vert), positif = plus lent (rouge).
+- Δ affiché au dixième de seconde (`-0,4`, `+0,5`).
+- Le calcul Transition conserve le même classement mais utilise désormais explicitement la convention temps : delta relais - delta plateau.
+- Détection d’une colonne PILOTE séparée lorsque la grille Apex la fournit.
+- Mémorisation du pilote et du kart par relais.
+- Colonne PIL. dans Velocity uniquement lorsqu’au moins un pilote Apex est disponible : 👤 pilote identique, 👥 changement pilote.
+- Infobulles instantanées sur les emojis.
+- Velocity Lab détaille pilotes/karts précédent et actuel, comparabilité et Δ brut / plateau / corrigé.
+
 ## V7.2.69 — Velocity Lab : comparatif figé au clic
 
 - Le tableau détaillé n'est plus reconstruit par le rafraîchissement live toutes les ~800 ms.
