@@ -1720,3 +1720,40 @@ body.velocity-lab-open{overflow:hidden!important}
   .analyzer-card-title-row{gap:6px}
   .analyzer-followed-title-row,.analyzer-rules-title-row{margin-bottom:6px}
 }
+
+/* Velocity V7.2.86 — Session de course multi-appareils */
+.race-session-launch{border-color:rgba(242,126,24,.55)!important;color:#fff!important}
+.race-session-card{width:min(860px,94vw)}
+.race-session-empty p{margin:0 0 16px;color:#b8bdc7;line-height:1.45}
+.race-session-empty label{display:grid;gap:7px;color:#b8bdc7;font-size:12px;font-weight:800;letter-spacing:.04em}
+.race-session-empty input{min-height:42px;border:1px solid #343b47;border-radius:9px;background:#0b0e13;color:#fff;padding:0 12px;font-size:15px}
+.race-session-context{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:16px 0;padding:13px;border:1px solid #242a34;border-radius:10px;background:#0b0e13}
+.race-session-context span,.race-session-summary span{font-size:10px;color:#7e8794;font-weight:900;letter-spacing:.08em}
+.race-session-context b{font-size:14px;color:#fff}
+.race-session-create{width:100%;min-height:44px}
+.race-session-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.race-session-summary>div{display:grid;gap:5px;padding:11px;border:1px solid #262d37;border-radius:10px;background:#0b0e13}
+.race-session-summary b{font-size:14px;color:#fff;overflow-wrap:anywhere}
+.race-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.race-access-card{display:grid;grid-template-columns:1fr 116px;grid-template-areas:'title qr' 'actions qr';gap:10px 14px;align-items:center;padding:14px;border:1px solid #2c333e;border-radius:12px;background:#0a0d12}
+.race-access-card>div:first-child{grid-area:title;display:grid;gap:4px}
+.race-access-card>div:first-child span{color:#f27e18;font-size:13px;font-weight:950;letter-spacing:.08em}
+.race-access-card>div:first-child strong{font-size:13px;color:#fff}
+.race-access-card img{grid-area:qr;width:116px;height:116px;background:#fff;border-radius:8px;padding:5px}
+.race-access-actions{grid-area:actions;display:flex;gap:8px;flex-wrap:wrap}
+.race-access-actions button{min-height:36px}
+.race-session-feedback{min-height:24px;margin:10px 0;color:#9de3bd;font-weight:800;font-size:12px}
+.race-session-end{width:100%;min-height:42px}
+.race-role-access>header,.race-role-access>#fullscreenFloatControls,.race-role-access>#home,.race-role-access>.iphone-preview{display:none!important}
+.race-role-access{padding-top:0!important}
+.race-role-access .screen{min-height:100dvh}
+.race-role-spotter #spotter{display:block!important}
+.race-role-spotter #spotter.active{min-height:100dvh}
+.race-role-pilot .sprint-focus-close{display:none!important}
+.race-role-pilot #enduranceFocus{z-index:100000}
+.race-role-ended{position:fixed;inset:0;z-index:200000;background:#07090e;display:grid;place-items:center;text-align:center;padding:24px}
+.race-role-ended[hidden]{display:none!important}
+.race-role-ended span{display:block;color:#ef1f2f;font-size:22px;font-weight:950;letter-spacing:.18em}
+.race-role-ended h1{margin:12px 0 8px;font-size:clamp(30px,7vw,58px);color:#fff}
+.race-role-ended p{color:#98a0ad;font-size:16px}
+@media(max-width:720px){.race-access-grid,.race-session-summary{grid-template-columns:1fr}.race-access-card{grid-template-columns:1fr 96px}.race-access-card img{width:96px;height:96px}}

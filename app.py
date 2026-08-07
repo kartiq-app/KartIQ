@@ -11,6 +11,7 @@ import urllib.parse
 import urllib.request
 import os
 import time
+import secrets
 
 try:
     import websocket
@@ -18,6 +19,11 @@ except ImportError:
     websocket = None
 
 from flask import Flask, jsonify, render_template, request, send_file
+
+try:
+    import qrcode
+except ImportError:
+    qrcode = None
 
 from apex_decoder import decode_frame, updates_to_dicts
 from apex_grid import parse_grid_frame
@@ -82,6 +88,8 @@ WEATHER_LOCATION_CACHE = {}
 WEATHER_LOCK = threading.Lock()
 DRIVER_MESSAGE_LOCK = threading.Lock()
 SPOTTER_LOCK = threading.Lock()
+RACE_SESSION_LOCK = threading.Lock()
+RACE_SESSION = None
 WEATHER_TTL_SECONDS = 300
 WEATHER_LOCATION_TTL_SECONDS = 86400
 
@@ -603,9 +611,142 @@ def payload():
     return data
 
 
+def _race_session_public(session):
+    if not isinstance(session, dict):
+        return None
+    return {
+        "id": session.get("id"),
+        "name": session.get("name"),
+        "status": session.get("status"),
+        "circuit_id": session.get("circuit_id"),
+        "circuit_name": session.get("circuit_name"),
+        "followed_driver": session.get("followed_driver"),
+        "created_at_ms": session.get("created_at_ms"),
+        "ended_at_ms": session.get("ended_at_ms"),
+    }
+
+
+def _race_access_for_token(token):
+    token = str(token or "").strip()
+    with RACE_SESSION_LOCK:
+        session = deepcopy(RACE_SESSION) if isinstance(RACE_SESSION, dict) else None
+    if not session or session.get("status") != "active":
+        return None
+    for role in ("spotter", "pilot"):
+        if secrets.compare_digest(str(session.get("tokens", {}).get(role) or ""), token):
+            return {"role": role, "session": _race_session_public(session)}
+    return None
+
+
 @app.get("/")
 def index():
-    return render_template("index.html", app_version=APP_VERSION)
+    return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="")
+
+
+@app.get("/join/<token>")
+def race_join(token):
+    access = _race_access_for_token(token)
+    if not access:
+        return render_template("index.html", app_version=APP_VERSION, race_access_role="expired", race_access_token=""), 410
+    return render_template(
+        "index.html",
+        app_version=APP_VERSION,
+        race_access_role=access["role"],
+        race_access_token=str(token),
+    )
+
+
+@app.get("/api/race-session")
+def get_race_session():
+    with RACE_SESSION_LOCK:
+        session = deepcopy(RACE_SESSION) if isinstance(RACE_SESSION, dict) else None
+    if not session:
+        return jsonify(ok=True, session=None)
+    public = _race_session_public(session)
+    if session.get("status") == "active":
+        origin = request.host_url.rstrip("/")
+        public["links"] = {role: f"{origin}/join/{token}" for role, token in session.get("tokens", {}).items()}
+    return jsonify(ok=True, session=public)
+
+
+@app.post("/api/race-session/create")
+def create_race_session():
+    global RACE_SESSION
+    body = request.get_json(force=True, silent=True) or {}
+    circuit_id = str(STATE.get("circuit_id") or "").strip()
+    if not circuit_id:
+        return jsonify(ok=False, error="Sélectionnez d'abord un circuit."), 400
+    circuits = {str(c.get("id") or ""): c for c in load_circuits()}
+    circuit = circuits.get(circuit_id)
+    if not circuit:
+        return jsonify(ok=False, error="Circuit actif introuvable."), 400
+    followed = str(STATE.get("followed_driver") or "").strip()
+    if not followed:
+        return jsonify(ok=False, error="Sélectionnez d'abord l'équipe suivie dans Analyzer."), 400
+    with RACE_SESSION_LOCK:
+        if isinstance(RACE_SESSION, dict) and RACE_SESSION.get("status") == "active":
+            return jsonify(ok=False, error="Une session de course est déjà active.", session=_race_session_public(RACE_SESSION)), 409
+        now_ms = int(time.time() * 1000)
+        session_id = secrets.token_hex(4).upper()
+        RACE_SESSION = {
+            "id": session_id,
+            "name": str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE",
+            "status": "active",
+            "circuit_id": circuit_id,
+            "circuit_name": str(circuit.get("name") or circuit_id),
+            "followed_driver": followed,
+            "created_at_ms": now_ms,
+            "ended_at_ms": None,
+            "tokens": {
+                "spotter": secrets.token_urlsafe(12),
+                "pilot": secrets.token_urlsafe(12),
+            },
+        }
+        session = deepcopy(RACE_SESSION)
+    public = _race_session_public(session)
+    origin = request.host_url.rstrip("/")
+    public["links"] = {role: f"{origin}/join/{token}" for role, token in session["tokens"].items()}
+    return jsonify(ok=True, session=public)
+
+
+@app.post("/api/race-session/end")
+def end_race_session():
+    global RACE_SESSION
+    with RACE_SESSION_LOCK:
+        if not isinstance(RACE_SESSION, dict) or RACE_SESSION.get("status") != "active":
+            return jsonify(ok=False, error="Aucune session active."), 400
+        RACE_SESSION["status"] = "ended"
+        RACE_SESSION["ended_at_ms"] = int(time.time() * 1000)
+        session = deepcopy(RACE_SESSION)
+    return jsonify(ok=True, session=_race_session_public(session))
+
+
+@app.get("/api/race-access/<token>")
+def get_race_access(token):
+    access = _race_access_for_token(token)
+    if not access:
+        return jsonify(ok=False, ended=True), 410
+    return jsonify(ok=True, role=access["role"], session=access["session"])
+
+
+@app.get("/api/race-session/qr/<role>")
+def race_session_qr(role):
+    role = str(role or "").lower()
+    if role not in {"spotter", "pilot"}:
+        return jsonify(ok=False, error="Rôle inconnu"), 400
+    with RACE_SESSION_LOCK:
+        session = deepcopy(RACE_SESSION) if isinstance(RACE_SESSION, dict) else None
+    if not session or session.get("status") != "active":
+        return jsonify(ok=False, error="Aucune session active"), 404
+    if qrcode is None:
+        return jsonify(ok=False, error="Module QR indisponible"), 503
+    token = session.get("tokens", {}).get(role)
+    link = f"{request.host_url.rstrip('/')}/join/{token}"
+    image = qrcode.make(link)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+    return send_file(buffer, mimetype="image/png", max_age=0)
 
 
 
@@ -731,6 +872,10 @@ def set_circuit():
     circuits = {str(c.get("id") or "").strip(): c for c in load_circuits()}
     if not circuit_id or circuit_id not in circuits:
         return jsonify(ok=False, error="Circuit inconnu dans la configuration du serveur."), 400
+    with RACE_SESSION_LOCK:
+        active_session = deepcopy(RACE_SESSION) if isinstance(RACE_SESSION, dict) and RACE_SESSION.get("status") == "active" else None
+    if active_session and str(active_session.get("circuit_id") or "") != circuit_id:
+        return jsonify(ok=False, error="Circuit verrouillé par la session de course active. Terminez la session avant de changer de circuit."), 423
     try:
         # Plusieurs appareils (TM Analyzer + Spotter smartphone) peuvent sélectionner
         # le même circuit. Ne jamais réinitialiser l'état partagé si le circuit est

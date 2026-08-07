@@ -1,3 +1,12 @@
+# Velocity V7.2.86 — Session de course multi-appareils (prototype)
+
+- Nouveau gestionnaire SESSION COURSE dans le footer Analyzer.
+- Création d’une session à partir du circuit actif et de l’équipe suivie.
+- Circuit verrouillé côté serveur pendant la session.
+- Liens temporaires distincts Spotter et Pilote, avec boutons Copier, Partager et QR Code généré localement.
+- Accès Spotter ouvrant uniquement le mode Spotter ; accès Pilote ouvrant le Focus Endurance.
+- Le TM peut terminer la session, ce qui invalide immédiatement les deux accès temporaires.
+
 # Velocity V7.2.85 — Alignements finaux Analyzer
 
 - Suppression de la mention « Colonnes Apex Timing enrichies par Velocity ».

@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
 <title>Velocity V{{ app_version }} — Architecture 5 modes</title>
 <link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
+<script>window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};</script>
 </head>
 <body>
 <header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleVelocityFullscreen()" title="Plein écran" aria-label="Afficher Velocity en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="spotter" onclick="showMode('spotter')">Spotter</button><button class="mode-btn" data-mode="analyzer" onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
@@ -298,7 +299,30 @@
       <button type="button" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
       <button type="button" class="analyzer-test-launch" onclick="openAnalyzerEnduranceTest()">🧪 MODE TEST ENDURANCE</button>
       <button type="button" class="velocity-lab-launch" onclick="openVelocityLab()">⚙ VELOCITY LAB</button>
+      <button type="button" class="race-session-launch" onclick="openRaceSessionManager()">🏁 SESSION COURSE</button>
     </footer>
+  </div>
+
+  <div class="analyzer-rules-modal race-session-modal" id="raceSessionModal" role="dialog" aria-modal="true" aria-labelledby="raceSessionTitle">
+    <div class="analyzer-rules-card race-session-card">
+      <div class="analyzer-rules-head"><div><span>PARTAGE MULTI-APPAREILS</span><h2 id="raceSessionTitle">Session de course</h2></div><button type="button" onclick="closeRaceSessionManager()" aria-label="Fermer">×</button></div>
+      <div id="raceSessionEmpty" class="race-session-empty">
+        <p>La session utilisera le <b>circuit actif</b> et l’<b>équipe suivie</b> dans Analyzer. Le circuit sera verrouillé tant que la session restera active.</p>
+        <label>Nom de la session<input id="raceSessionName" type="text" maxlength="80" placeholder="Ex. 24H Fun & Race"></label>
+        <div class="race-session-context"><span>Circuit</span><b id="raceSessionCircuit">—</b><span>Équipe suivie</span><b id="raceSessionTeam">—</b></div>
+        <button type="button" class="primary race-session-create" onclick="createRaceSession()">CRÉER LA SESSION</button>
+      </div>
+      <div id="raceSessionActive" class="race-session-active" hidden>
+        <div class="race-session-summary"><div><span>SESSION</span><b id="raceSessionActiveName">—</b></div><div><span>CIRCUIT VERROUILLÉ</span><b id="raceSessionActiveCircuit">—</b></div><div><span>ÉQUIPE</span><b id="raceSessionActiveTeam">—</b></div></div>
+        <div class="race-access-grid">
+          <article class="race-access-card"><div><span>SPOTTER</span><strong>Mode Spotter uniquement</strong></div><img id="raceSpotterQr" alt="QR code accès Spotter"><div class="race-access-actions"><button type="button" onclick="copyRaceAccessLink('spotter')">COPIER LE LIEN</button><button type="button" onclick="shareRaceAccessLink('spotter')">PARTAGER</button></div></article>
+          <article class="race-access-card"><div><span>PILOTE</span><strong>Mode Focus Endurance uniquement</strong></div><img id="racePilotQr" alt="QR code accès Pilote"><div class="race-access-actions"><button type="button" onclick="copyRaceAccessLink('pilot')">COPIER LE LIEN</button><button type="button" onclick="shareRaceAccessLink('pilot')">PARTAGER</button></div></article>
+        </div>
+        <div id="raceSessionFeedback" class="race-session-feedback" aria-live="polite"></div>
+        <button type="button" class="danger race-session-end" onclick="endRaceSession()">TERMINER LA SESSION</button>
+      </div>
+      <div class="analyzer-rules-note">Prototype de test : les liens sont temporaires et deviennent inutilisables lorsque le TM termine la session.</div>
+    </div>
   </div>
 
   <div class="velocity-lab-overlay" id="velocityLabOverlay" role="dialog" aria-modal="true" aria-labelledby="velocityLabTitle">
@@ -496,4 +520,5 @@
 <div class="overlay" id="genericOverlay" onclick="clearAlert()"><div class="generic-box"><div class="label" id="alertTitle">ALERTE</div><h1 id="alertLine1">—</h1><div class="line2" id="alertLine2">—</div></div></div>
 <div class="overlay" id="top8PitOverlay"><div class="top8-alert-box"><div class="top8-alert-title">🚨 ALERTE</div><div class="top8-alert-team" id="top8AlertTeam">—</div><div class="top8-alert-message">vient d'entrer aux stands</div><div class="top8-alert-position-label">Position</div><div class="top8-alert-position" id="top8AlertPosition">P— / Top 8</div><button class="top8-alert-close" onclick="clearTop8Alert()">FERMER</button></div></div>
 <div id="installHelp" class="install-help" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle"><div class="install-help-card"><h2 id="installHelpTitle">Velocity en plein écran sur iPhone</h2><p>Safari ne permet pas toujours d’activer le vrai plein écran depuis une page web. Pour obtenir l’affichage sans barre d’adresse :</p><p><strong>1.</strong> Appuie sur l’icône Partager de Safari.<br><strong>2.</strong> Choisis « Sur l’écran d’accueil ».<br><strong>3.</strong> Ouvre ensuite Velocity depuis sa nouvelle icône.</p><button onclick="closeInstallHelp()">J’ai compris</button></div></div>
+<div id="raceRoleEnded" class="race-role-ended" hidden><div><span>VELOCITY</span><h1>SESSION TERMINÉE</h1><p>L’accès à cette session de course est fermé.</p></div></div>
 <script src="/static/js/core/core.js?v={{ app_version }}"></script><script src="/static/js/spotter/spotter.js?v={{ app_version }}"></script><script src="/static/js/sprint/sprint.js?v={{ app_version }}"></script><script src="/static/js/qualification/qualification.js?v={{ app_version }}"></script><script src="/static/js/ui/race-ui.js?v={{ app_version }}"></script><script src="/static/js/endurance/queues.js?v={{ app_version }}"></script><script src="/static/js/endurance/analyzer.js?v={{ app_version }}"></script><script src="/static/js/ui/session-clock-fit.js?v={{ app_version }}"></script><script src="/static/js/core/bootstrap.js?v={{ app_version }}"></script></body></html>
