@@ -1,3 +1,10 @@
+# Velocity V7.2.80 — Annulation Quick Change & bouton Analyzer
+
+- Ajout d’un bouton **ANNULER** dès le choix du nombre de files et dans l’écran d’initialisation des karts.
+- Annuler restaure la configuration précédente sans sauvegarde ni synchronisation d’un brouillon.
+- Depuis Analyzer / STANDS, **PRÉPARER LA ZONE QUICK CHANGE** ouvre désormais le même workflow Spotter et revient dans Analyzer après validation ou annulation.
+- L’icône Quick Change / paramètres de Spotter utilise le même comportement.
+
 # Velocity V7.2.79 — STANDS / Spotter unifiés
 
 - Une seule détection IN commune à Heat Map et Spotter : statut Apex, colonne `sta/si` et impulsion MAP `*in`.

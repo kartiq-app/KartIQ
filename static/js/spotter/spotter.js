@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.79';
+const SPOTTER_APP_RELEASE='7.2.80';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -50,6 +50,9 @@ let spotterSessionOpened=false;
 let spotterPushInFlight=false;
 let spotterPushQueued=false;
 let spotterLocalMutationAt=0;
+let spotterSetupDraft=null;
+let spotterSetupOrigin='spotter';
+let spotterSetupRequested=false;
 
 function spotterClone(value){return JSON.parse(JSON.stringify(value??null))}
 function spotterUndoState(){
@@ -179,22 +182,46 @@ function saveSpotterFoundation(){
  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  spotterScheduleSharedSync();
 }
-function openSpotterSetup(){spotterUiStep='mode';renderSpotterFoundation('mode')}
-function spotterEditQueueSetup(){spotterUiStep='queue';renderSpotterFoundation('queue')}
+function spotterBeginSetup(origin){
+ if(!spotterSetupDraft)spotterSetupDraft=spotterClone(spotterState);
+ spotterSetupOrigin=origin||((typeof currentMode==='string'&&currentMode==='analyzer')?'analyzer':'spotter');
+}
+function openSpotterSetup(origin){
+ spotterBeginSetup(origin);
+ if(spotterSetupOrigin==='analyzer'&&typeof currentMode==='string'&&currentMode==='analyzer'){
+  spotterSetupRequested=true;
+  showMode('spotter');
+  return;
+ }
+ spotterUiStep='mode';renderSpotterFoundation('mode');
+}
+function spotterCancelSetup(){
+ const previous=spotterSetupDraft?spotterClone(spotterSetupDraft):null;
+ if(previous)Object.assign(spotterState,previous);
+ const origin=spotterSetupOrigin;
+ spotterSetupDraft=null;spotterSetupOrigin='spotter';spotterSetupRequested=false;
+ // Annuler ne doit ni pousser un état temporaire au serveur ni réinitialiser les files.
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
+ if(origin==='analyzer'){showMode('analyzer');return}
+ if(spotterState.configured){spotterRenderCurrent();return}
+ showHome();
+}
+function spotterEditQueueSetup(){spotterBeginSetup();spotterUiStep='queue';renderSpotterFoundation('queue')}
 async function spotterEnterMode(){
  spotterSessionOpened=true;
  // Toujours relire l'état serveur juste avant d'ouvrir Spotter. C'est essentiel
  // quand le TM vient de préparer les files depuis Analyzer sur un autre appareil.
  await spotterPullSharedState();
+ if(spotterSetupRequested){spotterSetupRequested=false;spotterUiStep='mode';renderSpotterFoundation('mode');return}
  // Une configuration créée depuis Analyzer ou un autre appareil est la seule
  // source de vérité : Spotter l'ouvre directement, y compris au premier accès
  // sur smartphone. L'écran de configuration n'existe que si rien n'est préparé.
  renderSpotterFoundation(spotterState.configured?(spotterState.recalibrating?'recalibrate':'live'):'mode');
 }
-function setSpotterMode(mode){const count=Math.max(1,Math.min(3,Number(mode)||1));spotterState.mode=count;saveSpotterFoundation();spotterUiStep='queue';renderSpotterFoundation('queue')}
+function setSpotterMode(mode){const count=Math.max(1,Math.min(3,Number(mode)||1));spotterState.mode=count;spotterUiStep='queue';renderSpotterFoundation('queue')}
 function addSpotterSetupKart(){spotterState.setupKarts.push(spotterDefaultKartName(spotterState.setupKarts.length));renderSpotterFoundation('queue');setTimeout(()=>document.querySelector('.spotter-setup-row:last-of-type input')?.focus(),0)}
 function removeSpotterSetupKart(index){if(spotterState.setupKarts.length<=1)return;spotterState.setupKarts.splice(index,1);renderSpotterFoundation('queue')}
-function updateSpotterSetupKart(index,value){spotterState.setupKarts[index]=String(value||'').trim().slice(0,18);saveSpotterFoundation();const btn=document.getElementById('spotterLaunchButton');if(btn)btn.disabled=!spotterState.setupKarts.some(Boolean)}
+function updateSpotterSetupKart(index,value){spotterState.setupKarts[index]=String(value||'').trim().slice(0,18);const btn=document.getElementById('spotterLaunchButton');if(btn)btn.disabled=!spotterState.setupKarts.some(Boolean)}
 function spotterLiveState(){
  try{if(typeof state==='object'&&state)return state}catch(_){ }
  return window.velocityState||window.state||{};
@@ -256,7 +283,9 @@ function launchSpotterFoundation(){
  if(!karts.length)return;
  const seeded=spotterSeedGridAssignments(karts.length+1);
  spotterState.queue=karts;spotterState.incoming=[];spotterState.maintenance=[];spotterState.assignments=seeded.assignments;spotterState.nextKvNumber=seeded.next;spotterState.movementLog=[];spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;spotterState.freeMode=false;spotterState.freeStartedAt=null;spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.configured=true;
+ const setupOrigin=spotterSetupOrigin;spotterSetupDraft=null;spotterSetupOrigin='spotter';spotterSetupRequested=false;
  saveSpotterFoundation();spotterUiStep='live';renderSpotterFoundation('live');
+ if(setupOrigin==='analyzer')setTimeout(()=>showMode('analyzer'),0);
  // Dès que la configuration est validée, synchroniser immédiatement les karts
  // déjà signalés IN par Apex, sans attendre le prochain tick de 750 ms.
  setTimeout(spotterMonitorApex,0);
@@ -746,10 +775,10 @@ function renderSpotterFoundation(forceStep){
   <div class="spotter-desktop-heading"><span>SPOTTER</span></div>
   ${spotterCommandBar(step)}
   <div class="spotter-step ${step==='mode'?'active':''}" id="spotterModeStep">
-   <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option ${spotterState.mode===1?'active':''}" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Verticale</small></button><button class="spotter-mode-option ${spotterState.mode===2?'active':''}" type="button" onclick="setSpotterMode(2)"><strong>2</strong><span>Files</span><small>Côte à côte</small></button><button class="spotter-mode-option ${spotterState.mode===3?'active':''}" type="button" onclick="setSpotterMode(3)"><strong>3</strong><span>Files</span><small>Côte à côte</small></button></div></div></section>
+   <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option ${spotterState.mode===1?'active':''}" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Verticale</small></button><button class="spotter-mode-option ${spotterState.mode===2?'active':''}" type="button" onclick="setSpotterMode(2)"><strong>2</strong><span>Files</span><small>Côte à côte</small></button><button class="spotter-mode-option ${spotterState.mode===3?'active':''}" type="button" onclick="setSpotterMode(3)"><strong>3</strong><span>Files</span><small>Côte à côte</small></button></div><button class="spotter-secondary spotter-cancel-setup" type="button" onclick="spotterCancelSetup()">ANNULER</button></div></section>
   </div>
   <div class="spotter-step ${step==='queue'?'active':''}" id="spotterQueueStep">
-   <section class="spotter-card"><div class="spotter-card-head"><h2>Initialiser ${spotterState.mode>1?'les files':'la file'}</h2><span>${spotterState.setupKarts.length} kart(s)</span></div><div class="spotter-card-body"><p class="spotter-intro">Saisissez les karts présents au départ. Velocity les répartit automatiquement dans ${spotterState.mode} file${spotterState.mode>1?'s':''} verticale${spotterState.mode>1?'s':''} et attribue les identifiants KV dans cet ordre.</p><div id="spotterSetupRows">${spotterState.setupKarts.map((kart,index)=>`<div class="spotter-setup-row"><div class="spotter-kv">${spotterPadKv(index)}</div><input autocomplete="off" value="${spotterEscape(kart)}" placeholder="Nom du kart" oninput="updateSpotterSetupKart(${index},this.value)"><button class="spotter-remove" type="button" onclick="removeSpotterSetupKart(${index})" aria-label="Supprimer">×</button></div>`).join('')}</div><button class="spotter-add-row" type="button" onclick="addSpotterSetupKart()">＋ AJOUTER UN KART</button><button id="spotterLaunchButton" class="spotter-primary" type="button" onclick="launchSpotterFoundation()" ${spotterState.setupKarts.some(Boolean)?'':'disabled'}>LANCER LE SPOTTER</button></div></section>
+   <section class="spotter-card"><div class="spotter-card-head"><h2>Initialiser ${spotterState.mode>1?'les files':'la file'}</h2><span>${spotterState.setupKarts.length} kart(s)</span></div><div class="spotter-card-body"><p class="spotter-intro">Saisissez les karts présents au départ. Velocity les répartit automatiquement dans ${spotterState.mode} file${spotterState.mode>1?'s':''} verticale${spotterState.mode>1?'s':''} et attribue les identifiants KV dans cet ordre.</p><div id="spotterSetupRows">${spotterState.setupKarts.map((kart,index)=>`<div class="spotter-setup-row"><div class="spotter-kv">${spotterPadKv(index)}</div><input autocomplete="off" value="${spotterEscape(kart)}" placeholder="Nom du kart" oninput="updateSpotterSetupKart(${index},this.value)"><button class="spotter-remove" type="button" onclick="removeSpotterSetupKart(${index})" aria-label="Supprimer">×</button></div>`).join('')}</div><button class="spotter-add-row" type="button" onclick="addSpotterSetupKart()">＋ AJOUTER UN KART</button><button id="spotterLaunchButton" class="spotter-primary" type="button" onclick="launchSpotterFoundation()" ${spotterState.setupKarts.some(Boolean)?'':'disabled'}>LANCER LE SPOTTER</button><button class="spotter-secondary spotter-cancel-setup" type="button" onclick="spotterCancelSetup()">ANNULER</button></div></section>
   </div>
   <div class="spotter-step ${step==='live'?'active':''}" id="spotterLiveStep">
    ${spotterState.freeMode?`<div class="spotter-free-status"><strong>MODE AUTO — SUIVI ESTIMÉ</strong><span>Depuis ${new Date(Number(spotterState.freeStartedAt||Date.now())).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} · ${spotterState.freePitIns} entrée(s) · ${spotterState.freePitOuts} sortie(s)</span></div>`:''}

@@ -1793,3 +1793,6 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
     max-width:var(--spotter-mobile-card)!important;
   }
 }
+
+/* V7.2.80 — sortie explicite des écrans de configuration Quick Change */
+.spotter-cancel-setup{width:100%;margin-top:10px;text-transform:uppercase;letter-spacing:.06em}
