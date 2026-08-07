@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.84"
-APP_RELEASE_NAME = "CORRECTIF BLOCAGE HOME"
+APP_VERSION = "7.2.85"
+APP_RELEASE_NAME = "FINITIONS ALIGNEMENTS ANALYZER"
 
 
 def _circuit_sort_key(circuit):

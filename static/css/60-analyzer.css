@@ -1639,7 +1639,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .analyzer-traffic-tick.tm10:before,.analyzer-traffic-tick.tp10:before{left:50%;right:auto;transform:translateX(-50%)}
 
 
-/* Velocity V7.2.84 — finitions Analyzer */
+/* Velocity V7.2.85 — finitions Analyzer */
 /* Titres de cartes harmonisés. */
 .weather-card .analyzer-card-label{
   font-size:13px!important;
@@ -1686,4 +1686,37 @@ body.velocity-lab-open{overflow:hidden!important}
 }
 @media(max-width:700px){
  .rules-card .rules-card-button,.analyzer-debrief-button{font-size:9px!important;padding:7px 8px!important}
+}
+
+
+/* Velocity V7.2.85 — alignements finaux Analyzer */
+/* Titres de cartes avec action à droite, sur une seule ligne. */
+.analyzer-card-title-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:0;
+}
+.analyzer-card-title-row .analyzer-card-label{margin-bottom:0!important;min-width:0}
+.analyzer-followed-title-row,.analyzer-rules-title-row{margin-bottom:8px}
+.analyzer-card-title-row .analyzer-debrief-button,
+.analyzer-card-title-row .rules-card-button{margin-left:auto;flex:0 0 auto}
+
+/* Le bandeau global ne réserve plus de place au compte rendu. */
+.analyzer-toolbar{grid-template-columns:auto 1fr!important}
+
+/* Le Classement LIVE et Velocity démarrent exactement au même niveau. */
+.analyzer-ranking-heading{width:100%}
+.analyzer-ranking-heading>small{display:none!important}
+@media(min-width:1400px){
+  .analyzer-ranking-panel .analyzer-ranking-title,
+  .analyzer-strategy-column .analyzer-velocity-title{
+    height:74px!important;min-height:74px!important;box-sizing:border-box!important;
+  }
+  /* Les deux lignes d'en-têtes de colonnes utilisent strictement la même typo. */
+  .analyzer-ranking-table thead th,
+  .analyzer-strategy-column .analyzer-kartiq-table thead th{
+    font-size:9px!important;letter-spacing:.05em!important;font-weight:700!important;
+  }
+}
+@media(max-width:700px){
+  .analyzer-card-title-row{gap:6px}
+  .analyzer-followed-title-row,.analyzer-rules-title-row{margin-bottom:6px}
 }

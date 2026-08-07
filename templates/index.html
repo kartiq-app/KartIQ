@@ -93,13 +93,15 @@
     <div class="analyzer-toolbar">
       <button class="inline-home-btn analyzer-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button>
       <div class="analyzer-heading"><span class="analyzer-kicker">ENDURANCE</span></div>
-      <button id="analyzerDebriefButton" class="analyzer-debrief-button" type="button" onclick="openAnalyzerDebrief()">COMPTE RENDU</button>
       <input id="analyzerSessionImport" type="file" accept="application/json,.json" hidden onchange="importAnalyzerSession(event)">
     </div>
 
     <section class="analyzer-hero" aria-label="Synthèse stratégique">
       <article class="analyzer-hero-card followed-card">
-        <span class="analyzer-card-label">ÉQUIPE SUIVIE</span>
+        <div class="analyzer-card-title-row analyzer-followed-title-row">
+          <span class="analyzer-card-label">ÉQUIPE SUIVIE</span>
+          <button id="analyzerDebriefButton" class="analyzer-debrief-button" type="button" onclick="openAnalyzerDebrief()">COMPTE RENDU</button>
+        </div>
         <div class="analyzer-followed-name-row"><strong id="analyzerFollowedName">—</strong></div>
         <div class="analyzer-followed-layout">
           <div class="analyzer-followed-summary">
@@ -138,8 +140,11 @@
       </article>
       <div class="analyzer-rules-message-stack">
         <article class="analyzer-hero-card rules-card">
-          <span class="analyzer-card-label">CONFORMITÉ RÈGLEMENTAIRE</span>
-          <div class="rules-status-row"><div class="rules-status" id="analyzerRulesStatus">—</div><button class="rules-card-button" type="button" onclick="openAnalyzerRules()">RÈGLEMENT</button></div>
+          <div class="analyzer-card-title-row analyzer-rules-title-row">
+            <span class="analyzer-card-label">CONFORMITÉ RÈGLEMENTAIRE</span>
+            <button class="rules-card-button" type="button" onclick="openAnalyzerRules()">RÈGLEMENT</button>
+          </div>
+          <div class="rules-status-row"><div class="rules-status" id="analyzerRulesStatus">—</div></div>
           <div class="rules-mini-grid">
             <div><span>Relais</span><b id="analyzerRuleRelay">10:00 → 60:00</b></div>
             <div><span>Stand minimum</span><b id="analyzerRulePit">02:30</b></div>
@@ -201,7 +206,6 @@
                 </label>
               </div>
             </div>
-            <small id="analyzerRankingSubtitle">Colonnes Apex Timing enrichies par Velocity</small>
           </div>
         </div>
         <div class="analyzer-ranking-wrap">

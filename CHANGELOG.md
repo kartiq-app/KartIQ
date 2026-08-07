@@ -1,4 +1,10 @@
-# Velocity V7.2.84 — Finitions Analyzer
+# Velocity V7.2.85 — Alignements finaux Analyzer
+
+- Suppression de la mention « Colonnes Apex Timing enrichies par Velocity ».
+- Alignement vertical des en-têtes et des lignes Classement LIVE / Velocity.
+- Harmonisation de la taille des titres de colonnes Velocity avec le Classement LIVE.
+- Déplacement de COMPTE RENDU dans l’en-tête de la carte ÉQUIPE SUIVIE, à droite.
+- Déplacement de RÈGLEMENT dans l’en-tête de la carte CONFORMITÉ RÈGLEMENTAIRE, à droite.
 
 - ÉQUIPE SUIVIE : « Position/Chrono » devient « Position du chrono ».
 - HEAT MAP : bouton OK après simulation pour effacer le résultat et revenir à l’état normal.
