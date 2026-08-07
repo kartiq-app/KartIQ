@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.75';
+const SPOTTER_APP_RELEASE='7.2.76';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -183,6 +183,16 @@ function addSpotterSetupKart(){spotterState.setupKarts.push(spotterDefaultKartNa
 function removeSpotterSetupKart(index){if(spotterState.setupKarts.length<=1)return;spotterState.setupKarts.splice(index,1);renderSpotterFoundation('queue')}
 function updateSpotterSetupKart(index,value){spotterState.setupKarts[index]=String(value||'').trim().slice(0,18);saveSpotterFoundation();const btn=document.getElementById('spotterLaunchButton');if(btn)btn.disabled=!spotterState.setupKarts.some(Boolean)}
 function spotterDriverKey(driver){return String(driver?.driver||driver?.name||'').trim()}
+// Même source de vérité que la Heat Map Analyzer : le statut de grille ET
+// l'impulsion Apex brute *in/*out conservée dans velocityApexMap.
+function spotterApexMapEntry(driver){
+ const row=Number(driver?.apex_row);
+ return Number.isFinite(row)?(window.velocityApexMap?.rows?.get(row)||null):null;
+}
+function spotterDriverPitState(driver){
+ const status=String(driver?.status||'unknown').toLowerCase();
+ return status==='pit'||Boolean(spotterApexMapEntry(driver)?.inPit)?'pit':'track';
+}
 function spotterMetricsForDriver(driver){
  let score=null,confidence=null;
  try{if(typeof analyzerKartScore==='function')score=analyzerKartScore(driver)}catch(_){ }
@@ -234,10 +244,9 @@ function spotterAddIncoming(team,driver=null,{source='apex'}={}){
  spotterState.incoming.push(incoming);
  if(spotterState.freeMode){spotterState.freePitIns+=1;spotterState.freeNeedsRecalibration=true;}
  spotterLogMovement('pit_in',{team:key,kv:assignment.kv,source,estimated:Boolean(spotterState.freeMode)});
- if(spotterState.freeMode){
-  const validated=spotterValidateIncoming(incoming.id,false,{silent:true,estimated:true});
-  if(validated)return true;
- }
+ // Même en mode Auto, une entrée Apex reste dans « Karts entrants »
+ // jusqu'à validation humaine vers une file ou Maintenance. Le mode Auto
+ // automatise la détection, pas la décision opérationnelle du Spotter.
  saveSpotterFoundation();renderSpotterFoundation('live');return true;
 }
 function simulateSpotterPitIn(){
@@ -317,12 +326,22 @@ function spotterMonitorApex(){
  const drivers=(window.state?.drivers||[]).filter(driver=>spotterDriverKey(driver));
  if(!drivers.length)return;
  if(!spotterState.monitorPrimed){
-  drivers.forEach(driver=>{spotterState.lastDriverStatus[spotterDriverKey(driver)]=String(driver.status||'unknown').toLowerCase()});
-  spotterState.monitorPrimed=true;saveSpotterFoundation();return;
+  let primedChange=false;
+  drivers.forEach(driver=>{
+   const team=spotterDriverKey(driver),status=spotterDriverPitState(driver);
+   spotterState.lastDriverStatus[team]=status;
+   // Si Spotter démarre alors que le kart est déjà dans la pit lane, on ne
+   // doit pas attendre une nouvelle transition : il devient entrant tout de suite.
+   if(status==='pit')primedChange=spotterAddIncoming(team,driver,{source:'apex'})||primedChange;
+  });
+  spotterState.monitorPrimed=true;
+  saveSpotterFoundation();
+  if(primedChange)renderSpotterFoundation('live');
+  return;
  }
  let changed=spotterRefreshVelocityMetrics();
  drivers.forEach(driver=>{
-  const team=spotterDriverKey(driver),status=String(driver.status||'unknown').toLowerCase(),previous=spotterState.lastDriverStatus[team];
+  const team=spotterDriverKey(driver),status=spotterDriverPitState(driver),previous=spotterState.lastDriverStatus[team];
   if(previous&&previous!=='pit'&&status==='pit')changed=spotterAddIncoming(team,driver,{source:'apex'})||changed;
   if(previous==='pit'&&status==='track')changed=spotterProcessPitOut(team,{source:'apex'})||changed;
   spotterState.lastDriverStatus[team]=status;

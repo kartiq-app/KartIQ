@@ -1,3 +1,11 @@
+# Velocity V7.2.76 — Spotter alimenté par les entrées Apex
+
+- Spotter utilise désormais la même détection de pit que la Heat Map : statut `pit` ou événement Apex brut `*in`.
+- Un kart détecté aux stands est automatiquement ajouté à **Karts entrants**, dans l'ordre d'arrivée.
+- Les karts déjà aux stands lors de l'ouverture/amorçage du Spotter sont également récupérés.
+- En mode Auto, l'entrée est détectée automatiquement mais **n'est plus validée automatiquement** dans une file : le Spotter humain choisit File 1/2/3 ou Maintenance.
+- Protection existante contre les doublons conservée.
+
 # Velocity V7.2.75 — Animations live des classements généraux
 
 - Qualification, Sprint, Endurance et Analyzer : animation de toute la ligne à chaque nouveau passage sur la ligne de chronométrage.
