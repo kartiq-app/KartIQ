@@ -1,3 +1,11 @@
+# Velocity V7.2.90 — Stabilité affichage Spotter
+
+- Le polling des droits Team continue toutes les 3 secondes mais ne relance plus le rendu lorsque l’état d’accès est inchangé.
+- Spotter n’est plus démonté/réaffiché à chaque réponse de `/api/device/session`.
+- Une coupure serveur transitoire ne remplace plus un écran Spotter/Pilote déjà autorisé par l’écran de verrouillage.
+- Le reroutage n’a lieu que si le rôle, la session, l’appareil ou les autorisations changent réellement.
+- Suppression des fichiers `__pycache__`/`.pyc` parasites de l’archive GitHub.
+
 # Velocity V7.2.89 — Verrouillage strict des rôles Team
 
 - Un appareil associé à un membre Team est désormais verrouillé par défaut pendant la vérification serveur.

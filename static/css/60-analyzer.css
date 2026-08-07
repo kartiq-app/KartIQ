@@ -1721,7 +1721,7 @@ body.velocity-lab-open{overflow:hidden!important}
   .analyzer-followed-title-row,.analyzer-rules-title-row{margin-bottom:6px}
 }
 
-/* Velocity V7.2.89 — Session de course multi-appareils */
+/* Velocity V7.2.90 — Session de course multi-appareils */
 .race-session-launch{border-color:rgba(242,126,24,.55)!important;color:#fff!important}
 .race-session-card{width:min(860px,94vw)}
 .race-session-empty p{margin:0 0 16px;color:#b8bdc7;line-height:1.45}
@@ -1758,7 +1758,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .race-role-ended p{color:#98a0ad;font-size:16px}
 @media(max-width:720px){.race-access-grid,.race-session-summary{grid-template-columns:1fr}.race-access-card{grid-template-columns:1fr 96px}.race-access-card img{width:96px;height:96px}}
 
-/* Velocity V7.2.89 — TEAM MANAGEMENT + appareils persistants */
+/* Velocity V7.2.90 — TEAM MANAGEMENT + appareils persistants */
 .race-session-card{width:min(980px,96vw);max-height:92vh;overflow:auto}
 .race-session-tabs{display:flex;gap:8px;margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #252b34}
 .race-session-tabs button{min-height:38px;padding:0 16px;border:1px solid #343b47;border-radius:8px;background:#0b0e13;color:#9da5b2;font-weight:900;letter-spacing:.06em}
@@ -1778,7 +1778,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-device-waiting{text-align:center}.velocity-device-waiting>div{max-width:520px}.velocity-device-waiting span{color:#ef1f2f;font-weight:950;letter-spacing:.18em}.velocity-device-waiting h1{font-size:32px;margin:10px 0}.velocity-device-waiting p{color:#a5adb8}.velocity-device-waiting b{display:block;margin-top:18px;color:#f27e18}.velocity-device-waiting-mode>header,.velocity-device-waiting-mode>#home,.velocity-device-waiting-mode>.screen{display:none!important}
 @media(max-width:720px){.race-team-toolbar,.race-add-member,.race-assignment-grid,.race-active-assignments,.race-session-actions{grid-template-columns:1fr}.race-member-head{align-items:flex-start}.race-member-head button{font-size:10px}.race-session-card{width:96vw}.race-session-tabs button{flex:1}}
 
-/* Velocity V7.2.89 — TEAM MANAGEMENT : suppressions, rôles multiples et invitation maîtrisée */
+/* Velocity V7.2.90 — TEAM MANAGEMENT : suppressions, rôles multiples et invitation maîtrisée */
 .race-team-title-actions,.race-member-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .race-team-title-actions .danger,.race-member-head-actions .danger{border-color:#5b2429;color:#ff7d86;background:#17090b}
 .race-role-picker{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid #303744;border-radius:10px;background:#090c11}
@@ -1798,7 +1798,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .race-invite-close{width:100%;margin-top:8px}
 @media(max-width:700px){.race-invite-link-row{grid-template-columns:1fr}.race-invite-share-actions{display:grid;grid-template-columns:1fr 1fr}.race-team-title-actions,.race-member-head-actions{justify-content:flex-start}}
 
-/* Velocity V7.2.89 — verrouillage strict des appareils Team */
+/* Velocity V7.2.90 — verrouillage strict des appareils Team */
 .velocity-device-pending-mode>header,.velocity-device-pending-mode>#home,.velocity-device-pending-mode>.screen,.velocity-device-pending-mode>footer,.velocity-device-pending-mode>#fullscreenFloatControls{display:none!important}
 .velocity-device-waiting-mode>footer,.velocity-device-waiting-mode>#fullscreenFloatControls{display:none!important}
 .race-role-access>footer,.race-role-access>#fullscreenFloatControls{display:none!important}
