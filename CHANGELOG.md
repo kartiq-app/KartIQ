@@ -1,4 +1,4 @@
-# Velocity V7.2.94 — Team Management harmonisé
+# Velocity V7.2.95 — Team Management harmonisé
 
 - Tous les boutons du module Team Management reprennent désormais la DA sombre des boutons Analyzer.
 - Les actions **SUPPRIMER** utilisent une variante danger sombre à bordure rouge, sans rectangle blanc.
@@ -7,13 +7,13 @@
 - La zone QR Code reste entièrement masquée tant que l’utilisateur ne clique pas sur **QR CODE**.
 - Le logo VELOCITY des deux écrans d’onboarding est resserré : V rouge et ELOCITY blanc forment un seul mot, comme sur la Home.
 
-## V7.2.94 — Onboarding Team et partage invitation
+## V7.2.95 — Onboarding Team et partage invitation
 - Fenêtre « Associer un appareil » simplifiée : Partager / Copier le lien / QR Code, sans URL affichée.
 - QR Code chargé de façon contrôlée avec message de secours en cas d’indisponibilité.
 - Écran membre : logo Velocity de la Home, icône d’accueil, texte « Vous rejoignez … en tant que : ».
 - Écran installation : titre « Installer Velocity » agrandi de 20 %.
 
-# Velocity V7.2.94 — Onboarding appareil premium
+# Velocity V7.2.95 — Onboarding appareil premium
 
 - Refonte complète de la page d'association d'un appareil membre.
 - Parcours en deux écrans : association du téléphone, puis installation de Velocity.
