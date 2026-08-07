@@ -1567,7 +1567,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-lab-matrix-wrap{overflow-anchor:none;overscroll-behavior:contain}
 
 
-/* Velocity V7.2.71 — Delta convention course + continuité pilote Apex */
+/* Velocity V7.2.72 — Delta convention course + continuité pilote Apex */
 .analyzer-kartiq-table .kartiq-pilot-head,
 .analyzer-kartiq-table .kartiq-pilot-continuity{
   text-align:center!important;
@@ -1590,9 +1590,29 @@ body.velocity-lab-open{overflow:hidden!important}
   .analyzer-strategy-column .analyzer-kartiq-table.has-pilot-column th:nth-child(13),.analyzer-strategy-column .analyzer-kartiq-table.has-pilot-column td:nth-child(13){width:13.5%!important}
 }
 
-.analyzer-kartiq-table .kartiq-pilot-continuity{position:relative;overflow:visible!important}
-.analyzer-kartiq-table .kartiq-pilot-continuity[data-tooltip]:hover::after{
-  content:attr(data-tooltip);position:absolute;left:50%;bottom:calc(100% - 2px);transform:translateX(-50%);
-  z-index:30;pointer-events:none;white-space:nowrap;background:#05070b;color:#fff;border:1px solid #4a5565;
-  border-radius:6px;padding:5px 7px;font-size:11px;font-weight:800;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.45)
+.analyzer-kartiq-table .kartiq-tooltip{
+  position:relative;
+  overflow:visible!important;
+  cursor:help;
 }
+.analyzer-kartiq-table .kartiq-tooltip[data-tooltip]:hover::after{
+  content:attr(data-tooltip);
+  position:absolute;
+  left:50%;
+  bottom:calc(100% - 2px);
+  transform:translateX(-50%);
+  z-index:30;
+  pointer-events:none;
+  white-space:nowrap;
+  background:#05070b;
+  color:#fff;
+  border:1px solid #4a5565;
+  border-radius:6px;
+  padding:5px 7px;
+  font-size:11px;
+  font-weight:800;
+  line-height:1;
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
+}
+
+/* Velocity V7.2.72 — Mode Test pilotes tournants + infobulles Velocity uniformisées. */

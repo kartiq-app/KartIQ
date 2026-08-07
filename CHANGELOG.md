@@ -1,3 +1,12 @@
+# V7.2.72 — Mode Test pilotes + infobulles Velocity uniformisées
+
+- Le Mode Test Endurance simule désormais 4 pilotes fictifs par équipe.
+- À chaque arrêt, 70 % de probabilité de changement de pilote et 30 % de continuité afin de tester les cas 👤 et 👥.
+- Les pilotes fictifs disposent de légers écarts de rythme pour rendre les changements réellement visibles dans les métriques.
+- Les arrêts du Mode Test effectuent désormais aussi un changement de kart effectif, conformément à l’option « Arrêts et changements de kart ».
+- Les infobulles existantes du classement Velocity (équipe, continuité pilote, évolution et Δ) utilisent désormais un design unique basé sur l’infobulle du Δ.
+- Aucun changement du Velocity Engine V1.0 ni des pondérations du Score.
+
 # V7.2.71 — Fiabilisation du Δ Velocity
 
 - Isolation complète de l’apprentissage du Mode Test Endurance : un test ne peut plus réutiliser les relais mémorisés d’une session réelle ou d’un test précédent.
@@ -6,7 +15,7 @@
 - Convention conservée : Δ négatif = gain/plus rapide (vert), Δ positif = perte/plus lent (rouge), affichage au dixième.
 - Aucun changement des pondérations du Velocity Engine V1.0.
 
-## V7.2.71 — Δ course et continuité pilote Apex
+## V7.2.70 — Δ course et continuité pilote Apex
 
 - Convention du Δ corrigée : négatif = plus rapide (vert), positif = plus lent (rouge).
 - Δ affiché au dixième de seconde (`-0,4`, `+0,5`).
