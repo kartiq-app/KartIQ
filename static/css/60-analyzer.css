@@ -1721,7 +1721,7 @@ body.velocity-lab-open{overflow:hidden!important}
   .analyzer-followed-title-row,.analyzer-rules-title-row{margin-bottom:6px}
 }
 
-/* Velocity V7.2.93 — Session de course multi-appareils */
+/* Velocity V7.2.94 — Session de course multi-appareils */
 .race-session-launch{border-color:rgba(242,126,24,.55)!important;color:#fff!important}
 .race-session-card{width:min(860px,94vw)}
 .race-session-empty p{margin:0 0 16px;color:#b8bdc7;line-height:1.45}
@@ -1758,7 +1758,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .race-role-ended p{color:#98a0ad;font-size:16px}
 @media(max-width:720px){.race-access-grid,.race-session-summary{grid-template-columns:1fr}.race-access-card{grid-template-columns:1fr 96px}.race-access-card img{width:96px;height:96px}}
 
-/* Velocity V7.2.93 — TEAM MANAGEMENT + appareils persistants */
+/* Velocity V7.2.94 — TEAM MANAGEMENT + appareils persistants */
 .race-session-card{width:min(980px,96vw);max-height:92vh;overflow:auto}
 .race-session-tabs{display:flex;gap:8px;margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #252b34}
 .race-session-tabs button{min-height:38px;padding:0 16px;border:1px solid #343b47;border-radius:8px;background:#0b0e13;color:#9da5b2;font-weight:900;letter-spacing:.06em}
@@ -1778,7 +1778,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-device-waiting{text-align:center}.velocity-device-waiting>div{max-width:520px}.velocity-device-waiting span{color:#ef1f2f;font-weight:950;letter-spacing:.18em}.velocity-device-waiting h1{font-size:32px;margin:10px 0}.velocity-device-waiting p{color:#a5adb8}.velocity-device-waiting b{display:block;margin-top:18px;color:#f27e18}.velocity-device-waiting-mode>header,.velocity-device-waiting-mode>#home,.velocity-device-waiting-mode>.screen{display:none!important}
 @media(max-width:720px){.race-team-toolbar,.race-add-member,.race-assignment-grid,.race-active-assignments,.race-session-actions{grid-template-columns:1fr}.race-member-head{align-items:flex-start}.race-member-head button{font-size:10px}.race-session-card{width:96vw}.race-session-tabs button{flex:1}}
 
-/* Velocity V7.2.93 — TEAM MANAGEMENT : suppressions, rôles multiples et invitation maîtrisée */
+/* Velocity V7.2.94 — TEAM MANAGEMENT : suppressions, rôles multiples et invitation maîtrisée */
 .race-team-title-actions,.race-member-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .race-team-title-actions .danger,.race-member-head-actions .danger{border-color:#5b2429;color:#ff7d86;background:#17090b}
 .race-role-picker{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid #303744;border-radius:10px;background:#090c11}
@@ -1798,7 +1798,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .race-invite-close{width:100%;margin-top:8px}
 @media(max-width:700px){.race-invite-link-row{grid-template-columns:1fr}.race-invite-share-actions{display:grid;grid-template-columns:1fr 1fr}.race-team-title-actions,.race-member-head-actions{justify-content:flex-start}}
 
-/* Velocity V7.2.93 — verrouillage strict des appareils Team */
+/* Velocity V7.2.94 — verrouillage strict des appareils Team */
 .velocity-device-pending-mode>header,.velocity-device-pending-mode>#home,.velocity-device-pending-mode>.screen,.velocity-device-pending-mode>footer,.velocity-device-pending-mode>#fullscreenFloatControls{display:none!important}
 .velocity-device-waiting-mode>footer,.velocity-device-waiting-mode>#fullscreenFloatControls{display:none!important}
 .race-role-access>footer,.race-role-access>#fullscreenFloatControls{display:none!important}
@@ -1806,7 +1806,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .race-role-pilot .screen{display:none!important}
 
 
-/* Velocity V7.2.93 — Onboarding premium d'association appareil */
+/* Velocity V7.2.94 — Onboarding premium d'association appareil */
 .velocity-invite-overlay{
   background:
     radial-gradient(circle at 50% 15%,rgba(239,31,47,.10),transparent 34%),
@@ -1855,7 +1855,7 @@ body.velocity-lab-open{overflow:hidden!important}
   .velocity-install-row{grid-template-columns:34px 1fr;padding:12px}
 }
 
-/* Velocity V7.2.93 — Invitation appareil et onboarding membre affinés */
+/* Velocity V7.2.94 — Invitation appareil et onboarding membre affinés */
 .velocity-onboarding-home-logo{
   justify-self:center;
   transform:none;
@@ -1888,3 +1888,52 @@ body.velocity-lab-open{overflow:hidden!important}
   .velocity-install-guide h2{font-size:21.6px}
   .race-invite-share-actions-main{grid-template-columns:1fr}
 }
+
+/* Velocity V7.2.94 — Team Management harmonisé avec la DA Analyzer */
+.velocity-onboarding-brand{gap:0}
+.velocity-onboarding-home-logo{gap:0!important;white-space:nowrap}
+.velocity-onboarding-home-logo .velocity-v,.velocity-onboarding-home-logo .kartiq-kart{display:inline-block;margin:0;padding:0}
+.velocity-onboarding-home-logo .kartiq-kart{margin-left:-.02em}
+
+.race-ui-btn,
+.race-session-card button:not(.analyzer-rules-head button),
+.race-invite-share-card button{
+  appearance:none;
+  min-height:38px;
+  padding:0 15px;
+  border:1px solid #3a4452;
+  border-radius:8px;
+  background:#111720;
+  color:#f2f4f7;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.035em;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+  cursor:pointer;
+  transition:border-color .14s ease,background .14s ease,color .14s ease,transform .14s ease;
+}
+.race-ui-btn:hover,
+.race-session-card button:not(.analyzer-rules-head button):hover,
+.race-invite-share-card button:hover{background:#17202b;border-color:#586578;color:#fff}
+.race-ui-btn:active,.race-session-card button:not(.analyzer-rules-head button):active,.race-invite-share-card button:active{transform:translateY(1px)}
+.race-ui-btn.primary,.race-session-card button.primary,.race-invite-share-card button.primary{border-color:#d92332;background:#bd1825;color:#fff}
+.race-ui-btn.primary:hover,.race-session-card button.primary:hover,.race-invite-share-card button.primary:hover{background:#d91e2d;border-color:#ef3140}
+.race-ui-btn.danger,.race-session-card button.danger,.race-member-head-actions .danger,.race-team-title-actions .danger{border-color:#6f2c33!important;background:#1b0d11!important;color:#ff8992!important}
+.race-ui-btn.danger:hover,.race-session-card button.danger:hover,.race-member-head-actions .danger:hover,.race-team-title-actions .danger:hover{border-color:#b7444e!important;background:#2a1116!important;color:#ffb0b6!important}
+.race-ui-btn:disabled,.race-session-card button:disabled,.race-invite-share-card button:disabled{opacity:.48;cursor:default;transform:none}
+.race-invite-close{width:100%;margin-top:8px}
+.race-invite-share-actions-main .primary{background:#bd1825;color:#fff;border-color:#d92332}
+.race-invite-qr[hidden]{display:none!important}
+
+.velocity-team-dialog{width:min(470px,94vw);padding:28px;border:1px solid #303844;border-radius:18px;background:linear-gradient(180deg,#11161d,#0a0e13);box-shadow:0 34px 100px rgba(0,0,0,.58)}
+.velocity-team-dialog h1{margin:8px 0 8px;color:#fff;font-size:27px;line-height:1.05;letter-spacing:-.025em}
+.velocity-team-dialog>p{margin:0 0 20px;color:#aab2bd;font-size:13px;line-height:1.55}
+.velocity-team-dialog-field{display:grid;gap:8px;margin:18px 0}
+.velocity-team-dialog-field span{font-size:9px;font-weight:950;letter-spacing:.12em;color:#8e98a6}
+.velocity-team-dialog-field input{width:100%;min-height:46px;box-sizing:border-box;border:1px solid #3a4452;border-radius:9px;background:#090d12;color:#fff;padding:0 13px;font:inherit;outline:none}
+.velocity-team-dialog-field input:focus{border-color:#69778b;box-shadow:0 0 0 2px rgba(105,119,139,.14)}
+.velocity-team-dialog .race-session-feedback{min-height:18px;margin:0 0 8px}
+.velocity-team-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.velocity-team-dialog-actions .race-ui-btn{min-height:44px}
+@media(max-width:600px){.velocity-team-dialog{padding:23px 18px}.velocity-team-dialog-actions{grid-template-columns:1fr}.race-team-title-actions,.race-member-head-actions{gap:7px}.race-member-head-actions .race-ui-btn{min-height:36px;padding:0 11px;font-size:10px}}

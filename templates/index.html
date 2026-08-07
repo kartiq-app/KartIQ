@@ -309,7 +309,7 @@
       <div class="race-session-tabs"><button id="raceTeamsTabBtn" class="active" onclick="raceSessionTab('teams')">TEAMS</button><button id="raceCourseTabBtn" onclick="raceSessionTab('course')">SESSION COURSE</button></div>
 
       <section id="raceTeamsPane" class="race-session-pane">
-        <div class="race-team-toolbar"><select id="raceTeamSelect" onchange="selectRaceTeam(this.value)"><option value="">Aucune Team</option></select><button type="button" onclick="createRaceTeamPrompt()">+ CRÉER UNE TEAM</button></div>
+        <div class="race-team-toolbar"><select id="raceTeamSelect" onchange="selectRaceTeam(this.value)"><option value="">Aucune Team</option></select><button type="button" class="race-ui-btn" onclick="openRaceTeamCreateModal()">+ CRÉER UNE TEAM</button></div>
         <div id="raceTeamEditor" class="race-team-editor"><div class="analyzer-empty">Créez ou sélectionnez une Team.</div></div>
       </section>
 
@@ -328,7 +328,7 @@
         <div id="raceSessionActive" class="race-session-active" hidden>
           <div class="race-session-summary"><div><span>SESSION</span><b id="raceSessionActiveName">—</b></div><div><span>CIRCUIT VERROUILLÉ</span><b id="raceSessionActiveCircuit">—</b></div><div><span>TEAM</span><b id="raceSessionActiveTeam">—</b></div></div>
           <div id="raceActiveAssignments" class="race-active-assignments"></div>
-          <div class="race-session-actions"><button type="button" onclick="saveRaceAssignments()">APPLIQUER LES RÔLES</button><button type="button" class="danger race-session-end" onclick="endRaceSession()">TERMINER LA SESSION</button></div>
+          <div class="race-session-actions"><button type="button" class="race-ui-btn" onclick="saveRaceAssignments()">APPLIQUER LES RÔLES</button><button type="button" class="race-ui-btn danger race-session-end" onclick="endRaceSession()">TERMINER LA SESSION</button></div>
         </div>
       </section>
       <div id="raceSessionFeedback" class="race-session-feedback" aria-live="polite"></div>
@@ -455,14 +455,31 @@
     <div><span>VELOCITY</span><h1 id="velocityDeviceWaitingName">Membre associé</h1><p id="velocityDeviceWaitingTeam">Aucune session active.</p><b>En attente d’affectation…</b></div>
   </div>
 
+<div id="raceTeamActionModal" class="velocity-invite-overlay" hidden>
+  <div class="velocity-team-dialog" role="dialog" aria-modal="true" aria-labelledby="raceTeamActionTitle">
+    <span class="velocity-invite-kicker">VELOCITY TEAM</span>
+    <h1 id="raceTeamActionTitle">TEAM</h1>
+    <p id="raceTeamActionText"></p>
+    <label id="raceTeamActionInputWrap" class="velocity-team-dialog-field" hidden>
+      <span>NOM DE LA TEAM</span>
+      <input id="raceTeamActionInput" type="text" autocomplete="off" maxlength="80" placeholder="Ex. Red Kronos">
+    </label>
+    <div id="raceTeamActionError" class="race-session-feedback error" aria-live="polite"></div>
+    <div class="velocity-team-dialog-actions">
+      <button type="button" class="race-ui-btn" onclick="closeRaceTeamActionModal()">ANNULER</button>
+      <button id="raceTeamActionConfirm" type="button" class="race-ui-btn primary" onclick="confirmRaceTeamAction()">VALIDER</button>
+    </div>
+  </div>
+</div>
+
 <div id="raceInviteShareModal" class="velocity-invite-overlay" hidden>
   <div class="velocity-invite-card race-invite-share-card">
     <span class="velocity-invite-kicker">VELOCITY TEAM</span><h1 id="raceInviteShareTitle">Associer un appareil</h1>
     <p id="raceInviteShareText">Invitation prête.</p>
     <div class="race-invite-share-actions race-invite-share-actions-main">
-      <button type="button" class="primary" onclick="shareRaceInviteLink()">PARTAGER</button>
-      <button type="button" onclick="copyRaceInviteLink()">COPIER LE LIEN</button>
-      <button type="button" onclick="toggleRaceInviteQr()">QR CODE</button>
+      <button type="button" class="race-ui-btn primary" onclick="shareRaceInviteLink()">PARTAGER</button>
+      <button type="button" class="race-ui-btn" onclick="copyRaceInviteLink()">COPIER LE LIEN</button>
+      <button type="button" class="race-ui-btn" onclick="toggleRaceInviteQr()">QR CODE</button>
     </div>
     <div id="raceInviteCopyStatus" class="race-invite-copy-status" aria-live="polite"></div>
     <div id="raceInviteQrWrap" class="race-invite-qr" hidden>
@@ -470,7 +487,7 @@
       <img id="raceInviteQrImage" alt="QR Code d’invitation Velocity" hidden>
       <div id="raceInviteQrError" class="race-invite-qr-error" hidden>QR Code indisponible. Utilisez « Partager » ou « Copier le lien ».</div>
     </div>
-    <button type="button" class="race-invite-close" onclick="closeRaceInviteShare()">FERMER</button>
+    <button type="button" class="race-ui-btn race-invite-close" onclick="closeRaceInviteShare()">FERMER</button>
   </div>
 </div>
 
