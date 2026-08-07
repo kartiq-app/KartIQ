@@ -319,9 +319,9 @@
           <label>Nom de la session<input id="raceSessionName" type="text" maxlength="80" placeholder="Ex. 24H Fun & Race"></label>
           <div class="race-session-context"><span>Circuit</span><b id="raceSessionCircuit">—</b><span>Team</span><b id="raceSessionTeam">—</b></div>
           <div class="race-assignment-grid">
-            <label>TEAM MANAGER<select id="raceAssignTM"><option value="">Non affecté</option></select></label>
-            <label>SPOTTER<select id="raceAssignSpotter"><option value="">Non affecté</option></select></label>
-            <label>PILOTE<select id="raceAssignPilot"><option value="">Non affecté</option></select></label>
+            <div class="race-role-picker"><span>TEAM MANAGER</span><div id="raceAssignTM" class="race-role-members"></div></div>
+            <div class="race-role-picker"><span>SPOTTER</span><div id="raceAssignSpotter" class="race-role-members"></div></div>
+            <div class="race-role-picker"><span>PILOTE</span><div id="raceAssignPilot" class="race-role-members"></div></div>
           </div>
           <button type="button" class="primary race-session-create" onclick="createRaceSession()">CRÉER LA SESSION</button>
         </div>
@@ -334,22 +334,6 @@
       <div id="raceSessionFeedback" class="race-session-feedback" aria-live="polite"></div>
       <div class="analyzer-rules-note">Les invitations servent à associer un appareil une seule fois. Ensuite le membre ouvre simplement Velocity depuis son écran d’accueil : sa session et son rôle sont détectés automatiquement.</div>
     </div>
-  </div>
-
-  <div id="velocityInviteOverlay" class="velocity-invite-overlay" hidden>
-    <div class="velocity-invite-card">
-      <span class="velocity-invite-kicker">VELOCITY TEAM</span><h1 id="velocityInviteTitle">Invitation</h1>
-      <p id="velocityInviteText">Chargement de votre invitation…</p>
-      <div id="velocityInviteRoles" class="velocity-invite-roles"></div>
-      <div class="velocity-install-box"><b>INSTALLER VELOCITY</b><p>Sur iPhone : ouvrez le menu <b>Partager</b>, puis <b>Ajouter à l’écran d’accueil</b>. Sur Android : utilisez <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</p></div>
-      <button id="velocityInviteClaim" type="button" class="primary" onclick="claimVelocityInvite()">ASSOCIER CET APPAREIL</button>
-      <div id="velocityInviteStatus" class="race-session-feedback"></div>
-      <p class="velocity-invite-after">Une fois l’icône Velocity installée, ouvrez-la. Cet appareil sera reconnu automatiquement pour les prochaines courses.</p>
-    </div>
-  </div>
-
-  <div id="velocityDeviceWaiting" class="velocity-device-waiting" hidden>
-    <div><span>VELOCITY</span><h1 id="velocityDeviceWaitingName">Membre associé</h1><p id="velocityDeviceWaitingTeam">Aucune session active.</p><b>En attente d’affectation…</b></div>
   </div>
 
   <div class="velocity-lab-overlay" id="velocityLabOverlay" role="dialog" aria-modal="true" aria-labelledby="velocityLabTitle">
@@ -432,6 +416,33 @@
     </div>
   </div>
 </section>
+
+  <div id="velocityInviteOverlay" class="velocity-invite-overlay" hidden>
+    <div class="velocity-invite-card">
+      <span class="velocity-invite-kicker">VELOCITY TEAM</span><h1 id="velocityInviteTitle">Invitation</h1>
+      <p id="velocityInviteText">Chargement de votre invitation…</p>
+      <div id="velocityInviteRoles" class="velocity-invite-roles"></div>
+      <div class="velocity-install-box"><b>INSTALLER VELOCITY</b><p>Sur iPhone : ouvrez le menu <b>Partager</b>, puis <b>Ajouter à l’écran d’accueil</b>. Sur Android : utilisez <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</p></div>
+      <button id="velocityInviteClaim" type="button" class="primary" onclick="claimVelocityInvite()">ASSOCIER CET APPAREIL</button>
+      <div id="velocityInviteStatus" class="race-session-feedback"></div>
+      <p class="velocity-invite-after">Une fois l’icône Velocity installée, ouvrez-la. Cet appareil sera reconnu automatiquement pour les prochaines courses.</p>
+    </div>
+  </div>
+
+  <div id="velocityDeviceWaiting" class="velocity-device-waiting" hidden>
+    <div><span>VELOCITY</span><h1 id="velocityDeviceWaitingName">Membre associé</h1><p id="velocityDeviceWaitingTeam">Aucune session active.</p><b>En attente d’affectation…</b></div>
+  </div>
+
+<div id="raceInviteShareModal" class="velocity-invite-overlay" hidden>
+  <div class="velocity-invite-card race-invite-share-card">
+    <span class="velocity-invite-kicker">VELOCITY TEAM</span><h1 id="raceInviteShareTitle">Associer un appareil</h1>
+    <p id="raceInviteShareText">Invitation prête.</p>
+    <div class="race-invite-link-row"><input id="raceInviteShareLink" type="text" readonly><button type="button" onclick="copyRaceInviteLink()">COPIER LE LIEN</button></div>
+    <div class="race-invite-share-actions"><button type="button" onclick="shareRaceInviteLink()">PARTAGER</button><button type="button" onclick="toggleRaceInviteQr()">QR CODE</button></div>
+    <div id="raceInviteQrWrap" class="race-invite-qr" hidden><img id="raceInviteQrImage" alt="QR Code d’invitation Velocity"></div>
+    <button type="button" class="race-invite-close" onclick="closeRaceInviteShare()">FERMER</button>
+  </div>
+</div>
 
 <div class="analyzer-modal analyzer-debrief-modal" id="analyzerDebriefModal" role="dialog" aria-modal="true" aria-labelledby="analyzerDebriefTitle">
   <div class="analyzer-modal-card analyzer-debrief-card">

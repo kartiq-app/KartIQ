@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.87"
+APP_VERSION = "7.2.88"
 APP_RELEASE_NAME = "TEAM MANAGEMENT & SESSION COURSE"
 
 

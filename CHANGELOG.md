@@ -1,4 +1,12 @@
-# Velocity V7.2.87 — Session de course multi-appareils (prototype)
+# Velocity V7.2.88 — Team Management fiabilisé
+
+- Correction de la page noire des invitations `/invite/...` : l’écran d’enrôlement est désormais hors de la page Analyzer et reste visible quand les écrans normaux sont masqués.
+- Ajout de la suppression d’une Team et d’un membre, avec confirmation et nettoyage des appareils/invitations associés.
+- Session Course : plusieurs membres peuvent être cochés pour un même rôle (Pilote, Spotter, Team Manager).
+- « Associer un appareil » ouvre désormais une fenêtre Velocity avec Copier le lien / Partager / QR Code, sans lancer automatiquement Mail.
+- Ajout d’un QR Code d’invitation servi directement par Velocity.
+
+# Velocity V7.2.86 — Session de course multi-appareils (prototype)
 
 - Nouveau gestionnaire SESSION COURSE dans le footer Analyzer.
 - Création d’une session à partir du circuit actif et de l’équipe suivie.

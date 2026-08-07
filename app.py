@@ -731,8 +731,18 @@ def create_team():
 @app.delete("/api/teams/<team_id>")
 def delete_team(team_id):
     with TEAM_DATA_LOCK:
-        before=len(TEAM_DATA.get("teams",[])); TEAM_DATA["teams"]=[t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))!=str(team_id)]
-        if len(TEAM_DATA["teams"])==before: return jsonify(ok=False,error="Team introuvable."),404
+        team=next((t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))==str(team_id)),None)
+        if not team: return jsonify(ok=False,error="Team introuvable."),404
+        active=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
+        if active and active.get("status")=="active" and str(active.get("team_id"))==str(team_id):
+            return jsonify(ok=False,error="Terminez la Session Course avant de supprimer cette Team."),409
+        member_ids={str(m.get("id")) for m in team.get("members",[])}
+        device_ids={str(did) for m in team.get("members",[]) for did in (m.get("device_ids") or [])}
+        TEAM_DATA["teams"]=[t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))!=str(team_id)]
+        for did in device_ids: TEAM_DATA.get("devices",{}).pop(did,None)
+        for token,invite in list(TEAM_DATA.get("invites",{}).items()):
+            if str(invite.get("team_id"))==str(team_id) or str(invite.get("member_id")) in member_ids:
+                TEAM_DATA.get("invites",{}).pop(token,None)
         _save_team_data(TEAM_DATA)
     return jsonify(ok=True)
 
@@ -762,6 +772,31 @@ def update_team_member(member_id):
     return jsonify(ok=True,member=member)
 
 
+@app.delete("/api/members/<member_id>")
+def delete_team_member(member_id):
+    with TEAM_DATA_LOCK:
+        team, member = _member_by_id(TEAM_DATA, member_id)
+        if not member:
+            return jsonify(ok=False,error="Membre introuvable."),404
+        # Retire les appareils et invitations liés au membre.
+        for device_id in list(member.get("device_ids") or []):
+            TEAM_DATA.get("devices", {}).pop(str(device_id), None)
+        for token, invite in list(TEAM_DATA.get("invites", {}).items()):
+            if str(invite.get("member_id")) == str(member_id):
+                TEAM_DATA.get("invites", {}).pop(token, None)
+        team["members"]=[m for m in team.get("members",[]) if str(m.get("id"))!=str(member_id)]
+        # Retire ce membre de toutes les affectations de sessions.
+        for session in TEAM_DATA.get("sessions",[]):
+            assignments=session.get("assignments") or {}
+            for role, mids in list(assignments.items()):
+                if isinstance(mids, list):
+                    assignments[role]=[mid for mid in mids if str(mid)!=str(member_id)]
+                elif str(mids)==str(member_id):
+                    assignments[role]=[]
+        _save_team_data(TEAM_DATA)
+    return jsonify(ok=True)
+
+
 @app.post("/api/members/<member_id>/invite")
 def create_member_invite(member_id):
     with TEAM_DATA_LOCK:
@@ -778,6 +813,19 @@ def get_invite(token):
     with TEAM_DATA_LOCK: invite=deepcopy(TEAM_DATA.get("invites",{}).get(str(token)))
     if not invite or invite.get("revoked"): return jsonify(ok=False,error="Invitation invalide."),410
     return jsonify(ok=True,invite=invite)
+
+
+@app.get("/api/invite/<token>/qr")
+def invite_qr(token):
+    with TEAM_DATA_LOCK:
+        invite=deepcopy(TEAM_DATA.get("invites",{}).get(str(token)))
+    if not invite or invite.get("revoked"):
+        return jsonify(ok=False,error="Invitation invalide."),410
+    if qrcode is None:
+        return jsonify(ok=False,error="QR Code indisponible."),503
+    link=f"{request.host_url.rstrip('/')}/invite/{token}"
+    img=qrcode.make(link); buf=io.BytesIO(); img.save(buf,format="PNG"); buf.seek(0)
+    return send_file(buf,mimetype="image/png",max_age=0)
 
 
 @app.post("/api/invite/<token>/claim")
@@ -820,8 +868,15 @@ def device_session():
         session=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
         role=None
         if session and session.get("status")=="active":
-            for r,mid in (session.get("assignments") or {}).items():
-                if str(mid)==str(dev.get("member_id")): role=r; break
+            # Une session peut affecter plusieurs membres au même rôle.
+            # Si un membre figure dans plusieurs rôles actifs, le rôle le plus
+            # opérationnel est priorisé : Team Manager > Spotter > Pilote.
+            assignments=session.get("assignments") or {}
+            member_id=str(dev.get("member_id"))
+            for r in ("team_manager","spotter","pilot"):
+                mids=assignments.get(r) or []
+                if not isinstance(mids,list): mids=[mids] if mids else []
+                if any(str(mid)==member_id for mid in mids): role=r; break
         _save_team_data(TEAM_DATA)
         public=_race_session_public(session) if session and role else None
     return jsonify(ok=True,paired=True,device=deepcopy(dev),authorized_roles=authorized_roles,session=public,role=role)
@@ -851,11 +906,16 @@ def create_race_session():
         if not team:return jsonify(ok=False,error="Sélectionnez une Team."),400
         member_map={str(m.get("id")):m for m in team.get("members",[])}; clean={}
         for role in ("team_manager","spotter","pilot"):
-            mid=str(assignments.get(role) or "").strip()
-            if not mid:continue
-            m=member_map.get(mid)
-            if not m or role not in (m.get("roles") or []):return jsonify(ok=False,error=f"Rôle {role} non autorisé pour ce membre."),400
-            clean[role]=mid
+            raw=assignments.get(role) or []
+            mids=raw if isinstance(raw,list) else ([raw] if raw else [])
+            valid=[]
+            for mid in mids:
+                mid=str(mid or "").strip()
+                if not mid or mid in valid: continue
+                m=member_map.get(mid)
+                if not m or role not in (m.get("roles") or []):return jsonify(ok=False,error=f"Rôle {role} non autorisé pour ce membre."),400
+                valid.append(mid)
+            clean[role]=valid
         now_ms=int(time.time()*1000); sid=secrets.token_hex(4).upper()
         session={"id":sid,"name":str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE","status":"active","circuit_id":circuit_id,"circuit_name":str(circuit.get("name") or circuit_id),"followed_driver":str(STATE.get("followed_driver") or "").strip(),"team_id":team.get("id"),"team_name":team.get("name"),"assignments":clean,"created_at_ms":now_ms,"ended_at_ms":None}
         TEAM_DATA.setdefault("sessions",[]).append(session); TEAM_DATA["active_session_id"]=sid; _save_team_data(TEAM_DATA)
@@ -873,11 +933,16 @@ def update_race_assignments():
         team=next((t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))==str(session.get("team_id"))),None); member_map={str(m.get("id")):m for m in (team or {}).get("members",[])}
         clean={}
         for role in ("team_manager","spotter","pilot"):
-            mid=str(assignments.get(role) or "").strip()
-            if not mid:continue
-            m=member_map.get(mid)
-            if not m or role not in (m.get("roles") or []):return jsonify(ok=False,error=f"Rôle {role} non autorisé."),400
-            clean[role]=mid
+            raw=assignments.get(role) or []
+            mids=raw if isinstance(raw,list) else ([raw] if raw else [])
+            valid=[]
+            for mid in mids:
+                mid=str(mid or "").strip()
+                if not mid or mid in valid: continue
+                m=member_map.get(mid)
+                if not m or role not in (m.get("roles") or []):return jsonify(ok=False,error=f"Rôle {role} non autorisé."),400
+                valid.append(mid)
+            clean[role]=valid
         session["assignments"]=clean; _save_team_data(TEAM_DATA)
     return jsonify(ok=True,session=_race_session_public(session))
 
