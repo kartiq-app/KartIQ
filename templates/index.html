@@ -419,14 +419,11 @@
 
   <div id="velocityInviteOverlay" class="velocity-invite-overlay" hidden>
     <div class="velocity-onboarding-shell">
-      <div class="velocity-onboarding-brand" aria-label="Velocity"><span class="velocity-onboarding-v">V</span><span>VELOCITY</span></div>
+      <div class="velocity-onboarding-brand kartiq-logo velocity-onboarding-home-logo" aria-label="Velocity"><span class="velocity-v">V</span><span class="kartiq-kart">ELOCITY</span></div>
 
       <section id="velocityInvitePairStep" class="velocity-onboarding-card">
         <div class="velocity-onboarding-step">ÉTAPE 1 SUR 2</div>
-        <div class="velocity-device-visual" aria-hidden="true">
-          <div class="velocity-device-outline"><div class="velocity-device-screen"><span class="velocity-device-v">V</span></div></div>
-          <div class="velocity-device-link-dot">+</div>
-        </div>
+        <div class="velocity-member-app-icon" aria-hidden="true"><img src="/static/icons/kartiq-180.png" alt=""></div>
         <h1 id="velocityInviteTitle">Invitation</h1>
         <p id="velocityInviteText" class="velocity-onboarding-lead">Chargement de votre invitation…</p>
         <div id="velocityInviteRoles" class="velocity-invite-roles"></div>
@@ -462,9 +459,17 @@
   <div class="velocity-invite-card race-invite-share-card">
     <span class="velocity-invite-kicker">VELOCITY TEAM</span><h1 id="raceInviteShareTitle">Associer un appareil</h1>
     <p id="raceInviteShareText">Invitation prête.</p>
-    <div class="race-invite-link-row"><input id="raceInviteShareLink" type="text" readonly><button type="button" onclick="copyRaceInviteLink()">COPIER LE LIEN</button></div>
-    <div class="race-invite-share-actions"><button type="button" onclick="shareRaceInviteLink()">PARTAGER</button><button type="button" onclick="toggleRaceInviteQr()">QR CODE</button></div>
-    <div id="raceInviteQrWrap" class="race-invite-qr" hidden><img id="raceInviteQrImage" alt="QR Code d’invitation Velocity"></div>
+    <div class="race-invite-share-actions race-invite-share-actions-main">
+      <button type="button" class="primary" onclick="shareRaceInviteLink()">PARTAGER</button>
+      <button type="button" onclick="copyRaceInviteLink()">COPIER LE LIEN</button>
+      <button type="button" onclick="toggleRaceInviteQr()">QR CODE</button>
+    </div>
+    <div id="raceInviteCopyStatus" class="race-invite-copy-status" aria-live="polite"></div>
+    <div id="raceInviteQrWrap" class="race-invite-qr" hidden>
+      <div id="raceInviteQrLoading" class="race-invite-qr-loading">Génération du QR Code…</div>
+      <img id="raceInviteQrImage" alt="QR Code d’invitation Velocity" hidden>
+      <div id="raceInviteQrError" class="race-invite-qr-error" hidden>QR Code indisponible. Utilisez « Partager » ou « Copier le lien ».</div>
+    </div>
     <button type="button" class="race-invite-close" onclick="closeRaceInviteShare()">FERMER</button>
   </div>
 </div>

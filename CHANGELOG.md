@@ -1,4 +1,10 @@
-# Velocity V7.2.92 — Onboarding appareil premium
+## V7.2.93 — Onboarding Team et partage invitation
+- Fenêtre « Associer un appareil » simplifiée : Partager / Copier le lien / QR Code, sans URL affichée.
+- QR Code chargé de façon contrôlée avec message de secours en cas d’indisponibilité.
+- Écran membre : logo Velocity de la Home, icône d’accueil, texte « Vous rejoignez … en tant que : ».
+- Écran installation : titre « Installer Velocity » agrandi de 20 %.
+
+# Velocity V7.2.93 — Onboarding appareil premium
 
 - Refonte complète de la page d'association d'un appareil membre.
 - Parcours en deux écrans : association du téléphone, puis installation de Velocity.
