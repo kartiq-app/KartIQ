@@ -1,3 +1,12 @@
+# Velocity V7.2.81 — Dead zone centrale de la ligne TRAFIC
+
+- Le kart suivi occupe désormais une zone centrale infranchissable par les cercles adverses.
+- À 0,00 s derrière, le cercle touche le bord gauche du kart ; à 0,00 s devant, il touche le bord droit.
+- Les écarts de -10 s à 0 s et de 0 s à +10 s sont reprojetés séparément de part et d'autre de la dead zone.
+- La largeur de la dead zone s'adapte automatiquement à la largeur réelle du visuel du kart et à celle des cercles.
+- Les graduations 2 / 4 / 6 / 8 / 10 suivent la même nouvelle projection.
+- Le calcul physique des écarts et les infobulles restent inchangés.
+
 # Velocity V7.2.80 — Annulation Quick Change & bouton Analyzer
 
 - Ajout d’un bouton **ANNULER** dès le choix du nombre de files et dans l’écran d’initialisation des karts.

@@ -1519,7 +1519,7 @@ body.spotter-drag-active #analyzerSpotterFiles{
 
 
 /* Velocity V7.2.65 — palette Radar unifiée et trafic circulaire */
-:root{--pace-fastest:#a855f7;--pace-excellent:#3b82f6;--pace-good:#22c55e;--pace-medium:#eab308;--pace-average:#f97316;--pace-slow:#ef4444}
+:root{--pace-fastest:#a855f7;--pace-excellent:#3b82f6;--pace-good:#22c55e;--pace-medium:#eab308;--pace-average:#f97316;--pace-slow:#ef4444;--velocity-traffic-dot-size:28px}
 .analyzer-traffic{margin-top:16px;padding-top:12px;border-top:1px solid #303744;min-width:0}
 .analyzer-traffic-head{display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:9px;color:#858f9d;font-size:10px;font-weight:900;letter-spacing:.08em}
 .analyzer-traffic-head b{color:#fff;font-size:10px;white-space:nowrap}
@@ -1537,7 +1537,7 @@ body.spotter-drag-active #analyzerSpotterFiles{
 .analyzer-traffic-tick:before{content:'';position:absolute;left:50%;top:-17px;width:1px;height:8px;background:#717b88;transform:translateX(-50%)}
 .analyzer-traffic-tick.tm10{left:0;transform:none}.analyzer-traffic-tick.tm10:before{left:0;transform:none}.analyzer-traffic-tick.tm8{left:10%}.analyzer-traffic-tick.tm6{left:20%}.analyzer-traffic-tick.tm4{left:30%}.analyzer-traffic-tick.tm2{left:40%}
 .analyzer-traffic-tick.tp2{left:60%}.analyzer-traffic-tick.tp4{left:70%}.analyzer-traffic-tick.tp6{left:80%}.analyzer-traffic-tick.tp8{left:90%}.analyzer-traffic-tick.tp10{right:0;left:auto;transform:none}.analyzer-traffic-tick.tp10:before{right:0;left:auto;transform:none}
-@media(max-width:700px){.analyzer-traffic-dot{width:25px;height:25px;font-size:9px}.analyzer-traffic-track{margin:0 10px}.analyzer-traffic-followed{width:50px}.analyzer-traffic-tick{font-size:10.5px}}
+@media(max-width:700px){:root{--velocity-traffic-dot-size:25px}.analyzer-traffic-dot{width:25px;height:25px;font-size:9px}.analyzer-traffic-track{margin:0 10px}.analyzer-traffic-followed{width:50px}.analyzer-traffic-tick{font-size:10.5px}}
 
 /* Velocity V7.2.69 — Velocity Lab compact comparison */
 .analyzer-footer .velocity-lab-launch{border:1px solid #694018!important;border-radius:7px!important;background:#201408!important;color:#ff9b32!important;padding:7px 10px!important}
@@ -1631,3 +1631,9 @@ body.velocity-lab-open{overflow:hidden!important}
 .apex-history-debrief-button{border:1px solid #d71920;background:#d71920;color:#fff;border-radius:8px;padding:10px 13px;font-size:10px;font-weight:900;letter-spacing:.05em;white-space:nowrap;cursor:pointer}
 .apex-history-debrief-button:hover:not(:disabled){background:#ef252d}.apex-history-debrief-button:disabled{opacity:.42;cursor:not-allowed}
 @media(max-width:760px){.apex-history-team-actions{width:100%;align-items:stretch;flex-direction:column}.apex-history-team-actions select{max-width:none;width:100%}.apex-history-debrief-button{width:100%}}
+
+/* Velocity V7.2.81 — TRAFIC : dead zone dynamique autour du kart suivi.
+   Les positions temporelles sont recalculées en JS depuis les deux bords de la zone centrale. */
+.analyzer-traffic-track{--traffic-dead-zone-safe:4px}
+.analyzer-traffic-followed{isolation:isolate}
+.analyzer-traffic-tick.tm10:before,.analyzer-traffic-tick.tp10:before{left:50%;right:auto;transform:translateX(-50%)}
