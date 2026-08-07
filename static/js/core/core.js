@@ -21,6 +21,9 @@ function unlockFocusOrientationForAndroid(){
   try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(error){console.warn('Déverrouillage orientation Android',error)}
 }
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
+// Pont explicite pour les modules isolés : `state` est un binding global `let`
+// et n'est donc pas automatiquement disponible sous `window.state`.
+try{Object.defineProperty(window,'velocityState',{configurable:true,get:()=>state})}catch(_){window.velocityState=state}
 let circuitChangeInProgress=false,pendingCircuitId='';
 let stateLoadInFlight=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
@@ -95,7 +98,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.76'),
+  appVersion:String(state?.version||'7.2.77'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},

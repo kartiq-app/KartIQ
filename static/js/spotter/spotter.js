@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.76';
+const SPOTTER_APP_RELEASE='7.2.77';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -85,7 +85,7 @@ function spotterApplyRemoteSnapshot(remote){
  if(!remote||typeof remote!=='object'||remote.client_id===SPOTTER_CLIENT_ID)return;
  // Un état d'une ancienne version ne doit jamais restaurer une ancienne session.
  if(String(remote.app_release||'')!==SPOTTER_APP_RELEASE)return;
- const currentCircuit=String(window.state?.circuit_id||window.state?.selected_circuit||'');
+ const currentCircuit=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
  if(remote.circuit_id&&currentCircuit&&String(remote.circuit_id)!==currentCircuit)return;
  const updated=Number(remote.updated_at_ms)||0;
  if(updated<=spotterLastRemoteUpdate)return;
@@ -182,6 +182,10 @@ function setSpotterMode(mode){const count=Math.max(1,Math.min(3,Number(mode)||1)
 function addSpotterSetupKart(){spotterState.setupKarts.push(spotterDefaultKartName(spotterState.setupKarts.length));renderSpotterFoundation('queue');setTimeout(()=>document.querySelector('.spotter-setup-row:last-of-type input')?.focus(),0)}
 function removeSpotterSetupKart(index){if(spotterState.setupKarts.length<=1)return;spotterState.setupKarts.splice(index,1);renderSpotterFoundation('queue')}
 function updateSpotterSetupKart(index,value){spotterState.setupKarts[index]=String(value||'').trim().slice(0,18);saveSpotterFoundation();const btn=document.getElementById('spotterLaunchButton');if(btn)btn.disabled=!spotterState.setupKarts.some(Boolean)}
+function spotterLiveState(){
+ try{if(typeof state==='object'&&state)return state}catch(_){ }
+ return window.velocityState||window.state||{};
+}
 function spotterDriverKey(driver){return String(driver?.driver||driver?.name||'').trim()}
 // Même source de vérité que la Heat Map Analyzer : le statut de grille ET
 // l'impulsion Apex brute *in/*out conservée dans velocityApexMap.
@@ -201,7 +205,7 @@ function spotterMetricsForDriver(driver){
 }
 function spotterSeedGridAssignments(startNumber){
  const assignments={};let next=Math.max(1,Number(startNumber)||1);
- const drivers=[...(window.state?.drivers||[])].filter(driver=>spotterDriverKey(driver)).sort((a,b)=>(Number(a.pos)||999)-(Number(b.pos)||999));
+ const drivers=[...(spotterLiveState()?.drivers||[])].filter(driver=>spotterDriverKey(driver)).sort((a,b)=>(Number(a.pos)||999)-(Number(b.pos)||999));
  drivers.forEach(driver=>{
   const team=spotterDriverKey(driver);const metrics=spotterMetricsForDriver(driver);
   assignments[team]={kv:spotterKvFromNumber(next++),apexKart:String(driver.apex||driver.kart||'—'),lastTeam:team,currentTeam:team,score:metrics.score,confidence:metrics.confidence,status:'track'};
@@ -214,6 +218,9 @@ function launchSpotterFoundation(){
  const seeded=spotterSeedGridAssignments(karts.length+1);
  spotterState.queue=karts;spotterState.incoming=[];spotterState.maintenance=[];spotterState.assignments=seeded.assignments;spotterState.nextKvNumber=seeded.next;spotterState.movementLog=[];spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;spotterState.freeMode=false;spotterState.freeStartedAt=null;spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.configured=true;
  saveSpotterFoundation();spotterUiStep='live';renderSpotterFoundation('live');
+ // Dès que la configuration est validée, synchroniser immédiatement les karts
+ // déjà signalés IN par Apex, sans attendre le prochain tick de 750 ms.
+ setTimeout(spotterMonitorApex,0);
 }
 function resetSpotterFoundation(){
  if(!confirm('Réinitialiser la configuration Spotter ?'))return;
@@ -221,7 +228,7 @@ function resetSpotterFoundation(){
  saveSpotterFoundation();spotterUiStep='mode';renderSpotterFoundation('mode');
 }
 function spotterAllocateKv(){const kv=spotterKvFromNumber(spotterState.nextKvNumber);spotterState.nextKvNumber+=1;return kv}
-function spotterFindDriver(team){return (window.state?.drivers||[]).find(driver=>spotterDriverKey(driver)===String(team||''))||null}
+function spotterFindDriver(team){return (spotterLiveState()?.drivers||[]).find(driver=>spotterDriverKey(driver)===String(team||''))||null}
 function spotterCurrentAssignment(team){return spotterState.assignments[String(team||'')]||null}
 function spotterEnsureAssignment(team,driver=null){
  const key=String(team||'').trim();if(!key)return null;
@@ -323,7 +330,7 @@ function spotterRefreshVelocityMetrics(){
 }
 function spotterMonitorApex(){
  if(!spotterState.configured||spotterState.recalibrating)return;
- const drivers=(window.state?.drivers||[]).filter(driver=>spotterDriverKey(driver));
+ const drivers=(spotterLiveState()?.drivers||[]).filter(driver=>spotterDriverKey(driver));
  if(!drivers.length)return;
  if(!spotterState.monitorPrimed){
   let primedChange=false;

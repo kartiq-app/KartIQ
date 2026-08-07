@@ -1,4 +1,13 @@
-# Velocity V7.2.76 — Spotter alimenté par les entrées Apex
+# Velocity V7.2.77 — Spotter alimenté par les entrées Apex
+
+## V7.2.77 — Raccordement live Spotter / Apex
+
+- Correction du flux live Spotter : le module lisait `window.state`, alors que l’état de course est déclaré en `let state` et n’est pas une propriété de `window`.
+- Spotter lit désormais directement la même source de vérité que Heat Map via `spotterLiveState()`.
+- Ajout d’un pont `window.velocityState` défensif pour les modules qui nécessitent l’état live.
+- Lors de la validation de la configuration Spotter, les karts déjà présents dans la Pit Lane Apex sont injectés immédiatement dans **Karts entrants**.
+- La détection `status = pit` + impulsion MAP `*in` reste commune à Heat Map et Spotter.
+
 
 - Spotter utilise désormais la même détection de pit que la Heat Map : statut `pit` ou événement Apex brut `*in`.
 - Un kart détecté aux stands est automatiquement ajouté à **Karts entrants**, dans l'ordre d'arrivée.
