@@ -1,3 +1,14 @@
+# Velocity V7.2.92 — Onboarding appareil premium
+
+- Refonte complète de la page d'association d'un appareil membre.
+- Parcours en deux écrans : association du téléphone, puis installation de Velocity.
+- Le bouton **ASSOCIER CET APPAREIL** est désormais l'action principale du premier écran.
+- Après association, transition automatique vers les instructions d'installation.
+- Texte validé : « Appuyez sur le bouton ⬆️ Partager situé à côté de la barre d'adresse. »
+- Étapes dédiées « Ajouter à l'écran d'accueil » puis ouverture via l'icône Velocity.
+- Si l'appareil a déjà réclamé cette invitation, l'écran d'installation est affiché directement.
+- Aucun changement sur les droits Team, les rôles actifs ou le moteur de Session Course.
+
 # Velocity V7.2.91 — Fin de session : révocation Team Manager
 
 - Un rôle **Team Manager autorisé** dans la fiche d’un membre ne donne plus aucun accès permanent à Velocity.

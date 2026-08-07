@@ -1721,7 +1721,7 @@ body.velocity-lab-open{overflow:hidden!important}
   .analyzer-followed-title-row,.analyzer-rules-title-row{margin-bottom:6px}
 }
 
-/* Velocity V7.2.91 — Session de course multi-appareils */
+/* Velocity V7.2.92 — Session de course multi-appareils */
 .race-session-launch{border-color:rgba(242,126,24,.55)!important;color:#fff!important}
 .race-session-card{width:min(860px,94vw)}
 .race-session-empty p{margin:0 0 16px;color:#b8bdc7;line-height:1.45}
@@ -1758,7 +1758,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .race-role-ended p{color:#98a0ad;font-size:16px}
 @media(max-width:720px){.race-access-grid,.race-session-summary{grid-template-columns:1fr}.race-access-card{grid-template-columns:1fr 96px}.race-access-card img{width:96px;height:96px}}
 
-/* Velocity V7.2.91 — TEAM MANAGEMENT + appareils persistants */
+/* Velocity V7.2.92 — TEAM MANAGEMENT + appareils persistants */
 .race-session-card{width:min(980px,96vw);max-height:92vh;overflow:auto}
 .race-session-tabs{display:flex;gap:8px;margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #252b34}
 .race-session-tabs button{min-height:38px;padding:0 16px;border:1px solid #343b47;border-radius:8px;background:#0b0e13;color:#9da5b2;font-weight:900;letter-spacing:.06em}
@@ -1778,7 +1778,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-device-waiting{text-align:center}.velocity-device-waiting>div{max-width:520px}.velocity-device-waiting span{color:#ef1f2f;font-weight:950;letter-spacing:.18em}.velocity-device-waiting h1{font-size:32px;margin:10px 0}.velocity-device-waiting p{color:#a5adb8}.velocity-device-waiting b{display:block;margin-top:18px;color:#f27e18}.velocity-device-waiting-mode>header,.velocity-device-waiting-mode>#home,.velocity-device-waiting-mode>.screen{display:none!important}
 @media(max-width:720px){.race-team-toolbar,.race-add-member,.race-assignment-grid,.race-active-assignments,.race-session-actions{grid-template-columns:1fr}.race-member-head{align-items:flex-start}.race-member-head button{font-size:10px}.race-session-card{width:96vw}.race-session-tabs button{flex:1}}
 
-/* Velocity V7.2.91 — TEAM MANAGEMENT : suppressions, rôles multiples et invitation maîtrisée */
+/* Velocity V7.2.92 — TEAM MANAGEMENT : suppressions, rôles multiples et invitation maîtrisée */
 .race-team-title-actions,.race-member-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .race-team-title-actions .danger,.race-member-head-actions .danger{border-color:#5b2429;color:#ff7d86;background:#17090b}
 .race-role-picker{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid #303744;border-radius:10px;background:#090c11}
@@ -1798,9 +1798,59 @@ body.velocity-lab-open{overflow:hidden!important}
 .race-invite-close{width:100%;margin-top:8px}
 @media(max-width:700px){.race-invite-link-row{grid-template-columns:1fr}.race-invite-share-actions{display:grid;grid-template-columns:1fr 1fr}.race-team-title-actions,.race-member-head-actions{justify-content:flex-start}}
 
-/* Velocity V7.2.91 — verrouillage strict des appareils Team */
+/* Velocity V7.2.92 — verrouillage strict des appareils Team */
 .velocity-device-pending-mode>header,.velocity-device-pending-mode>#home,.velocity-device-pending-mode>.screen,.velocity-device-pending-mode>footer,.velocity-device-pending-mode>#fullscreenFloatControls{display:none!important}
 .velocity-device-waiting-mode>footer,.velocity-device-waiting-mode>#fullscreenFloatControls{display:none!important}
 .race-role-access>footer,.race-role-access>#fullscreenFloatControls{display:none!important}
 .race-role-spotter .screen:not(#spotter){display:none!important}
 .race-role-pilot .screen{display:none!important}
+
+
+/* Velocity V7.2.92 — Onboarding premium d'association appareil */
+.velocity-invite-overlay{
+  background:
+    radial-gradient(circle at 50% 15%,rgba(239,31,47,.10),transparent 34%),
+    linear-gradient(180deg,#07090d 0%,#05070a 100%);
+  padding:max(22px,env(safe-area-inset-top)) 18px max(22px,env(safe-area-inset-bottom));
+  overflow:auto;
+}
+.velocity-onboarding-shell{width:min(560px,100%);margin:auto;display:grid;gap:18px}
+.velocity-onboarding-brand{display:flex;align-items:center;justify-content:center;gap:10px;color:#f7f8fa;font-size:15px;font-weight:1000;letter-spacing:.22em;text-transform:uppercase}
+.velocity-onboarding-v{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#ef1f2f;color:#fff;font-size:18px;letter-spacing:0;box-shadow:0 8px 30px rgba(239,31,47,.22)}
+.velocity-onboarding-card{position:relative;overflow:hidden;padding:30px 30px 28px;border:1px solid #242b35;border-radius:24px;background:linear-gradient(180deg,rgba(18,22,28,.98),rgba(10,13,18,.98));box-shadow:0 34px 100px rgba(0,0,0,.52)}
+.velocity-onboarding-card::before{content:"";position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent)}
+.velocity-onboarding-step{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border:1px solid #333b47;border-radius:999px;background:#11161d;color:#8f99a7;font-size:9px;font-weight:1000;letter-spacing:.14em}
+.velocity-onboarding-step.success{color:#8ae6aa;border-color:rgba(62,201,109,.35);background:rgba(62,201,109,.08)}
+.velocity-device-visual{height:116px;display:flex;align-items:center;justify-content:center;position:relative;margin:4px 0 6px}
+.velocity-device-outline{width:58px;height:96px;padding:5px;border:2px solid #596372;border-radius:15px;background:#080b0f;box-shadow:0 14px 36px rgba(0,0,0,.35)}
+.velocity-device-screen{height:100%;border-radius:10px;background:radial-gradient(circle at 50% 38%,rgba(239,31,47,.17),transparent 46%),#10151c;display:grid;place-items:center}
+.velocity-device-v{font-size:29px;font-weight:1000;font-style:italic;color:#ef1f2f}
+.velocity-device-link-dot{position:absolute;left:calc(50% + 24px);bottom:18px;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#ef1f2f;color:#fff;border:4px solid #0e1218;font-size:17px;font-weight:900}
+.velocity-onboarding-card h1{margin:6px 0 8px;text-align:center;font-size:clamp(28px,7vw,38px);line-height:1.04;letter-spacing:-.035em;color:#fff}
+.velocity-onboarding-lead{margin:0 auto!important;max-width:430px;text-align:center;color:#aab3bf!important;font-size:14px!important;line-height:1.55!important}
+.velocity-onboarding-lead b{color:#fff}
+.velocity-invite-roles{justify-content:center;margin:18px 0 0}
+.velocity-invite-roles span{padding:8px 12px;border-color:#303945;background:#11161d;color:#dfe4ea;letter-spacing:.06em}
+.velocity-onboarding-divider{height:1px;margin:24px 0;background:linear-gradient(90deg,transparent,#2a313b 15%,#2a313b 85%,transparent)}
+.velocity-onboarding-copy{max-width:440px;margin:0 auto 20px;text-align:center;color:#8f99a7;font-size:12px;line-height:1.55}
+.velocity-onboarding-primary{width:100%;min-height:52px;border:0;border-radius:13px;background:#ef1f2f;color:#fff;font-size:12px;font-weight:1000;letter-spacing:.08em;box-shadow:0 10px 28px rgba(239,31,47,.20);cursor:pointer}
+.velocity-onboarding-primary:hover{filter:brightness(1.08)}
+.velocity-onboarding-primary:disabled{opacity:.55;cursor:default}
+.velocity-onboarding-status{min-height:18px;margin-top:12px;text-align:center}
+.velocity-success-mark{width:68px;height:68px;margin:20px auto 14px;border-radius:50%;display:grid;place-items:center;background:rgba(47,198,103,.12);border:1px solid rgba(72,223,126,.42);color:#59db89;font-size:34px;font-weight:900;box-shadow:0 0 45px rgba(49,196,101,.10)}
+.velocity-install-guide{display:grid;gap:12px}
+.velocity-install-guide h2{margin:0;color:#fff;text-align:center;font-size:18px;letter-spacing:.01em}
+.velocity-install-intro{margin:0 0 4px;text-align:center;color:#919ba8;font-size:12px}
+.velocity-install-row{display:grid;grid-template-columns:38px 1fr;align-items:center;gap:12px;padding:14px 15px;border:1px solid #28303a;border-radius:14px;background:#0c1016}
+.velocity-install-row>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#151b23;color:#fff;font-size:18px}
+.velocity-install-row p{margin:0;color:#c4cbd4;font-size:12px;line-height:1.5}
+.velocity-install-row b{color:#fff}
+.velocity-install-footnote{margin:18px 0 0!important;text-align:center;color:#737e8d!important;font-size:11px!important;line-height:1.5!important}
+@media(max-width:600px){
+  .velocity-invite-overlay{place-items:start center;padding-left:14px;padding-right:14px}
+  .velocity-onboarding-shell{margin:auto 0}
+  .velocity-onboarding-card{padding:24px 18px 22px;border-radius:20px}
+  .velocity-device-visual{height:102px}
+  .velocity-onboarding-divider{margin:20px 0}
+  .velocity-install-row{grid-template-columns:34px 1fr;padding:12px}
+}

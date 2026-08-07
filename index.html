@@ -418,14 +418,39 @@
 </section>
 
   <div id="velocityInviteOverlay" class="velocity-invite-overlay" hidden>
-    <div class="velocity-invite-card">
-      <span class="velocity-invite-kicker">VELOCITY TEAM</span><h1 id="velocityInviteTitle">Invitation</h1>
-      <p id="velocityInviteText">Chargement de votre invitation…</p>
-      <div id="velocityInviteRoles" class="velocity-invite-roles"></div>
-      <div class="velocity-install-box"><b>INSTALLER VELOCITY</b><p>Sur iPhone : ouvrez le menu <b>Partager</b>, puis <b>Ajouter à l’écran d’accueil</b>. Sur Android : utilisez <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</p></div>
-      <button id="velocityInviteClaim" type="button" class="primary" onclick="claimVelocityInvite()">ASSOCIER CET APPAREIL</button>
-      <div id="velocityInviteStatus" class="race-session-feedback"></div>
-      <p class="velocity-invite-after">Une fois l’icône Velocity installée, ouvrez-la. Cet appareil sera reconnu automatiquement pour les prochaines courses.</p>
+    <div class="velocity-onboarding-shell">
+      <div class="velocity-onboarding-brand" aria-label="Velocity"><span class="velocity-onboarding-v">V</span><span>VELOCITY</span></div>
+
+      <section id="velocityInvitePairStep" class="velocity-onboarding-card">
+        <div class="velocity-onboarding-step">ÉTAPE 1 SUR 2</div>
+        <div class="velocity-device-visual" aria-hidden="true">
+          <div class="velocity-device-outline"><div class="velocity-device-screen"><span class="velocity-device-v">V</span></div></div>
+          <div class="velocity-device-link-dot">+</div>
+        </div>
+        <h1 id="velocityInviteTitle">Invitation</h1>
+        <p id="velocityInviteText" class="velocity-onboarding-lead">Chargement de votre invitation…</p>
+        <div id="velocityInviteRoles" class="velocity-invite-roles"></div>
+        <div class="velocity-onboarding-divider"></div>
+        <p class="velocity-onboarding-copy">Associez ce téléphone à votre profil Velocity. Vos accès resteront limités aux rôles autorisés par votre Team.</p>
+        <button id="velocityInviteClaim" type="button" class="velocity-onboarding-primary" onclick="claimVelocityInvite()">ASSOCIER CET APPAREIL</button>
+        <div id="velocityInviteStatus" class="race-session-feedback velocity-onboarding-status"></div>
+      </section>
+
+      <section id="velocityInviteInstallStep" class="velocity-onboarding-card velocity-install-step" hidden>
+        <div class="velocity-onboarding-step success">ÉTAPE 2 SUR 2</div>
+        <div class="velocity-success-mark" aria-hidden="true">✓</div>
+        <h1>Appareil associé</h1>
+        <p id="velocityInviteInstallIdentity" class="velocity-onboarding-lead">Votre appareil est maintenant associé à votre profil.</p>
+        <div class="velocity-onboarding-divider"></div>
+        <div class="velocity-install-guide">
+          <h2>Installer Velocity</h2>
+          <p class="velocity-install-intro">Pour utiliser Velocity comme une véritable application :</p>
+          <div class="velocity-install-row"><span>①</span><p>Appuyez sur le bouton <b>⬆️ Partager</b> situé à côté de la barre d'adresse.</p></div>
+          <div class="velocity-install-row"><span>②</span><p>Sélectionnez <b>« Ajouter à l'écran d'accueil »</b>.</p></div>
+          <div class="velocity-install-row"><span>③</span><p>Ouvrez désormais <b>Velocity</b> depuis son icône sur votre écran d'accueil.</p></div>
+        </div>
+        <p class="velocity-install-footnote">Lors des prochaines courses, il vous suffira d'ouvrir Velocity depuis cette icône.</p>
+      </section>
     </div>
   </div>
 
