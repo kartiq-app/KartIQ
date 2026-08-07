@@ -1637,3 +1637,53 @@ body.velocity-lab-open{overflow:hidden!important}
 .analyzer-traffic-track{--traffic-dead-zone-safe:4px}
 .analyzer-traffic-followed{isolation:isolate}
 .analyzer-traffic-tick.tm10:before,.analyzer-traffic-tick.tp10:before{left:50%;right:auto;transform:translateX(-50%)}
+
+
+/* Velocity V7.2.84 — finitions Analyzer */
+/* Titres de cartes harmonisés. */
+.weather-card .analyzer-card-label{
+  font-size:13px!important;
+  line-height:1.2!important;
+}
+/* RÈGLEMENT reprend exactement le gabarit des boutons de classement. */
+.rules-card .rules-card-button{
+  padding:8px 11px!important;
+  font-size:11px!important;
+  font-weight:400!important;
+  letter-spacing:.025em!important;
+  line-height:1!important;
+}
+/* COMPTE RENDU devient un bouton classique, identique au style RÈGLEMENT / classements. */
+.analyzer-debrief-button{
+  border:1px solid #343d4b!important;
+  border-radius:7px!important;
+  background:#090d13!important;
+  color:#8f99a8!important;
+  font-family:var(--font-torque,Arial,sans-serif)!important;
+  font-size:11px!important;
+  font-weight:400!important;
+  letter-spacing:.025em!important;
+  line-height:1!important;
+  padding:8px 11px!important;
+  box-shadow:none!important;
+}
+.analyzer-debrief-button:hover{border-color:#68768a!important;color:#fff!important;background:#090d13!important}
+/* Résultat de simulation : message + bouton OK à l'extrême droite. */
+.pit-simulator-result-row{display:flex;align-items:stretch;gap:8px;width:100%}
+.pit-simulator-result-row .pit-simulator-result{flex:1;min-width:0}
+.pit-simulator-result:empty{display:none}
+.pit-simulator-ok{
+  flex:0 0 auto;min-width:48px;padding:0 12px;border:1px solid #343d4b;border-radius:7px;
+  background:#090d13;color:#d9dee7;font-family:var(--font-torque,Arial,sans-serif);font-size:11px;
+  font-weight:400;letter-spacing:.025em;cursor:pointer;
+}
+.pit-simulator-ok:hover{border-color:#68768a;color:#fff}
+.pit-simulator-ok[hidden]{display:none!important}
+/* Bouton retour STANDS : flèche plus petite et parfaitement centrée. */
+.analyzer-spotter-actions .analyzer-spotter-undo.spotter-undo-button{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  font-size:23px!important;line-height:1!important;padding:0 0 2px!important;
+}
+@media(max-width:700px){
+ .rules-card .rules-card-button,.analyzer-debrief-button{font-size:9px!important;padding:7px 8px!important}
+}

@@ -1,3 +1,13 @@
+# Velocity V7.2.84 — Finitions Analyzer
+
+- ÉQUIPE SUIVIE : « Position/Chrono » devient « Position du chrono ».
+- HEAT MAP : bouton OK après simulation pour effacer le résultat et revenir à l’état normal.
+- MÉTÉO : titre harmonisé avec les autres cartes.
+- CONFORMITÉ RÉGLEMENTAIRE : bouton RÈGLEMENT ramené au gabarit des boutons de classement.
+- Classement Analyzer : « CLASSEMENT GÉNÉRAL » devient « CLASSEMENT LIVE ».
+- STANDS : flèche du bouton retour réduite et recentrée.
+- Barre Analyzer : « DÉBRIEF » devient « COMPTE RENDU » avec un style de bouton classique.
+
 # Velocity V7.2.83 — Trafic : dead zone ajustée au kart
 
 - Dead zone de la ligne Trafic calée sur la largeur réelle du visuel du kart avec seulement 1 px de marge.
