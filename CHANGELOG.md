@@ -1,4 +1,15 @@
-# Velocity V7.2.88 — Team Management fiabilisé
+# Velocity V7.2.89 — Verrouillage strict des rôles Team
+
+- Un appareil associé à un membre Team est désormais verrouillé par défaut pendant la vérification serveur.
+- Un membre sans rôle Team Manager n’accède jamais à Home, Analyzer, Qualification, Sprint, Endurance ou Velocity Lab hors affectation.
+- Sans session active : écran « En attente d’affectation ».
+- Rôle Spotter actif : seul Spotter est affiché.
+- Rôle Pilote actif : seul le Focus Pilote est affiché.
+- Rôle Team Manager actif/autorisé : accès complet conservé.
+- En cas d’échec réseau lors de la vérification des droits, l’accès reste fermé au lieu de retomber sur l’application complète.
+- Un rôle renvoyé par la session est vérifié une seconde fois contre les rôles autorisés du membre.
+
+# Velocity V7.2.89 — Team Management fiabilisé
 
 - Correction de la page noire des invitations `/invite/...` : l’écran d’enrôlement est désormais hors de la page Analyzer et reste visible quand les écrans normaux sont masqués.
 - Ajout de la suppression d’une Team et d’un membre, avec confirmation et nettoyage des appareils/invitations associés.
