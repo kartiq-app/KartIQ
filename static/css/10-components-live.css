@@ -285,14 +285,20 @@ body.current-home .home{height:100dvh;padding:0!important;overflow:hidden!import
 .sprint-delta-cell .gap-with{margin-top:7px}
 @media(max-width:680px){.sprint-session-info{gap:6px;margin-top:2px;font-size:12px}.sprint-delta-cell .gap-with{margin-top:3px}}
 
-/* V4.0.3 — animations live qualification */
-#qualifTable tr,#sprintTable tr,#enduranceTable tr{transition:transform .48s cubic-bezier(.22,.8,.2,1)}
-#qualifTable tr.lap-flash,#enduranceTable tr.lap-flash{animation:kartiqLapFlash 1s ease-out}
-@keyframes kartiqLapFlash{0%,100%{background:transparent}18%,58%{background:rgba(255,230,0,.30);box-shadow:inset 4px 0 0 var(--yellow),inset -4px 0 0 var(--yellow)}}
+/* V7.2.75 — animations communes des classements généraux */
+#qualifTable tr,#sprintTable tr,#enduranceQualifTable tr,#enduranceLandscapeTable tr,#enduranceTable tr,.analyzer-ranking-table tbody tr{transition:transform .52s cubic-bezier(.22,.8,.2,1)}
+.ranking-lap-flash{animation-duration:1.9s;animation-timing-function:ease-in-out;animation-delay:var(--ranking-flash-offset,0ms);animation-fill-mode:both}
+.ranking-lap-flash-purple{animation-name:velocityRankingFlashPurple}
+.ranking-lap-flash-green{animation-name:velocityRankingFlashGreen}
+.ranking-lap-flash-orange{animation-name:velocityRankingFlashOrange}
+@keyframes velocityRankingFlashPurple{0%,100%{background-color:transparent;box-shadow:none}18%,52%{background-color:rgba(182,108,255,.27);box-shadow:inset 4px 0 0 var(--purple),inset -4px 0 0 var(--purple),0 0 18px rgba(182,108,255,.12)}}
+@keyframes velocityRankingFlashGreen{0%,100%{background-color:transparent;box-shadow:none}18%,52%{background-color:rgba(49,233,129,.22);box-shadow:inset 4px 0 0 var(--green),inset -4px 0 0 var(--green),0 0 18px rgba(49,233,129,.10)}}
+@keyframes velocityRankingFlashOrange{0%,100%{background-color:transparent;box-shadow:none}18%,52%{background-color:rgba(255,159,28,.23);box-shadow:inset 4px 0 0 var(--orange),inset -4px 0 0 var(--orange),0 0 18px rgba(255,159,28,.10)}}
+.ranking-position-up,.ranking-position-down{position:relative;z-index:3;will-change:transform}
 .remaining-time.time-critical{color:var(--red)!important;text-shadow:0 0 14px rgba(255,68,68,.35)}
 @media(prefers-reduced-motion:reduce){
-  #qualifTable tr,#sprintTable tr,#enduranceTable tr{transition:none}
-  .lap-flash{animation:none!important}
+  #qualifTable tr,#sprintTable tr,#enduranceQualifTable tr,#enduranceLandscapeTable tr,#enduranceTable tr,.analyzer-ranking-table tbody tr{transition:none!important}
+  .ranking-lap-flash{animation:none!important}
 }
 
 /* Velocity V4.1.4 — Sprint desktop : pilote au-dessus du temps et delta P1 vert */

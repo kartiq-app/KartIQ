@@ -17,12 +17,39 @@ function endurancePitBadge(driver){
  if(until&&until<=now)enduranceOutUntil.delete(key);
  return '';
 }
+const rankingLapAnimations=new Map();
+const RANKING_FLASH_DURATION_MS=1900;
+function rankingDriverKey(driver){return String(driver?.apex_row??driver?.driver??driver?.pos??'')}
+function syncRankingLapAnimations(){
+ const now=Date.now(),absoluteBest=absoluteSessionBestSeconds(),seen=new Set();
+ for(const d of state.drivers||[]){
+  const key=rankingDriverKey(d);if(!key)continue;seen.add(key);
+  const signature=`${String(d.laps??'')}|${String(d.last??'')}`;
+  const previous=rankingLapAnimations.get(key);
+  if(previous&&previous.signature!==signature&&Number.isFinite(parseLapTime(d.last))){
+   const lastSeconds=parseLapTime(d.last);
+   const kind=Number.isFinite(absoluteBest)&&Math.abs(lastSeconds-absoluteBest)<0.0005?'purple':(d.last_improved_personal_best?'green':'orange');
+   rankingLapAnimations.set(key,{signature,kind,startedAt:now});
+  }else if(!previous){rankingLapAnimations.set(key,{signature,kind:null,startedAt:0})}
+  else if(previous.signature!==signature){rankingLapAnimations.set(key,{...previous,signature})}
+ }
+ for(const key of [...rankingLapAnimations.keys()])if(!seen.has(key))rankingLapAnimations.delete(key);
+}
+function rankingFlashMeta(driver){
+ const entry=rankingLapAnimations.get(rankingDriverKey(driver));if(!entry?.kind)return {className:'',style:''};
+ const elapsed=Date.now()-entry.startedAt;if(elapsed<0||elapsed>=RANKING_FLASH_DURATION_MS)return {className:'',style:''};
+ return {className:` ranking-lap-flash ranking-lap-flash-${entry.kind}`,style:`--ranking-flash-offset:-${Math.round(elapsed)}ms`};
+}
+function rankingCaptureRows(el){
+ return new Map([...el.querySelectorAll('tr[data-driver]')].map(tr=>[tr.dataset.driver,{rect:tr.getBoundingClientRect(),pos:String(tr.dataset.position||'')}]))
+}
+function rankingAnimateRows(el,previousRows){
+ requestAnimationFrame(()=>{[...el.querySelectorAll('tr[data-driver]')].forEach(tr=>{const old=previousRows.get(tr.dataset.driver);if(!old||old.pos===String(tr.dataset.position||''))return;const newRect=tr.getBoundingClientRect();const dy=old.rect.top-newRect.top;if(Math.abs(dy)<=1)return;tr.classList.add(Number(tr.dataset.position)<Number(old.pos)?'ranking-position-up':'ranking-position-down');tr.style.transition='none';tr.style.transform=`translateY(${dy}px)`;requestAnimationFrame(()=>{tr.style.transition='transform .52s cubic-bezier(.22,.8,.2,1)';tr.style.transform='translateY(0)';setTimeout(()=>tr.classList.remove('ranking-position-up','ranking-position-down'),560)})})});
+}
 function rows(target,cols){
- const el=document.getElementById(target);const previousRects=new Map([...el.querySelectorAll('tr[data-driver]')].map(tr=>[tr.dataset.driver,tr.getBoundingClientRect()]));
- const fragment=document.createDocumentFragment();
- state.drivers.forEach(d=>{const tr=document.createElement('tr');const key=d.driver||String(d.pos);const signature=String(d.laps)+'|'+String(d.last);const signatureKey=target+'|'+key;const previousSignature=rowLapSignatures.get(signatureKey);tr.dataset.driver=key;tr.className='clickable'+(d.driver===state.followed_driver?' followed':'')+((target==='qualifTable'||target==='enduranceTable')&&previousSignature&&previousSignature!==signature?' lap-flash':'');tr.onclick=()=>followDriver(d.driver);tr.innerHTML=cols(d);fragment.appendChild(tr);rowLapSignatures.set(signatureKey,signature)});
- el.replaceChildren(fragment);
- requestAnimationFrame(()=>{[...el.querySelectorAll('tr[data-driver]')].forEach(tr=>{const oldRect=previousRects.get(tr.dataset.driver);if(!oldRect)return;const newRect=tr.getBoundingClientRect();const dy=oldRect.top-newRect.top;if(Math.abs(dy)>1){tr.style.transition='none';tr.style.transform=`translateY(${dy}px)`;requestAnimationFrame(()=>{tr.style.transition='transform .48s cubic-bezier(.22,.8,.2,1)';tr.style.transform='translateY(0)'})}})});
+ const el=document.getElementById(target);if(!el)return;const previousRows=rankingCaptureRows(el);const fragment=document.createDocumentFragment();
+ state.drivers.forEach(d=>{const tr=document.createElement('tr');const key=rankingDriverKey(d)||String(d.pos);const flash=rankingFlashMeta(d);tr.dataset.driver=key;tr.dataset.position=String(d.pos??'');tr.className='clickable'+(d.driver===state.followed_driver?' followed':'')+flash.className;if(flash.style)tr.setAttribute('style',flash.style);tr.onclick=()=>followDriver(d.driver);tr.innerHTML=cols(d);fragment.appendChild(tr)});
+ el.replaceChildren(fragment);rankingAnimateRows(el,previousRows);
 }
 function absoluteSessionBestSeconds(){
  const valid=(state.drivers||[]).map(d=>parseLapTime(d.best)).filter(Number.isFinite);
@@ -191,6 +218,7 @@ function render(){
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);if(circuitNameElement)circuitNameElement.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
  const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelectElement.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}if(circuitSelectElement){const displayedCircuit=circuitChangeInProgress&&pendingCircuitId?pendingCircuitId:(state.circuit_id||'');if(circuitSelectElement.value!==displayedCircuit)circuitSelectElement.value=displayedCircuit;circuitSelectElement.disabled=!!circuitChangeInProgress}
  const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
+ syncRankingLapAnimations();
  const showRankingKart=rankingHasKartColumn();
  document.querySelector('#qualification .qual-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);
  document.querySelector('#sprint .sprint-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);
@@ -243,6 +271,7 @@ async function changeCircuit(){
   try{closeApexBrowserSocket()}catch(error){console.warn('[Velocity] Fermeture WebSocket navigateur ignorée',error)}
   apexBrowserCircuitId=null;
   rowLapSignatures.clear();
+  rankingLapAnimations.clear();
   endurancePitStatuses.clear();
   enduranceOutUntil.clear();
   lastCrossEvent=null;

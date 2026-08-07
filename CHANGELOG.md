@@ -1,11 +1,21 @@
-# V7.2.74 — Débrief des anciennes sessions Apex
+# Velocity V7.2.75 — Animations live des classements généraux
+
+- Qualification, Sprint, Endurance et Analyzer : animation de toute la ligne à chaque nouveau passage sur la ligne de chronométrage.
+- Violet : meilleur temps absolu de la session.
+- Vert : amélioration du meilleur temps personnel.
+- Orange : tour non amélioré.
+- Déplacement FLIP de la ligne vers le haut ou le bas lorsqu'une position est gagnée ou perdue.
+- Animation basée sur une identité stable de l'équipe/pilote afin de ne pas se déclencher sur un simple rafraîchissement Apex.
+- Aucun changement des calculs de classement, des chronos ou du moteur Velocity.
+
+# V7.2.75 — Débrief des anciennes sessions Apex
 
 - STATS > ANCIENNES SESSIONS : sélection d’une session historique Apex puis génération d’un Débrief complet.
 - Le moteur de Débrief existant est réutilisé avec tous les tours et pits de toutes les équipes de la session sélectionnée.
 - L’équipe choisie dans la session est analysée et comparée à l’intégralité du plateau historique.
 - Export PDF du Débrief historique avec le nom de la session.
 
-# V7.2.74 — Velocity complet, tri Delta et Mode Test suivi
+# V7.2.75 — Velocity complet, tri Delta et Mode Test suivi
 
 - Classement Velocity : toutes les équipes évaluables sont désormais disponibles ; 10 lignes restent visibles et le reste est accessible par scroll vertical.
 - Nouveau tri « Delta » : les meilleurs gains corrigés (valeurs les plus négatives) remontent en tête, sans modifier la colonne TOP qui reste le rang officiel par Score.

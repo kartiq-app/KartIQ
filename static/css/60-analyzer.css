@@ -1567,7 +1567,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-lab-matrix-wrap{overflow-anchor:none;overscroll-behavior:contain}
 
 
-/* Velocity V7.2.74 — Delta convention course + continuité pilote Apex */
+/* Velocity V7.2.75 — Delta convention course + continuité pilote Apex */
 .analyzer-kartiq-table .kartiq-pilot-head,
 .analyzer-kartiq-table .kartiq-pilot-continuity{
   text-align:center!important;
@@ -1615,9 +1615,9 @@ body.velocity-lab-open{overflow:hidden!important}
   box-shadow:0 6px 18px rgba(0,0,0,.45);
 }
 
-/* Velocity V7.2.74 — Mode Test pilotes tournants + infobulles Velocity uniformisées. */
+/* Velocity V7.2.75 — Mode Test pilotes tournants + infobulles Velocity uniformisées. */
 
-/* Velocity V7.2.74 — tableaux complets, 10 lignes visibles et scroll vertical. */
+/* Velocity V7.2.75 — tableaux complets, 10 lignes visibles et scroll vertical. */
 .analyzer-strategy-column .analyzer-kartiq-wrap{max-height:338px!important;overflow-y:auto!important;overflow-x:auto!important;overscroll-behavior:contain;}
 .velocity-lab-ranking-wrap{max-height:470px;overflow:auto;overscroll-behavior:contain;}
 .velocity-lab-table thead{position:sticky;top:0;z-index:5;}
@@ -1625,7 +1625,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .analyzer-kartiq-table .kartiq-tooltip{cursor:default!important;}
 @media(max-width:700px){.velocity-lab-ranking-wrap{max-height:430px}}
 
-/* Velocity V7.2.74 — Débrief des anciennes sessions Apex. */
+/* Velocity V7.2.75 — Débrief des anciennes sessions Apex. */
 .apex-history-team-actions{display:flex;align-items:center;gap:8px;justify-content:flex-end;min-width:0}
 .apex-history-team-actions select{max-width:320px}
 .apex-history-debrief-button{border:1px solid #d71920;background:#d71920;color:#fff;border-radius:8px;padding:10px 13px;font-size:10px;font-weight:900;letter-spacing:.05em;white-space:nowrap;cursor:pointer}
