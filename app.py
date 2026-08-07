@@ -70,7 +70,7 @@ STATE = {
     "traffic_recording": False,
     "traffic_recording_started_at": None,
     "driver_message": None,
-    "spotter": {"configured": False, "updated_at_ms": None, "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live"},
+    "spotter": {"configured": False, "updated_at_ms": None, "queue_mode": 1, "setup_karts": ["X", "Y", "Z"], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server"},
 }
 
 
@@ -683,7 +683,7 @@ def update_spotter_state():
     snapshot = body.get("spotter")
     if not isinstance(snapshot, dict):
         return jsonify(ok=False, error="État Spotter invalide"), 400
-    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release"}
+    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "setup_karts", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release"}
     if str(snapshot.get("app_release") or "") != APP_VERSION:
         return jsonify(ok=False, error="Version Spotter obsolète", expected=APP_VERSION), 409
     clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
@@ -713,6 +713,10 @@ def reset_race_state_for_new_circuit(circuit_id):
     """Vide toutes les données appartenant au circuit précédent."""
     with DRIVER_MESSAGE_LOCK:
         STATE["driver_message"] = None
+    # Le Quick Change est partagé entre Analyzer et Spotter pour un circuit donné.
+    # Un changement de piste ne doit jamais réutiliser les files du circuit précédent.
+    with SPOTTER_LOCK:
+        STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X", "Y", "Z"], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
     stop_live_connection()
     APEX_TABLE.reset()
     PROTOCOL_ENGINE.reset()
@@ -728,7 +732,12 @@ def set_circuit():
     if not circuit_id or circuit_id not in circuits:
         return jsonify(ok=False, error="Circuit inconnu dans la configuration du serveur."), 400
     try:
-        reset_race_state_for_new_circuit(circuit_id)
+        # Plusieurs appareils (TM Analyzer + Spotter smartphone) peuvent sélectionner
+        # le même circuit. Ne jamais réinitialiser l'état partagé si le circuit est
+        # déjà actif : le deuxième appareil doit récupérer le Quick Change existant.
+        current_circuit = str(STATE.get("circuit_id") or "").strip()
+        if current_circuit != circuit_id:
+            reset_race_state_for_new_circuit(circuit_id)
     except Exception as error:
         app.logger.exception("Erreur pendant la sélection du circuit %s", circuit_id)
         return jsonify(ok=False, error=f"Initialisation du circuit impossible : {error}"), 500

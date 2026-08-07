@@ -1,3 +1,15 @@
+# Velocity V7.2.79 — STANDS / Spotter unifiés
+
+- Une seule détection IN commune à Heat Map et Spotter : statut Apex, colonne `sta/si` et impulsion MAP `*in`.
+- La colonne Apex `sta` est désormais interprétée : `si` = IN, `sf` = damier/terminé.
+- Les non-partants marqués `si` sont filtrés de la Pit Lane tant qu’ils n’ont aucune donnée sportive.
+- Configuration Quick Change réellement partagée entre Analyzer et Spotter sur tous les appareils.
+- Si le TM configure les files depuis Analyzer, Spotter s’ouvre directement sur ces files, y compris au premier accès smartphone.
+- Si Spotter configure ou modifie les files, STANDS Analyzer reprend automatiquement le même état.
+- Le nombre de files et les karts de configuration sont inclus dans le snapshot partagé.
+- Sélectionner le même circuit depuis un second appareil ne réinitialise plus le Quick Change déjà préparé.
+- Un vrai changement de circuit réinitialise l’état STANDS/Spotter pour éviter toute contamination entre pistes.
+
 # Velocity V7.2.78 — Spotter : filtrage des sessions terminées
 
 ## V7.2.78 — IN Apex vs entrée opérationnelle Spotter

@@ -307,6 +307,7 @@ class RaceStateService:
                 "pace5": pace5,
                 "pace5_laps": len(recent_five),
                 "status": row.get("status", "unknown"),
+                "status_source": row.get("status_source"),
                 "pit_timer": row.get("pit_timer") or None,
                 "track_timer": row.get("track_timer") or None,
                 "apex_row": row.get("row"),

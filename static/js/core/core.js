@@ -98,7 +98,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.78'),
+  appVersion:String(state?.version||'7.2.79'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -293,6 +293,28 @@ function velocityApexMapEntryPhase(entry,at=Date.now()){
 function resetVelocityApexMap(circuitId=null){
  window.velocityApexMap.rows.clear();window.velocityApexMap.lastEventAt=0;window.velocityApexMap.noLive=true;window.velocityApexMap.circuitId=circuitId;
 }
+function velocityDriverHasParticipated(driver){
+ const laps=Number(driver?.laps);
+ if(Number.isFinite(laps)&&laps>0)return true;
+ const values=[driver?.last,driver?.best,driver?.last_lap,driver?.best_lap];
+ return values.some(value=>{const text=String(value??'').trim().toLowerCase();return Boolean(text&&text!=='—'&&!text.includes('non partant'));});
+}
+// Source de vérité unique pour STANDS / Spotter et Heat Map.
+// - impulsion MAP *in : toujours prioritaire ;
+// - statut backend pit : accepté ;
+// - sta/si : accepté seulement pour un concurrent ayant réellement participé,
+//   afin de ne pas envoyer les « Non partant » dans la pit lane.
+function velocityKartIsInPit(driver){
+ if(!driver)return false;
+ const row=Number(driver?.apex_row);
+ const mapEntry=Number.isFinite(row)?window.velocityApexMap?.rows?.get(row):null;
+ if(mapEntry?.inPit)return true;
+ if(String(driver?.status||'').toLowerCase()!=='pit')return false;
+ if(String(driver?.status_source||'').toLowerCase()==='sta'&&!velocityDriverHasParticipated(driver))return false;
+ return true;
+}
+window.velocityDriverHasParticipated=velocityDriverHasParticipated;
+window.velocityKartIsInPit=velocityKartIsInPit;
 function ingestApexMapEvents(frame,circuitId){
  const registry=window.velocityApexMap;
  if(registry.circuitId!==circuitId)resetVelocityApexMap(circuitId);

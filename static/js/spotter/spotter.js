@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.78';
+const SPOTTER_APP_RELEASE='7.2.79';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -83,6 +83,7 @@ function spotterUndoLastAction(){
 }
 function spotterApplyRemoteSnapshot(remote){
  if(!remote||typeof remote!=='object'||remote.client_id===SPOTTER_CLIENT_ID)return;
+ const wasConfigured=Boolean(spotterState.configured);
  // Un état d'une ancienne version ne doit jamais restaurer une ancienne session.
  if(String(remote.app_release||'')!==SPOTTER_APP_RELEASE)return;
  const currentCircuit=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
@@ -94,6 +95,7 @@ function spotterApplyRemoteSnapshot(remote){
  spotterApplyingRemote=true;
  try{
   if(Number.isFinite(Number(remote.queue_mode)))spotterState.mode=Math.max(1,Math.min(3,Number(remote.queue_mode)));
+  if(Array.isArray(remote.setup_karts)&&remote.setup_karts.length)spotterState.setupKarts=remote.setup_karts.map(value=>String(value||''));
   if(Array.isArray(remote.queue))spotterState.queue=spotterClone(remote.queue);
   if(Array.isArray(remote.maintenance))spotterState.maintenance=spotterClone(remote.maintenance);
   if(Array.isArray(remote.incoming))spotterState.incoming=spotterClone(remote.incoming);
@@ -107,7 +109,13 @@ function spotterApplyRemoteSnapshot(remote){
   spotterState.freePitIns=Number(remote.pit_ins)||0;
   spotterState.freePitOuts=Number(remote.pit_outs)||0;
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
-  if(document.body.classList.contains('current-spotter')&&!spotterDrag?.active&&!spotterDrag?.timer&&!['mode','queue'].includes(spotterUiStep))spotterRenderCurrent();
+  if(document.body.classList.contains('current-spotter')&&!spotterDrag?.active&&!spotterDrag?.timer){
+   // Si le TM a configuré le Quick Change depuis Analyzer pendant que Spotter
+   // était encore sur l'écran de configuration, on bascule immédiatement vers
+   // les files partagées au lieu de laisser une seconde configuration locale.
+   if(spotterState.configured&&(!wasConfigured||['mode','queue'].includes(spotterUiStep)))spotterRenderCurrent();
+   else if(!['mode','queue'].includes(spotterUiStep))spotterRenderCurrent();
+  }
  }finally{spotterApplyingRemote=false}
 }
 async function spotterPullSharedState(){
@@ -142,7 +150,7 @@ function spotterSharedSnapshot(){
  const clone=value=>JSON.parse(JSON.stringify(value??null));
  return {
   configured:Boolean(spotterState.configured),app_release:SPOTTER_APP_RELEASE,
-  client_id:SPOTTER_CLIENT_ID,queue_mode:Number(spotterState.mode)||1,
+  client_id:SPOTTER_CLIENT_ID,queue_mode:Number(spotterState.mode)||1,setup_karts:clone(spotterState.setupKarts||[]),
   mode:spotterState.recalibrating?'recalibrating':(spotterState.freeMode?'auto':'live'),
   queue:clone(spotterState.queue||[]),maintenance:clone(spotterState.maintenance||[]),incoming:clone(spotterState.incoming||[]),
   assignments:clone(spotterState.assignments||{}),movement_log:clone((spotterState.movementLog||[]).slice(0,40)),incoming_queue_selections:clone(spotterState.incomingQueueSelections||{}),
@@ -173,10 +181,15 @@ function saveSpotterFoundation(){
 }
 function openSpotterSetup(){spotterUiStep='mode';renderSpotterFoundation('mode')}
 function spotterEditQueueSetup(){spotterUiStep='queue';renderSpotterFoundation('queue')}
-function spotterEnterMode(){
- const mobile=window.matchMedia?.('(max-width: 899px)')?.matches;
- if(mobile&&!spotterSessionOpened){spotterSessionOpened=true;spotterUiStep='mode';renderSpotterFoundation('mode');return}
- spotterSessionOpened=true;renderSpotterFoundation(spotterState.configured?(spotterState.recalibrating?'recalibrate':'live'):'mode');
+async function spotterEnterMode(){
+ spotterSessionOpened=true;
+ // Toujours relire l'état serveur juste avant d'ouvrir Spotter. C'est essentiel
+ // quand le TM vient de préparer les files depuis Analyzer sur un autre appareil.
+ await spotterPullSharedState();
+ // Une configuration créée depuis Analyzer ou un autre appareil est la seule
+ // source de vérité : Spotter l'ouvre directement, y compris au premier accès
+ // sur smartphone. L'écran de configuration n'existe que si rien n'est préparé.
+ renderSpotterFoundation(spotterState.configured?(spotterState.recalibrating?'recalibrate':'live'):'mode');
 }
 function setSpotterMode(mode){const count=Math.max(1,Math.min(3,Number(mode)||1));spotterState.mode=count;saveSpotterFoundation();spotterUiStep='queue';renderSpotterFoundation('queue')}
 function addSpotterSetupKart(){spotterState.setupKarts.push(spotterDefaultKartName(spotterState.setupKarts.length));renderSpotterFoundation('queue');setTimeout(()=>document.querySelector('.spotter-setup-row:last-of-type input')?.focus(),0)}
@@ -194,8 +207,10 @@ function spotterApexMapEntry(driver){
  return Number.isFinite(row)?(window.velocityApexMap?.rows?.get(row)||null):null;
 }
 function spotterDriverPitState(driver){
- const status=String(driver?.status||'unknown').toLowerCase();
- return status==='pit'||Boolean(spotterApexMapEntry(driver)?.inPit)?'pit':'track';
+ const inPit=typeof velocityKartIsInPit==='function'
+  ? velocityKartIsInPit(driver)
+  : (String(driver?.status||'unknown').toLowerCase()==='pit'||Boolean(spotterApexMapEntry(driver)?.inPit));
+ return inPit?'pit':'track';
 }
 // Spotter ne doit pas confondre « kart actuellement IN » avec « nouvelle entrée
 // opérationnelle à traiter ». Une session terminée depuis longtemps peut laisser

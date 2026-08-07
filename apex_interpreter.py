@@ -24,6 +24,9 @@ FIELD_BY_APEX_TYPE = {
     # `otr`, car de nombreuses autres cellules Apex utilisent aussi la classe
     # générique `in`.
     "otr": "on_track_timer",
+    # Colonne de statut Apex : certaines pistes matérialisent IN avec la classe `si`
+    # et le damier avec `sf`, sans fournir de compteur `otr`.
+    "sta": "status_flag",
     # Types fréquemment employés par les configurations Apex pour le nombre d'arrêts.
     "pit": "pit_stops",
     "pst": "pit_stops",
@@ -87,7 +90,7 @@ class ApexInterpreter:
             "last_lap": None, "best_lap": None, "gap": None,
             "interval": None, "laps": None, "timer": None,
             "pit_timer": None, "track_timer": None,
-            "pit_stops": None, "penalty": None, "status": "unknown", "last_lap_kind": None,
+            "pit_stops": None, "penalty": None, "status": "unknown", "status_source": None, "last_lap_kind": None,
             "updated_at": None,
         })
 
@@ -168,6 +171,22 @@ class ApexInterpreter:
                 row["best_lap"] = value
         elif field in {"gap", "interval"}:
             row[field] = value or None
+        elif field == "status_flag":
+            # Certaines interfaces Apex n'exposent le statut stands que via la
+            # colonne `sta`. `si` correspond au badge rouge IN, tandis que `sf`
+            # correspond au damier / concurrent terminé. On conserve la source
+            # afin que le frontend puisse filtrer les non-partants marqués IN.
+            old = row.get("status")
+            if code == "si":
+                row["status"] = "pit"
+                row["status_source"] = "sta"
+                if not initial and old != "pit":
+                    self._emit(update.row, "pit_in", "Entrée aux stands", "Statut Apex IN (sta/si)", value, "pit")
+            elif code == "sf":
+                row["status"] = "finished"
+                row["status_source"] = "sta"
+                if not initial and old == "pit":
+                    self._emit(update.row, "pit_out", "Sortie du statut IN", "Statut Apex damier (sta/sf)", value, "track")
         elif field == "on_track_timer":
             # La colonne Apex `otr` porte le compteur du relais en cours.
             # Sa classe `to` correspond au compteur de stand, tandis que `in`
@@ -178,6 +197,7 @@ class ApexInterpreter:
             old = row.get("status")
             if code in {"to", "*in"}:
                 row["status"] = "pit"
+                row["status_source"] = "otr"
                 row["pit_timer"] = value or row.get("pit_timer")
                 row["timer"] = row.get("pit_timer")
                 if not initial and old != "pit":
@@ -188,6 +208,7 @@ class ApexInterpreter:
                 # sur certains habillages, puisque le type de colonne `otr` est
                 # désormais la source de vérité.
                 row["status"] = "track"
+                row["status_source"] = "otr"
                 row["track_timer"] = value or row.get("track_timer")
                 row["timer"] = row.get("track_timer")
                 if not initial and old == "pit":
