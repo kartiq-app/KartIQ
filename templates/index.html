@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
 <title>Velocity V{{ app_version }} — Architecture 5 modes</title>
 <link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
-<script>window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};</script>
+<script>window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};window.VELOCITY_INVITE_TOKEN={{ velocity_invite_token|tojson }};</script>
 </head>
 <body>
 <header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleVelocityFullscreen()" title="Plein écran" aria-label="Afficher Velocity en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="spotter" onclick="showMode('spotter')">Spotter</button><button class="mode-btn" data-mode="analyzer" onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
@@ -305,24 +305,51 @@
 
   <div class="analyzer-rules-modal race-session-modal" id="raceSessionModal" role="dialog" aria-modal="true" aria-labelledby="raceSessionTitle">
     <div class="analyzer-rules-card race-session-card">
-      <div class="analyzer-rules-head"><div><span>PARTAGE MULTI-APPAREILS</span><h2 id="raceSessionTitle">Session de course</h2></div><button type="button" onclick="closeRaceSessionManager()" aria-label="Fermer">×</button></div>
-      <div id="raceSessionEmpty" class="race-session-empty">
-        <p>La session utilisera le <b>circuit actif</b> et l’<b>équipe suivie</b> dans Analyzer. Le circuit sera verrouillé tant que la session restera active.</p>
-        <label>Nom de la session<input id="raceSessionName" type="text" maxlength="80" placeholder="Ex. 24H Fun & Race"></label>
-        <div class="race-session-context"><span>Circuit</span><b id="raceSessionCircuit">—</b><span>Équipe suivie</span><b id="raceSessionTeam">—</b></div>
-        <button type="button" class="primary race-session-create" onclick="createRaceSession()">CRÉER LA SESSION</button>
-      </div>
-      <div id="raceSessionActive" class="race-session-active" hidden>
-        <div class="race-session-summary"><div><span>SESSION</span><b id="raceSessionActiveName">—</b></div><div><span>CIRCUIT VERROUILLÉ</span><b id="raceSessionActiveCircuit">—</b></div><div><span>ÉQUIPE</span><b id="raceSessionActiveTeam">—</b></div></div>
-        <div class="race-access-grid">
-          <article class="race-access-card"><div><span>SPOTTER</span><strong>Mode Spotter uniquement</strong></div><img id="raceSpotterQr" alt="QR code accès Spotter"><div class="race-access-actions"><button type="button" onclick="copyRaceAccessLink('spotter')">COPIER LE LIEN</button><button type="button" onclick="shareRaceAccessLink('spotter')">PARTAGER</button></div></article>
-          <article class="race-access-card"><div><span>PILOTE</span><strong>Mode Focus Endurance uniquement</strong></div><img id="racePilotQr" alt="QR code accès Pilote"><div class="race-access-actions"><button type="button" onclick="copyRaceAccessLink('pilot')">COPIER LE LIEN</button><button type="button" onclick="shareRaceAccessLink('pilot')">PARTAGER</button></div></article>
+      <div class="analyzer-rules-head"><div><span>TEAM MANAGEMENT</span><h2 id="raceSessionTitle">Session Course</h2></div><button type="button" onclick="closeRaceSessionManager()" aria-label="Fermer">×</button></div>
+      <div class="race-session-tabs"><button id="raceTeamsTabBtn" class="active" onclick="raceSessionTab('teams')">TEAMS</button><button id="raceCourseTabBtn" onclick="raceSessionTab('course')">SESSION COURSE</button></div>
+
+      <section id="raceTeamsPane" class="race-session-pane">
+        <div class="race-team-toolbar"><select id="raceTeamSelect" onchange="selectRaceTeam(this.value)"><option value="">Aucune Team</option></select><button type="button" onclick="createRaceTeamPrompt()">+ CRÉER UNE TEAM</button></div>
+        <div id="raceTeamEditor" class="race-team-editor"><div class="analyzer-empty">Créez ou sélectionnez une Team.</div></div>
+      </section>
+
+      <section id="raceCoursePane" class="race-session-pane" hidden>
+        <div id="raceSessionEmpty" class="race-session-empty">
+          <p>La session utilise le <b>circuit actif</b>. Les membres viennent de la Team sélectionnée et ne voient que leur rôle actif dans Velocity.</p>
+          <label>Nom de la session<input id="raceSessionName" type="text" maxlength="80" placeholder="Ex. 24H Fun & Race"></label>
+          <div class="race-session-context"><span>Circuit</span><b id="raceSessionCircuit">—</b><span>Team</span><b id="raceSessionTeam">—</b></div>
+          <div class="race-assignment-grid">
+            <label>TEAM MANAGER<select id="raceAssignTM"><option value="">Non affecté</option></select></label>
+            <label>SPOTTER<select id="raceAssignSpotter"><option value="">Non affecté</option></select></label>
+            <label>PILOTE<select id="raceAssignPilot"><option value="">Non affecté</option></select></label>
+          </div>
+          <button type="button" class="primary race-session-create" onclick="createRaceSession()">CRÉER LA SESSION</button>
         </div>
-        <div id="raceSessionFeedback" class="race-session-feedback" aria-live="polite"></div>
-        <button type="button" class="danger race-session-end" onclick="endRaceSession()">TERMINER LA SESSION</button>
-      </div>
-      <div class="analyzer-rules-note">Prototype de test : les liens sont temporaires et deviennent inutilisables lorsque le TM termine la session.</div>
+        <div id="raceSessionActive" class="race-session-active" hidden>
+          <div class="race-session-summary"><div><span>SESSION</span><b id="raceSessionActiveName">—</b></div><div><span>CIRCUIT VERROUILLÉ</span><b id="raceSessionActiveCircuit">—</b></div><div><span>TEAM</span><b id="raceSessionActiveTeam">—</b></div></div>
+          <div id="raceActiveAssignments" class="race-active-assignments"></div>
+          <div class="race-session-actions"><button type="button" onclick="saveRaceAssignments()">APPLIQUER LES RÔLES</button><button type="button" class="danger race-session-end" onclick="endRaceSession()">TERMINER LA SESSION</button></div>
+        </div>
+      </section>
+      <div id="raceSessionFeedback" class="race-session-feedback" aria-live="polite"></div>
+      <div class="analyzer-rules-note">Les invitations servent à associer un appareil une seule fois. Ensuite le membre ouvre simplement Velocity depuis son écran d’accueil : sa session et son rôle sont détectés automatiquement.</div>
     </div>
+  </div>
+
+  <div id="velocityInviteOverlay" class="velocity-invite-overlay" hidden>
+    <div class="velocity-invite-card">
+      <span class="velocity-invite-kicker">VELOCITY TEAM</span><h1 id="velocityInviteTitle">Invitation</h1>
+      <p id="velocityInviteText">Chargement de votre invitation…</p>
+      <div id="velocityInviteRoles" class="velocity-invite-roles"></div>
+      <div class="velocity-install-box"><b>INSTALLER VELOCITY</b><p>Sur iPhone : ouvrez le menu <b>Partager</b>, puis <b>Ajouter à l’écran d’accueil</b>. Sur Android : utilisez <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</p></div>
+      <button id="velocityInviteClaim" type="button" class="primary" onclick="claimVelocityInvite()">ASSOCIER CET APPAREIL</button>
+      <div id="velocityInviteStatus" class="race-session-feedback"></div>
+      <p class="velocity-invite-after">Une fois l’icône Velocity installée, ouvrez-la. Cet appareil sera reconnu automatiquement pour les prochaines courses.</p>
+    </div>
+  </div>
+
+  <div id="velocityDeviceWaiting" class="velocity-device-waiting" hidden>
+    <div><span>VELOCITY</span><h1 id="velocityDeviceWaitingName">Membre associé</h1><p id="velocityDeviceWaitingTeam">Aucune session active.</p><b>En attente d’affectation…</b></div>
   </div>
 
   <div class="velocity-lab-overlay" id="velocityLabOverlay" role="dialog" aria-modal="true" aria-labelledby="velocityLabTitle">

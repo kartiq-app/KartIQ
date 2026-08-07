@@ -90,6 +90,32 @@ DRIVER_MESSAGE_LOCK = threading.Lock()
 SPOTTER_LOCK = threading.Lock()
 RACE_SESSION_LOCK = threading.Lock()
 RACE_SESSION = None
+TEAM_DATA_LOCK = threading.Lock()
+TEAM_DATA_PATH = APP_DIR / "velocity_team_management.json"
+
+def _default_team_data():
+    return {"teams": [], "invites": {}, "devices": {}, "active_session_id": None, "sessions": []}
+
+def _load_team_data():
+    try:
+        if TEAM_DATA_PATH.exists():
+            data = json.loads(TEAM_DATA_PATH.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                base = _default_team_data(); base.update(data); return base
+    except Exception:
+        pass
+    return _default_team_data()
+
+def _save_team_data(data):
+    try:
+        TEAM_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = TEAM_DATA_PATH.with_suffix('.tmp')
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+        tmp.replace(TEAM_DATA_PATH)
+    except Exception:
+        pass
+
+TEAM_DATA = _load_team_data()
 WEATHER_TTL_SECONDS = 300
 WEATHER_LOCATION_TTL_SECONDS = 86400
 
@@ -611,27 +637,52 @@ def payload():
     return data
 
 
-def _race_session_public(session):
+def _team_public(team):
+    if not isinstance(team, dict):
+        return None
+    return deepcopy(team)
+
+
+def _member_by_id(data, member_id):
+    for team in data.get("teams", []):
+        for member in team.get("members", []):
+            if str(member.get("id")) == str(member_id):
+                return team, member
+    return None, None
+
+
+def _session_by_id(data, session_id):
+    for session in data.get("sessions", []):
+        if str(session.get("id")) == str(session_id):
+            return session
+    return None
+
+
+def _race_session_public(session, include_assignments=True):
     if not isinstance(session, dict):
         return None
-    return {
-        "id": session.get("id"),
-        "name": session.get("name"),
-        "status": session.get("status"),
-        "circuit_id": session.get("circuit_id"),
-        "circuit_name": session.get("circuit_name"),
-        "followed_driver": session.get("followed_driver"),
-        "created_at_ms": session.get("created_at_ms"),
+    public = {
+        "id": session.get("id"), "name": session.get("name"), "status": session.get("status"),
+        "circuit_id": session.get("circuit_id"), "circuit_name": session.get("circuit_name"),
+        "followed_driver": session.get("followed_driver"), "team_id": session.get("team_id"),
+        "team_name": session.get("team_name"), "created_at_ms": session.get("created_at_ms"),
         "ended_at_ms": session.get("ended_at_ms"),
     }
+    if include_assignments:
+        public["assignments"] = deepcopy(session.get("assignments") or {})
+    return public
+
+
+def _device_id_from_request():
+    return str(request.headers.get("X-Velocity-Device") or request.cookies.get("velocity_device_id") or "").strip()
 
 
 def _race_access_for_token(token):
+    # Compatibilité des anciens liens V7.2.87 pendant la transition.
     token = str(token or "").strip()
     with RACE_SESSION_LOCK:
         session = deepcopy(RACE_SESSION) if isinstance(RACE_SESSION, dict) else None
-    if not session or session.get("status") != "active":
-        return None
+    if not session or session.get("status") != "active": return None
     for role in ("spotter", "pilot"):
         if secrets.compare_digest(str(session.get("tokens", {}).get(role) or ""), token):
             return {"role": role, "session": _race_session_public(session)}
@@ -640,114 +691,213 @@ def _race_access_for_token(token):
 
 @app.get("/")
 def index():
-    return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="")
+    return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token="")
 
 
 @app.get("/join/<token>")
 def race_join(token):
     access = _race_access_for_token(token)
     if not access:
-        return render_template("index.html", app_version=APP_VERSION, race_access_role="expired", race_access_token=""), 410
-    return render_template(
-        "index.html",
-        app_version=APP_VERSION,
-        race_access_role=access["role"],
-        race_access_token=str(token),
-    )
+        return render_template("index.html", app_version=APP_VERSION, race_access_role="expired", race_access_token="", velocity_invite_token=""), 410
+    return render_template("index.html", app_version=APP_VERSION, race_access_role=access["role"], race_access_token=str(token), velocity_invite_token="")
+
+
+@app.get("/invite/<token>")
+def team_invite(token):
+    with TEAM_DATA_LOCK:
+        invite = deepcopy(TEAM_DATA.get("invites", {}).get(str(token)))
+    if not invite or invite.get("revoked"):
+        return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token="expired"), 410
+    return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token=str(token))
+
+
+@app.get("/api/teams")
+def get_teams():
+    with TEAM_DATA_LOCK:
+        teams = deepcopy(TEAM_DATA.get("teams", []))
+    return jsonify(ok=True, teams=teams)
+
+
+@app.post("/api/teams")
+def create_team():
+    body=request.get_json(force=True,silent=True) or {}; name=str(body.get("name") or "").strip()[:80]
+    if not name: return jsonify(ok=False,error="Nom de Team requis."),400
+    with TEAM_DATA_LOCK:
+        team={"id":secrets.token_hex(4).upper(),"name":name,"members":[],"created_at_ms":int(time.time()*1000)}
+        TEAM_DATA["teams"].append(team); _save_team_data(TEAM_DATA)
+    return jsonify(ok=True,team=team)
+
+
+@app.delete("/api/teams/<team_id>")
+def delete_team(team_id):
+    with TEAM_DATA_LOCK:
+        before=len(TEAM_DATA.get("teams",[])); TEAM_DATA["teams"]=[t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))!=str(team_id)]
+        if len(TEAM_DATA["teams"])==before: return jsonify(ok=False,error="Team introuvable."),404
+        _save_team_data(TEAM_DATA)
+    return jsonify(ok=True)
+
+
+@app.post("/api/teams/<team_id>/members")
+def add_team_member(team_id):
+    body=request.get_json(force=True,silent=True) or {}; name=str(body.get("name") or "").strip()[:80]
+    roles=[r for r in (body.get("roles") or []) if r in {"pilot","spotter","team_manager"}]
+    if not name: return jsonify(ok=False,error="Nom du membre requis."),400
+    with TEAM_DATA_LOCK:
+        team=next((t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))==str(team_id)),None)
+        if not team: return jsonify(ok=False,error="Team introuvable."),404
+        member={"id":secrets.token_hex(4).upper(),"name":name,"roles":roles,"device_ids":[],"created_at_ms":int(time.time()*1000)}
+        team.setdefault("members",[]).append(member); _save_team_data(TEAM_DATA)
+    return jsonify(ok=True,member=member)
+
+
+@app.patch("/api/members/<member_id>")
+def update_team_member(member_id):
+    body=request.get_json(force=True,silent=True) or {}
+    with TEAM_DATA_LOCK:
+        team,member=_member_by_id(TEAM_DATA,member_id)
+        if not member:return jsonify(ok=False,error="Membre introuvable."),404
+        if "name" in body: member["name"]=str(body.get("name") or member.get("name") or "").strip()[:80]
+        if "roles" in body: member["roles"]=[r for r in (body.get("roles") or []) if r in {"pilot","spotter","team_manager"}]
+        _save_team_data(TEAM_DATA)
+    return jsonify(ok=True,member=member)
+
+
+@app.post("/api/members/<member_id>/invite")
+def create_member_invite(member_id):
+    with TEAM_DATA_LOCK:
+        team,member=_member_by_id(TEAM_DATA,member_id)
+        if not member:return jsonify(ok=False,error="Membre introuvable."),404
+        token=secrets.token_urlsafe(18); code=secrets.token_hex(3).upper()
+        TEAM_DATA.setdefault("invites",{})[token]={"token":token,"code":code,"team_id":team.get("id"),"team_name":team.get("name"),"member_id":member.get("id"),"member_name":member.get("name"),"roles":deepcopy(member.get("roles") or []),"created_at_ms":int(time.time()*1000),"revoked":False}
+        _save_team_data(TEAM_DATA)
+    return jsonify(ok=True,link=f"{request.host_url.rstrip('/')}/invite/{token}",code=code)
+
+
+@app.get("/api/invite/<token>")
+def get_invite(token):
+    with TEAM_DATA_LOCK: invite=deepcopy(TEAM_DATA.get("invites",{}).get(str(token)))
+    if not invite or invite.get("revoked"): return jsonify(ok=False,error="Invitation invalide."),410
+    return jsonify(ok=True,invite=invite)
+
+
+@app.post("/api/invite/<token>/claim")
+def claim_invite(token):
+    body=request.get_json(force=True,silent=True) or {}; device_id=str(body.get("device_id") or _device_id_from_request() or secrets.token_urlsafe(18)).strip()
+    device_name=str(body.get("device_name") or request.user_agent.platform or "Appareil Velocity")[:80]
+    with TEAM_DATA_LOCK:
+        invite=TEAM_DATA.get("invites",{}).get(str(token))
+        if not invite or invite.get("revoked"): return jsonify(ok=False,error="Invitation invalide."),410
+        team,member=_member_by_id(TEAM_DATA,invite.get("member_id"))
+        if not member:return jsonify(ok=False,error="Membre introuvable."),404
+        if device_id not in member.setdefault("device_ids",[]): member["device_ids"].append(device_id)
+        TEAM_DATA.setdefault("devices",{})[device_id]={"id":device_id,"member_id":member.get("id"),"member_name":member.get("name"),"team_id":team.get("id"),"team_name":team.get("name"),"name":device_name,"last_seen_ms":int(time.time()*1000),"version":APP_VERSION}
+        invite["claimed_device_id"]=device_id; invite["claimed_at_ms"]=int(time.time()*1000)
+        _save_team_data(TEAM_DATA)
+    resp=jsonify(ok=True,device_id=device_id,member={"id":member.get("id"),"name":member.get("name"),"team_name":team.get("name"),"roles":member.get("roles",[])})
+    resp.set_cookie("velocity_device_id",device_id,max_age=60*60*24*365*3,samesite="Lax",secure=request.is_secure)
+    return resp
+
+
+@app.get("/api/device/me")
+def device_me():
+    device_id=_device_id_from_request()
+    with TEAM_DATA_LOCK:
+        dev=TEAM_DATA.get("devices",{}).get(device_id); data=deepcopy(dev) if dev else None
+        if dev:
+            dev["last_seen_ms"]=int(time.time()*1000); dev["version"]=APP_VERSION; _save_team_data(TEAM_DATA)
+    return jsonify(ok=True,device=data)
+
+
+@app.get("/api/device/session")
+def device_session():
+    device_id=_device_id_from_request()
+    with TEAM_DATA_LOCK:
+        dev=TEAM_DATA.get("devices",{}).get(device_id)
+        if not dev:return jsonify(ok=True,paired=False,session=None,role=None)
+        dev["last_seen_ms"]=int(time.time()*1000); dev["version"]=APP_VERSION
+        _team,_member=_member_by_id(TEAM_DATA,dev.get("member_id"))
+        authorized_roles=deepcopy((_member or {}).get("roles") or [])
+        session=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
+        role=None
+        if session and session.get("status")=="active":
+            for r,mid in (session.get("assignments") or {}).items():
+                if str(mid)==str(dev.get("member_id")): role=r; break
+        _save_team_data(TEAM_DATA)
+        public=_race_session_public(session) if session and role else None
+    return jsonify(ok=True,paired=True,device=deepcopy(dev),authorized_roles=authorized_roles,session=public,role=role)
 
 
 @app.get("/api/race-session")
 def get_race_session():
-    with RACE_SESSION_LOCK:
-        session = deepcopy(RACE_SESSION) if isinstance(RACE_SESSION, dict) else None
-    if not session:
-        return jsonify(ok=True, session=None)
-    public = _race_session_public(session)
-    if session.get("status") == "active":
-        origin = request.host_url.rstrip("/")
-        public["links"] = {role: f"{origin}/join/{token}" for role, token in session.get("tokens", {}).items()}
-    return jsonify(ok=True, session=public)
+    with TEAM_DATA_LOCK:
+        session=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
+        teams=deepcopy(TEAM_DATA.get("teams",[]))
+    return jsonify(ok=True,session=_race_session_public(session) if session else None,teams=teams)
 
 
 @app.post("/api/race-session/create")
 def create_race_session():
     global RACE_SESSION
-    body = request.get_json(force=True, silent=True) or {}
-    circuit_id = str(STATE.get("circuit_id") or "").strip()
-    if not circuit_id:
-        return jsonify(ok=False, error="Sélectionnez d'abord un circuit."), 400
-    circuits = {str(c.get("id") or ""): c for c in load_circuits()}
-    circuit = circuits.get(circuit_id)
-    if not circuit:
-        return jsonify(ok=False, error="Circuit actif introuvable."), 400
-    followed = str(STATE.get("followed_driver") or "").strip()
-    if not followed:
-        return jsonify(ok=False, error="Sélectionnez d'abord l'équipe suivie dans Analyzer."), 400
-    with RACE_SESSION_LOCK:
-        if isinstance(RACE_SESSION, dict) and RACE_SESSION.get("status") == "active":
-            return jsonify(ok=False, error="Une session de course est déjà active.", session=_race_session_public(RACE_SESSION)), 409
-        now_ms = int(time.time() * 1000)
-        session_id = secrets.token_hex(4).upper()
-        RACE_SESSION = {
-            "id": session_id,
-            "name": str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE",
-            "status": "active",
-            "circuit_id": circuit_id,
-            "circuit_name": str(circuit.get("name") or circuit_id),
-            "followed_driver": followed,
-            "created_at_ms": now_ms,
-            "ended_at_ms": None,
-            "tokens": {
-                "spotter": secrets.token_urlsafe(12),
-                "pilot": secrets.token_urlsafe(12),
-            },
-        }
-        session = deepcopy(RACE_SESSION)
-    public = _race_session_public(session)
-    origin = request.host_url.rstrip("/")
-    public["links"] = {role: f"{origin}/join/{token}" for role, token in session["tokens"].items()}
-    return jsonify(ok=True, session=public)
+    body=request.get_json(force=True,silent=True) or {}; circuit_id=str(STATE.get("circuit_id") or "").strip()
+    if not circuit_id:return jsonify(ok=False,error="Sélectionnez d'abord un circuit."),400
+    circuits={str(c.get("id") or ""):c for c in load_circuits()}; circuit=circuits.get(circuit_id)
+    if not circuit:return jsonify(ok=False,error="Circuit actif introuvable."),400
+    team_id=str(body.get("team_id") or "").strip(); assignments=body.get("assignments") or {}
+    with TEAM_DATA_LOCK:
+        if TEAM_DATA.get("active_session_id"):
+            current=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id"))
+            if current and current.get("status")=="active":return jsonify(ok=False,error="Une session de course est déjà active.",session=_race_session_public(current)),409
+        team=next((t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))==team_id),None)
+        if not team:return jsonify(ok=False,error="Sélectionnez une Team."),400
+        member_map={str(m.get("id")):m for m in team.get("members",[])}; clean={}
+        for role in ("team_manager","spotter","pilot"):
+            mid=str(assignments.get(role) or "").strip()
+            if not mid:continue
+            m=member_map.get(mid)
+            if not m or role not in (m.get("roles") or []):return jsonify(ok=False,error=f"Rôle {role} non autorisé pour ce membre."),400
+            clean[role]=mid
+        now_ms=int(time.time()*1000); sid=secrets.token_hex(4).upper()
+        session={"id":sid,"name":str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE","status":"active","circuit_id":circuit_id,"circuit_name":str(circuit.get("name") or circuit_id),"followed_driver":str(STATE.get("followed_driver") or "").strip(),"team_id":team.get("id"),"team_name":team.get("name"),"assignments":clean,"created_at_ms":now_ms,"ended_at_ms":None}
+        TEAM_DATA.setdefault("sessions",[]).append(session); TEAM_DATA["active_session_id"]=sid; _save_team_data(TEAM_DATA)
+    # Miroir de compatibilité avec le verrouillage déjà présent côté V7.2.87.
+    with RACE_SESSION_LOCK: RACE_SESSION=deepcopy(session)
+    return jsonify(ok=True,session=_race_session_public(session))
+
+
+@app.patch("/api/race-session/assignments")
+def update_race_assignments():
+    body=request.get_json(force=True,silent=True) or {}; assignments=body.get("assignments") or {}
+    with TEAM_DATA_LOCK:
+        session=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
+        if not session or session.get("status")!="active":return jsonify(ok=False,error="Aucune session active."),400
+        team=next((t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))==str(session.get("team_id"))),None); member_map={str(m.get("id")):m for m in (team or {}).get("members",[])}
+        clean={}
+        for role in ("team_manager","spotter","pilot"):
+            mid=str(assignments.get(role) or "").strip()
+            if not mid:continue
+            m=member_map.get(mid)
+            if not m or role not in (m.get("roles") or []):return jsonify(ok=False,error=f"Rôle {role} non autorisé."),400
+            clean[role]=mid
+        session["assignments"]=clean; _save_team_data(TEAM_DATA)
+    return jsonify(ok=True,session=_race_session_public(session))
 
 
 @app.post("/api/race-session/end")
 def end_race_session():
     global RACE_SESSION
-    with RACE_SESSION_LOCK:
-        if not isinstance(RACE_SESSION, dict) or RACE_SESSION.get("status") != "active":
-            return jsonify(ok=False, error="Aucune session active."), 400
-        RACE_SESSION["status"] = "ended"
-        RACE_SESSION["ended_at_ms"] = int(time.time() * 1000)
-        session = deepcopy(RACE_SESSION)
-    return jsonify(ok=True, session=_race_session_public(session))
+    with TEAM_DATA_LOCK:
+        session=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
+        if not session or session.get("status")!="active":return jsonify(ok=False,error="Aucune session active."),400
+        session["status"]="ended"; session["ended_at_ms"]=int(time.time()*1000); TEAM_DATA["active_session_id"]=None; _save_team_data(TEAM_DATA)
+    with RACE_SESSION_LOCK: RACE_SESSION=deepcopy(session)
+    return jsonify(ok=True,session=_race_session_public(session))
 
 
 @app.get("/api/race-access/<token>")
 def get_race_access(token):
-    access = _race_access_for_token(token)
-    if not access:
-        return jsonify(ok=False, ended=True), 410
-    return jsonify(ok=True, role=access["role"], session=access["session"])
-
-
-@app.get("/api/race-session/qr/<role>")
-def race_session_qr(role):
-    role = str(role or "").lower()
-    if role not in {"spotter", "pilot"}:
-        return jsonify(ok=False, error="Rôle inconnu"), 400
-    with RACE_SESSION_LOCK:
-        session = deepcopy(RACE_SESSION) if isinstance(RACE_SESSION, dict) else None
-    if not session or session.get("status") != "active":
-        return jsonify(ok=False, error="Aucune session active"), 404
-    if qrcode is None:
-        return jsonify(ok=False, error="Module QR indisponible"), 503
-    token = session.get("tokens", {}).get(role)
-    link = f"{request.host_url.rstrip('/')}/join/{token}"
-    image = qrcode.make(link)
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    buffer.seek(0)
-    return send_file(buffer, mimetype="image/png", max_age=0)
-
+    access=_race_access_for_token(token)
+    if not access:return jsonify(ok=False,ended=True),410
+    return jsonify(ok=True,role=access["role"],session=access["session"])
 
 
 

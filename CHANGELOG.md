@@ -1,4 +1,4 @@
-# Velocity V7.2.86 — Session de course multi-appareils (prototype)
+# Velocity V7.2.87 — Session de course multi-appareils (prototype)
 
 - Nouveau gestionnaire SESSION COURSE dans le footer Analyzer.
 - Création d’une session à partir du circuit actif et de l’équipe suivie.
