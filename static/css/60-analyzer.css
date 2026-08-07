@@ -1567,13 +1567,13 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-lab-matrix-wrap{overflow-anchor:none;overscroll-behavior:contain}
 
 
-/* Velocity V7.2.72 — Delta convention course + continuité pilote Apex */
+/* Velocity V7.2.73 — Delta convention course + continuité pilote Apex */
 .analyzer-kartiq-table .kartiq-pilot-head,
 .analyzer-kartiq-table .kartiq-pilot-continuity{
   text-align:center!important;
   white-space:nowrap!important;
 }
-.analyzer-kartiq-table .kartiq-pilot-continuity{font-size:16px;line-height:1;cursor:help}
+.analyzer-kartiq-table .kartiq-pilot-continuity{font-size:16px;line-height:1;cursor:default}
 @media(min-width:1400px){
   .analyzer-strategy-column .analyzer-kartiq-table.has-pilot-column th:nth-child(1),.analyzer-strategy-column .analyzer-kartiq-table.has-pilot-column td:nth-child(1){width:4.2%!important}
   .analyzer-strategy-column .analyzer-kartiq-table.has-pilot-column th:nth-child(2),.analyzer-strategy-column .analyzer-kartiq-table.has-pilot-column td:nth-child(2){width:4.4%!important}
@@ -1593,7 +1593,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .analyzer-kartiq-table .kartiq-tooltip{
   position:relative;
   overflow:visible!important;
-  cursor:help;
+  cursor:default;
 }
 .analyzer-kartiq-table .kartiq-tooltip[data-tooltip]:hover::after{
   content:attr(data-tooltip);
@@ -1615,4 +1615,12 @@ body.velocity-lab-open{overflow:hidden!important}
   box-shadow:0 6px 18px rgba(0,0,0,.45);
 }
 
-/* Velocity V7.2.72 — Mode Test pilotes tournants + infobulles Velocity uniformisées. */
+/* Velocity V7.2.73 — Mode Test pilotes tournants + infobulles Velocity uniformisées. */
+
+/* Velocity V7.2.73 — tableaux complets, 10 lignes visibles et scroll vertical. */
+.analyzer-strategy-column .analyzer-kartiq-wrap{max-height:338px!important;overflow-y:auto!important;overflow-x:auto!important;overscroll-behavior:contain;}
+.velocity-lab-ranking-wrap{max-height:470px;overflow:auto;overscroll-behavior:contain;}
+.velocity-lab-table thead{position:sticky;top:0;z-index:5;}
+.velocity-lab-table th{position:sticky;top:0;z-index:5;}
+.analyzer-kartiq-table .kartiq-tooltip{cursor:default!important;}
+@media(max-width:700px){.velocity-lab-ranking-wrap{max-height:430px}}

@@ -114,7 +114,7 @@ async function maybeAutoFollowBrice(){
 async function followDriver(driverName,{automatic=false}={}){
  const selected=(state.drivers||[]).find(d=>d.driver===driverName);if(!selected)return;
  if(!automatic)manualFollowOverride=true;
- state.followed_driver=driverName;state.followed=selected;state.qualif_delta=qualificationDeltaFor(selected);render();await api('/api/follow',{driver:driverName})
+ state.followed_driver=driverName;state.followed=selected;state.qualif_delta=qualificationDeltaFor(selected);render();if(window.velocityEnduranceTest?.active)return;await api('/api/follow',{driver:driverName})
 }
 function driverAhead(followed){if(!followed||!followed.pos||Number(followed.pos)<=1)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(followed.pos)-1)||null}
 function sprintReferenceFor(driver){

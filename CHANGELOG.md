@@ -1,11 +1,10 @@
-# V7.2.72 — Mode Test pilotes + infobulles Velocity uniformisées
+# V7.2.73 — Velocity complet, tri Delta et Mode Test suivi
 
-- Le Mode Test Endurance simule désormais 4 pilotes fictifs par équipe.
-- À chaque arrêt, 70 % de probabilité de changement de pilote et 30 % de continuité afin de tester les cas 👤 et 👥.
-- Les pilotes fictifs disposent de légers écarts de rythme pour rendre les changements réellement visibles dans les métriques.
-- Les arrêts du Mode Test effectuent désormais aussi un changement de kart effectif, conformément à l’option « Arrêts et changements de kart ».
-- Les infobulles existantes du classement Velocity (équipe, continuité pilote, évolution et Δ) utilisent désormais un design unique basé sur l’infobulle du Δ.
-- Aucun changement du Velocity Engine V1.0 ni des pondérations du Score.
+- Classement Velocity : toutes les équipes évaluables sont désormais disponibles ; 10 lignes restent visibles et le reste est accessible par scroll vertical.
+- Nouveau tri « Delta » : les meilleurs gains corrigés (valeurs les plus négatives) remontent en tête, sans modifier la colonne TOP qui reste le rang officiel par Score.
+- Velocity Lab : toutes les équipes évaluables sont disponibles, avec défilement vertical et sélection de 2 à 5 karts parmi l’ensemble du plateau.
+- Mode Test Endurance : l’équipe suivie peut être changée librement et reste sélectionnée pendant les rafraîchissements synthétiques ; aucun appel serveur réel n’est envoyé lors du suivi en Mode Test.
+- Infobulles Velocity : suppression du curseur d’aide « ? » ; les infobulles restent accessibles directement au survol avec le design unifié.
 
 # V7.2.71 — Fiabilisation du Δ Velocity
 
