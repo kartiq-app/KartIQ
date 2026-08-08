@@ -769,8 +769,8 @@ function analyzerRelayRawMetrics(driver,gridNow=null){
  // Alias historiques conservés pour compatibilité interne : leur signe suit désormais la convention Δ.
  const rawGain=rawDelta,gridGain=gridDelta,correctedGain=correctedDelta;
  const laps=Number(relay?.lapCount)||0;
- const currentPilot=analyzerDriverPilot(driver)||relay?.pilot||null,previousPilot=previous?.pilot||null;
- const currentKart=analyzerRelayKart(driver)||relay?.kart||null,previousKart=previous?.kart||null;
+ const currentPilot=analyzerOfficialCurrentPilot(driver)||relay?.pilot||analyzerDriverPilot(driver)||null,previousPilot=previous?.pilot||null;
+ const currentKart=analyzerOfficialCurrentKart(driver)||analyzerRelayKart(driver)||relay?.kart||null,previousKart=previous?.kart||null;
  return {driver,history,relay,average,best3,consistency,rawDelta,gridDelta,correctedDelta,rawGain,gridGain,correctedGain,gridNow:currentGrid,previousGrid:Number.isFinite(previousGrid)?previousGrid:null,previousAverage:previous?.average??null,currentPilot,previousPilot,currentKart,previousKart,laps,relayIndex:Number(relay?.index)||((history.relays||[]).length+1)};
 }
 function analyzerRelayPopulation(){
@@ -817,12 +817,13 @@ function analyzerQualificationSessionName(name){
 }
 function analyzerRelayScorePilotLabel(driver){
  const team=String(driver?.driver||'—').trim()||'—';
- const pilot=String(analyzerDriverPilot(driver)||'').trim();
+ const pilot=String(analyzerOfficialCurrentPilot(driver)||analyzerDriverPilot(driver)||'').trim();
  return pilot&&analyzerNormalizePilot(pilot)!==analyzerNormalizePilot(team)?`${team} / ${pilot}`:team;
 }
-function analyzerRelayScoreSlices(laps,pits){
+function analyzerRelayScoreSlices(laps,pits,driver=null){
  const clean=analyzerDebriefCleanLaps(laps,pits);
- const pitLaps=(pits||[]).map(p=>Number(p?.lap)).filter(Number.isFinite).sort((a,b)=>a-b);
+ const chronologicalPits=(pits||[]).slice().sort((a,b)=>Number(a?.stop)-Number(b?.stop));
+ const pitLaps=chronologicalPits.map(p=>Number(p?.lap)).filter(Number.isFinite).sort((a,b)=>a-b);
  const bounds=[0,...pitLaps,Infinity],relays=[];
  for(let i=0;i<bounds.length-1;i++){
   let segment=clean.filter(l=>Number(l.lap)>bounds[i]&&Number(l.lap)<bounds[i+1]);
@@ -830,7 +831,11 @@ function analyzerRelayScoreSlices(laps,pits){
   const values=segment.map(l=>Number(l.seconds)).filter(Number.isFinite);
   if(!values.length)continue;
   const sorted=values.slice().sort((a,b)=>a-b),top3=sorted.slice(0,3);
-  relays.push({index:i+1,from:segment[0]?.lap||null,to:segment[segment.length-1]?.lap||null,laps:values.length,average:analyzerMean(values),best3:analyzerMean(top3),consistency:analyzerStdDev(values),values});
+  // Le .P Apex rattache chaque arrêt au pilote du relais qui vient de se terminer.
+  // Le dernier relais sans arrêt terminé utilise le pilote courant officiel de .INF.
+  const completedPilot=String(chronologicalPits[i]?.driverName||'').trim();
+  const currentPilot=i===bounds.length-2?String(analyzerOfficialCurrentPilot(driver)||'').trim():'';
+  relays.push({index:i+1,from:segment[0]?.lap||null,to:segment[segment.length-1]?.lap||null,laps:values.length,average:analyzerMean(values),best3:analyzerMean(top3),consistency:analyzerStdDev(values),values,pilot:completedPilot||currentPilot||null});
  }
  return relays;
 }
@@ -852,7 +857,7 @@ async function analyzerRelayScoreQualificationContext(drivers){
  let historical=[];try{historical=parseApexSnapshotTeams(await apexHistoryRequest(`S#${session.id}`))}catch(_){historical=[]}
  const byRow=new Map(),averages=[];
  for(const driver of drivers){
-  const liveName=normalizeApexTeamName(driver.driver),livePilot=normalizeApexTeamName(analyzerDriverPilot(driver)||''),liveKart=String(validKartNumber(driver)||driver.apex||'').trim();
+  const liveName=normalizeApexTeamName(driver.driver),livePilot=normalizeApexTeamName(analyzerOfficialCurrentPilot(driver)||analyzerDriverPilot(driver)||''),liveKart=String(analyzerOfficialCurrentKart(driver)||validKartNumber(driver)||driver.apex||'').trim();
   const match=historical.find(team=>normalizeApexTeamName(team.name)===liveName)||historical.find(team=>livePilot&&normalizeApexTeamName(team.name)===livePilot)||historical.find(team=>liveKart&&String(team.kart||'').trim()===liveKart);
   if(!match)continue;
   try{
@@ -910,7 +915,7 @@ async function analyzerLoadRelayScores({force=false}={}){
  for(let i=0;i<drivers.length;i++){
   if(token!==analyzerRelayScoreLoadToken)break;
   const driver=drivers[i];
-  try{const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(Number(driver.apex_row),'',null),fetchAllApexTeamPits(Number(driver.apex_row),'',null).catch(()=>[])]);teams.push({driver,relays:analyzerRelayScoreSlices(laps,pits)})}catch(_){teams.push({driver,relays:[]})}
+  try{const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(Number(driver.apex_row),'',null),fetchAllApexTeamPits(Number(driver.apex_row),'',null).catch(()=>[])]);teams.push({driver,relays:analyzerRelayScoreSlices(laps,pits,driver)})}catch(_){teams.push({driver,relays:[]})}
  }
  if(token===analyzerRelayScoreLoadToken){
   const qualification=await analyzerRelayScoreQualificationContext(drivers);
@@ -952,7 +957,9 @@ function analyzerVelocityUnifiedMetrics(driver){
  const bestLaps=(relay.values||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b).slice(0,3);
  return {
   ...fallback,
-  relay:{...(fallback.relay||{}),index,lapCount:laps,laps:[...(relay.values||[])],bestLaps},
+  relay:{...(fallback.relay||{}),index,lapCount:laps,laps:[...(relay.values||[])],bestLaps,pilot:relay.pilot||fallback.relay?.pilot||null},
+  currentPilot:relay.pilot||analyzerOfficialCurrentPilot(driver)||fallback.currentPilot||null,
+  currentKart:analyzerOfficialCurrentKart(driver)||fallback.currentKart||null,
   average:relay.average,
   best3:relay.best3,
   consistency:relay.consistency,
@@ -1030,7 +1037,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
   relayRows.push(`<tr onclick="${follow}">${relays}</tr>`);
  });
  const qualLabel=data.qualification?.session?.name?`R1 référencé sur ${analyzerEscape(data.qualification.session.name)}`:'R1 sans qualification reconnue : transition neutralisée';
- host.innerHTML=`<div class="relay-score-meta">${qualLabel} · Scores reconstruits depuis les tours et arrêts STATS Apex.</div><div class="relay-score-grid"><div class="relay-score-fixed"><table class="analyzer-kartiq-table relay-score-fixed-table"><thead><tr><th class="relay-fixed-top">TOP</th><th class="relay-fixed-pos">POS</th><th class="relay-fixed-kart">KART</th><th class="relay-fixed-team">ÉQUIPE / PILOTE</th></tr></thead><tbody>${fixedRows.join('')}</tbody></table></div><div class="relay-score-xscroll" id="analyzerRelayScoreXScroll"><table class="analyzer-kartiq-table relay-score-table" style="width:${relayTableWidth}px;min-width:${relayTableWidth}px;max-width:${relayTableWidth}px">${relayColgroup}<thead><tr>${relayHeaders}</tr></thead><tbody>${relayRows.join('')}</tbody></table></div></div>`;
+ host.innerHTML=`<div class="relay-score-meta">${qualLabel} · Scores alimentés par les tours, arrêts et pilotes natifs STATS Apex.</div><div class="relay-score-grid"><div class="relay-score-fixed"><table class="analyzer-kartiq-table relay-score-fixed-table"><thead><tr><th class="relay-fixed-top">TOP</th><th class="relay-fixed-pos">POS</th><th class="relay-fixed-kart">KART</th><th class="relay-fixed-team">ÉQUIPE / PILOTE</th></tr></thead><tbody>${fixedRows.join('')}</tbody></table></div><div class="relay-score-xscroll" id="analyzerRelayScoreXScroll"><table class="analyzer-kartiq-table relay-score-table" style="width:${relayTableWidth}px;min-width:${relayTableWidth}px;max-width:${relayTableWidth}px">${relayColgroup}<thead><tr>${relayHeaders}</tr></thead><tbody>${relayRows.join('')}</tbody></table></div></div>`;
  host.classList.add('relay-score-scroll-host');
  const xscroll=document.getElementById('analyzerRelayScoreXScroll');
  if(xscroll){
@@ -1848,6 +1855,15 @@ function analyzerOfficialPilotTotals(driver){
  const entry=analyzerApexPilotTotalsCache.get(rowId);if(!entry)return [];
  return (entry.pilots||[]).filter(p=>p.name&&Number(p.totalMs)>0).map(p=>({name:p.name,seconds:Number(p.totalMs)/1000,driverId:p.driverId,current:Boolean(p.current)})).sort((a,b)=>b.seconds-a.seconds||a.name.localeCompare(b.name));
 }
+function analyzerOfficialCurrentPilot(driver){
+ const rowId=Number(driver?.apex_row)||0,entry=analyzerApexPilotTotalsCache.get(rowId);
+ const current=(entry?.pilots||[]).find(p=>p.current&&p.name);
+ return current?.name||null;
+}
+function analyzerOfficialCurrentKart(driver){
+ const rowId=Number(driver?.apex_row)||0,entry=analyzerApexPilotTotalsCache.get(rowId);
+ return String(entry?.teamInfo?.kartNumber||'').trim()||null;
+}
 async function analyzerEnsureOfficialPilotTotals(driver){
  const rowId=Number(driver?.apex_row)||0;if(!rowId||analyzerApexPilotTotalsLoading.has(rowId))return;
  if(analyzerApexPilotTotalsCache.get(rowId)?.loadedAt&&Date.now()-analyzerApexPilotTotalsCache.get(rowId).loadedAt<15000)return;
@@ -2081,23 +2097,14 @@ async function loadApexTeamLaps(rowId,sessionId=''){
 
 
 function apexPitProtocolMilliseconds(value){
- const text=String(value??'').trim();
- if(!text||text==='—')return 0;
- // Les durées Apex sont transmises sous forme de secondes décimales
- // (ex. 12693.327) ou parfois déjà en millisecondes entières.
- if(/^[-+]?\d+\.\d+$/.test(text)){
-  const seconds=Number(text);return Number.isFinite(seconds)&&seconds>0?Math.round(seconds*1000):0;
- }
- const numeric=Number(text.replace(/[^0-9-]/g,''));
- return Number.isFinite(numeric)&&numeric>0?numeric:0;
+ // Alignement strict sur le parseur officiel Apex tzfji() :
+ // suppression des marqueurs alphabétiques puis parseInt => valeur en millisecondes.
+ // Ne jamais multiplier une valeur décimale par 1000 : Apex tronque lui-même la partie décimale.
+ return apexProtocolNumber(value);
 }
 function apexPitProtocolLap(value){
- const text=String(value??'').trim();if(!text)return 0;
- // Apex encode le tour comme une petite valeur décimale : 0.174 = tour 174.
- if(/^[-+]?0?\.\d+$/.test(text)){
-  const lap=Math.round(Number(text)*1000);return Number.isFinite(lap)&&lap>0?lap:0;
- }
- return apexProtocolNumber(text);
+ // Alignement strict sur tzfji() : le numéro de tour est parsé comme un entier Apex.
+ return apexProtocolNumber(value);
 }
 function formatApexPitClock(ms){
  const value=Math.max(0,Math.floor(Number(ms)||0));if(!value)return '—';
@@ -2130,23 +2137,44 @@ function parseApexPitLine(line,rowId){
   driverTotalTimeMs:apexPitProtocolMilliseconds(fields[8])
  };
 }
-function parseApexDriverInfos(raw,rowId){
+function parseApexDriverInfo(raw,rowId){
  const marker=`D${rowId}.INF`,line=String(raw||'').split(/\r?\n/).find(item=>String(item||'').trim().startsWith(marker));
- if(!line)return [];
- const start=line.indexOf('<');if(start<0)return [];
+ if(!line)return {rowId:Number(rowId)||0,kartNumber:'',driverName:'',drivers:[]};
+ const start=line.indexOf('<');if(start<0)return {rowId:Number(rowId)||0,kartNumber:'',driverName:'',drivers:[]};
  try{
   const box=document.createElement('div');box.innerHTML=line.slice(start);
-  return [...box.querySelectorAll('driver')].map(node=>({driverId:apexProtocolNumber(node.getAttribute('id')),name:String(node.getAttribute('name')||'').trim(),current:String(node.getAttribute('current')||'')==='1'})).filter(item=>item.driverId&&item.name);
- }catch(_){return []}
+  const root=box.firstElementChild;
+  const drivers=[...box.querySelectorAll('driver')].map(node=>({
+   driverId:apexProtocolNumber(node.getAttribute('id')),
+   memberId:String(node.getAttribute('member')||''),
+   number:String(node.getAttribute('num')||''),
+   color:String(node.getAttribute('color')||''),
+   flag:String(node.getAttribute('nat')||''),
+   name:String(node.getAttribute('name')||'').trim(),
+   photoId:String(node.getAttribute('picture')||''),
+   current:String(node.getAttribute('current')||'')==='1'
+  })).filter(item=>item.driverId&&item.name);
+  return {
+   rowId:Number(rowId)||0,
+   apexId:String(root?.getAttribute('id')||''),
+   memberId:String(root?.getAttribute('member')||''),
+   centerId:String(root?.getAttribute('center')||''),
+   kartNumber:String(root?.getAttribute('num')||'').trim(),
+   kartColor:String(root?.getAttribute('color')||''),
+   driverName:String(root?.getAttribute('name')||'').trim(),
+   drivers
+  };
+ }catch(_){return {rowId:Number(rowId)||0,kartNumber:'',driverName:'',drivers:[]}}
 }
-function analyzerCacheOfficialPilotTotals(rowId,pits,drivers){
+function parseApexDriverInfos(raw,rowId){return parseApexDriverInfo(raw,rowId).drivers}
+function analyzerCacheOfficialPilotTotals(rowId,pits,drivers,teamInfo=null){
  const byId=new Map();
  (drivers||[]).forEach(d=>byId.set(Number(d.driverId),{driverId:Number(d.driverId),name:d.name,current:Boolean(d.current),totalMs:0}));
  (pits||[]).forEach(p=>{const id=Number(p.driverId)||0;if(!id)return;const current=byId.get(id)||{driverId:id,name:String(p.driverName||'').trim(),current:false,totalMs:0};current.totalMs=Math.max(Number(current.totalMs)||0,Number(p.driverTotalTimeMs)||0);if(p.driverName)current.name=p.driverName;byId.set(id,current)});
- analyzerApexPilotTotalsCache.set(Number(rowId),{pilots:[...byId.values()],loadedAt:Date.now()});
+ analyzerApexPilotTotalsCache.set(Number(rowId),{pilots:[...byId.values()],teamInfo:teamInfo||null,loadedAt:Date.now()});
 }
 function parseApexPitData(raw,rowId){
- const drivers=parseApexDriverInfos(raw,rowId),driverNames=new Map(drivers.map(d=>[Number(d.driverId),d.name]));
+ const teamInfo=parseApexDriverInfo(raw,rowId),drivers=teamInfo.drivers,driverNames=new Map(drivers.map(d=>[Number(d.driverId),d.name]));
  const byStop=new Map();
  for(const line of String(raw||'').split(/\r?\n/)){const pit=parseApexPitLine(line,rowId);if(pit){pit.driverName=driverNames.get(Number(pit.driverId))||'';byStop.set(pit.stop,pit)}}
  const chronological=[...byStop.values()].sort((a,b)=>a.stop-b.stop);
@@ -2156,7 +2184,7 @@ function parseApexPitData(raw,rowId){
   pit.onTrack=formatApexPitClock(pit.trackTimeMs||Math.max(0,pit.pitInMs-(previous?.pitOutMs||0)));
   pit.pitTime=pit.pitTimeMs?formatApexPitDuration(pit.pitTimeMs):(pit.pitOutMs>pit.pitInMs?formatApexPitDuration(pit.pitOutMs-pit.pitInMs):'—');
  });
- analyzerCacheOfficialPilotTotals(rowId,chronological,drivers);
+ analyzerCacheOfficialPilotTotals(rowId,chronological,drivers,teamInfo);
  return chronological.sort((a,b)=>b.stop-a.stop);
 }
 async function fetchAllApexTeamPits(rowId,sessionId,status){
@@ -2201,7 +2229,9 @@ function analyzerBuildHydratedRelay(driver,laps,pits){
   source:'apex-history',
   hydratedAt:Date.now(),
   startLap,
-  latestLap:lapNumbers.length?Math.max(...lapNumbers):startLap
+  latestLap:lapNumbers.length?Math.max(...lapNumbers):startLap,
+  pilot:analyzerOfficialCurrentPilot(driver)||analyzerDriverPilot(driver)||null,
+  kart:analyzerOfficialCurrentKart(driver)||analyzerRelayKart(driver)||null
  };
 }
 function analyzerApplyHydratedRelay(driver,laps,pits){

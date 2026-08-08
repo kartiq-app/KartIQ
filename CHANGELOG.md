@@ -1,3 +1,11 @@
+# V7.2.123 — Données STATS Apex natives
+
+- Alignement du parseur `.P` Velocity sur le JavaScript officiel Apex (`tzfji`) : durées, temps piste, temps stands et `driver_total_time` sont interprétés directement en millisecondes Apex, sans conversion heuristique.
+- Lecture enrichie de `.INF` : numéro de kart courant, liste des pilotes et drapeau `current` (`is_current`) sont conservés dans le cache Analyzer.
+- SCORE RELAIS rattache désormais chaque relais au pilote fourni par Apex dans `.P`; le relais en cours utilise le pilote `current` de `.INF`.
+- Velocity / Velocity Lab utilisent le pilote courant officiel Apex pour la continuité 👤/👥 et privilégient le numéro de kart `.INF` lorsqu'il est disponible.
+- Le moteur actuel reste en fallback lorsque `.P` ou `.INF` ne sont pas fournis par une installation Apex.
+
 # V7.2.122 — Score Relais : largeur réellement fixe
 
 - Les colonnes R1 à Rn utilisent désormais un `colgroup` commun et une largeur structurelle fixe de 56 px.

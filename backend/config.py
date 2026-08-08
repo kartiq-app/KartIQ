@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.122"
-APP_RELEASE_NAME = "SCORE RELAIS COLONNES UNIFORMES"
+APP_VERSION = "7.2.123"
+APP_RELEASE_NAME = "APEX STATS NATIFS"
 
 
 def _circuit_sort_key(circuit):
