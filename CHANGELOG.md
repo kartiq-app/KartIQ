@@ -1,3 +1,15 @@
+# V7.2.132 — Velocity Lab : Score Sprint expérimental
+
+- Ajout d’un mode **SCORE SPRINT** exclusivement dans Velocity Lab ; aucun changement du classement Velocity ni de SCORE RELAIS dans Analyzer.
+- Détection des anciennes sessions Apex de type Qualification / Course avec sélection manuelle et réorganisation avant calcul.
+- Prise en charge de deux groupes de qualification / course et ajout optionnel de la session LIVE comme dernière étape.
+- Reconstruction de l’historique individuel de chaque pilote : dernière session pertinente → session suivante, quel que soit son groupe.
+- Calcul expérimental du Δ corrigé : variation du temps moyen pilote moins variation médiane du plateau.
+- Pondération adaptative : TRANSITION progresse de 25 à 45 % selon |Δ corrigé|, tandis que PACE diminue de 45 à 25 %.
+- La règle est symétrique : amélioration forte = kart valorisé ; dégradation forte = kart sanctionné.
+- Sans référence antérieure exploitable, Transition est absente et Pace / Potential / Consistency / Sample sont renormalisés.
+- Le tableau Score Sprint affiche Score, temps moyen, Δ corrigé, poids Pace/Transition, session et kart précédents, plus le détail complet des transitions.
+
 ## V7.2.131 — Delta : gain de position vert
 
 - Le Delta DEVANT passe en vert lorsque l'équipe suivie franchit la ligne en ayant gagné au moins une position.

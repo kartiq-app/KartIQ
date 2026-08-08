@@ -1187,7 +1187,157 @@ function analyzerVelocityLabRawRows(metrics,key){
   ['POPULATION',String(pop)]
  ];
 }
+
+/* Velocity V7.2.132 — Velocity Lab / SCORE SPRINT expérimental.
+   Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
+let velocityLabMode='official';
+let velocityLabSprintSessions=[];
+let velocityLabSprintSelected=new Set();
+let velocityLabSprintLoading=false;
+let velocityLabSprintAnalysis=null;
+
+function setVelocityLabMode(mode){
+ velocityLabMode=mode==='sprint'?'sprint':'official';
+ document.getElementById('velocityLabOfficialTab')?.classList.toggle('active',velocityLabMode==='official');
+ document.getElementById('velocityLabSprintTab')?.classList.toggle('active',velocityLabMode==='sprint');
+ const official=document.getElementById('velocityLabOfficialPanel'),sprint=document.getElementById('velocityLabSprintPanel');
+ if(official)official.hidden=velocityLabMode!=='official';if(sprint)sprint.hidden=velocityLabMode!=='sprint';
+ if(velocityLabMode==='official')analyzerRenderVelocityLab(true);
+ else if(!velocityLabSprintSessions.length)loadVelocityLabSprintSessions();
+ else renderVelocityLabSprintSessions();
+}
+function velocityLabSprintRelevantSession(session){return ['qualification','race'].includes(analyzerSessionKind(session))}
+function velocityLabSprintAutoIds(sessions){
+ const newest=(sessions||[]).filter(velocityLabSprintRelevantSession),ids=new Set();if(!newest.length)return ids;
+ let foundQual=false;
+ for(let i=0;i<Math.min(newest.length,16);i++){
+  const item=newest[i];ids.add(String(item.id));
+  if(analyzerSessionKind(item)==='qualification'){
+   foundQual=true;
+   // Deux groupes de qualification sont généralement contigus dans la liste Apex.
+   let j=i+1;while(j<newest.length&&analyzerSessionKind(newest[j])==='qualification'){ids.add(String(newest[j].id));j++}
+   break;
+  }
+ }
+ if(!foundQual){[...newest].slice(0,10).forEach(item=>ids.add(String(item.id)))}
+ return ids;
+}
+async function loadVelocityLabSprintSessions(){
+ const status=document.getElementById('velocityLabSprintSessionStatus'),button=document.getElementById('velocityLabSprintLoadButton');
+ if(status)status.textContent='Interrogation des anciennes sessions Apex…';if(button)button.disabled=true;
+ try{
+  let sessions=[];try{sessions=await apexSessionsRequest()}catch(_){sessions=parseApexPreviousSessions(await apexHistoryRequest('S#'))}
+  const relevant=sessions.filter(velocityLabSprintRelevantSession);
+  const auto=velocityLabSprintAutoIds(relevant);
+  // Apex expose habituellement les sessions les plus récentes en premier : le Lab les présente en ordre chronologique.
+  velocityLabSprintSessions=relevant.slice().reverse().map((session,index)=>({...session,labOrder:index}));
+  velocityLabSprintSelected=new Set([...auto]);velocityLabSprintAnalysis=null;
+  if(status)status.textContent=relevant.length?`${relevant.length} session(s) Sprint/Qualification détectée(s) · sélection automatique à valider.`:'Aucune qualification/course détectée.';
+  renderVelocityLabSprintSessions();
+ }catch(error){if(status)status.textContent=`Historique Apex indisponible : ${error.message}`}
+ finally{if(button)button.disabled=false}
+}
+function toggleVelocityLabSprintSession(id,checked){if(checked)velocityLabSprintSelected.add(String(id));else velocityLabSprintSelected.delete(String(id));velocityLabSprintAnalysis=null;renderVelocityLabSprintSessions()}
+function moveVelocityLabSprintSession(id,direction){
+ const index=velocityLabSprintSessions.findIndex(s=>String(s.id)===String(id)),next=index+Number(direction);if(index<0||next<0||next>=velocityLabSprintSessions.length)return;
+ const copy=velocityLabSprintSessions.slice(),tmp=copy[index];copy[index]=copy[next];copy[next]=tmp;velocityLabSprintSessions=copy;velocityLabSprintAnalysis=null;renderVelocityLabSprintSessions();
+}
+function renderVelocityLabSprintSessions(){
+ const host=document.getElementById('velocityLabSprintSessions'),analyze=document.getElementById('velocityLabSprintAnalyzeButton'),includeLive=Boolean(document.getElementById('velocityLabSprintIncludeLive')?.checked);if(!host)return;
+ if(!velocityLabSprintSessions.length){host.innerHTML='<div class="analyzer-empty">Aucune session chargée.</div>';if(analyze)analyze.disabled=true;return}
+ host.innerHTML=velocityLabSprintSessions.map((s,index)=>{const checked=velocityLabSprintSelected.has(String(s.id)),kind=analyzerSessionKind(s)==='qualification'?'QUALIF':'COURSE';return `<div class="velocity-lab-sprint-session ${checked?'selected':''}"><label><input type="checkbox" ${checked?'checked':''} onchange="toggleVelocityLabSprintSession('${analyzerEscape(String(s.id))}',this.checked)"><b>${kind}</b><span>${analyzerEscape(s.name)}</span><small>ID ${analyzerEscape(String(s.id))}</small></label><div><button type="button" onclick="moveVelocityLabSprintSession('${analyzerEscape(String(s.id))}',-1)" ${index===0?'disabled':''}>↑</button><button type="button" onclick="moveVelocityLabSprintSession('${analyzerEscape(String(s.id))}',1)" ${index===velocityLabSprintSessions.length-1?'disabled':''}>↓</button></div></div>`}).join('')+(includeLive?'<div class="velocity-lab-sprint-session live selected"><label><input type="checkbox" checked disabled><b>LIVE</b><span>SESSION EN COURS</span><small>Dernière étape</small></label></div>':'');
+ if(analyze)analyze.disabled=velocityLabSprintLoading||(!velocityLabSprintSelected.size&&!includeLive);
+}
+function velocityLabSprintPilotKey(value){return normalizeApexTeamName(value)}
+function velocityLabSprintMetricsFromLaps(laps){
+ let clean=analyzerDebriefCleanLaps(laps||[],[]);if(clean.length>1)clean=clean.slice(1);
+ const values=clean.map(l=>Number(l.seconds)).filter(v=>Number.isFinite(v)&&v>0);if(values.length<3)return null;
+ const sorted=values.slice().sort((a,b)=>a-b),top3=sorted.slice(0,3);
+ return {laps:values.length,average:analyzerMean(values),best3:analyzerMean(top3),consistency:analyzerStdDev(values),values};
+}
+async function velocityLabSprintPool(items,worker,limit=4){
+ const results=new Array(items.length);let cursor=0;
+ async function runner(){while(true){const i=cursor++;if(i>=items.length)return;try{results[i]=await worker(items[i],i)}catch(_){results[i]=null}}}
+ await Promise.all(Array.from({length:Math.min(limit,Math.max(1,items.length))},runner));return results;
+}
+async function velocityLabSprintHistoricalData(session,progress){
+ const snapshot=parseApexSnapshotTeams(await apexHistoryRequest(`S#${session.id}`));
+ const rows=await velocityLabSprintPool(snapshot,async(team,index)=>{
+  if(progress)progress(`Chargement ${session.name} · ${index+1}/${snapshot.length}`);
+  const laps=await fetchAllApexTeamLaps(team.rowId,session.id,null),metrics=velocityLabSprintMetricsFromLaps(laps);if(!metrics)return null;
+  return {pilot:team.name,pilotKey:velocityLabSprintPilotKey(team.name),kart:team.kart||'—',rowId:team.rowId,...metrics};
+ },4);
+ const entries=rows.filter(Boolean),grid=analyzerMedian(entries.map(x=>x.average).filter(Number.isFinite));
+ return {id:String(session.id),name:session.name,kind:analyzerSessionKind(session),live:false,entries,grid};
+}
+async function velocityLabSprintLiveData(progress){
+ const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);
+ const rows=await velocityLabSprintPool(drivers,async(driver,index)=>{
+  if(progress)progress(`Chargement LIVE · ${index+1}/${drivers.length}`);
+  const laps=await fetchAllApexTeamLaps(Number(driver.apex_row),'',null),metrics=velocityLabSprintMetricsFromLaps(laps);if(!metrics)return null;
+  const pilot=String(driver.driver||analyzerOfficialCurrentPilot(driver)||'').trim();
+  return {pilot,pilotKey:velocityLabSprintPilotKey(pilot),kart:String(analyzerOfficialCurrentKart(driver)||validKartNumber(driver)||driver.apex||'—'),rowId:Number(driver.apex_row),...metrics};
+ },4);
+ const entries=rows.filter(Boolean),grid=analyzerMedian(entries.map(x=>x.average).filter(Number.isFinite));
+ return {id:'live',name:'SESSION LIVE',kind:'race',live:true,entries,grid};
+}
+function velocityLabSprintAdaptiveWeights(delta){
+ if(!Number.isFinite(delta))return {pace:.60,transition:0,potential:.20,consistency:.133333,sample:.066667,label:'Sans transition'};
+ const a=Math.abs(delta);let pace=.45,transition=.25;
+ if(a>=.50){pace=.25;transition=.45}else if(a>=.35){pace=.30;transition=.40}else if(a>=.20){pace=.35;transition=.35}else if(a>=.10){pace=.40;transition=.30}
+ return {pace,transition,potential:.15,consistency:.10,sample:.05,label:`Δ ${a.toFixed(3)} s`};
+}
+function velocityLabSprintTransitionNote(delta){return Number.isFinite(delta)?Math.max(0,Math.min(100,Math.round(50-delta*100))):null}
+function velocityLabSprintBuildAnalysis(sessions){
+ const previousByPilot=new Map(),allRows=[];
+ sessions.forEach((session,sessionIndex)=>{
+  const eligible=session.entries.filter(e=>e.laps>=3&&Number.isFinite(e.average));
+  const paceVals=eligible.map(e=>e.average),potentialVals=eligible.map(e=>e.best3).filter(Number.isFinite),consistencyVals=eligible.map(e=>e.consistency).filter(Number.isFinite),sampleVals=eligible.map(e=>e.laps);
+  const stage=[];
+  eligible.forEach(entry=>{
+   const previous=previousByPilot.get(entry.pilotKey)||null;
+   const rawDelta=previous?entry.average-previous.average:null;
+   const gridDelta=previous&&Number.isFinite(session.grid)&&Number.isFinite(previous.sessionGrid)?session.grid-previous.sessionGrid:null;
+   const correctedDelta=Number.isFinite(rawDelta)&&Number.isFinite(gridDelta)?rawDelta-gridDelta:null;
+   stage.push({session,sessionIndex,entry,previous,rawDelta,gridDelta,correctedDelta});
+  });
+  stage.forEach(row=>{
+   const {entry,correctedDelta}=row;
+   const pace=analyzerPercentileScore(entry.average,paceVals),potential=analyzerPercentileScore(entry.best3,potentialVals),consistency=analyzerPercentileScore(entry.consistency,consistencyVals),sample=analyzerPercentileScore(entry.laps,sampleVals,{lowerIsBetter:false});
+   const transition=velocityLabSprintTransitionNote(correctedDelta),weights=velocityLabSprintAdaptiveWeights(correctedDelta);
+   const score=Math.max(0,Math.min(100,Math.round(pace*weights.pace+(transition??0)*weights.transition+potential*weights.potential+consistency*weights.consistency+sample*weights.sample)));
+   Object.assign(row,{criteria:{pace,transition,potential,consistency,sample},weights,score});allRows.push(row);
+  });
+  eligible.forEach(entry=>previousByPilot.set(entry.pilotKey,{...entry,sessionId:session.id,sessionName:session.name,sessionGrid:session.grid}));
+ });
+ const latestIndex=Math.max(-1,...allRows.map(r=>r.sessionIndex)),latest=allRows.filter(r=>r.sessionIndex===latestIndex).sort((a,b)=>b.score-a.score);
+ return {sessions,rows:allRows,latest};
+}
+function velocityLabSprintDeltaClass(delta){return !Number.isFinite(delta)?'neutral':delta<-.0005?'good':delta>.0005?'bad':'neutral'}
+function renderVelocityLabSprintResults(){
+ const host=document.getElementById('velocityLabSprintResults'),analysis=velocityLabSprintAnalysis;if(!host)return;
+ if(!analysis){host.innerHTML='<div class="velocity-lab-placeholder">Validez les sessions puis lancez le calcul.</div>';return}
+ const current=analysis.latest;
+ if(!current.length){host.innerHTML='<div class="analyzer-empty">Aucun pilote avec au moins 3 tours exploitables dans la dernière session.</div>';return}
+ const summary=current.map((r,index)=>`<tr><td>${index+1}</td><td class="velocity-lab-kart">${analyzerEscape(r.entry.kart)}</td><td class="velocity-lab-team">${analyzerEscape(r.entry.pilot)}</td><td><b class="velocity-lab-score ${analyzerScoreClass(r.score)}">${r.score}</b></td><td>${analyzerVelocityLabFormatTime(r.entry.average)}</td><td class="sprint-delta ${velocityLabSprintDeltaClass(r.correctedDelta)}">${analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true})}</td><td>${Math.round(r.weights.pace*100)}%</td><td>${Math.round(r.weights.transition*100)}%</td><td>${r.previous?analyzerEscape(r.previous.sessionName):'—'}</td><td>${r.previous?analyzerEscape(r.previous.kart):'—'}</td></tr>`).join('');
+ const history=analysis.rows.map(r=>`<tr><td>${analyzerEscape(r.session.name)}</td><td>${analyzerEscape(r.entry.pilot)}</td><td>${analyzerEscape(r.entry.kart)}</td><td>${analyzerVelocityLabFormatTime(r.entry.average)}</td><td>${r.previous?analyzerVelocityLabFormatTime(r.previous.average):'—'}</td><td>${analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true})}</td><td>${analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true})}</td><td class="sprint-delta ${velocityLabSprintDeltaClass(r.correctedDelta)}">${analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true})}</td><td>${r.criteria.transition??'—'}</td><td>${Math.round(r.weights.transition*100)}%</td><td><b>${r.score}</b></td></tr>`).join('');
+ host.innerHTML=`<div class="velocity-lab-sprint-result-head"><div><span>SCORE SPRINT EXPÉRIMENTAL</span><h3>${analyzerEscape(current[0].session.name)}</h3></div><small>${analysis.sessions.length} étape(s) · pondération adaptative · aucune incidence sur Analyzer</small></div><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table velocity-lab-sprint-ranking"><thead><tr><th>TOP</th><th>KART</th><th>PILOTE</th><th>SCORE</th><th>T.MOYEN</th><th>Δ CORRIGÉ</th><th>PACE</th><th>TRANSITION</th><th>RÉF. PRÉC.</th><th>KART PRÉC.</th></tr></thead><tbody>${summary}</tbody></table></div><details class="velocity-lab-sprint-details"><summary>DÉTAIL DE TOUTES LES TRANSITIONS (${analysis.rows.length})</summary><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table"><thead><tr><th>SESSION</th><th>PILOTE</th><th>KART</th><th>T.MOYEN</th><th>AVANT</th><th>Δ PILOTE</th><th>Δ PLATEAU</th><th>Δ CORRIGÉ</th><th>NOTE TRANS.</th><th>POIDS TRANS.</th><th>SCORE</th></tr></thead><tbody>${history}</tbody></table></div></details><div class="velocity-lab-note"><b>Règle expérimentale :</b> plus |Δ corrigé| est élevé, plus TRANSITION prend du poids (25 → 45 %) et PACE en perd (45 → 25 %). Le signe agit dans les deux sens : amélioration = kart valorisé, dégradation = kart sanctionné. Sans référence antérieure exploitable, Transition est absente et les autres critères sont renormalisés.</div>`;
+}
+async function runVelocityLabSprintAnalysis(){
+ if(velocityLabSprintLoading)return;const results=document.getElementById('velocityLabSprintResults'),button=document.getElementById('velocityLabSprintAnalyzeButton'),status=document.getElementById('velocityLabSprintSessionStatus');
+ const selected=velocityLabSprintSessions.filter(s=>velocityLabSprintSelected.has(String(s.id))),includeLive=Boolean(document.getElementById('velocityLabSprintIncludeLive')?.checked);if(!selected.length&&!includeLive)return;
+ velocityLabSprintLoading=true;if(button)button.disabled=true;if(results)results.innerHTML='<div class="velocity-lab-placeholder">Chargement des tours Apex…</div>';
+ const progress=text=>{if(status)status.textContent=text};
+ try{
+  const datasets=[];for(const session of selected){datasets.push(await velocityLabSprintHistoricalData(session,progress))}
+  if(includeLive)datasets.push(await velocityLabSprintLiveData(progress));
+  velocityLabSprintAnalysis=velocityLabSprintBuildAnalysis(datasets);progress(`${datasets.length} étape(s) analysée(s) · ${velocityLabSprintAnalysis.rows.length} performance(s) exploitable(s).`);renderVelocityLabSprintResults();
+ }catch(error){if(results)results.innerHTML=`<div class="analyzer-empty">Score Sprint indisponible : ${analyzerEscape(error.message)}</div>`;if(status)status.textContent='Erreur pendant le calcul.'}
+ finally{velocityLabSprintLoading=false;renderVelocityLabSprintSessions()}
+}
+
 function openVelocityLab(){
+ setVelocityLabMode('official');
  analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false;analyzerVelocityLabLastRender=0;
  document.getElementById('velocityLabOverlay')?.classList.add('active');document.body.classList.add('velocity-lab-open');analyzerRenderVelocityLab(true);
 }
