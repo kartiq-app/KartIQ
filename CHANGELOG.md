@@ -1,10 +1,10 @@
-## V7.2.104
-- Analyzer / Velocity : nouvelle vue **SCORE RELAIS** accessible depuis l’en-tête de la carte Velocity.
-- Boutons **VELOCITY** et **SCORE RELAIS** alignés sur la DA de Classement live / Classement virtuel.
-- Reconstruction des relais à partir des tours + arrêts Apex STATS, sans dépendre uniquement de l’apprentissage live.
-- R1 utilise la dernière session de qualification reconnue quand elle existe (Qualification, Qualif, Qualifying, Tijdrijden).
-- Matrice dynamique `TOP | POS | KART | ÉQUIPE / PILOTE | R1...` ; les colonnes d’identité restent figées pendant le défilement horizontal.
-- Les colonnes relais se créent automatiquement au fil de la course ; rafraîchissement automatique de la reconstruction toutes les 60 s lorsque la vue est ouverte.
+# V7.2.105 — Delta Score Relais unifié & rendu Analyzer stabilisé
+
+- La colonne Δ du classement Velocity utilise désormais exactement le Δ corrigé du dernier relais calculé par SCORE RELAIS lorsque les STATS sont disponibles.
+- Le tri Delta utilise la même source de vérité.
+- La reconstruction périodique SCORE RELAIS ne relance plus le rendu global Analyzer.
+- Heat Map et Velocity ne sont plus démontés/réaffichés pendant le rafraîchissement des relais.
+- SCORE RELAIS se rafraîchit de manière isolée et la vue Velocity met à jour uniquement ses cellules Delta.
 
 ## V7.2.103
 

@@ -219,7 +219,7 @@
 
       <aside class="analyzer-strategy-column" aria-label="Outils stratégiques">
         <section class="panel analyzer-panel analyzer-market-panel">
-          <div class="analyzer-panel-title analyzer-velocity-title"><div class="analyzer-ranking-switch analyzer-velocity-switch" role="group" aria-label="Vue Velocity"><button id="analyzerVelocityViewBtn" class="active" type="button" onclick="setAnalyzerVelocityView('velocity')">VELOCITY</button><button id="analyzerRelayScoreViewBtn" type="button" onclick="setAnalyzerVelocityView('relays')">SCORE RELAIS</button></div><label class="analyzer-kartiq-sort">Trier par <select id="analyzerKartSort" onchange="setAnalyzerKartSort(this.value)"><option value="none">Aucun</option><option value="relay-end">Fin relais</option><option value="delta">Delta</option></select></label></div>
+          <div class="analyzer-panel-title analyzer-velocity-title"><span class="analyzer-static-ranking-tab">VELOCITY</span><label class="analyzer-kartiq-sort">Trier par <select id="analyzerKartSort" onchange="setAnalyzerKartSort(this.value)"><option value="none">Aucun</option><option value="relay-end">Fin relais</option><option value="delta">Delta</option></select></label></div>
           <div id="analyzerKartMarket" class="analyzer-kartiq-wrap"><div class="analyzer-empty">Apprentissage en cours…</div></div>
         </section>
 
