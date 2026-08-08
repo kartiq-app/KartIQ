@@ -2085,3 +2085,53 @@ html.velocity-member-shared-mode .testbar{display:none!important}
   .analyzer-weather-message-stack>.weather-card .weather-slot-rain{font-size:21px!important}
   .analyzer-weather-message-stack>.weather-card .weather-slot-temp{font-size:24px!important}
 }
+
+/* Velocity V7.2.113 — météo -25%, pénalités compactes, largeur LIVE figée */
+/* Météo : réduction de 25% par rapport à V7.2.112 + typographie plus légère */
+.analyzer-weather-message-stack>.weather-card .weather-slot-icon{width:45px!important;height:45px!important}
+.analyzer-weather-message-stack>.weather-card .weather-slot-time,
+.analyzer-weather-message-stack>.weather-card .weather-slot-rain{font-size:18px!important;line-height:1.05!important;font-weight:500!important}
+.analyzer-weather-message-stack>.weather-card .weather-slot-temp{font-size:20px!important;line-height:1.05!important;font-weight:500!important}
+@media(max-width:700px){
+  .analyzer-weather-message-stack>.weather-card .weather-slot-icon{width:41px!important;height:41px!important}
+  .analyzer-weather-message-stack>.weather-card .weather-slot-time,
+  .analyzer-weather-message-stack>.weather-card .weather-slot-rain{font-size:16px!important;font-weight:500!important}
+  .analyzer-weather-message-stack>.weather-card .weather-slot-temp{font-size:18px!important;font-weight:500!important}
+}
+
+/* Pénalités : lignes 25% plus basses sans toucher aux axes/tailles de colonnes */
+.analyzer-penalty-row{min-height:29px!important}
+@media(max-width:700px){.analyzer-penalty-row{min-height:27px!important}}
+
+/* Classement LIVE : géométrie fixe. Le contenu Équipe/Pilote ne pilote plus la largeur du tableau. */
+.analyzer-ranking-table{
+  width:100%!important;
+  min-width:1280px!important;
+  max-width:none!important;
+  table-layout:fixed!important;
+}
+.analyzer-ranking-table th:nth-child(1),.analyzer-ranking-table td:nth-child(1){width:48px!important}
+.analyzer-ranking-table th:nth-child(2),.analyzer-ranking-table td:nth-child(2){width:24px!important;min-width:24px!important;max-width:24px!important}
+.analyzer-ranking-table th:nth-child(3),.analyzer-ranking-table td:nth-child(3){width:52px!important}
+.analyzer-ranking-table th:nth-child(4),.analyzer-ranking-table td:nth-child(4),
+.analyzer-ranking-table.general-ranking-mode .a-team,
+.analyzer-ranking-table.virtual-ranking-mode .a-team{
+  width:300px!important;
+  min-width:300px!important;
+  max-width:300px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.analyzer-ranking-table th:nth-child(5),.analyzer-ranking-table td:nth-child(5){width:74px!important}
+.analyzer-ranking-table th:nth-child(6),.analyzer-ranking-table td:nth-child(6){width:58px!important}
+.analyzer-ranking-table th:nth-child(7),.analyzer-ranking-table td:nth-child(7){width:82px!important}
+.analyzer-ranking-table th:nth-child(8),.analyzer-ranking-table td:nth-child(8){width:66px!important}
+.analyzer-ranking-table th:nth-child(9),.analyzer-ranking-table td:nth-child(9){width:78px!important}
+.analyzer-ranking-table th:nth-child(10),.analyzer-ranking-table td:nth-child(10){width:78px!important}
+.analyzer-ranking-table th:nth-child(11),.analyzer-ranking-table td:nth-child(11){width:82px!important}
+.analyzer-ranking-table th:nth-child(12),.analyzer-ranking-table td:nth-child(12){width:72px!important}
+.analyzer-ranking-table th:nth-child(13),.analyzer-ranking-table td:nth-child(13){width:62px!important}
+.analyzer-ranking-table th:nth-child(14),.analyzer-ranking-table td:nth-child(14){width:96px!important}
+.analyzer-ranking-table th:nth-child(15),.analyzer-ranking-table td:nth-child(15){width:64px!important}
+.analyzer-ranking-table th:nth-child(16),.analyzer-ranking-table td:nth-child(16){width:62px!important}

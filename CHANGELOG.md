@@ -1,3 +1,8 @@
+# V7.2.113
+- Météo horaire : textes et icônes réduits de 25 %, typographie affinée.
+- Pénalités : hauteur des lignes réduite de 25 %.
+- Classement LIVE : largeur et colonnes figées pour supprimer les variations lors de l’alternance Équipe/Pilote ; la carte Pénalités conserve les mêmes axes.
+
 # V7.2.112 — Météo x3 & alignement Pénalités
 
 - Dalles horaires Météo : textes et icônes agrandis x3.
