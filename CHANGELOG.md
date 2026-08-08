@@ -1,3 +1,11 @@
+# Velocity V7.2.98 — Couleurs de disponibilité Spotter / STANDS
+
+- Rouge : kart en partance / réservé pour quitter les stands.
+- Vert : premier kart réellement disponible dans chaque file.
+- Orange : tous les autres karts disponibles placés derrière le premier disponible.
+- Même règle de couleur dans Spotter et dans STANDS Analyzer.
+- Aucun changement sur l'ordre des files, la validation, le drag & drop ou la synchronisation.
+
 # Velocity V7.2.97 — Identité unique des cartes Spotter
 
 - Correction de la validation d’un kart entrant quand son libellé KV est identique à celui d’une autre carte déjà présente dans une autre file.

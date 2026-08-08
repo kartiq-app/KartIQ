@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.97"
+APP_VERSION = "7.2.98"
 APP_RELEASE_NAME = "SYNCHRONISATION STANDS SPOTTER"
 
 
