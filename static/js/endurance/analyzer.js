@@ -1552,7 +1552,7 @@ function renderAnalyzerPenalties(){
  if(!items.length){host.innerHTML='<div class="analyzer-empty">Aucune pénalité Apex.</div>';return;}
  host.innerHTML=items.map(p=>{
   const team=String(p?.driver||'—'),kart=String(p?.kart||'').trim(),text=String(p?.penalty||p?.comment||'Pénalité').trim()||'Pénalité';
-  return `<div class="analyzer-penalty-row"><span class="analyzer-penalty-time">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-team"><strong>${analyzerEscape(team)}</strong>${kart?`<small>Kart ${analyzerEscape(kart)}</small>`:''}</span><span class="analyzer-penalty-text">${analyzerEscape(text)}</span></div>`;
+  return `<div class="analyzer-penalty-row" role="row"><span class="analyzer-penalty-time" role="cell">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-kart" role="cell">${kart?analyzerEscape(kart):'—'}</span><span class="analyzer-penalty-team" role="cell">${analyzerEscape(team)}</span><span class="analyzer-penalty-text" role="cell">${analyzerEscape(text)}</span></div>`;
  }).join('');
 }
 

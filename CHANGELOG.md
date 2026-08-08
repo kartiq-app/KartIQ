@@ -1,3 +1,11 @@
+# V7.2.111 — Pénalités en colonnes & rééquilibrage Météo/Messagerie
+
+- Carte PÉNALITÉS transformée en tableau à 4 colonnes : Heure | Kart | Équipe | Pénalités.
+- Entêtes alignés sur la typographie du Classement Live ; numéro de kart seul ; équipe et pénalité alignées à gauche.
+- Messagerie Pilote réduite de 40 % en hauteur sur desktop.
+- Météo agrandie de l’espace libéré ; les dalles horaires occupent toute la hauteur disponible sous Vent / Pluie.
+- La hauteur cumulée Météo + Messagerie reste identique à Équipe suivie / Conformité réglementaire.
+
 # V7.2.110 — Layout Analyzer équilibré & Pénalités Apex
 
 - **Conformité réglementaire** prend désormais toute la hauteur de la carte **Équipe suivie** afin d'agrandir les cartes pilotes.

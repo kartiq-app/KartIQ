@@ -1998,21 +1998,23 @@ html.velocity-member-shared-mode .testbar{display:none!important}
   .analyzer-hero>.rules-card .rules-pilot-card{min-height:74px;padding:10px 7px}
   .analyzer-hero>.rules-card .rules-pilot-name{font-size:12px;line-height:1.15}
   .analyzer-hero>.rules-card .rules-pilot-card strong{font-size:17px;margin-top:8px}
-  .analyzer-weather-message-stack{display:grid;grid-template-rows:minmax(0,64fr) minmax(0,36fr);gap:8px;min-width:0}
+  .analyzer-weather-message-stack{display:grid;grid-template-rows:minmax(0,78.4fr) minmax(0,21.6fr);gap:8px;min-width:0}
   .analyzer-weather-message-stack>.analyzer-hero-card{height:100%;min-height:0;box-sizing:border-box}
-  .analyzer-weather-message-stack>.weather-card{padding:11px 12px;overflow:hidden}
+  .analyzer-weather-message-stack>.weather-card{padding:11px 12px;overflow:hidden;display:flex;flex-direction:column}
   .analyzer-weather-message-stack>.weather-card .weather-main{margin-top:4px;gap:9px}
   .analyzer-weather-message-stack>.weather-card .weather-icon{width:46px;height:46px}
   .analyzer-weather-message-stack>.weather-card .weather-current strong{font-size:27px}
   .analyzer-weather-message-stack>.weather-card .weather-current span{margin-top:3px;font-size:10px}
   .analyzer-weather-message-stack>.weather-card .weather-stats{margin-top:5px;gap:6px}
   .analyzer-weather-message-stack>.weather-card .weather-stats div{padding-top:4px}
-  .analyzer-weather-message-stack>.weather-card .weather-timeline-wrap{margin-top:5px}
+  .analyzer-weather-message-stack>.weather-card .weather-timeline-wrap{margin-top:5px;flex:1 1 auto;min-height:0;display:flex}
+  .analyzer-weather-message-stack>.weather-card .weather-timeline{height:100%;flex:1 0 auto;align-items:stretch}
+  .analyzer-weather-message-stack>.weather-card .weather-slot{height:100%;box-sizing:border-box}
   .analyzer-weather-message-stack>.weather-card .weather-slot{padding:3px 2px;gap:1px}
   .analyzer-weather-message-stack>.weather-card .weather-slot-icon{width:20px;height:20px}
   .analyzer-weather-message-stack>.weather-card .weather-slot-time,.analyzer-weather-message-stack>.weather-card .weather-slot-rain{font-size:8px}
   .analyzer-weather-message-stack>.weather-card .weather-slot-temp{font-size:9px}
-  .analyzer-weather-message-stack>.analyzer-driver-message-card{min-height:0;padding:9px 10px!important}
+  .analyzer-weather-message-stack>.analyzer-driver-message-card{min-height:0;padding:7px 9px!important;gap:3px!important}
 }
 @media(max-width:1050px){
   .analyzer-hero>.rules-card{grid-column:auto}
@@ -2026,17 +2028,23 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .analyzer-penalties-title{min-height:48px;padding:0 14px!important;border-bottom:1px solid #323945!important;background:#151a23;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px;margin:0!important}
 .analyzer-penalties-title .analyzer-static-ranking-tab{font-family:var(--font-torque,Arial,sans-serif)!important;font-size:14px!important;color:#ff8a1f!important;font-weight:900;letter-spacing:.04em}
 .analyzer-penalties-title small{font-size:9px;color:#8f99a8;font-weight:800;white-space:nowrap}
+.analyzer-penalties-table{background:#090c11;min-width:0}
+.analyzer-penalties-head,.analyzer-penalty-row{display:grid;grid-template-columns:64px 56px minmax(180px,260px) minmax(220px,1fr);column-gap:10px;align-items:center}
+.analyzer-penalties-head{min-height:35px;padding:0 13px;background:#151a23;border-bottom:1px solid #323945;color:#aab2bf;font-size:9px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}
+.analyzer-penalties-head span{text-align:left;white-space:nowrap}
+.analyzer-penalties-head span:nth-child(1),.analyzer-penalties-head span:nth-child(2){text-align:center}
 .analyzer-penalties-list{max-height:258px;overflow-y:auto;scrollbar-width:thin;background:#090c11}
-.analyzer-penalty-row{display:grid;grid-template-columns:58px minmax(150px,1fr) minmax(120px,1.2fr);gap:12px;align-items:center;padding:10px 13px;border-bottom:1px solid #1d232c;font-size:10px}
+.analyzer-penalty-row{min-height:38px;padding:0 13px;border-bottom:1px solid #1d232c;font-size:11px}
 .analyzer-penalty-row:nth-child(even){background:#0c1016}
-.analyzer-penalty-time{font-family:var(--font-time,monospace);font-size:11px;font-weight:900;color:#8f99a8;font-variant-numeric:tabular-nums}
-.analyzer-penalty-team{min-width:0;display:flex;flex-direction:column;gap:2px}
-.analyzer-penalty-team strong{color:#fff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.analyzer-penalty-team small{color:#697484;font-size:8px;font-weight:800}
-.analyzer-penalty-text{color:#ff6464;font-size:11px;font-weight:900;text-align:right;white-space:normal;overflow-wrap:anywhere}
+.analyzer-penalty-time{font-family:var(--font-time,monospace);font-size:11px;font-weight:900;color:#8f99a8;font-variant-numeric:tabular-nums;text-align:center}
+.analyzer-penalty-kart{font-family:var(--font-torque,Arial,sans-serif);font-size:11px;font-weight:900;color:#fff;text-align:center}
+.analyzer-penalty-team{min-width:0;color:#fff;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.analyzer-penalty-text{min-width:0;color:#ff6464;font-size:11px;font-weight:900;text-align:left;white-space:normal;overflow-wrap:anywhere}
 @media(max-width:700px){
   .analyzer-ranking-column{gap:9px}
+  .analyzer-penalties-table{overflow-x:auto}
+  .analyzer-penalties-head,.analyzer-penalty-row{grid-template-columns:52px 44px 150px minmax(220px,1fr);min-width:500px;column-gap:8px}
   .analyzer-penalties-list{max-height:220px}
-  .analyzer-penalty-row{grid-template-columns:48px minmax(100px,1fr);gap:8px;padding:8px 9px}
-  .analyzer-penalty-text{grid-column:2;text-align:left;font-size:10px}
+  .analyzer-penalty-row{min-height:36px}
+  .analyzer-penalty-text{font-size:10px}
 }
