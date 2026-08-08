@@ -1,3 +1,10 @@
+# V7.2.121 — Score Relais : colonnes uniformes
+
+- Toutes les colonnes R1 → Rn ont désormais strictement la même largeur.
+- Largeur dimensionnée pour afficher confortablement une valeur à trois chiffres comme 100.
+- Les scores à un ou deux chiffres restent centrés dans la même largeur.
+- Aucun changement des calculs, couleurs, colonnes fixes ou navigation horizontale.
+
 # V7.2.120 — Score Relais : R1 réellement accessible
 
 - Séparation physique des colonnes fixes TOP / POS / KART / ÉQUIPE et de la zone horizontale R1 → Rn.

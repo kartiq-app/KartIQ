@@ -1954,7 +1954,7 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .relay-score-scroll-host{overflow-x:auto!important;overscroll-behavior-x:contain;touch-action:pan-x pan-y;scroll-behavior:auto;-webkit-overflow-scrolling:touch}
 .relay-score-scroll-host .relay-score-table{margin-left:0!important}
 .relay-score-table th,.relay-score-table td{box-sizing:border-box!important}
-.relay-score-table .relay-score-col{width:44px!important;min-width:44px!important;max-width:44px!important;text-align:center!important;font-weight:900}
+.relay-score-table .relay-score-col{width:52px!important;min-width:52px!important;max-width:52px!important;text-align:center!important;font-weight:900}
 .relay-score-table td.relay-score-col.high{background:rgba(56,220,136,.18)!important;color:#55eba0}
 .relay-score-table td.relay-score-col.mid{background:rgba(255,155,50,.12)!important;color:#ffad55}
 .relay-score-table td.relay-score-col.low{background:rgba(255,92,92,.14)!important;color:#ff7474}
@@ -1967,8 +1967,8 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .relay-score-table .sticky-team{left:114px;width:190px!important;min-width:190px!important;max-width:190px!important;text-align:left!important;overflow:hidden;text-overflow:ellipsis;box-shadow:6px 0 10px rgba(0,0,0,.22)}
 .relay-score-table tbody tr:nth-child(even) .sticky-id{background:#0d1117!important}
 .relay-score-table tbody tr:hover .sticky-id{background:#171d27!important}
-@media(min-width:1400px){.relay-score-table .relay-score-col{width:42px!important;min-width:42px!important;max-width:42px!important}.relay-score-table .sticky-team{width:180px!important;min-width:180px!important;max-width:180px!important}}
-@media(max-width:700px){.relay-score-table .sticky-team{width:145px!important;min-width:145px!important;max-width:145px!important}.relay-score-table .relay-score-col{width:42px!important;min-width:42px!important;max-width:42px!important}.relay-score-meta{font-size:8px}}
+@media(min-width:1400px){.relay-score-table .sticky-team{width:180px!important;min-width:180px!important;max-width:180px!important}}
+@media(max-width:700px){.relay-score-table .sticky-team{width:145px!important;min-width:145px!important;max-width:145px!important}.relay-score-meta{font-size:8px}}
 
 /* V7.2.107 — pilotes conformité + débrief relais */
 .rules-pilots{display:flex;gap:6px;margin-top:7px;overflow:hidden;align-items:stretch}
@@ -2221,3 +2221,6 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .relay-score-fixed-table thead th,.relay-score-xscroll .relay-score-table thead th{height:36px!important}
 @media(min-width:1400px){.relay-score-fixed{flex-basis:294px;width:294px}.relay-score-fixed-table{width:294px!important;min-width:294px!important;max-width:294px!important}.relay-score-fixed-table .relay-fixed-team{width:180px!important;min-width:180px!important;max-width:180px!important}}
 @media(max-width:700px){.relay-score-fixed{flex-basis:259px;width:259px}.relay-score-fixed-table{width:259px!important;min-width:259px!important;max-width:259px!important}.relay-score-fixed-table .relay-fixed-team{width:145px!important;min-width:145px!important;max-width:145px!important}}
+
+/* Velocity V7.2.121 — Score Relais : largeur uniforme des colonnes R1 → Rn */
+.relay-score-xscroll .relay-score-table .relay-score-col{width:52px!important;min-width:52px!important;max-width:52px!important;padding-left:6px!important;padding-right:6px!important;text-align:center!important}
