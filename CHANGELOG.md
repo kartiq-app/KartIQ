@@ -1,4 +1,4 @@
-# V7.2.106 — Velocity Lab unifié avec le moteur STATS / Score Relais
+# V7.2.107 — Velocity Lab unifié avec le moteur STATS / Score Relais
 
 - Velocity Lab utilise désormais les mêmes relais reconstruits depuis STATS que SCORE RELAIS.
 - Delta brut, Delta plateau et Delta corrigé sont strictement identiques entre SCORE RELAIS, le classement VELOCITY et Velocity Lab.

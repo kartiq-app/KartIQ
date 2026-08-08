@@ -387,7 +387,7 @@ function simulateSpotterPitOut(){
 }
 function spotterLogMovement(type,data={}){spotterState.movementLog.unshift({type,at:Date.now(),...data});spotterState.movementLog=spotterState.movementLog.slice(0,80)}
 function spotterAvailableIndex(){return spotterState.queue.findIndex(item=>item.status==='available')}
-// Velocity V7.2.106 — sélection du premier kart disponible dans la file choisie
+// Velocity V7.2.107 — sélection du premier kart disponible dans la file choisie
 function spotterAvailableIndexInFile(file){
  const target=Math.max(1,Math.min(spotterState.mode,Number(file)||1));
  return spotterState.queue.findIndex(item=>item.status==='available'&&(Number(item.queueFile)||1)===target);

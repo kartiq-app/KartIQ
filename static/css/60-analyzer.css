@@ -1967,3 +1967,12 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .relay-score-table tbody tr:hover .sticky-id{background:#171d27!important}
 @media(min-width:1400px){.relay-score-table .relay-score-col{width:42px!important;min-width:42px!important;max-width:42px!important}.relay-score-table .sticky-team{width:180px!important;min-width:180px!important;max-width:180px!important}}
 @media(max-width:700px){.relay-score-table .sticky-team{width:145px!important;min-width:145px!important;max-width:145px!important}.relay-score-table .relay-score-col{width:42px!important;min-width:42px!important;max-width:42px!important}.relay-score-meta{font-size:8px}}
+
+/* V7.2.107 — pilotes conformité + débrief relais */
+.rules-pilots{display:flex;gap:6px;margin-top:7px;overflow:hidden;align-items:stretch}
+.rules-pilot-card{flex:1 1 0;min-width:0;background:#07090e;border:1px solid #252d38;border-radius:7px;padding:5px 3px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.rules-pilot-icon{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid #3a4655;border-radius:4px;background:#0d1219;font-size:12px;margin-bottom:3px}
+.rules-pilot-name{display:block;max-width:100%;color:#c8ced8;font-size:7px;font-weight:800;text-transform:uppercase;overflow:hidden;line-height:1.05}
+.rules-pilot-card strong{display:block;margin-top:4px;color:#fff;font-size:11px;font-weight:900;white-space:nowrap}
+.debrief-insufficient{font-size:9px;font-weight:900;color:#ff9b32;white-space:nowrap}
+@media(max-width:700px){.rules-pilots{gap:4px}.rules-pilot-card{padding:4px 2px}.rules-pilot-name{font-size:6px}.rules-pilot-card strong{font-size:9px}}

@@ -346,7 +346,7 @@ function analyzerApexRaceIsActive(){
  const connected=['connected','receiving','test'].includes(liveStatus)||connection.includes('connect')||connection.includes('test');
  if(!connected)return false;
 
- // V7.2.106 — une grille Apex encore affichée ne signifie pas qu'une course roule.
+ // V7.2.107 — une grille Apex encore affichée ne signifie pas qu'une course roule.
  // Si Apex fournit une cible tours, elle est prioritaire.
  const totalLaps=Number(state?.total_laps),currentLap=Number(state?.current_lap);
  if(Number.isFinite(totalLaps)&&totalLaps>0&&Number.isFinite(currentLap))return currentLap<totalLaps;
@@ -797,7 +797,7 @@ function analyzerRelayMetrics(driver){
 }
 
 
-/* Velocity V7.2.106 — Score Relais reconstruit depuis les STATS Apex */
+/* Velocity V7.2.107 — Score Relais reconstruit depuis les STATS Apex */
 function analyzerQualificationSessionName(name){
  const normalized=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
  return /(^|\b)(qualification|qualif|qualifying|tijdrijden)(\b|$)/i.test(normalized);
@@ -886,7 +886,7 @@ async function analyzerLoadRelayScores({force=false}={}){
  }
  const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);if(!drivers.length)return;
  analyzerRelayScoreLoading=true;const token=++analyzerRelayScoreLoadToken;
- // V7.2.106 : la reconstruction STATS est un travail de données en arrière-plan.
+ // V7.2.107 : la reconstruction STATS est un travail de données en arrière-plan.
  // Ne jamais relancer renderAnalyzer() ici : cela reconstruisait Velocity + Heat Map
  // et provoquait un flash visible à chaque rafraîchissement de SCORE RELAIS.
  if(analyzerVelocityView==='relays'&&!analyzerRelayScoreData){
@@ -1460,7 +1460,7 @@ function analyzerTrafficUpdateTicks(geometry){
 function analyzerRenderTrafficAhead(followed){
  const host=document.getElementById('analyzerTrafficDots');
  if(!host)return;
- // Velocity V7.2.106 — aucun trafic adverse ne doit survivre hors course.
+ // Velocity V7.2.107 — aucun trafic adverse ne doit survivre hors course.
  // On s'aligne sur la même détection d'activité que la Heat Map afin qu'un
  // classement Apex ancien ou des phases mémorisées ne puissent pas réafficher
  // un cercle fantôme au chargement d'Analyzer.
@@ -1546,6 +1546,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerRulePit').textContent=analyzerFormatDuration(analyzerRules.minPitSeconds);
  document.getElementById('analyzerStopsRemaining').textContent=String(stops.remaining);
  document.getElementById('analyzerStopCadence').textContent=Number.isFinite(stops.cadence)?`1 / ${analyzerFormatDuration(stops.cadence)}`:'—';
+ renderAnalyzerRulesPilots(followed);
  const max=analyzerRules.maxStintMinutes*60,min=analyzerRules.minStintMinutes*60;
  const rulesStatus=document.getElementById('analyzerRulesStatus');rulesStatus.className='rules-status';
  if(!followed)rulesStatus.textContent='Équipe non sélectionnée';
@@ -1721,6 +1722,16 @@ function renderAnalyzerQueueAdvice(){
  const scored=first.filter(x=>Number.isFinite(x.score)).sort((a,b)=>b.score-a.score);
  if(!scored.length){el.textContent='Files renseignées — apprentissage des notes en cours';return}
  const best=scored[0];el.textContent=`FILE ${queueLetter(best.queue)} — kart ${best.kart} (${best.score}/100)`;
+}
+function analyzerPilotTotalSeconds(driver){
+ const history=analyzerTeamHistory(driver),totals=new Map(),now=Date.now();
+ const relays=[...(history?.relays||[])];if(history?.currentRelay)relays.push({...history.currentRelay,status:'active'});
+ relays.forEach(r=>{const pilot=String(r?.pilot||'').trim();if(!pilot)return;let seconds=0;if(r.status==='active'){const live=analyzerParseDuration(driver?.track_timer);seconds=Number.isFinite(live)?live:Math.max(0,(now-Number(r.startAt||now))/1000)}else if(Number.isFinite(Number(r.endAt))&&Number.isFinite(Number(r.startAt)))seconds=Math.max(0,(Number(r.endAt)-Number(r.startAt))/1000);if(seconds>0)totals.set(pilot,(totals.get(pilot)||0)+seconds)});
+ return [...totals.entries()].map(([name,seconds])=>({name,seconds})).sort((a,b)=>b.seconds-a.seconds);
+}
+function analyzerPilotHoursLabel(seconds){const total=Math.max(0,Math.floor(Number(seconds)||0)),hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60);return `${String(hours).padStart(2,'0')}H${String(minutes).padStart(2,'0')}`}
+function renderAnalyzerRulesPilots(driver){
+ const host=document.getElementById('analyzerRulesPilots');if(!host)return;const pilots=driver?analyzerPilotTotalSeconds(driver):[];host.hidden=!pilots.length;host.innerHTML=pilots.map(p=>{const parts=String(p.name).trim().split(/\s+/),first=parts.shift()||'',last=parts.join(' ');return `<div class="rules-pilot-card"><span class="rules-pilot-icon" aria-hidden="true">👤</span><span class="rules-pilot-name">${analyzerEscape(first)}${last?`<br>${analyzerEscape(last)}`:''}</span><strong>${analyzerEscape(analyzerPilotHoursLabel(p.seconds))}</strong></div>`}).join('');
 }
 function setAnalyzerSort(value){analyzerSort=value||'position';renderAnalyzer()}
 function openAnalyzerRules(){
@@ -2137,19 +2148,28 @@ function analyzerDebriefCleanLaps(laps,pits){
 function analyzerDebriefRelays(laps,pits){
  const pitLaps=(pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite).sort((a,b)=>a-b),boundaries=[0,...pitLaps,Infinity],relays=[];
  for(let i=0;i<boundaries.length-1;i++){
-  let values=laps.filter(l=>l.lap>boundaries[i]&&l.lap<boundaries[i+1]);
-  if(values.length>1)values=values.slice(1);
-  if(!values.length)continue;
-  const sec=values.map(l=>l.seconds);
-  relays.push({index:i+1,from:values[0].lap,to:values[values.length-1].lap,laps:values.length,best:Math.min(...sec),average:analyzerDebriefAverage(sec),median:analyzerDebriefMedian(sec),std:analyzerDebriefStd(sec)});
+  const segment=laps.filter(l=>l.lap>boundaries[i]&&l.lap<boundaries[i+1]);
+  if(!segment.length)continue;
+  let values=segment.slice();
+  if(values.length>1)values=values.slice(1); // tour de sortie non représentatif
+  const insufficient=values.length<2;
+  const sec=values.map(l=>l.seconds).filter(Number.isFinite);
+  relays.push({index:i+1,from:segment[0].lap,to:segment[segment.length-1].lap,laps:values.length,best:sec.length?Math.min(...sec):NaN,average:insufficient?NaN:analyzerDebriefAverage(sec),median:insufficient?NaN:analyzerDebriefMedian(sec),std:insufficient?NaN:analyzerDebriefStd(sec),insufficient});
  }
  return relays;
+}
+function analyzerDebriefPilotByRelay(driver){
+ const map=new Map(),history=analyzerTeamHistory(driver);
+ const relays=[...(history?.relays||[])];if(history?.currentRelay)relays.push({...history.currentRelay,status:'active'});
+ relays.forEach(r=>{const name=String(r?.pilot||'').trim();if(name)map.set(Number(r.index),name)});
+ return map;
 }
 async function analyzerDebriefLoadTeam(driver,sessionId=''){
  const rowId=Number(driver?.apex_row)||0;if(!rowId)throw new Error(`Identifiant STATS indisponible pour ${driver?.driver||'une équipe'}`);
  const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(rowId,sessionId,null),fetchAllApexTeamPits(rowId,sessionId,null).catch(()=>[])]);
  const clean=analyzerDebriefCleanLaps(laps,pits),seconds=clean.map(l=>l.seconds),pitDurations=(pits||[]).map(p=>Math.max(0,(p.pitOutMs||0)-(p.pitInMs||0))/1000).filter(v=>v>0);
- return {driver,name:driver.driver||`Équipe ${rowId}`,position:Number(driver.pos)||999,laps,pits,clean,relays:analyzerDebriefRelays(clean,pits),best:seconds.length?Math.min(...seconds):NaN,average:analyzerDebriefAverage(seconds),median:analyzerDebriefMedian(seconds),std:analyzerDebriefStd(seconds),pitAverage:analyzerDebriefAverage(pitDurations),pitStd:analyzerDebriefStd(pitDurations),pitCount:pits.length};
+ const pilotByRelay=analyzerDebriefPilotByRelay(driver),relays=analyzerDebriefRelays(clean,pits).map(r=>({...r,pilot:pilotByRelay.get(Number(r.index))||''}));
+ return {driver,name:driver.driver||`Équipe ${rowId}`,position:Number(driver.pos)||999,laps,pits,clean,relays,best:seconds.length?Math.min(...seconds):NaN,average:analyzerDebriefAverage(seconds),median:analyzerDebriefMedian(seconds),std:analyzerDebriefStd(seconds),pitAverage:analyzerDebriefAverage(pitDurations),pitStd:analyzerDebriefStd(pitDurations),pitCount:pits.length};
 }
 function analyzerDebriefFmtSeconds(value){return Number.isFinite(value)?formatApexMilliseconds(value*1000):'—'}
 function analyzerDebriefFmtPit(value){return Number.isFinite(value)?formatApexPitDuration(value*1000):'—'}
@@ -2213,7 +2233,7 @@ function renderAnalyzerDebrief(team,all,context={}){
    <div class="debrief-metric"><span>Régularité</span><b>${analyzerDebriefOrdinal(consistencyRank,n)}</b></div>
    <div class="debrief-metric"><span>Temps moyen stands</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div>
   </div></section>
-  <section class="debrief-section"><h3>ANALYSE DES RELAIS TERMINÉS / EN COURS</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RELAIS</th><th>TOURS</th><th>POS. RELAIS</th><th>FENÊTRE</th><th>MEILLEUR</th><th>MOYENNE</th><th>CONSTANCE</th></tr></thead><tbody>${team.relays.map(r=>{const comparison=analyzerDebriefRelayComparison(r,team,all);return `<tr><td>R${r.index}</td><td>${r.laps}</td><td><strong class="debrief-relay-position">${analyzerDebriefRelayPosition(comparison.rank,comparison.total)}</strong></td><td>${r.from} → ${r.to}</td><td>${analyzerDebriefFmtSeconds(r.best)}</td><td>${analyzerDebriefFmtSeconds(r.average)}</td><td class="${analyzerDebriefConstanceClass(comparison.constance)}" title="Écart entre la moyenne et le meilleur tour du relais">${analyzerDebriefFmtConstance(comparison.constance)}</td></tr>`}).join('')||'<tr><td colspan="7">Aucun relais exploitable pour le moment.</td></tr>'}</tbody></table></div><p class="debrief-table-note"><strong>POS. RELAIS</strong> classe le rythme moyen de l’équipe face aux équipes disposant d’au moins deux tours exploitables sur la même fenêtre de course. <strong>Constance</strong> correspond à l’écart entre la moyenne et le meilleur tour : plus l’écart est faible, plus le relais est régulier.</p></section>
+  <section class="debrief-section"><h3>ANALYSE DES RELAIS TERMINÉS / EN COURS</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RELAIS</th><th>PILOTE</th><th>TOURS</th><th>POS. RELAIS</th><th>FENÊTRE</th><th>MEILLEUR</th><th>MOYENNE</th><th>CONSTANCE</th></tr></thead><tbody>${team.relays.map(r=>{const comparison=r.insufficient?{rank:0,total:0,constance:NaN}:analyzerDebriefRelayComparison(r,team,all);return `<tr><td>R${r.index}</td><td>${r.pilot?analyzerEscape(r.pilot):'—'}</td><td>${r.laps}</td><td>${r.insufficient?'<span class="debrief-insufficient">ÉCHANTILLON INSUFFISANT</span>':`<strong class="debrief-relay-position">${analyzerDebriefRelayPosition(comparison.rank,comparison.total)}</strong>`}</td><td>${r.from} → ${r.to}</td><td>${analyzerDebriefFmtSeconds(r.best)}</td><td>${analyzerDebriefFmtSeconds(r.average)}</td><td class="${analyzerDebriefConstanceClass(comparison.constance)}" title="Écart entre la moyenne et le meilleur tour du relais">${analyzerDebriefFmtConstance(comparison.constance)}</td></tr>`}).join('')||'<tr><td colspan="8">Aucun relais détecté pour le moment.</td></tr>'}</tbody></table></div><p class="debrief-table-note"><strong>POS. RELAIS</strong> classe le rythme moyen de l’équipe face aux équipes disposant d’au moins deux tours exploitables sur la même fenêtre de course. Les relais trop courts restent affichés avec la mention <strong>Échantillon insuffisant</strong>, sans classement. <strong>Constance</strong> correspond à l’écart entre la moyenne et le meilleur tour : plus l’écart est faible, plus le relais est régulier.</p></section>
   <section class="debrief-section"><h3>ARRÊTS AUX STANDS</h3><div class="debrief-grid"><div class="debrief-metric"><span>Nombre</span><b>${team.pitCount}</b></div><div class="debrief-metric"><span>Temps moyen</span><b>${analyzerDebriefFmtPit(team.pitAverage)}</b></div><div class="debrief-metric"><span>Dispersion</span><b>${Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'}</b></div><div class="debrief-metric"><span>Rang plateau</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div></div></section>
   <section class="debrief-section"><h3>CLASSEMENT DU RYTHME MOYEN</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RANG</th><th>ÉQUIPE</th><th>MOYENNE</th><th>MEILLEUR</th><th>RÉGULARITÉ</th><th>PITS</th><th>MOY. PIT</th></tr></thead><tbody>${ranking.map((x,i)=>`<tr class="${x===team?'debrief-followed-row':''}"><td>${i+1}</td><td>${analyzerEscape(x.name)}</td><td>${analyzerDebriefFmtSeconds(x.average)}</td><td>${analyzerDebriefFmtSeconds(x.best)}</td><td>${analyzerDebriefRegularityLabel(x.std)}</td><td>${x.pitCount}</td><td>${analyzerDebriefFmtPit(x.pitAverage)}</td></tr>`).join('')}</tbody></table></div></section>
   <section class="debrief-section"><h3>CONCLUSION</h3><div class="debrief-verdict">${analyzerDebriefVerdict(team,all)}</div></section>`;
@@ -2414,7 +2434,7 @@ window.addEventListener('error',event=>{const t=window.velocityEnduranceTest;if(
 
 /* Velocity V7.2.75 — Débrief complet des anciennes sessions Apex depuis STATS. */
 
-// Velocity V7.2.106 — masquage du mode développeur pour les membres Team
+// Velocity V7.2.107 — masquage du mode développeur pour les membres Team
 let velocityRaceSession=null,velocityRaceTeams=[],velocityRaceTeamId='',velocityRaceAccessPoll=null,velocityDevicePoll=null,velocityDeviceRole='',velocityDeviceAccessSignature='';
 const VELOCITY_DEVICE_KEY='velocity_device_id';
 let velocityInviteShare={link:'',memberName:'',token:''};
