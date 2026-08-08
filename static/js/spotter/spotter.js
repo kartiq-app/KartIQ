@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.98';
+const SPOTTER_APP_RELEASE='7.2.100';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -354,6 +354,11 @@ function simulateSpotterPitOut(){
 }
 function spotterLogMovement(type,data={}){spotterState.movementLog.unshift({type,at:Date.now(),...data});spotterState.movementLog=spotterState.movementLog.slice(0,80)}
 function spotterAvailableIndex(){return spotterState.queue.findIndex(item=>item.status==='available')}
+// Velocity V7.2.100 — sélection du premier kart disponible dans la file choisie
+function spotterAvailableIndexInFile(file){
+ const target=Math.max(1,Math.min(spotterState.mode,Number(file)||1));
+ return spotterState.queue.findIndex(item=>item.status==='available'&&(Number(item.queueFile)||1)===target);
+}
 function spotterRemoveCardEverywhere(cardId){
  if(!cardId)return;
  spotterState.queue=spotterState.queue.filter(item=>item.cardId!==cardId);
@@ -362,13 +367,26 @@ function spotterRemoveCardEverywhere(cardId){
 function spotterValidateIncoming(id,toMaintenance=false,{silent=false,estimated=false,targetFile=null}={}){
  const index=spotterState.incoming.findIndex(item=>item.id===id);if(index<0)return;
  const incoming=spotterState.incoming[index];
- const availableIndex=spotterAvailableIndex();
- if(availableIndex<0){if(!silent)alert('Aucun kart disponible dans la file.');return false}
+ // En multi-files, la file choisie doit être connue AVANT de sélectionner le kart
+ // à attribuer. Chaque file est une file indienne autonome : le premier kart
+ // disponible de la file choisie part, et le kart rendu est ajouté au fond de
+ // cette même file. Les autres files ne doivent jamais être modifiées.
+ let selectedFile=0;
+ let availableIndex=-1;
+ if(toMaintenance){
+  availableIndex=spotterAvailableIndex();
+  if(availableIndex>=0)selectedFile=Number(spotterState.queue[availableIndex]?.queueFile)||1;
+ }else{
+  const requestedFile=Number(targetFile||spotterState.incomingQueueSelections[id]||0);
+  if(!requestedFile){if(!silent)alert('Sélectionnez une file avant de valider.');return false}
+  selectedFile=Math.max(1,Math.min(spotterState.mode,requestedFile));
+  availableIndex=spotterAvailableIndexInFile(selectedFile);
+ }
+ if(availableIndex<0){
+  if(!silent)alert(toMaintenance?'Aucun kart disponible dans les files.':`Aucun kart disponible dans la file ${selectedFile}.`);
+  return false;
+ }
  const assigned=spotterState.queue[availableIndex];
- const selectedFile=toMaintenance
-  ? (Number(assigned.queueFile)||1)
-  : Math.max(1,Math.min(spotterState.mode,Number(targetFile||spotterState.incomingQueueSelections[id]||(silent?assigned.queueFile:0))||0));
- if(!toMaintenance&&!selectedFile){if(!silent)alert('Sélectionnez une file avant de valider.');return false}
  spotterRememberUndo();
  const current=spotterEnsureAssignment(incoming.team,spotterFindDriver(incoming.team));
  const returned={...current,cardId:incoming.returnedCardId||current.cardId||spotterCardId('return'),kv:incoming.returnedKv||current.kv,apexKart:incoming.returnedKart||current.apexKart,lastTeam:incoming.team,currentTeam:null,score:incoming.score??current.score,confidence:incoming.confidence??current.confidence,status:toMaintenance?'maintenance':'available',enteredAt:Date.now(),queueFile:selectedFile};

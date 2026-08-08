@@ -1,10 +1,18 @@
-# Velocity V7.2.98 — Couleurs de disponibilité Spotter / STANDS
+# Velocity V7.2.100 — Correction multi-files Spotter
 
-- Rouge : kart en partance / réservé pour quitter les stands.
-- Vert : premier kart réellement disponible dans chaque file.
-- Orange : tous les autres karts disponibles placés derrière le premier disponible.
-- Même règle de couleur dans Spotter et dans STANDS Analyzer.
-- Aucun changement sur l'ordre des files, la validation, le drag & drop ou la synchronisation.
+- La validation d’un kart entrant détermine désormais la file choisie avant de sélectionner le kart à attribuer.
+- Velocity prend uniquement le premier kart `available` de la file sélectionnée (File 1, 2 ou 3).
+- Le kart rendu par l’équipe entrante est ajouté au fond de cette même file via son `queueFile`.
+- Les autres files restent totalement inchangées lors de la validation.
+- Message explicite si la file choisie ne contient aucun kart disponible.
+- La logique Maintenance existante reste inchangée.
+
+# Velocity V7.2.99 — Reset Trafic hors course
+
+- La ligne Trafic utilise désormais la même détection d’activité que la Heat Map avant d’afficher les adversaires.
+- En l’absence de course active, les cercles adverses, phases mémorisées et positions interpolées sont purgés immédiatement.
+- Un ancien classement Apex ou un état conservé d’une session précédente ne peut plus afficher de cercle fantôme au chargement d’Analyzer.
+- Le kart de l’équipe suivie reste seul au centre de la ligne tant qu’aucune course n’est active.
 
 # Velocity V7.2.97 — Identité unique des cartes Spotter
 
