@@ -1,3 +1,12 @@
+# V7.2.124 — Schéma Apex + sessions natives
+
+- Le schéma fourni par le `grid` Apex via `data-type` devient explicitement la source de vérité dès qu’il est disponible ; aucun mapping relatif `cX` ne peut ensuite le remplacer.
+- Le diagnostic protocolaire expose désormais `schema_source` et le `column_schema` réellement détecté pour faciliter les vérifications piste par piste.
+- Ajout de `/api/apex/sessions` : Velocity interroge directement la commande Apex `S#`, structure les sessions et les classe (qualification, endurance, course, essais, autre).
+- Score Relais privilégie les sessions Apex classées `qualification` pour retrouver le contexte R1, avec fallback sur l’ancien parsing brut si l’endpoint structuré n’est pas disponible.
+- Reconnaissance étendue des noms de qualification : Qualif / Qualification / Qualifying / Tijdrijden / Chrono(s) / Time Trial / Time Attack.
+- Le cache du Service Worker passe à V7.2.124 pour forcer le chargement des nouveaux fichiers.
+
 # V7.2.123 — Données STATS Apex natives
 
 - Alignement du parseur `.P` Velocity sur le JavaScript officiel Apex (`tzfji`) : durées, temps piste, temps stands et `driver_total_time` sont interprétés directement en millisecondes Apex, sans conversion heuristique.

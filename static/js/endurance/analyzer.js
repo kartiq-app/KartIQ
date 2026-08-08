@@ -813,7 +813,12 @@ function analyzerRelayMetrics(driver){
 /* Velocity V7.2.107 — Score Relais reconstruit depuis les STATS Apex */
 function analyzerQualificationSessionName(name){
  const normalized=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
- return /(^|\b)(qualification|qualif|qualifying|tijdrijden)(\b|$)/i.test(normalized);
+ return /(^|\b)(qualification|qualif|qualifying|tijdrijden|chrono|chronos|time trial|time attack)(\b|$)/i.test(normalized);
+}
+function analyzerSessionKind(session){
+ const explicit=String(session?.kind||'').trim().toLowerCase();
+ if(explicit)return explicit;
+ return analyzerQualificationSessionName(session?.name)?'qualification':'other';
 }
 function analyzerRelayScorePilotLabel(driver){
  const team=String(driver?.driver||'—').trim()||'—';
@@ -847,12 +852,12 @@ function analyzerRelayScoreQualificationAverage(laps,pits){
 }
 async function analyzerRelayScoreEnsureSessions(){
  if(apexPreviousSessions.length)return apexPreviousSessions;
- apexPreviousSessions=parseApexPreviousSessions(await apexHistoryRequest('S#'));
+ try{apexPreviousSessions=await apexSessionsRequest()}catch(_){apexPreviousSessions=parseApexPreviousSessions(await apexHistoryRequest('S#'))}
  return apexPreviousSessions;
 }
 async function analyzerRelayScoreQualificationContext(drivers){
  let sessions=[];try{sessions=await analyzerRelayScoreEnsureSessions()}catch(_){return {session:null,grid:null,byRow:new Map()}}
- const session=sessions.find(item=>analyzerQualificationSessionName(item.name));
+ const session=sessions.find(item=>analyzerSessionKind(item)==='qualification');
  if(!session)return {session:null,grid:null,byRow:new Map()};
  let historical=[];try{historical=parseApexSnapshotTeams(await apexHistoryRequest(`S#${session.id}`))}catch(_){historical=[]}
  const byRow=new Map(),averages=[];
@@ -1924,6 +1929,13 @@ async function apexHistoryRequest(command){
  if(!response.ok||!data.ok)throw new Error(data.error||`Erreur Apex ${response.status}`);
  return String(data.raw||'');
 }
+async function apexSessionsRequest(){
+ const query=new URLSearchParams({circuit_id:apexHistoryCircuitId()});
+ const response=await fetch(`/api/apex/sessions?${query.toString()}`,{cache:'no-store'});
+ const data=await response.json().catch(()=>({ok:false,error:'Réponse Apex illisible'}));
+ if(!response.ok||!data.ok)throw new Error(data.error||`Erreur Apex ${response.status}`);
+ return Array.isArray(data.sessions)?data.sessions:[];
+}
 function openApexHistory(){
  document.getElementById('apexHistoryModal')?.classList.add('show');
  showApexHistoryPanel('sessions');
@@ -1945,14 +1957,14 @@ function showApexHistoryPanel(panel){
 }
 function parseApexPreviousSessions(raw){
  return String(raw||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{
-  const parts=line.split('#');return {id:String(parts.shift()||'').trim(),name:parts.join('#').trim()};
+  const parts=line.split('#'),item={id:String(parts.shift()||'').trim(),name:parts.join('#').trim()};item.kind=analyzerQualificationSessionName(item.name)?'qualification':'other';return item;
  }).filter(item=>item.id&&item.name&&!/^error$/i.test(item.id));
 }
 async function loadApexPreviousSessions(){
  const status=document.getElementById('apexHistorySessionsStatus'),host=document.getElementById('apexHistorySessionsList');
  if(status)status.textContent='Interrogation d’Apex…';if(host)host.innerHTML='<div class="analyzer-empty">Chargement…</div>';
  try{
-  apexPreviousSessions=parseApexPreviousSessions(await apexHistoryRequest('S#'));
+  try{apexPreviousSessions=await apexSessionsRequest()}catch(_){apexPreviousSessions=parseApexPreviousSessions(await apexHistoryRequest('S#'))}
   if(status)status.textContent=apexPreviousSessions.length?`${apexPreviousSessions.length} session(s) disponible(s).`:'Aucune ancienne session disponible.';
   if(host)host.innerHTML=apexPreviousSessions.length?apexPreviousSessions.map(session=>`<button type="button" class="apex-history-session-row" onclick="selectApexPreviousSession('${analyzerEscape(session.id)}')"><span>${analyzerEscape(session.name)}</span><small>ID ${analyzerEscape(session.id)}</small><b>CONSULTER</b></button>`).join(''):'<div class="analyzer-empty">Aucun historique Apex pour le moment.</div>';
   refreshApexHistorySessionSelect();updateApexHistoricalDebriefButton();

@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.123"
-APP_RELEASE_NAME = "APEX STATS NATIFS"
+APP_VERSION = "7.2.124"
+APP_RELEASE_NAME = "SCHÉMA APEX + SESSIONS NATIVES"
 
 
 def _circuit_sort_key(circuit):

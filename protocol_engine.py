@@ -29,6 +29,7 @@ class ProtocolEngine:
         self._rows: set[int] = set()
         self._lap_anchor: int | None = None
         self._heuristic_schema_applied = False
+        self._apex_schema_locked = False
         self.remaining_ms: int | None = None
         self.remaining_updated_at_ms: int | None = None
         self.remaining_end_at_ms: int | None = None
@@ -115,6 +116,10 @@ class ProtocolEngine:
             self.adapter = "HTML Grid Adapter"
             self.confidence = 100
             self.interpreter.set_schema(grid.schema, grid.labels)
+            # Dès qu'Apex fournit le schéma HTML réel, il devient la source de vérité.
+            # Aucun mapping relatif cX ne doit pouvoir le remplacer ensuite.
+            self._apex_schema_locked = True
+            self._heuristic_schema_applied = False
 
         for update in updates:
             self.updates += 1
@@ -152,7 +157,7 @@ class ProtocolEngine:
         Apex conserve généralement l'ordre : position, kart, nom/équipe,
         dernier tour, écart, intervalle, meilleur tour, puis compteurs.
         """
-        if self._lap_anchor is None:
+        if self._lap_anchor is None or self._apex_schema_locked or self.grid_frames:
             return
         c = self._lap_anchor
         schema = {
@@ -199,6 +204,8 @@ class ProtocolEngine:
             "race_objects": len(rows),
             "lap_anchor_column": self._lap_anchor,
             "heuristic_schema": self._heuristic_schema_applied,
+            "schema_source": "apex_data_type" if self._apex_schema_locked else ("heuristic" if self._heuristic_schema_applied else "pending"),
+            "column_schema": {str(col): apex_type for col, apex_type in sorted(self.interpreter.schema.items())},
         }
         snap["mapping_status"] = "automatic_grid" if self.protocol == "html_grid" else "automatic_heuristic"
         # Un compte à rebours Apex n'est valable que s'il a été rafraîchi récemment.

@@ -12,6 +12,7 @@ import urllib.request
 import os
 import time
 import secrets
+import unicodedata
 
 try:
     import websocket
@@ -987,7 +988,7 @@ def _apex_http_request(circuit, command):
         "https://live-data.apex-timing.com/live-timing/commonv2/functions/request.php",
         data=encoded,
         headers={
-            "User-Agent": "Mozilla/5.0 Velocity/7.2.123",
+            "User-Agent": "Mozilla/5.0 Velocity/7.2.124",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": circuit.get("live_url") or "https://www.apex-timing.com",
             "Referer": circuit.get("live_url") or "https://www.apex-timing.com/",
@@ -996,6 +997,50 @@ def _apex_http_request(circuit, command):
     )
     with urllib.request.urlopen(req, timeout=20) as response:
         return response.read().decode("utf-8", errors="replace"), port
+
+
+def _apex_session_kind(name):
+    """Classe une session Apex sans dépendre de son identifiant numérique."""
+    normalized = unicodedata.normalize("NFKD", str(name or "")).encode("ascii", "ignore").decode("ascii").casefold()
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+    if re.search(r"\b(qualification|qualif|qualifying|tijdrijden|chrono|chronos|time trial|time attack)\b", normalized):
+        return "qualification"
+    if re.search(r"\b(endurance|resistencia|resistance|24h|12h|8h|6h|4h|2h)\b", normalized):
+        return "endurance"
+    if re.search(r"\b(sprint|race|course|finale|final|heat|manche)\b", normalized):
+        return "race"
+    if re.search(r"\b(practice|training|warm ?up|essai|essais|free practice)\b", normalized):
+        return "practice"
+    return "other"
+
+
+def _parse_apex_sessions(raw):
+    sessions = []
+    for order, line in enumerate(str(raw or "").splitlines()):
+        line = line.strip()
+        if not line or "#" not in line:
+            continue
+        session_id, name = line.split("#", 1)
+        session_id, name = session_id.strip(), name.strip()
+        if not session_id or not name or session_id.casefold() == "error":
+            continue
+        sessions.append({"id": session_id, "name": name, "kind": _apex_session_kind(name), "order": order})
+    return sessions
+
+
+@app.get("/api/apex/sessions")
+def apex_sessions():
+    """Liste structurée des sessions historiques telle que fournie par Apex via S#."""
+    circuit_id = str(request.args.get("circuit_id") or STATE.get("circuit_id") or "")
+    circuit = next((c for c in load_circuits() if c["id"] == circuit_id), None)
+    if not circuit:
+        return jsonify(ok=False, error="Circuit inconnu"), 400
+    try:
+        raw, port = _apex_http_request(circuit, "S#")
+        return jsonify(ok=True, sessions=_parse_apex_sessions(raw), raw=raw, port=port)
+    except Exception as exc:
+        write_live_log(f"SESSIONS APEX ERREUR {exc}")
+        return jsonify(ok=False, error=str(exc)), 502
 
 
 @app.post("/api/apex/history")
