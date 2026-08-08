@@ -1,3 +1,11 @@
+## V7.2.104
+- Analyzer / Velocity : nouvelle vue **SCORE RELAIS** accessible depuis l’en-tête de la carte Velocity.
+- Boutons **VELOCITY** et **SCORE RELAIS** alignés sur la DA de Classement live / Classement virtuel.
+- Reconstruction des relais à partir des tours + arrêts Apex STATS, sans dépendre uniquement de l’apprentissage live.
+- R1 utilise la dernière session de qualification reconnue quand elle existe (Qualification, Qualif, Qualifying, Tijdrijden).
+- Matrice dynamique `TOP | POS | KART | ÉQUIPE / PILOTE | R1...` ; les colonnes d’identité restent figées pendant le défilement horizontal.
+- Les colonnes relais se créent automatiquement au fil de la course ; rafraîchissement automatique de la reconstruction toutes les 60 s lorsque la vue est ouverte.
+
 ## V7.2.103
 
 - Delta voisinage harmonisé dans Analyzer, Focus Sprint et Focus Endurance.
