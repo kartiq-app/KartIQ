@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.102"
+APP_VERSION = "7.2.103"
 APP_RELEASE_NAME = "CORRECTION MULTI FILES SPOTTER"
 
 

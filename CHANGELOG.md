@@ -1,3 +1,13 @@
+## V7.2.103
+
+- Delta voisinage harmonisé dans Analyzer, Focus Sprint et Focus Endurance.
+- Équipe devant : écart affiché avec signe positif.
+- Équipe derrière : écart affiché avec signe négatif.
+- Couleurs calculées uniquement sur l’évolution de la magnitude de l’écart entre deux tours du pilote suivi.
+- Devant : écart qui se réduit = vert ; qui augmente = orange.
+- Derrière : écart qui augmente = vert ; qui se réduit = orange.
+- Tolérance de comparaison ramenée à 0,001 s pour éviter de masquer les évolutions utiles.
+
 ## V7.2.102
 - Spotter/STANDS : cartes en attente = fond sombre + filet orange uniquement.
 - Spotter/STANDS : premier kart disponible = fond vert renforcé.

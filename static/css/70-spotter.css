@@ -1798,7 +1798,7 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-cancel-setup{width:100%;margin-top:10px;text-transform:uppercase;letter-spacing:.06em}
 
 
-/* Velocity V7.2.102 — lecture immédiate des disponibilités par file */
+/* Velocity V7.2.103 — lecture immédiate des disponibilités par file */
 /* Rouge = kart en partance, vert plein = premier disponible, filet orange = attente derrière. */
 .spotter-queue-card.available:not(.waiting){
   background:linear-gradient(135deg,#0b6f3b,#064d2a)!important;

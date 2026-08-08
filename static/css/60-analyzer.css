@@ -1941,7 +1941,7 @@ body.velocity-lab-open{overflow:hidden!important}
 /* Velocity V7.2.95 — le mode développeur reste strictement propriétaire */
 html.velocity-member-shared-mode .testbar{display:none!important}
 
-/* Velocity V7.2.102 — Stats pilotes */
+/* Velocity V7.2.103 — Stats pilotes */
 .apex-history-pilots-list{display:flex;flex-direction:column;gap:12px;margin-top:10px}
 .apex-pilot-group{background:#0c111a;border:1px solid #29303a;border-radius:10px;padding:12px}
 .apex-pilot-group h3{margin:0 0 10px;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:.04em}
