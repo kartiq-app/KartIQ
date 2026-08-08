@@ -1,3 +1,12 @@
+# V7.2.106 — Velocity Lab unifié avec le moteur STATS / Score Relais
+
+- Velocity Lab utilise désormais les mêmes relais reconstruits depuis STATS que SCORE RELAIS.
+- Delta brut, Delta plateau et Delta corrigé sont strictement identiques entre SCORE RELAIS, le classement VELOCITY et Velocity Lab.
+- La composante TRANSITION de Velocity Lab utilise le même Delta corrigé que SCORE RELAIS.
+- Les cinq composantes du score affiché dans Velocity Lab reprennent le score du dernier relais reconstruit depuis STATS quand il est disponible.
+- Le classement VELOCITY utilise également ce même score de relais reconstruit, avec fallback sur l'ancien moteur uniquement tant que les STATS ne sont pas encore chargées.
+- Chargement des SCORE RELAIS lancé en arrière-plan depuis Analyzer pour éviter une divergence tant que l'utilisateur n'a pas ouvert manuellement la vue SCORE RELAIS.
+
 # V7.2.105 — Delta Score Relais unifié & rendu Analyzer stabilisé
 
 - La colonne Δ du classement Velocity utilise désormais exactement le Δ corrigé du dernier relais calculé par SCORE RELAIS lorsque les STATS sont disponibles.
