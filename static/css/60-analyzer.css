@@ -2224,3 +2224,10 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 
 /* Velocity V7.2.121 — Score Relais : largeur uniforme des colonnes R1 → Rn */
 .relay-score-xscroll .relay-score-table .relay-score-col{width:52px!important;min-width:52px!important;max-width:52px!important;padding-left:6px!important;padding-right:6px!important;text-align:center!important}
+
+
+/* Velocity V7.2.122 — Score Relais : largeur strictement identique R1 → Rn */
+.analyzer-strategy-column .relay-score-xscroll table.relay-score-table{table-layout:fixed!important}
+.analyzer-strategy-column .relay-score-xscroll table.relay-score-table col.relay-score-width-col{width:56px!important;min-width:56px!important;max-width:56px!important}
+.analyzer-strategy-column .relay-score-xscroll table.relay-score-table th.relay-score-col,
+.analyzer-strategy-column .relay-score-xscroll table.relay-score-table td.relay-score-col{width:56px!important;min-width:56px!important;max-width:56px!important;padding-left:6px!important;padding-right:6px!important;text-align:center!important;box-sizing:border-box!important}

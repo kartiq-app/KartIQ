@@ -1,3 +1,10 @@
+# V7.2.122 — Score Relais : largeur réellement fixe
+
+- Les colonnes R1 à Rn utilisent désormais un `colgroup` commun et une largeur structurelle fixe de 56 px.
+- La largeur totale du tableau des relais est calculée explicitement à partir du nombre de relais, ce qui empêche le navigateur de redistribuer l’espace entre les colonnes.
+- Les valeurs à 1, 2 ou 3 chiffres, y compris 100, restent centrées dans des colonnes strictement identiques.
+- Aucun changement du calcul des scores, des couleurs, des colonnes fixes ou du scroll horizontal.
+
 # V7.2.121 — Score Relais : colonnes uniformes
 
 - Toutes les colonnes R1 → Rn ont désormais strictement la même largeur.

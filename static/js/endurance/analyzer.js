@@ -1019,7 +1019,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
  if(analyzerRelayScoreLoading&&!analyzerRelayScoreData){host.innerHTML='<div class="analyzer-empty">Reconstruction des relais depuis STATS…</div>';return}
  const data=analyzerRelayScoreData;if(!data){host.innerHTML='<div class="analyzer-empty">Cliquez sur SCORE RELAIS pour reconstruire les relais depuis STATS.</div>';return}
  if(Date.now()-data.updatedAt>60000&&!analyzerRelayScoreLoading)setTimeout(()=>analyzerLoadRelayScores({force:true}),0);
- const maxRelay=Math.max(1,data.maxRelay||0),relayHeaders=Array.from({length:maxRelay},(_,i)=>`<th class="relay-score-col">R${i+1}</th>`).join('');
+ const maxRelay=Math.max(1,data.maxRelay||0),relayColWidth=56,relayTableWidth=maxRelay*relayColWidth,relayColgroup=`<colgroup>${Array.from({length:maxRelay},()=>`<col class="relay-score-width-col" style="width:${relayColWidth}px;min-width:${relayColWidth}px;max-width:${relayColWidth}px">`).join('')}</colgroup>`,relayHeaders=Array.from({length:maxRelay},(_,i)=>`<th class="relay-score-col">R${i+1}</th>`).join('');
  const byRow=new Map(data.teams.map(team=>[Number(team.driver.apex_row),team]));
  const fixedRows=[],relayRows=[];
  ordered.forEach(item=>{
@@ -1030,7 +1030,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
   relayRows.push(`<tr onclick="${follow}">${relays}</tr>`);
  });
  const qualLabel=data.qualification?.session?.name?`R1 référencé sur ${analyzerEscape(data.qualification.session.name)}`:'R1 sans qualification reconnue : transition neutralisée';
- host.innerHTML=`<div class="relay-score-meta">${qualLabel} · Scores reconstruits depuis les tours et arrêts STATS Apex.</div><div class="relay-score-grid"><div class="relay-score-fixed"><table class="analyzer-kartiq-table relay-score-fixed-table"><thead><tr><th class="relay-fixed-top">TOP</th><th class="relay-fixed-pos">POS</th><th class="relay-fixed-kart">KART</th><th class="relay-fixed-team">ÉQUIPE / PILOTE</th></tr></thead><tbody>${fixedRows.join('')}</tbody></table></div><div class="relay-score-xscroll" id="analyzerRelayScoreXScroll"><table class="analyzer-kartiq-table relay-score-table"><thead><tr>${relayHeaders}</tr></thead><tbody>${relayRows.join('')}</tbody></table></div></div>`;
+ host.innerHTML=`<div class="relay-score-meta">${qualLabel} · Scores reconstruits depuis les tours et arrêts STATS Apex.</div><div class="relay-score-grid"><div class="relay-score-fixed"><table class="analyzer-kartiq-table relay-score-fixed-table"><thead><tr><th class="relay-fixed-top">TOP</th><th class="relay-fixed-pos">POS</th><th class="relay-fixed-kart">KART</th><th class="relay-fixed-team">ÉQUIPE / PILOTE</th></tr></thead><tbody>${fixedRows.join('')}</tbody></table></div><div class="relay-score-xscroll" id="analyzerRelayScoreXScroll"><table class="analyzer-kartiq-table relay-score-table" style="width:${relayTableWidth}px;min-width:${relayTableWidth}px;max-width:${relayTableWidth}px">${relayColgroup}<thead><tr>${relayHeaders}</tr></thead><tbody>${relayRows.join('')}</tbody></table></div></div>`;
  host.classList.add('relay-score-scroll-host');
  const xscroll=document.getElementById('analyzerRelayScoreXScroll');
  if(xscroll){
