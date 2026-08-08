@@ -379,11 +379,14 @@ function analyzerAnimatedTrackSeconds(driver){
  if(status==='pit')return raw;
  return anchor.raw+Math.max(0,(now-anchor.at)/1000);
 }
+// V7.2.118 — phase Apex unique pour TRAFIC + Heat Map.
+// Même règle que le Live Tracking Apex : interpolation pendant la durée du segment,
+// puis invalidation 5 s après sa fin pour éviter les positions fantômes/stales.
 function analyzerApexEntryPhase(entry,at=Date.now()){
- if(!entry)return null;
- // V6.11.2 : un marqueur reste visible à la fin du segment jusqu'au prochain événement Apex.
- const age=at-Number(entry.startedAt||0),duration=Number(entry.durationMs)||0;
- if(!duration)return Number(entry.lastPhase)||0;
+ if(!entry||!entry.startedAt||!entry.durationMs)return null;
+ const age=at-Number(entry.startedAt),duration=Number(entry.durationMs);
+ if(!Number.isFinite(age)||!Number.isFinite(duration)||duration<=0||age<0)return null;
+ if(age>duration+5000)return null;
  const p=Math.max(0,Math.min(1,age/duration));
  const s1=Number(entry.sectors?.s1)||0,s2=Number(entry.sectors?.s2)||0,s3=Number(entry.sectors?.s3)||0;
  const total=(s1+s2+s3)>0?s1+s2+s3:(Number(entry.lapDurationMs)||duration);
@@ -391,11 +394,19 @@ function analyzerApexEntryPhase(entry,at=Date.now()){
  if(entry.segment==='s1')return total>0?p*s1/total:p;
  if(entry.segment==='s2')return total>0?(s1+p*s2)/total:Number(entry.lastPhase)||0;
  if(entry.segment==='s3')return total>0?(s1+s2+p*s3)/total:Number(entry.lastPhase)||0;
- if(entry.segment==='in'||entry.segment==='out')return Number(entry.lastPhase)||0;
- return Number(entry.lastPhase)||0;
+ // Les chemins pit IN/OUT Apex sont distincts du tracé principal. Ils ne doivent
+ // pas être projetés artificiellement autour du radar principal.
+ if(entry.segment==='in'||entry.segment==='out')return null;
+ return null;
+}
+function analyzerApexStablePhase(driver,at=Date.now()){
+ const entry=analyzerApexMapEntry(driver);
+ if(!entry||entry.inPit)return null;
+ const phase=analyzerApexEntryPhase(entry,at);
+ return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
 function analyzerDriverPhase(driver){
- const eventPhase=analyzerApexEntryPhase(analyzerApexMapEntry(driver));if(Number.isFinite(eventPhase))return ((eventPhase%1)+1)%1;
+ const eventPhase=analyzerApexStablePhase(driver);if(Number.isFinite(eventPhase))return eventPhase;
  const pace=analyzerDriverPace(driver);if(!Number.isFinite(pace)||pace<=0)return 0;
  const track=analyzerAnimatedTrackSeconds(driver);if(Number.isFinite(track)&&track>=0)return ((track%pace)+pace)%pace/pace;
  return 0;
@@ -411,7 +422,7 @@ function analyzerMapLastLap(driver){const value=analyzerParseDuration(driver?.la
 function analyzerMapPaceCategory(delta){if(delta<=.10)return 'fastest';if(delta<=.29)return 'excellent';if(delta<=.49)return 'good';if(delta<=.79)return 'medium';if(delta<=.99)return 'average';return 'slow'}
 function analyzerMapPaceData(drivers){const valid=(drivers||[]).filter(d=>!(typeof velocityKartIsInPit==='function'?velocityKartIsInPit(d):d?.status==='pit')).map(d=>({driver:d,lap:analyzerMapLastLap(d)})).filter(x=>Number.isFinite(x.lap));const best=valid.length?Math.min(...valid.map(x=>x.lap)):null;const map=new Map();for(const d of drivers||[]){const lap=analyzerMapLastLap(d),delta=Number.isFinite(best)&&Number.isFinite(lap)?Math.max(0,lap-best):null;map.set(d,{lap,delta,category:Number.isFinite(delta)?analyzerMapPaceCategory(delta):'slow'})}return {best,map}}
 function analyzerTrackPoint(phase,radius=121,cx=analyzerMapGeometry.cx,cy=analyzerMapGeometry.cy){const angle=(Number(phase)||0)*Math.PI*2-Math.PI/2;return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius}}
-function analyzerMapPoint(driver,radius=121){const entry=analyzerApexMapEntry(driver),phase=analyzerApexEntryPhase(entry);if(!entry||!Number.isFinite(phase))return null;return {...analyzerTrackPoint(phase,radius),phase,inPit:Boolean(entry.inPit),entry}}
+function analyzerMapPoint(driver,radius=121){const entry=analyzerApexMapEntry(driver),phase=analyzerApexStablePhase(driver);if(!entry||!Number.isFinite(phase))return null;return {...analyzerTrackPoint(phase,radius),phase,inPit:Boolean(entry.inPit),entry}}
 function analyzerMapRadarMarkup(){const {cx,cy}=analyzerMapGeometry;const rings=Object.entries(analyzerMapRings).map(([category,r])=>`<circle class="map-radar-ring ${category}" cx="${cx}" cy="${cy}" r="${r}"></circle>`).join('');const rays=Array.from({length:8},(_,i)=>{const a=i*Math.PI/4-Math.PI/2,x1=cx+Math.cos(a)*41.25,y1=cy+Math.sin(a)*41.25,x2=cx+Math.cos(a)*124.85,y2=cy+Math.sin(a)*124.85;return `<line class="map-radar-ray" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"></line>`}).join('');const checker=Array.from({length:12},(_,i)=>{const y=cy-10*(i+1),alt=i%2;return `<rect class="map-finish-square ${alt?'alt':''}" x="${cx-5}" y="${y}" width="5" height="10"></rect><rect class="map-finish-square ${alt?'':'alt'}" x="${cx}" y="${y}" width="5" height="10"></rect>`}).join('');return `${rays}${rings}<g class="map-finish-line">${checker}</g>`}
 function analyzerSimulationKartLabel(driver){return String(validKartNumber(driver)||driver?.apex||driver?.pos||'—').slice(0,3)}
 function analyzerMapTop5Set(drivers){return new Set((drivers||[]).slice().sort((a,b)=>(Number(a.velocity_score??a.kart_score??0)||0)-(Number(b.velocity_score??b.kart_score??0)||0)).slice(-5).map(d=>d.driver))}
@@ -1357,11 +1368,17 @@ function analyzerTrafficLapSeconds(driver){
  }
  return 60;
 }
+// V7.2.117 — identité TRAFIC alignée sur l'identifiant concurrent Apex rXXXXX.
+// Le numéro de kart peut changer pendant une endurance : il ne doit donc jamais
+// servir de clé temporelle pour la position physique du concurrent.
 function analyzerTrafficKey(driver){
- const kart=String(driver?.kart||driver?.kart_number||'').trim();
- return kart?`kart:${kart}`:`driver:${String(driver?.driver||driver?.team||driver?.pos||'unknown')}`;
+ const row=Number(driver?.apex_row);
+ if(Number.isFinite(row)&&row>0)return `apex:r${row}`;
+ return `driver:${String(driver?.driver||driver?.team||driver?.pos||'unknown')}`;
 }
 function analyzerTrafficUpdateMotion(drivers){
+ // Fallback historique, utilisé uniquement lorsqu'aucune impulsion de tracking
+ // Apex n'est disponible sur le circuit. Il n'est jamais mélangé au tracking Apex.
  const now=performance.now();
  const liveKeys=new Set();
  (drivers||[]).forEach(driver=>{
@@ -1380,24 +1397,41 @@ function analyzerTrafficUpdateMotion(drivers){
    previous.laps=laps;
   }
  });
- analyzerTrafficMotion.forEach((value,key)=>{if(!liveKeys.has(key)&&now-value.lastSeen>15000)analyzerTrafficMotion.delete(key)});
+ // Une ancienne position ne survit plus 15 s : Apex masque lui-même son cercle
+ // 5 s après la fin de l'animation. On adopte la même tolérance.
+ analyzerTrafficMotion.forEach((value,key)=>{if(!liveKeys.has(key)&&now-value.lastSeen>5000)analyzerTrafficMotion.delete(key)});
 }
-function analyzerTrafficPhase(driver,now){
+function analyzerTrafficFallbackPhase(driver,now){
  const motion=analyzerTrafficMotion.get(analyzerTrafficKey(driver));
  if(!motion||!motion.ready||!Number.isFinite(motion.lapSeconds)||motion.lapSeconds<=0)return null;
  const elapsed=Math.max(0,(now-motion.crossedAt)/1000);
  return (elapsed%motion.lapSeconds)/motion.lapSeconds;
 }
-function analyzerTrafficSignedGap(followed,driver,now){
- // Écart physique signé : négatif derrière, positif devant.
- // Ni le classement ni le nombre de tours ne servent de filtre.
- const followedPhase=analyzerTrafficPhase(followed,now),driverPhase=analyzerTrafficPhase(driver,now);
- if(Number.isFinite(followedPhase)&&Number.isFinite(driverPhase)){
-  let fraction=driverPhase-followedPhase;
-  if(fraction>.5)fraction-=1;
-  else if(fraction<=-.5)fraction+=1;
-  if(Math.abs(fraction)>1e-6)return fraction*analyzerTrafficLapSeconds(followed);
+function analyzerTrafficTrackingIsLive(now=Date.now()){
+ const registry=analyzerApexMapRegistry();
+ if(registry?.noLive||!registry?.rows?.size||!Number(registry.lastEventAt))return false;
+ // Le tour est de l'ordre de quelques dizaines de secondes. 90 s permet de
+ // conserver le tracking entre deux impulsions sans réutiliser une vieille course.
+ return now-Number(registry.lastEventAt)<=90000;
+}
+function analyzerTrafficApexPhase(driver,now=Date.now()){
+ return analyzerApexStablePhase(driver,now);
+}
+function analyzerTrafficSignedGapFromPhases(followedPhase,driverPhase,followed){
+ if(!Number.isFinite(followedPhase)||!Number.isFinite(driverPhase))return null;
+ let fraction=driverPhase-followedPhase;
+ if(fraction>.5)fraction-=1;
+ else if(fraction<=-.5)fraction+=1;
+ if(Math.abs(fraction)<=1e-6)return 0;
+ return fraction*analyzerTrafficLapSeconds(followed);
+}
+function analyzerTrafficSignedGap(followed,driver,now,source='fallback'){
+ if(source==='apex'){
+  return analyzerTrafficSignedGapFromPhases(analyzerTrafficApexPhase(followed,now),analyzerTrafficApexPhase(driver,now),followed);
  }
+ const followedPhase=analyzerTrafficFallbackPhase(followed,now),driverPhase=analyzerTrafficFallbackPhase(driver,now);
+ const phaseGap=analyzerTrafficSignedGapFromPhases(followedPhase,driverPhase,followed);
+ if(Number.isFinite(phaseGap))return phaseGap;
  if(typeof directRaceGap==='function'){
   const ahead=directRaceGap(followed,driver);
   if(Number.isFinite(ahead)&&ahead>=0)return ahead;
@@ -1408,11 +1442,13 @@ function analyzerTrafficSignedGap(followed,driver,now){
 }
 function analyzerTrafficAround(followed){
  if(!followed)return [];
- const drivers=state.drivers||[],now=performance.now(),pace=analyzerMapPaceData(drivers);
- analyzerTrafficUpdateMotion(drivers);
+ const drivers=state.drivers||[],nowDate=Date.now(),pace=analyzerMapPaceData(drivers);
+ const useApexTracking=analyzerTrafficTrackingIsLive(nowDate)&&Number.isFinite(analyzerTrafficApexPhase(followed,nowDate));
+ if(!useApexTracking)analyzerTrafficUpdateMotion(drivers);
+ else analyzerTrafficMotion.clear();
  return drivers
   .filter(driver=>driver&&driver.driver!==followed.driver&&driver.status!=='pit')
-  .map(driver=>({driver,gap:analyzerTrafficSignedGap(followed,driver,now),category:pace.map.get(driver)?.category||'slow',key:analyzerTrafficKey(driver)}))
+  .map(driver=>({driver,gap:analyzerTrafficSignedGap(followed,driver,useApexTracking?nowDate:performance.now(),useApexTracking?'apex':'fallback'),category:pace.map.get(driver)?.category||'slow',key:analyzerTrafficKey(driver)}))
   .filter(item=>Number.isFinite(item.gap)&&Math.abs(item.gap)<=ANALYZER_TRAFFIC_HYSTERESIS_SECONDS)
   .sort((a,b)=>a.gap-b.gap);
 }

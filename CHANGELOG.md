@@ -1,3 +1,19 @@
+# V7.2.118 — TRAFIC + Heat Map unifiés sur le tracking Apex
+
+- Heat Map et TRAFIC utilisent désormais la même phase Apex par concurrent.
+- Expiration des positions 5 s après la fin du segment, comme Apex.
+- Les segments pit `in/out` ne sont plus projetés artificiellement sur le radar principal.
+- Identité concurrent stable `rXXXXX` conservée.
+
+# V7.2.117 — TRAFIC aligné sur le tracking Apex
+
+- Analyzer — ligne **TRAFIC** : l’identité temporelle utilise désormais l’identifiant concurrent Apex stable `rXXXXX` (`apex_row`) et non le numéro de kart.
+- Lorsque les impulsions Apex `*`, `*i1`, `*i2`, `*in`, `*out` sont disponibles, TRAFIC utilise exclusivement le moteur de position déjà alimenté par ces événements (`track/s1/s2/s3/in/out`) ; aucun mélange avec l’ancienne interpolation n’est effectué.
+- La progression est calculée à partir de l’horodatage et de la durée de la portion Apex, sur le même principe que le Live Tracking Apex.
+- Un état dépassé de plus de 5 s est ignoré, comme sur Apex, afin d’empêcher un ancien concurrent de réapparaître sous forme de « kart fantôme ».
+- L’ancienne interpolation par passages de tours est conservée uniquement en fallback pour les circuits qui ne fournissent pas de tracking exploitable.
+- Aucun changement de design de la ligne TRAFIC ni des autres modules Analyzer.
+
 # V7.2.116
 
 - Analyzer — carte **PÉNALITÉS ET INFORMATIONS** : numéro de kart, nom d’équipe et texte du message agrandis de 25 %.
