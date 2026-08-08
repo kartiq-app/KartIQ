@@ -1,3 +1,11 @@
+# V7.2.112 — Météo x3 & alignement Pénalités
+
+- Dalles horaires Météo : textes et icônes agrandis x3.
+- PÉNALITÉS : HEURE alignée sur POS du Classement LIVE.
+- PÉNALITÉS : KART aligné sur la colonne KART du Classement LIVE, avec la même taille de numéro.
+- PÉNALITÉS : conservation d’un espace invisible équivalent à la colonne IN pour garantir l’alignement.
+- Texte des pénalités en blanc.
+
 # V7.2.111 — Pénalités en colonnes & rééquilibrage Météo/Messagerie
 
 - Carte PÉNALITÉS transformée en tableau à 4 colonnes : Heure | Kart | Équipe | Pénalités.

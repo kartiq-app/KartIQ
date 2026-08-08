@@ -2048,3 +2048,40 @@ html.velocity-member-shared-mode .testbar{display:none!important}
   .analyzer-penalty-row{min-height:36px}
   .analyzer-penalty-text{font-size:10px}
 }
+
+
+/* Velocity V7.2.112 — météo horaire x3 + alignement Pénalités sur Classement LIVE */
+.analyzer-weather-message-stack>.weather-card .weather-slot-icon{width:60px!important;height:60px!important}
+.analyzer-weather-message-stack>.weather-card .weather-slot-time,
+.analyzer-weather-message-stack>.weather-card .weather-slot-rain{font-size:24px!important;line-height:1.05!important}
+.analyzer-weather-message-stack>.weather-card .weather-slot-temp{font-size:27px!important;line-height:1.05!important}
+.analyzer-weather-message-stack>.weather-card .weather-slot{gap:4px!important}
+
+/* Le tableau PÉNALITÉS reprend exactement les axes POS / IN / KART / ÉQUIPE du Classement LIVE.
+   La piste IN reste une piste invisible afin que KART conserve le même x que dans le classement. */
+.analyzer-penalties-head,.analyzer-penalty-row{
+  grid-template-columns:var(--pen-pos-w,48px) var(--pen-in-w,24px) var(--pen-kart-w,52px) var(--pen-team-w,230px) minmax(220px,1fr)!important;
+  column-gap:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+}
+.analyzer-penalties-head span:nth-child(1),.analyzer-penalty-row>*:nth-child(1){grid-column:1}
+.analyzer-penalties-head span:nth-child(2),.analyzer-penalty-row>*:nth-child(2){grid-column:3}
+.analyzer-penalties-head span:nth-child(3),.analyzer-penalty-row>*:nth-child(3){grid-column:4}
+.analyzer-penalties-head span:nth-child(4),.analyzer-penalty-row>*:nth-child(4){grid-column:5}
+.analyzer-penalties-head span:nth-child(1),.analyzer-penalties-head span:nth-child(2),
+.analyzer-penalty-time,.analyzer-penalty-kart{text-align:center!important}
+.analyzer-penalties-head span:nth-child(3),.analyzer-penalties-head span:nth-child(4),
+.analyzer-penalty-team,.analyzer-penalty-text{padding-left:8px!important;box-sizing:border-box!important;text-align:left!important}
+.analyzer-penalty-kart{font-family:inherit!important;font-size:11px!important;font-weight:400!important;color:#fff!important}
+.analyzer-penalty-text{color:#fff!important}
+@media(max-width:700px){
+  .analyzer-penalties-head,.analyzer-penalty-row{
+    grid-template-columns:var(--pen-pos-w,42px) var(--pen-in-w,24px) var(--pen-kart-w,44px) var(--pen-team-w,150px) minmax(220px,1fr)!important;
+    min-width:500px;
+  }
+  .analyzer-weather-message-stack>.weather-card .weather-slot-icon{width:54px!important;height:54px!important}
+  .analyzer-weather-message-stack>.weather-card .weather-slot-time,
+  .analyzer-weather-message-stack>.weather-card .weather-slot-rain{font-size:21px!important}
+  .analyzer-weather-message-stack>.weather-card .weather-slot-temp{font-size:24px!important}
+}

@@ -1546,14 +1546,31 @@ function analyzerPenaltyItems(){
   return analyzerPenaltyTimeLabel(b).localeCompare(analyzerPenaltyTimeLabel(a));
  });
 }
+function analyzerSyncPenaltyColumns(){
+ const ranking=document.querySelector('.analyzer-ranking-table');
+ const head=document.querySelector('.analyzer-penalties-head');
+ const list=document.getElementById('analyzerPenaltiesList');
+ if(!ranking||!head||!list)return;
+ const th=ranking.querySelectorAll('thead th');
+ if(th.length<4)return;
+ const targets=[head,list];
+ const values={
+  '--pen-pos-w':`${Math.round(th[0].getBoundingClientRect().width)}px`,
+  '--pen-in-w':`${Math.round(th[1].getBoundingClientRect().width)}px`,
+  '--pen-kart-w':`${Math.round(th[2].getBoundingClientRect().width)}px`,
+  '--pen-team-w':`${Math.round(th[3].getBoundingClientRect().width)}px`
+ };
+ targets.forEach(node=>Object.entries(values).forEach(([key,value])=>node.style.setProperty(key,value)));
+}
 function renderAnalyzerPenalties(){
  const host=document.getElementById('analyzerPenaltiesList'),count=document.getElementById('analyzerPenaltiesCount');if(!host)return;
  const items=analyzerPenaltyItems();if(count)count.textContent=`${items.length} pénalité${items.length>1?'s':''}`;
- if(!items.length){host.innerHTML='<div class="analyzer-empty">Aucune pénalité Apex.</div>';return;}
+ if(!items.length){host.innerHTML='<div class="analyzer-empty">Aucune pénalité Apex.</div>';analyzerSyncPenaltyColumns();return;}
  host.innerHTML=items.map(p=>{
   const team=String(p?.driver||'—'),kart=String(p?.kart||'').trim(),text=String(p?.penalty||p?.comment||'Pénalité').trim()||'Pénalité';
   return `<div class="analyzer-penalty-row" role="row"><span class="analyzer-penalty-time" role="cell">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-kart" role="cell">${kart?analyzerEscape(kart):'—'}</span><span class="analyzer-penalty-team" role="cell">${analyzerEscape(team)}</span><span class="analyzer-penalty-text" role="cell">${analyzerEscape(text)}</span></div>`;
  }).join('');
+ analyzerSyncPenaltyColumns();
 }
 
 function renderAnalyzer(){
