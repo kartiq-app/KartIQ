@@ -1976,3 +1976,15 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .rules-pilot-card strong{display:block;margin-top:4px;color:#fff;font-size:11px;font-weight:900;white-space:nowrap}
 .debrief-insufficient{font-size:9px;font-weight:900;color:#ff9b32;white-space:nowrap}
 @media(max-width:700px){.rules-pilots{gap:4px}.rules-pilot-card{padding:4px 2px}.rules-pilot-name{font-size:6px}.rules-pilot-card strong{font-size:9px}}
+
+
+/* V7.2.109 — temps pilotes officiels Apex */
+.rules-pilots{align-items:stretch}
+.rules-pilot-card{padding:8px 5px}
+.rules-pilot-icon{display:none!important}
+.rules-pilot-name{font-size:10px;line-height:1.12;color:#eef2f7;font-weight:900}
+.rules-pilot-card strong{font-size:13px;font-weight:950;margin-top:6px}
+.debrief-pilot-totals .debrief-pilot-total{text-align:center}
+.debrief-pilot-totals .debrief-pilot-total span{font-weight:800;text-transform:uppercase}
+.debrief-pilot-totals .debrief-pilot-total b{font-size:18px}
+@media(max-width:700px){.rules-pilot-name{font-size:8px}.rules-pilot-card strong{font-size:11px}}

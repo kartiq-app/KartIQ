@@ -1723,15 +1723,26 @@ function renderAnalyzerQueueAdvice(){
  if(!scored.length){el.textContent='Files renseignées — apprentissage des notes en cours';return}
  const best=scored[0];el.textContent=`FILE ${queueLetter(best.queue)} — kart ${best.kart} (${best.score}/100)`;
 }
-function analyzerPilotTotalSeconds(driver){
- const history=analyzerTeamHistory(driver),totals=new Map(),now=Date.now();
- const relays=[...(history?.relays||[])];if(history?.currentRelay)relays.push({...history.currentRelay,status:'active'});
- relays.forEach(r=>{const pilot=String(r?.pilot||'').trim();if(!pilot)return;let seconds=0;if(r.status==='active'){const live=analyzerParseDuration(driver?.track_timer);seconds=Number.isFinite(live)?live:Math.max(0,(now-Number(r.startAt||now))/1000)}else if(Number.isFinite(Number(r.endAt))&&Number.isFinite(Number(r.startAt)))seconds=Math.max(0,(Number(r.endAt)-Number(r.startAt))/1000);if(seconds>0)totals.set(pilot,(totals.get(pilot)||0)+seconds)});
- return [...totals.entries()].map(([name,seconds])=>({name,seconds})).sort((a,b)=>b.seconds-a.seconds);
-}
+const analyzerApexPilotTotalsCache=new Map();
+const analyzerApexPilotTotalsLoading=new Map();
 function analyzerPilotHoursLabel(seconds){const total=Math.max(0,Math.floor(Number(seconds)||0)),hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60);return `${String(hours).padStart(2,'0')}H${String(minutes).padStart(2,'0')}`}
+function analyzerOfficialPilotTotals(driver){
+ const rowId=Number(driver?.apex_row)||0;if(!rowId)return [];
+ const entry=analyzerApexPilotTotalsCache.get(rowId);if(!entry)return [];
+ return (entry.pilots||[]).filter(p=>p.name&&Number(p.totalMs)>0).map(p=>({name:p.name,seconds:Number(p.totalMs)/1000,driverId:p.driverId,current:Boolean(p.current)})).sort((a,b)=>b.seconds-a.seconds||a.name.localeCompare(b.name));
+}
+async function analyzerEnsureOfficialPilotTotals(driver){
+ const rowId=Number(driver?.apex_row)||0;if(!rowId||analyzerApexPilotTotalsLoading.has(rowId))return;
+ if(analyzerApexPilotTotalsCache.get(rowId)?.loadedAt&&Date.now()-analyzerApexPilotTotalsCache.get(rowId).loadedAt<15000)return;
+ const promise=fetchAllApexTeamPits(rowId,'',null).catch(()=>[]).finally(()=>analyzerApexPilotTotalsLoading.delete(rowId));
+ analyzerApexPilotTotalsLoading.set(rowId,promise);await promise;
+}
 function renderAnalyzerRulesPilots(driver){
- const host=document.getElementById('analyzerRulesPilots');if(!host)return;const pilots=driver?analyzerPilotTotalSeconds(driver):[];host.hidden=!pilots.length;host.innerHTML=pilots.map(p=>{const parts=String(p.name).trim().split(/\s+/),first=parts.shift()||'',last=parts.join(' ');return `<div class="rules-pilot-card"><span class="rules-pilot-icon" aria-hidden="true">👤</span><span class="rules-pilot-name">${analyzerEscape(first)}${last?`<br>${analyzerEscape(last)}`:''}</span><strong>${analyzerEscape(analyzerPilotHoursLabel(p.seconds))}</strong></div>`}).join('');
+ const host=document.getElementById('analyzerRulesPilots');if(!host)return;
+ const pilots=driver?analyzerOfficialPilotTotals(driver):[];
+ if(driver&&!pilots.length)analyzerEnsureOfficialPilotTotals(driver).then(()=>{const followed=(state.drivers||[]).find(d=>analyzerFollowed(d));if(followed&&Number(followed.apex_row)===Number(driver.apex_row))renderAnalyzerRulesPilots(followed)}).catch(()=>{});
+ host.hidden=!pilots.length;
+ host.innerHTML=pilots.map(p=>{const parts=String(p.name).trim().split(/\s+/),first=parts.shift()||'',last=parts.join(' ');return `<div class="rules-pilot-card"><span class="rules-pilot-name">${analyzerEscape(first)}${last?`<br>${analyzerEscape(last)}`:''}</span><strong>${analyzerEscape(analyzerPilotHoursLabel(p.seconds))}</strong></div>`}).join('');
 }
 function setAnalyzerSort(value){analyzerSort=value||'position';renderAnalyzer()}
 function openAnalyzerRules(){
@@ -1988,26 +1999,47 @@ function parseApexPitLine(line,rowId){
  const markerStop=apexProtocolNumber(value.slice(marker.length,hash));
  const fields=value.slice(hash+1).split('|').map(item=>String(item||'').trim());
  if(!markerStop||fields.length<4)return null;
- // Format réellement livré par Apex :
- // D<équipe>.P<index>#<arrêt>|<tour encodé>|<entrée stands absolue>|<sortie stands absolue>
+ // Format Apex complet : arrêt | tour | entrée | sortie | pit_time | track_time | tours relais | driver_id | driver_total_time
  const stop=apexProtocolNumber(fields[0])||markerStop;
  return {
   stop,
   lap:apexPitProtocolLap(fields[1]),
   pitInMs:apexPitProtocolMilliseconds(fields[2]),
-  pitOutMs:apexPitProtocolMilliseconds(fields[3])
+  pitOutMs:apexPitProtocolMilliseconds(fields[3]),
+  pitTimeMs:apexPitProtocolMilliseconds(fields[4]),
+  trackTimeMs:apexPitProtocolMilliseconds(fields[5]),
+  relayLapsNumber:apexProtocolNumber(fields[6]),
+  driverId:apexProtocolNumber(fields[7]),
+  driverTotalTimeMs:apexPitProtocolMilliseconds(fields[8])
  };
 }
+function parseApexDriverInfos(raw,rowId){
+ const marker=`D${rowId}.INF`,line=String(raw||'').split(/\r?\n/).find(item=>String(item||'').trim().startsWith(marker));
+ if(!line)return [];
+ const start=line.indexOf('<');if(start<0)return [];
+ try{
+  const box=document.createElement('div');box.innerHTML=line.slice(start);
+  return [...box.querySelectorAll('driver')].map(node=>({driverId:apexProtocolNumber(node.getAttribute('id')),name:String(node.getAttribute('name')||'').trim(),current:String(node.getAttribute('current')||'')==='1'})).filter(item=>item.driverId&&item.name);
+ }catch(_){return []}
+}
+function analyzerCacheOfficialPilotTotals(rowId,pits,drivers){
+ const byId=new Map();
+ (drivers||[]).forEach(d=>byId.set(Number(d.driverId),{driverId:Number(d.driverId),name:d.name,current:Boolean(d.current),totalMs:0}));
+ (pits||[]).forEach(p=>{const id=Number(p.driverId)||0;if(!id)return;const current=byId.get(id)||{driverId:id,name:String(p.driverName||'').trim(),current:false,totalMs:0};current.totalMs=Math.max(Number(current.totalMs)||0,Number(p.driverTotalTimeMs)||0);if(p.driverName)current.name=p.driverName;byId.set(id,current)});
+ analyzerApexPilotTotalsCache.set(Number(rowId),{pilots:[...byId.values()],loadedAt:Date.now()});
+}
 function parseApexPitData(raw,rowId){
+ const drivers=parseApexDriverInfos(raw,rowId),driverNames=new Map(drivers.map(d=>[Number(d.driverId),d.name]));
  const byStop=new Map();
- for(const line of String(raw||'').split(/\r?\n/)){const pit=parseApexPitLine(line,rowId);if(pit)byStop.set(pit.stop,pit)}
+ for(const line of String(raw||'').split(/\r?\n/)){const pit=parseApexPitLine(line,rowId);if(pit){pit.driverName=driverNames.get(Number(pit.driverId))||'';byStop.set(pit.stop,pit)}}
  const chronological=[...byStop.values()].sort((a,b)=>a.stop-b.stop);
  chronological.forEach((pit,index)=>{
   const previous=chronological[index-1];
   pit.hour=formatApexPitClock(pit.pitInMs);
-  pit.onTrack=formatApexPitClock(Math.max(0,pit.pitInMs-(previous?.pitOutMs||0)));
-  pit.pitTime=pit.pitOutMs>pit.pitInMs?formatApexPitDuration(pit.pitOutMs-pit.pitInMs):'—';
+  pit.onTrack=formatApexPitClock(pit.trackTimeMs||Math.max(0,pit.pitInMs-(previous?.pitOutMs||0)));
+  pit.pitTime=pit.pitTimeMs?formatApexPitDuration(pit.pitTimeMs):(pit.pitOutMs>pit.pitInMs?formatApexPitDuration(pit.pitOutMs-pit.pitInMs):'—');
  });
+ analyzerCacheOfficialPilotTotals(rowId,chronological,drivers);
  return chronological.sort((a,b)=>b.stop-a.stop);
 }
 async function fetchAllApexTeamPits(rowId,sessionId,status){
@@ -2158,18 +2190,26 @@ function analyzerDebriefRelays(laps,pits){
  }
  return relays;
 }
-function analyzerDebriefPilotByRelay(driver){
- const map=new Map(),history=analyzerTeamHistory(driver);
- const relays=[...(history?.relays||[])];if(history?.currentRelay)relays.push({...history.currentRelay,status:'active'});
- relays.forEach(r=>{const name=String(r?.pilot||'').trim();if(name)map.set(Number(r.index),name)});
+function analyzerDebriefPilotByRelay(driver,pits){
+ const map=new Map();
+ const chronological=(pits||[]).slice().sort((a,b)=>Number(a.stop)-Number(b.stop));
+ chronological.forEach((pit,index)=>{const name=String(pit?.driverName||'').trim();if(name)map.set(index+1,name)});
+ const rowId=Number(driver?.apex_row)||0,cache=analyzerApexPilotTotalsCache.get(rowId),current=(cache?.pilots||[]).find(p=>p.current&&p.name);
+ if(current)map.set(chronological.length+1,current.name);
+ if(!map.size){const history=analyzerTeamHistory(driver),relays=[...(history?.relays||[])];if(history?.currentRelay)relays.push({...history.currentRelay,status:'active'});relays.forEach(r=>{const name=String(r?.pilot||'').trim();if(name)map.set(Number(r.index),name)})}
  return map;
+}
+function analyzerDebriefOfficialPilotTotals(driver,pits){
+ const rowId=Number(driver?.apex_row)||0,cache=analyzerApexPilotTotalsCache.get(rowId);
+ if(cache?.pilots?.length)return cache.pilots.filter(p=>p.name&&Number(p.totalMs)>0).map(p=>({name:p.name,totalMs:Number(p.totalMs),current:Boolean(p.current)})).sort((a,b)=>b.totalMs-a.totalMs||a.name.localeCompare(b.name));
+ const byId=new Map();(pits||[]).forEach(p=>{const id=Number(p.driverId)||0,name=String(p.driverName||'').trim(),totalMs=Number(p.driverTotalTimeMs)||0;if(!id||!name||!totalMs)return;const prev=byId.get(id);if(!prev||totalMs>prev.totalMs)byId.set(id,{name,totalMs,current:false})});return [...byId.values()].sort((a,b)=>b.totalMs-a.totalMs||a.name.localeCompare(b.name));
 }
 async function analyzerDebriefLoadTeam(driver,sessionId=''){
  const rowId=Number(driver?.apex_row)||0;if(!rowId)throw new Error(`Identifiant STATS indisponible pour ${driver?.driver||'une équipe'}`);
  const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(rowId,sessionId,null),fetchAllApexTeamPits(rowId,sessionId,null).catch(()=>[])]);
  const clean=analyzerDebriefCleanLaps(laps,pits),seconds=clean.map(l=>l.seconds),pitDurations=(pits||[]).map(p=>Math.max(0,(p.pitOutMs||0)-(p.pitInMs||0))/1000).filter(v=>v>0);
- const pilotByRelay=analyzerDebriefPilotByRelay(driver),relays=analyzerDebriefRelays(clean,pits).map(r=>({...r,pilot:pilotByRelay.get(Number(r.index))||''}));
- return {driver,name:driver.driver||`Équipe ${rowId}`,position:Number(driver.pos)||999,laps,pits,clean,relays,best:seconds.length?Math.min(...seconds):NaN,average:analyzerDebriefAverage(seconds),median:analyzerDebriefMedian(seconds),std:analyzerDebriefStd(seconds),pitAverage:analyzerDebriefAverage(pitDurations),pitStd:analyzerDebriefStd(pitDurations),pitCount:pits.length};
+ const pilotByRelay=analyzerDebriefPilotByRelay(driver,pits),relays=analyzerDebriefRelays(clean,pits).map(r=>({...r,pilot:pilotByRelay.get(Number(r.index))||''})),pilotTotals=analyzerDebriefOfficialPilotTotals(driver,pits);
+ return {driver,name:driver.driver||`Équipe ${rowId}`,position:Number(driver.pos)||999,laps,pits,clean,relays,pilotTotals,best:seconds.length?Math.min(...seconds):NaN,average:analyzerDebriefAverage(seconds),median:analyzerDebriefMedian(seconds),std:analyzerDebriefStd(seconds),pitAverage:analyzerDebriefAverage(pitDurations),pitStd:analyzerDebriefStd(pitDurations),pitCount:pits.length};
 }
 function analyzerDebriefFmtSeconds(value){return Number.isFinite(value)?formatApexMilliseconds(value*1000):'—'}
 function analyzerDebriefFmtPit(value){return Number.isFinite(value)?formatApexPitDuration(value*1000):'—'}
@@ -2234,6 +2274,7 @@ function renderAnalyzerDebrief(team,all,context={}){
    <div class="debrief-metric"><span>Temps moyen stands</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div>
   </div></section>
   <section class="debrief-section"><h3>ANALYSE DES RELAIS TERMINÉS / EN COURS</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RELAIS</th><th>PILOTE</th><th>TOURS</th><th>POS. RELAIS</th><th>FENÊTRE</th><th>MEILLEUR</th><th>MOYENNE</th><th>CONSTANCE</th></tr></thead><tbody>${team.relays.map(r=>{const comparison=r.insufficient?{rank:0,total:0,constance:NaN}:analyzerDebriefRelayComparison(r,team,all);return `<tr><td>R${r.index}</td><td>${r.pilot?analyzerEscape(r.pilot):'—'}</td><td>${r.laps}</td><td>${r.insufficient?'<span class="debrief-insufficient">ÉCHANTILLON INSUFFISANT</span>':`<strong class="debrief-relay-position">${analyzerDebriefRelayPosition(comparison.rank,comparison.total)}</strong>`}</td><td>${r.from} → ${r.to}</td><td>${analyzerDebriefFmtSeconds(r.best)}</td><td>${analyzerDebriefFmtSeconds(r.average)}</td><td class="${analyzerDebriefConstanceClass(comparison.constance)}" title="Écart entre la moyenne et le meilleur tour du relais">${analyzerDebriefFmtConstance(comparison.constance)}</td></tr>`}).join('')||'<tr><td colspan="8">Aucun relais détecté pour le moment.</td></tr>'}</tbody></table></div><p class="debrief-table-note"><strong>POS. RELAIS</strong> classe le rythme moyen de l’équipe face aux équipes disposant d’au moins deux tours exploitables sur la même fenêtre de course. Les relais trop courts restent affichés avec la mention <strong>Échantillon insuffisant</strong>, sans classement. <strong>Constance</strong> correspond à l’écart entre la moyenne et le meilleur tour : plus l’écart est faible, plus le relais est régulier.</p></section>
+  <section class="debrief-section"><h3>TEMPS DE ROULAGE TOTAL</h3><div class="debrief-grid debrief-pilot-totals">${(team.pilotTotals||[]).length?(team.pilotTotals||[]).map(p=>`<div class="debrief-metric debrief-pilot-total"><span>${analyzerEscape(p.name)}</span><b>${analyzerEscape(analyzerPilotHoursLabel(Number(p.totalMs)/1000))}</b></div>`).join(''):'<div class="analyzer-empty">Temps pilotes Apex indisponibles pour le moment.</div>'}</div><p class="debrief-table-note">Temps cumulés officiels transmis par Apex via <strong>driver_total_time</strong>. Velocity ne recalcule pas ces totaux.</p></section>
   <section class="debrief-section"><h3>ARRÊTS AUX STANDS</h3><div class="debrief-grid"><div class="debrief-metric"><span>Nombre</span><b>${team.pitCount}</b></div><div class="debrief-metric"><span>Temps moyen</span><b>${analyzerDebriefFmtPit(team.pitAverage)}</b></div><div class="debrief-metric"><span>Dispersion</span><b>${Number.isFinite(team.pitStd)?team.pitStd.toFixed(3)+' s':'—'}</b></div><div class="debrief-metric"><span>Rang plateau</span><b>${team.pitCount?analyzerDebriefOrdinal(pitRank,n):'—'}</b></div></div></section>
   <section class="debrief-section"><h3>CLASSEMENT DU RYTHME MOYEN</h3><div class="debrief-table-wrap"><table class="debrief-table"><thead><tr><th>RANG</th><th>ÉQUIPE</th><th>MOYENNE</th><th>MEILLEUR</th><th>RÉGULARITÉ</th><th>PITS</th><th>MOY. PIT</th></tr></thead><tbody>${ranking.map((x,i)=>`<tr class="${x===team?'debrief-followed-row':''}"><td>${i+1}</td><td>${analyzerEscape(x.name)}</td><td>${analyzerDebriefFmtSeconds(x.average)}</td><td>${analyzerDebriefFmtSeconds(x.best)}</td><td>${analyzerDebriefRegularityLabel(x.std)}</td><td>${x.pitCount}</td><td>${analyzerDebriefFmtPit(x.pitAverage)}</td></tr>`).join('')}</tbody></table></div></section>
   <section class="debrief-section"><h3>CONCLUSION</h3><div class="debrief-verdict">${analyzerDebriefVerdict(team,all)}</div></section>`;

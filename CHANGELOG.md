@@ -1,3 +1,11 @@
+# V7.2.109 — Temps pilotes officiels Apex
+
+- Conformité réglementaire : temps pilotes alimentés par `driver_total_time` Apex, sans reconstruction locale des relais.
+- Compte Rendu : nouvelle section TEMPS DE ROULAGE TOTAL basée sur les totaux Apex officiels.
+- Association pilote/relais améliorée grâce à `driver_id` + bloc `INF` Apex.
+- Cartes pilotes compactées : suppression de la silhouette, nom/prénom agrandis et temps total en gras.
+- Les relais trop courts restent visibles dans le Compte Rendu mais n'affectent pas les totaux pilotes officiels.
+
 # V7.2.107 — Velocity Lab unifié avec le moteur STATS / Score Relais
 
 - Velocity Lab utilise désormais les mêmes relais reconstruits depuis STATS que SCORE RELAIS.
