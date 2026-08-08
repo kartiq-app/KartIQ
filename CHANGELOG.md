@@ -1,3 +1,11 @@
+# Velocity V7.2.96 — Synchronisation STANDS / Spotter
+
+- STANDS Analyzer consomme désormais le même état partagé que le mode Spotter, issu de `/api/spotter-state`.
+- Ajout d'un cache navigateur `velocitySharedSpotterState` alimenté à la fois par les modifications locales et par le polling serveur Spotter.
+- Mise à jour immédiate des cartes STANDS lorsqu'un autre appareil modifie les files, les entrants ou la maintenance.
+- `state.spotter` du flux général reste uniquement un fallback de sécurité.
+- Aucun changement des règles Quick Change, du moteur Velocity ou des droits Team.
+
 # Velocity V7.2.95 — Team Management harmonisé
 
 - Tous les boutons du module Team Management reprennent désormais la DA sombre des boutons Analyzer.

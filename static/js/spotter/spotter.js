@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.95';
+const SPOTTER_APP_RELEASE='7.2.96';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -111,6 +111,7 @@ function spotterApplyRemoteSnapshot(remote){
   spotterState.freeStartedAt=remote.free_started_at||null;
   spotterState.freePitIns=Number(remote.pit_ins)||0;
   spotterState.freePitOuts=Number(remote.pit_outs)||0;
+  spotterPublishSharedState(remote);
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
   if(document.body.classList.contains('current-spotter')&&!spotterDrag?.active&&!spotterDrag?.timer){
    // Si le TM a configuré le Quick Change depuis Analyzer pendant que Spotter
@@ -145,6 +146,7 @@ function loadSpotterFoundation(){
   }
  }catch(_){localStorage.removeItem(SPOTTER_STORAGE_KEY)}
  spotterEnsureSetupDefaults();
+ spotterPublishSharedState();
  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  renderSpotterFoundation();
 }
@@ -159,6 +161,16 @@ function spotterSharedSnapshot(){
   assignments:clone(spotterState.assignments||{}),movement_log:clone((spotterState.movementLog||[]).slice(0,40)),incoming_queue_selections:clone(spotterState.incomingQueueSelections||{}),
   free_started_at:spotterState.freeStartedAt||null,pit_ins:Number(spotterState.freePitIns)||0,pit_outs:Number(spotterState.freePitOuts)||0,recalibrating:Boolean(spotterState.recalibrating)
  };
+}
+function spotterPublishSharedState(snapshot=null){
+ const published=spotterClone(snapshot||spotterSharedSnapshot());
+ if(!published||typeof published!=='object')return;
+ if(!published.app_release)published.app_release=SPOTTER_APP_RELEASE;
+ if(!published.client_id)published.client_id=SPOTTER_CLIENT_ID;
+ if(!published.updated_at_ms)published.updated_at_ms=spotterLastRemoteUpdate||Date.now();
+ if(!published.circuit_id)published.circuit_id=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
+ window.velocitySharedSpotterState=published;
+ try{window.dispatchEvent(new CustomEvent('velocity:spotter-state',{detail:spotterClone(published)}))}catch(_){}
 }
 async function spotterPushSharedState(){
  if(spotterPushInFlight){spotterPushQueued=true;return}
@@ -179,6 +191,7 @@ async function spotterPushSharedState(){
 function spotterScheduleSharedSync(){if(spotterApplyingRemote)return;spotterPushQueued=true;clearTimeout(spotterSyncTimer);spotterSyncTimer=setTimeout(()=>{spotterPushQueued=false;spotterPushSharedState()},120)}
 function saveSpotterFoundation(){
  spotterLocalMutationAt=Date.now();
+ spotterPublishSharedState();
  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  spotterScheduleSharedSync();
 }
