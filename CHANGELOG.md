@@ -1,3 +1,11 @@
+## V7.2.131 — Delta : gain de position vert
+
+- Le Delta DEVANT passe en vert lorsque l'équipe suivie franchit la ligne en ayant gagné au moins une position.
+- La règle est symétrique à la V7.2.130 : gain de place = vert, perte de place = orange.
+- Le fait de course est prioritaire sur la réinitialisation normale provoquée par un changement de P-1.
+- Le Delta DERRIÈRE reste totalement indépendant.
+- Si la position ne change pas, la tendance normale basée sur l'intervalle Apex reste inchangée.
+
 ## V7.2.130 — Delta : perte de position orange
 
 - Le Delta DEVANT passe en orange lorsque l'équipe suivie franchit la ligne en ayant perdu au moins une position.

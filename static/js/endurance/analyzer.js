@@ -1457,13 +1457,15 @@ function analyzerUpdateFollowedDeltas(followed){
   Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,position:Number.isFinite(Number(followed.pos))?Number(followed.pos):null,aheadSignature,behindSignature,ahead:data.aheadValue,behind:data.behindValue,aheadUnit:data.aheadUnit,behindUnit:data.behindUnit,aheadKey:data.aheadKey,behindKey:data.behindKey,aheadTrend:'neutral',behindTrend:'neutral'});
   return {...data,aheadTrend:'neutral',behindTrend:'neutral'};
  }
- // V7.2.130 — fait de course prioritaire : si l'équipe suivie perd une place
- // au franchissement de la ligne, le Delta DEVANT est ORANGE même si P-1 vient
- // de changer et que son historique d'intervalle doit être réinitialisé.
+ // V7.2.131 — faits de course prioritaires au franchissement de la ligne :
+ // gain de position = Delta DEVANT VERT ; perte de position = Delta DEVANT ORANGE,
+ // même si P-1 change et que l'historique d'intervalle doit être réinitialisé.
  const currentPosition=Number(followed.pos);
  const previousPosition=Number(analyzerFollowedDeltaHistory.position);
  const followedCrossedLine=Boolean(aheadSignature&&aheadSignature!==analyzerFollowedDeltaHistory.aheadSignature);
  const lostPositionAtLine=followedCrossedLine&&Number.isFinite(currentPosition)&&Number.isFinite(previousPosition)&&currentPosition>previousPosition;
+ const gainedPositionAtLine=followedCrossedLine&&Number.isFinite(currentPosition)&&Number.isFinite(previousPosition)&&currentPosition<previousPosition;
+ const positionEventTrend=gainedPositionAtLine?'good':lostPositionAtLine?'bad':'neutral';
  if(followedCrossedLine&&Number.isFinite(currentPosition))analyzerFollowedDeltaHistory.position=currentPosition;
  // Un dépassement, un pit ou un changement de position peut remplacer P-1/P+1.
  // Chaque côté repart de zéro indépendamment afin de ne jamais comparer deux adversaires différents.
@@ -1472,7 +1474,7 @@ function analyzerUpdateFollowedDeltas(followed){
   analyzerFollowedDeltaHistory.ahead=data.aheadValue;
   analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit;
   analyzerFollowedDeltaHistory.aheadSignature=aheadSignature;
-  analyzerFollowedDeltaHistory.aheadTrend=lostPositionAtLine?'bad':'neutral';
+  analyzerFollowedDeltaHistory.aheadTrend=positionEventTrend;
  }
  if(analyzerFollowedDeltaHistory.behindKey!==data.behindKey){
   analyzerFollowedDeltaHistory.behindKey=data.behindKey;
@@ -1491,9 +1493,10 @@ function analyzerUpdateFollowedDeltas(followed){
   analyzerFollowedDeltaHistory.ahead=Number.isFinite(data.aheadValue)?data.aheadValue:null;
   analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit||'';
  }
- // Une perte de place connue est prioritaire sur la tendance d'intervalle :
- // c'est un fait de course négatif Velocity, donc ORANGE côté DEVANT.
- if(lostPositionAtLine)analyzerFollowedDeltaHistory.aheadTrend='bad';
+ // Un changement de position connu est prioritaire sur la tendance d'intervalle :
+ // gain de place = fait de course positif Velocity (VERT) ;
+ // perte de place = fait de course négatif Velocity (ORANGE).
+ if(positionEventTrend!=='neutral')analyzerFollowedDeltaHistory.aheadTrend=positionEventTrend;
  // Règle Velocity DERRIÈRE : si notre avance augmente, on s'éloigne => VERT.
  // Si elle diminue, le poursuivant revient => ORANGE.
  if(behindSignature&&behindSignature!==analyzerFollowedDeltaHistory.behindSignature){
