@@ -1390,7 +1390,7 @@ function analyzerRefreshKartRelayCountdowns(){
 }
 if(!window.__kartiqRelayCountdownTimer){window.__kartiqRelayCountdownTimer=setInterval(analyzerRefreshKartRelayCountdowns,1000)}
 
-const analyzerFollowedDeltaHistory={driver:'',signature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'};
+const analyzerFollowedDeltaHistory={driver:'',aheadSignature:null,behindSignature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'};
 function analyzerGapMetric(value){
  const raw=String(value??'').trim();
  if(!raw||raw==='—'||raw==='--')return {value:null,unit:''};
@@ -1445,39 +1445,52 @@ function analyzerFollowedNeighbors(followed){
 }
 function analyzerUpdateFollowedDeltas(followed){
  const data=analyzerFollowedNeighbors(followed);
- if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',signature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
+ if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',aheadSignature:null,behindSignature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
  const driverKey=analyzerDeltaCompetitorKey(followed)||String(state?.followed_driver||followed.pos||'');
- const signature=analyzerDeltaSignature(followed);
+ // Les deux deltas sont volontairement indépendants :
+ // - DEVANT vient de followed.interval et est échantillonné au passage de l'équipe suivie.
+ // - DERRIÈRE vient de behind.interval et est échantillonné au passage du poursuivant.
+ // Cela évite de réutiliser une couleur calculée sur une donnée qui n'a pas encore été rafraîchie par Apex.
+ const aheadSignature=analyzerDeltaSignature(followed);
+ const behindSignature=data.behind?analyzerDeltaSignature(data.behind):'';
  if(analyzerFollowedDeltaHistory.driver!==driverKey){
-  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,signature,ahead:data.aheadValue,behind:data.behindValue,aheadUnit:data.aheadUnit,behindUnit:data.behindUnit,aheadKey:data.aheadKey,behindKey:data.behindKey,aheadTrend:'neutral',behindTrend:'neutral'});
+  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,aheadSignature,behindSignature,ahead:data.aheadValue,behind:data.behindValue,aheadUnit:data.aheadUnit,behindUnit:data.behindUnit,aheadKey:data.aheadKey,behindKey:data.behindKey,aheadTrend:'neutral',behindTrend:'neutral'});
   return {...data,aheadTrend:'neutral',behindTrend:'neutral'};
  }
  // Un dépassement, un pit ou un changement de position peut remplacer P-1/P+1.
- // On ne compare jamais le nouvel adversaire à l'historique de l'ancien.
+ // Chaque côté repart de zéro indépendamment afin de ne jamais comparer deux adversaires différents.
  if(analyzerFollowedDeltaHistory.aheadKey!==data.aheadKey){
   analyzerFollowedDeltaHistory.aheadKey=data.aheadKey;
   analyzerFollowedDeltaHistory.ahead=data.aheadValue;
   analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit;
+  analyzerFollowedDeltaHistory.aheadSignature=aheadSignature;
   analyzerFollowedDeltaHistory.aheadTrend='neutral';
  }
  if(analyzerFollowedDeltaHistory.behindKey!==data.behindKey){
   analyzerFollowedDeltaHistory.behindKey=data.behindKey;
   analyzerFollowedDeltaHistory.behind=data.behindValue;
   analyzerFollowedDeltaHistory.behindUnit=data.behindUnit;
+  analyzerFollowedDeltaHistory.behindSignature=behindSignature;
   analyzerFollowedDeltaHistory.behindTrend='neutral';
  }
- if(signature&&signature!==analyzerFollowedDeltaHistory.signature){
-  const tolerance=.001;
+ const tolerance=.001;
+ // Règle Velocity DEVANT : si le retard diminue, on se rapproche => VERT.
+ if(aheadSignature&&aheadSignature!==analyzerFollowedDeltaHistory.aheadSignature){
   if(data.aheadUnit&&data.aheadUnit===analyzerFollowedDeltaHistory.aheadUnit&&Number.isFinite(data.aheadValue)&&Number.isFinite(analyzerFollowedDeltaHistory.ahead)){
    analyzerFollowedDeltaHistory.aheadTrend=data.aheadValue<analyzerFollowedDeltaHistory.ahead-tolerance?'good':data.aheadValue>analyzerFollowedDeltaHistory.ahead+tolerance?'bad':'neutral';
   }else analyzerFollowedDeltaHistory.aheadTrend='neutral';
+  analyzerFollowedDeltaHistory.aheadSignature=aheadSignature;
+  analyzerFollowedDeltaHistory.ahead=Number.isFinite(data.aheadValue)?data.aheadValue:null;
+  analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit||'';
+ }
+ // Règle Velocity DERRIÈRE : si notre avance augmente, on s'éloigne => VERT.
+ // Si elle diminue, le poursuivant revient => ORANGE.
+ if(behindSignature&&behindSignature!==analyzerFollowedDeltaHistory.behindSignature){
   if(data.behindUnit&&data.behindUnit===analyzerFollowedDeltaHistory.behindUnit&&Number.isFinite(data.behindValue)&&Number.isFinite(analyzerFollowedDeltaHistory.behind)){
    analyzerFollowedDeltaHistory.behindTrend=data.behindValue>analyzerFollowedDeltaHistory.behind+tolerance?'good':data.behindValue<analyzerFollowedDeltaHistory.behind-tolerance?'bad':'neutral';
   }else analyzerFollowedDeltaHistory.behindTrend='neutral';
-  analyzerFollowedDeltaHistory.signature=signature;
-  analyzerFollowedDeltaHistory.ahead=Number.isFinite(data.aheadValue)?data.aheadValue:null;
+  analyzerFollowedDeltaHistory.behindSignature=behindSignature;
   analyzerFollowedDeltaHistory.behind=Number.isFinite(data.behindValue)?data.behindValue:null;
-  analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit||'';
   analyzerFollowedDeltaHistory.behindUnit=data.behindUnit||'';
  }
  return {...data,aheadTrend:analyzerFollowedDeltaHistory.aheadTrend,behindTrend:analyzerFollowedDeltaHistory.behindTrend};

@@ -1,3 +1,13 @@
+# Velocity V7.2.129 — Delta devant / derrière indépendants
+
+- Sépare complètement l’historique de tendance du Delta devant et du Delta derrière.
+- Delta devant : échantillonné quand l’équipe suivie franchit la ligne, puisque la donnée native vient de `followed.interval`.
+- Delta derrière : échantillonné quand le poursuivant P+1 franchit la ligne, puisque la donnée native vient de `behind.interval`.
+- Règle Velocity devant : écart qui diminue = vert ; écart qui augmente = orange.
+- Règle Velocity derrière : avance qui augmente = vert ; avance qui diminue = orange.
+- Même comportement pour les écarts en secondes et en tours, avec remise à zéro indépendante si P-1 ou P+1 change.
+- La logique commune reste utilisée par Équipe suivie, Focus Sprint et Focus Endurance.
+
 # Velocity V7.2.128 — Delta Apex natif : écarts en tours
 
 - Delta commun : prise en charge des intervalles Apex exprimés en tours, y compris les libellés localisés (`Ronde(s)`, `Vuelta(s)`, `Runde(n)`, `Giro/Giri`, `Volta(s)`).
