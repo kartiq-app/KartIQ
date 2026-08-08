@@ -1,3 +1,9 @@
+# V7.2.116
+
+- Analyzer — carte **PÉNALITÉS ET INFORMATIONS** : numéro de kart, nom d’équipe et texte du message agrandis de 25 %.
+- La taille de l’heure reste inchangée.
+- Aucun changement sur les pénalités des autres modes.
+
 # V7.2.115
 
 - Analyzer uniquement : la carte PÉNALITÉS devient **PÉNALITÉS ET INFORMATIONS**.

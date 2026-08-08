@@ -2195,3 +2195,11 @@ html.velocity-member-shared-mode .testbar{display:none!important}
   .analyzer-ranking-table th{font-size:8px!important}
   .analyzer-penalties-head,.analyzer-penalty-row{grid-template-columns:var(--pen-pos-w,42px) var(--pen-in-w,24px) var(--pen-kart-w,44px) minmax(300px,1fr)!important;min-width:410px!important}
 }
+
+/* Velocity V7.2.116 — Pénalités et Informations : contenu +25 %, heure inchangée */
+.analyzer-penalty-kart{font-size:13.75px!important}
+.analyzer-penalty-team{font-size:13.75px!important}
+.analyzer-penalty-text{font-size:13.75px!important}
+.analyzer-penalty-combined{font-size:13.75px!important}
+.analyzer-penalty-combined .analyzer-penalty-team{font-size:13.75px!important}
+.analyzer-penalty-separator,.analyzer-penalty-combined .analyzer-penalty-text{font-size:13.75px!important}
