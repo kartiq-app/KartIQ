@@ -2135,3 +2135,63 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .analyzer-ranking-table th:nth-child(14),.analyzer-ranking-table td:nth-child(14){width:96px!important}
 .analyzer-ranking-table th:nth-child(15),.analyzer-ranking-table td:nth-child(15){width:64px!important}
 .analyzer-ranking-table th:nth-child(16),.analyzer-ranking-table td:nth-child(16){width:62px!important}
+
+
+/* Velocity V7.2.114 — LIVE sans scroll horizontal, règle pilote, pénalités compactes */
+/* Classement LIVE : toutes les colonnes restent visibles dans la largeur de la carte. */
+.analyzer-ranking-wrap{overflow-x:hidden!important;overflow-y:auto!important}
+.analyzer-ranking-table{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  table-layout:fixed!important;
+  font-size:10px!important;
+}
+.analyzer-ranking-table th,.analyzer-ranking-table td{
+  box-sizing:border-box!important;
+  padding-left:3px!important;
+  padding-right:3px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.analyzer-ranking-table th{font-size:8px!important;letter-spacing:.025em!important}
+.analyzer-ranking-table th:nth-child(1),.analyzer-ranking-table td:nth-child(1){width:4.2%!important}
+.analyzer-ranking-table th:nth-child(2),.analyzer-ranking-table td:nth-child(2){width:2.3%!important;min-width:0!important;max-width:none!important}
+.analyzer-ranking-table th:nth-child(3),.analyzer-ranking-table td:nth-child(3){width:4.2%!important}
+.analyzer-ranking-table th:nth-child(4),.analyzer-ranking-table td:nth-child(4),
+.analyzer-ranking-table.general-ranking-mode .a-team,
+.analyzer-ranking-table.virtual-ranking-mode .a-team{
+  width:22%!important;min-width:0!important;max-width:none!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.analyzer-ranking-table th:nth-child(5),.analyzer-ranking-table td:nth-child(5){width:6.2%!important}
+.analyzer-ranking-table th:nth-child(6),.analyzer-ranking-table td:nth-child(6){width:4.6%!important}
+.analyzer-ranking-table th:nth-child(7),.analyzer-ranking-table td:nth-child(7){width:6.2%!important}
+.analyzer-ranking-table th:nth-child(8),.analyzer-ranking-table td:nth-child(8){width:5.2%!important}
+.analyzer-ranking-table th:nth-child(9),.analyzer-ranking-table td:nth-child(9){width:5.8%!important}
+.analyzer-ranking-table th:nth-child(10),.analyzer-ranking-table td:nth-child(10){width:5.8%!important}
+.analyzer-ranking-table th:nth-child(11),.analyzer-ranking-table td:nth-child(11){width:6.2%!important}
+.analyzer-ranking-table th:nth-child(12),.analyzer-ranking-table td:nth-child(12){width:5.2%!important}
+.analyzer-ranking-table th:nth-child(13),.analyzer-ranking-table td:nth-child(13){width:4.4%!important}
+.analyzer-ranking-table th:nth-child(14),.analyzer-ranking-table td:nth-child(14){width:7.2%!important}
+.analyzer-ranking-table th:nth-child(15),.analyzer-ranking-table td:nth-child(15){width:5.0%!important}
+.analyzer-ranking-table th:nth-child(16),.analyzer-ranking-table td:nth-child(16){width:5.3%!important}
+
+/* PÉNALITÉS : HEURE / KART / ÉQUIPE : TEXTE, sans colonne PÉNALITÉS séparée. */
+.analyzer-penalties-head,.analyzer-penalty-row{
+  grid-template-columns:var(--pen-pos-w,48px) var(--pen-in-w,24px) var(--pen-kart-w,52px) minmax(0,1fr)!important;
+  column-gap:0!important;
+}
+.analyzer-penalties-head span:nth-child(1),.analyzer-penalty-row>*:nth-child(1){grid-column:1!important}
+.analyzer-penalties-head span:nth-child(2),.analyzer-penalty-row>*:nth-child(2){grid-column:3!important}
+.analyzer-penalties-head span:nth-child(3),.analyzer-penalty-row>*:nth-child(3){grid-column:4!important}
+.analyzer-penalties-head span:nth-child(n+4){display:none!important}
+.analyzer-penalty-combined{min-width:0;padding-left:8px;box-sizing:border-box;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;font-size:11px}
+.analyzer-penalty-combined .analyzer-penalty-team{display:inline;color:#fff;font-size:11px;font-weight:800;white-space:nowrap}
+.analyzer-penalty-separator,.analyzer-penalty-combined .analyzer-penalty-text{display:inline;color:#fff!important;font-size:11px;font-weight:400;white-space:nowrap}
+@media(max-width:700px){
+  .analyzer-ranking-wrap{overflow-x:auto!important}
+  .analyzer-ranking-table{min-width:1040px!important;font-size:9px!important}
+  .analyzer-ranking-table th{font-size:8px!important}
+  .analyzer-penalties-head,.analyzer-penalty-row{grid-template-columns:var(--pen-pos-w,42px) var(--pen-in-w,24px) var(--pen-kart-w,44px) minmax(300px,1fr)!important;min-width:410px!important}
+}

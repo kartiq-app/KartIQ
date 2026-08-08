@@ -1,3 +1,9 @@
+# V7.2.114
+
+- Analyzer : le Classement Live tient désormais intégralement dans la largeur de sa carte sur desktop, sans défilement horizontal.
+- Conformité réglementaire : « Cadence requise » devient « Temps mini. par pilote » et reprend directement le paramètre règlementaire « Temps minimum par pilote (minutes) ».
+- Pénalités : suppression de la colonne/en-tête PÉNALITÉS ; chaque ligne affiche désormais « ÉQUIPE : TEXTE DE LA PÉNALITÉ » après HEURE et KART.
+
 # V7.2.113
 - Météo horaire : textes et icônes réduits de 25 %, typographie affinée.
 - Pénalités : hauteur des lignes réduite de 25 %.

@@ -1568,7 +1568,7 @@ function renderAnalyzerPenalties(){
  if(!items.length){host.innerHTML='<div class="analyzer-empty">Aucune pénalité Apex.</div>';analyzerSyncPenaltyColumns();return;}
  host.innerHTML=items.map(p=>{
   const team=String(p?.driver||'—'),kart=String(p?.kart||'').trim(),text=String(p?.penalty||p?.comment||'Pénalité').trim()||'Pénalité';
-  return `<div class="analyzer-penalty-row" role="row"><span class="analyzer-penalty-time" role="cell">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-kart" role="cell">${kart?analyzerEscape(kart):'—'}</span><span class="analyzer-penalty-team" role="cell">${analyzerEscape(team)}</span><span class="analyzer-penalty-text" role="cell">${analyzerEscape(text)}</span></div>`;
+  return `<div class="analyzer-penalty-row" role="row"><span class="analyzer-penalty-time" role="cell">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-kart" role="cell">${kart?analyzerEscape(kart):'—'}</span><span class="analyzer-penalty-combined" role="cell"><strong class="analyzer-penalty-team">${analyzerEscape(team)}</strong><span class="analyzer-penalty-separator"> : </span><span class="analyzer-penalty-text">${analyzerEscape(text)}</span></span></div>`;
  }).join('');
  analyzerSyncPenaltyColumns();
 }
@@ -1598,7 +1598,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerRuleRelay').textContent=`${analyzerFormatDuration(analyzerRules.minStintMinutes*60)} → ${analyzerFormatDuration(analyzerRules.maxStintMinutes*60)}`;
  document.getElementById('analyzerRulePit').textContent=analyzerFormatDuration(analyzerRules.minPitSeconds);
  document.getElementById('analyzerStopsRemaining').textContent=String(stops.remaining);
- document.getElementById('analyzerStopCadence').textContent=Number.isFinite(stops.cadence)?`1 / ${analyzerFormatDuration(stops.cadence)}`:'—';
+ document.getElementById('analyzerStopCadence').textContent=Number.isFinite(analyzerRules.driverMinimumMinutes)?analyzerFormatDuration(analyzerRules.driverMinimumMinutes*60,{compact:true}):'—';
  renderAnalyzerRulesPilots(followed);
  const max=analyzerRules.maxStintMinutes*60,min=analyzerRules.minStintMinutes*60;
  const rulesStatus=document.getElementById('analyzerRulesStatus');rulesStatus.className='rules-status';
