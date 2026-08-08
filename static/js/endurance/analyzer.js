@@ -29,6 +29,8 @@ let analyzerVelocityView='velocity';
 let analyzerRelayScoreData=null;
 let analyzerRelayScoreLoading=false;
 let analyzerRelayScoreLoadToken=0;
+let analyzerRelayScoreScrollLeft=0;
+let analyzerRelayScoreScrollBound=false;
 let analyzerActiveSessionId=null;
 let analyzerSessionCircuitId=null;
 let analyzerLastSessionSaveAt=0;
@@ -995,12 +997,21 @@ function analyzerRefreshVelocityDeltaCells(){
 }
 
 function setAnalyzerVelocityView(view){
- analyzerVelocityView=view==='relays'?'relays':'velocity';
+ const nextView=view==='relays'?'relays':'velocity';
+ const enteringRelays=nextView==='relays'&&analyzerVelocityView!=='relays';
+ analyzerVelocityView=nextView;
+ if(enteringRelays)analyzerRelayScoreScrollLeft=0;
  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
  const sort=document.querySelector('.analyzer-kartiq-sort');if(sort)sort.hidden=analyzerVelocityView==='relays';
  renderAnalyzer();
- if(analyzerVelocityView==='relays')analyzerLoadRelayScores();
+ if(analyzerVelocityView==='relays'){
+  requestAnimationFrame(()=>{
+   const host=document.getElementById('analyzerKartMarket');
+   if(host)host.scrollLeft=enteringRelays?0:Math.min(analyzerRelayScoreScrollLeft,Math.max(0,host.scrollWidth-host.clientWidth));
+  });
+  analyzerLoadRelayScores();
+ }
 }
 function analyzerRenderRelayScoreTable(marketByScore){
  const host=document.getElementById('analyzerKartMarket');if(!host)return;
@@ -1008,7 +1019,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
  if(analyzerRelayScoreLoading&&!analyzerRelayScoreData){host.innerHTML='<div class="analyzer-empty">Reconstruction des relais depuis STATS…</div>';return}
  const data=analyzerRelayScoreData;if(!data){host.innerHTML='<div class="analyzer-empty">Cliquez sur SCORE RELAIS pour reconstruire les relais depuis STATS.</div>';return}
  if(Date.now()-data.updatedAt>60000&&!analyzerRelayScoreLoading)setTimeout(()=>analyzerLoadRelayScores({force:true}),0);
- const scrollLeft=host.scrollLeft||0,maxRelay=Math.max(1,data.maxRelay||0),relayHeaders=Array.from({length:maxRelay},(_,i)=>`<th class="relay-score-col">R${i+1}</th>`).join('');
+ const maxRelay=Math.max(1,data.maxRelay||0),relayHeaders=Array.from({length:maxRelay},(_,i)=>`<th class="relay-score-col">R${i+1}</th>`).join('');
  const byRow=new Map(data.teams.map(team=>[Number(team.driver.apex_row),team]));
  const rows=ordered.map(item=>{
   const d=item.driver,rowId=Number(d.apex_row),team=byRow.get(rowId),scores=data.matrix.get(rowId)||new Map(),kart=validKartNumber(d)||d.apex||'—';
@@ -1017,7 +1028,15 @@ function analyzerRenderRelayScoreTable(marketByScore){
  }).join('');
  const qualLabel=data.qualification?.session?.name?`R1 référencé sur ${analyzerEscape(data.qualification.session.name)}`:'R1 sans qualification reconnue : transition neutralisée';
  host.innerHTML=`<div class="relay-score-meta">${qualLabel} · Scores reconstruits depuis les tours et arrêts STATS Apex.</div><table class="analyzer-kartiq-table relay-score-table"><thead><tr><th class="sticky-id sticky-top">TOP</th><th class="sticky-id sticky-pos">POS</th><th class="sticky-id sticky-kart">KART</th><th class="sticky-id sticky-team">ÉQUIPE / PILOTE</th>${relayHeaders}</tr></thead><tbody>${rows}</tbody></table>`;
- host.scrollLeft=scrollLeft;
+ host.classList.add('relay-score-scroll-host');
+ if(!host.dataset.relayScoreScrollBound){
+  host.addEventListener('scroll',()=>{if(analyzerVelocityView==='relays')analyzerRelayScoreScrollLeft=host.scrollLeft},{passive:true});
+  host.dataset.relayScoreScrollBound='1';
+ }
+ requestAnimationFrame(()=>{
+  const maxScroll=Math.max(0,host.scrollWidth-host.clientWidth);
+  host.scrollLeft=Math.min(Math.max(0,analyzerRelayScoreScrollLeft),maxScroll);
+ });
 }
 
 const VELOCITY_ENGINE_VERSION='1.0';

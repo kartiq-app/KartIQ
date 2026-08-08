@@ -1,3 +1,11 @@
+# V7.2.119 — Navigation complète Score Relais
+
+- La vue SCORE RELAIS s’ouvre désormais systématiquement sur R1.
+- Le défilement horizontal est indépendant de la vue VELOCITY et peut revenir complètement à gauche jusqu’à R1.
+- La position de scroll est conservée pendant les rafraîchissements de SCORE RELAIS, sans être écrasée par les rerenders STATS.
+- Les colonnes TOP | POS | KART | ÉQUIPE / PILOTE restent figées pendant la navigation horizontale.
+- Amélioration du swipe horizontal sur mobile et trackpad.
+
 # V7.2.118 — TRAFIC + Heat Map unifiés sur le tracking Apex
 
 - Heat Map et TRAFIC utilisent désormais la même phase Apex par concurrent.
