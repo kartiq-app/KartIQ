@@ -152,7 +152,9 @@ function sprintReferenceFor(driver){
 function raceGapSeconds(value){
  const raw=String(value??'').trim().replace(',', '.');
  if(!raw||raw==='—'||raw==='--')return null;
- if(/lap|tour/i.test(raw))return null;
+ // Ne jamais convertir un écart exprimé en tours en secondes. Apex localise
+ // parfois cette valeur (Rondes, Vueltas, Runden, Giri, Voltas...).
+ if(raceLapInterval(raw)!==null)return null;
  const cleaned=raw.replace(/[+\s]|s(ec)?\.?$/gi,'');
  const parts=cleaned.split(':').map(Number);
  if(parts.some(v=>!Number.isFinite(v)))return null;
@@ -181,7 +183,9 @@ function directRaceGap(behind,ahead){
 }
 function raceLapInterval(value){
  const raw=String(value??'').trim();
- const match=raw.match(/(\d+(?:[.,]\d+)?)\s*(?:lap|laps|tour|tours)/i);
+ // Vocabulaire observé / plausible selon la langue configurée dans Apex.
+ // Le nombre reste la donnée utile ; l'affichage Velocity est normalisé en français.
+ const match=raw.match(/(\d+(?:[.,]\d+)?)\s*(?:laps?|tours?|rondes?|vueltas?|runden?|runde|giri|giro|voltas?|okr(?:ą|a)żenia|okrążenie)/i);
  if(!match)return null;
  const laps=Number(match[1].replace(',', '.'));
  return Number.isFinite(laps)&&laps>0?laps:null;

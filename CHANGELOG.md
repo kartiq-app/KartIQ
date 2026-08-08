@@ -1,3 +1,10 @@
+# Velocity V7.2.128 — Delta Apex natif : écarts en tours
+
+- Delta commun : prise en charge des intervalles Apex exprimés en tours, y compris les libellés localisés (`Ronde(s)`, `Vuelta(s)`, `Runde(n)`, `Giro/Giri`, `Volta(s)`).
+- Empêche qu’un écart tel que `3 Rondes` soit interprété comme `3 secondes`.
+- Équipe suivie, Focus Sprint et Focus Endurance utilisent la même logique temps/tours.
+- La tendance vert/orange n’est comparée que si l’unité reste identique entre deux mesures ; un passage secondes ↔ tours repart neutre.
+
 # Velocity V7.2.127 — Delta Apex natif
 
 - Focus Sprint, Focus Endurance et Équipe suivie utilisent désormais une source Delta commune.

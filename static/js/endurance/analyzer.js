@@ -1390,17 +1390,23 @@ function analyzerRefreshKartRelayCountdowns(){
 }
 if(!window.__kartiqRelayCountdownTimer){window.__kartiqRelayCountdownTimer=setInterval(analyzerRefreshKartRelayCountdowns,1000)}
 
-const analyzerFollowedDeltaHistory={driver:'',signature:null,ahead:null,behind:null,aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'};
+const analyzerFollowedDeltaHistory={driver:'',signature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'};
+function analyzerGapMetric(value){
+ const raw=String(value??'').trim();
+ if(!raw||raw==='—'||raw==='--')return {value:null,unit:''};
+ const lapValue=typeof raceLapInterval==='function'?raceLapInterval(raw):null;
+ if(Number.isFinite(lapValue))return {value:lapValue,unit:'laps'};
+ const normalized=raw.replace(',','.');
+ const match=normalized.match(/-?\d+(?:\.\d+)?/);if(!match)return {value:null,unit:''};
+ const n=Math.abs(Number(match[0]));return Number.isFinite(n)?{value:n,unit:'seconds'}:{value:null,unit:''};
+}
 function analyzerGapSeconds(value){
- const raw=String(value??'').trim().replace(',','.');
- if(!raw||raw==='—'||raw==='--'||/lap|tour/i.test(raw))return null;
- const match=raw.match(/-?\d+(?:\.\d+)?/);if(!match)return null;
- const n=Math.abs(Number(match[0]));return Number.isFinite(n)?n:null;
+ const metric=analyzerGapMetric(value);return metric.unit==='seconds'?metric.value:null;
 }
 function analyzerSignedDelta(value,sign){
  const raw=String(value??'').trim();
  if(!raw||raw==='—'||raw==='--')return '—';
- if(/lap|tour/i.test(raw))return `${sign}${raw.replace(/^[+-]\s*/,'')}`;
+ if(typeof raceLapInterval==='function'&&Number.isFinite(raceLapInterval(raw)))return `${sign}${raw.replace(/^[+-]\s*/,'')}`;
  const seconds=analyzerGapSeconds(raw);return Number.isFinite(seconds)?`${sign}${seconds.toFixed(2)}`:'—';
 }
 function analyzerDeltaSignature(followed){
@@ -1424,10 +1430,13 @@ function analyzerFollowedNeighbors(followed){
  // data-type="int" Apex, puis gap leader, puis renvoie -- si rien n'est exploitable.
  const aheadText=ahead&&typeof formatRaceInterval==='function'?formatRaceInterval(followed,ahead,'+'):'—';
  const behindText=behind&&typeof formatRaceInterval==='function'?formatRaceInterval(behind,followed,'-'):'—';
+ const aheadMetric=analyzerGapMetric(aheadText),behindMetric=analyzerGapMetric(behindText);
  return {
   ahead,behind,
-  aheadValue:ahead?analyzerGapSeconds(aheadText):null,
-  behindValue:behind?analyzerGapSeconds(behindText):null,
+  aheadValue:ahead?aheadMetric.value:null,
+  behindValue:behind?behindMetric.value:null,
+  aheadUnit:ahead?aheadMetric.unit:'',
+  behindUnit:behind?behindMetric.unit:'',
   aheadText:aheadText&&aheadText!=='--'?aheadText:'—',
   behindText:behindText&&behindText!=='--'?behindText:'—',
   aheadKey:analyzerDeltaCompetitorKey(ahead),
@@ -1436,11 +1445,11 @@ function analyzerFollowedNeighbors(followed){
 }
 function analyzerUpdateFollowedDeltas(followed){
  const data=analyzerFollowedNeighbors(followed);
- if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',signature:null,ahead:null,behind:null,aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
+ if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',signature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
  const driverKey=analyzerDeltaCompetitorKey(followed)||String(state?.followed_driver||followed.pos||'');
  const signature=analyzerDeltaSignature(followed);
  if(analyzerFollowedDeltaHistory.driver!==driverKey){
-  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,signature,ahead:data.aheadValue,behind:data.behindValue,aheadKey:data.aheadKey,behindKey:data.behindKey,aheadTrend:'neutral',behindTrend:'neutral'});
+  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,signature,ahead:data.aheadValue,behind:data.behindValue,aheadUnit:data.aheadUnit,behindUnit:data.behindUnit,aheadKey:data.aheadKey,behindKey:data.behindKey,aheadTrend:'neutral',behindTrend:'neutral'});
   return {...data,aheadTrend:'neutral',behindTrend:'neutral'};
  }
  // Un dépassement, un pit ou un changement de position peut remplacer P-1/P+1.
@@ -1448,24 +1457,28 @@ function analyzerUpdateFollowedDeltas(followed){
  if(analyzerFollowedDeltaHistory.aheadKey!==data.aheadKey){
   analyzerFollowedDeltaHistory.aheadKey=data.aheadKey;
   analyzerFollowedDeltaHistory.ahead=data.aheadValue;
+  analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit;
   analyzerFollowedDeltaHistory.aheadTrend='neutral';
  }
  if(analyzerFollowedDeltaHistory.behindKey!==data.behindKey){
   analyzerFollowedDeltaHistory.behindKey=data.behindKey;
   analyzerFollowedDeltaHistory.behind=data.behindValue;
+  analyzerFollowedDeltaHistory.behindUnit=data.behindUnit;
   analyzerFollowedDeltaHistory.behindTrend='neutral';
  }
  if(signature&&signature!==analyzerFollowedDeltaHistory.signature){
   const tolerance=.001;
-  if(Number.isFinite(data.aheadValue)&&Number.isFinite(analyzerFollowedDeltaHistory.ahead)){
+  if(data.aheadUnit&&data.aheadUnit===analyzerFollowedDeltaHistory.aheadUnit&&Number.isFinite(data.aheadValue)&&Number.isFinite(analyzerFollowedDeltaHistory.ahead)){
    analyzerFollowedDeltaHistory.aheadTrend=data.aheadValue<analyzerFollowedDeltaHistory.ahead-tolerance?'good':data.aheadValue>analyzerFollowedDeltaHistory.ahead+tolerance?'bad':'neutral';
-  }else if(!Number.isFinite(data.aheadValue))analyzerFollowedDeltaHistory.aheadTrend='neutral';
-  if(Number.isFinite(data.behindValue)&&Number.isFinite(analyzerFollowedDeltaHistory.behind)){
+  }else analyzerFollowedDeltaHistory.aheadTrend='neutral';
+  if(data.behindUnit&&data.behindUnit===analyzerFollowedDeltaHistory.behindUnit&&Number.isFinite(data.behindValue)&&Number.isFinite(analyzerFollowedDeltaHistory.behind)){
    analyzerFollowedDeltaHistory.behindTrend=data.behindValue>analyzerFollowedDeltaHistory.behind+tolerance?'good':data.behindValue<analyzerFollowedDeltaHistory.behind-tolerance?'bad':'neutral';
-  }else if(!Number.isFinite(data.behindValue))analyzerFollowedDeltaHistory.behindTrend='neutral';
+  }else analyzerFollowedDeltaHistory.behindTrend='neutral';
   analyzerFollowedDeltaHistory.signature=signature;
   analyzerFollowedDeltaHistory.ahead=Number.isFinite(data.aheadValue)?data.aheadValue:null;
   analyzerFollowedDeltaHistory.behind=Number.isFinite(data.behindValue)?data.behindValue:null;
+  analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit||'';
+  analyzerFollowedDeltaHistory.behindUnit=data.behindUnit||'';
  }
  return {...data,aheadTrend:analyzerFollowedDeltaHistory.aheadTrend,behindTrend:analyzerFollowedDeltaHistory.behindTrend};
 }

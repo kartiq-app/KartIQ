@@ -146,7 +146,7 @@ class RaceStateService:
         raw = str(value or "").strip().replace(",", ".")
         if not raw or raw in {"—", "--"}:
             return None
-        if "lap" in raw.lower() or "tour" in raw.lower():
+        if self.race_lap_interval(raw) is not None:
             return None
         raw = raw.lstrip("+").rstrip(" s")
         try:
@@ -178,7 +178,7 @@ class RaceStateService:
     @staticmethod
     def race_lap_interval(value):
         raw = str(value or "").strip()
-        match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:lap|laps|tour|tours)", raw, re.I)
+        match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:laps?|tours?|rondes?|vueltas?|runden?|runde|giri|giro|voltas?|okr(?:ą|a)żenia|okrążenie)", raw, re.I)
         if not match:
             return None
         try:
