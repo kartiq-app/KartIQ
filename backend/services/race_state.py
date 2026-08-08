@@ -145,7 +145,7 @@ class RaceStateService:
     def race_gap_seconds(self, value):
         raw = str(value or "").strip().replace(",", ".")
         if not raw or raw in {"—", "--"}:
-            return 0.0
+            return None
         if "lap" in raw.lower() or "tour" in raw.lower():
             return None
         raw = raw.lstrip("+").rstrip(" s")
@@ -164,12 +164,16 @@ class RaceStateService:
     def direct_race_gap(self, behind, ahead):
         if not behind or not ahead:
             return None
+        # Apex expose directement l'écart au concurrent précédent dans data-type="int".
+        # Cette donnée native est prioritaire ; gap leader ne sert que de fallback.
+        interval = self.race_gap_seconds(behind.get("interval"))
+        if interval is not None:
+            return max(0.0, interval)
         behind_gap = self.race_gap_seconds(behind.get("gap"))
         ahead_gap = 0.0 if ahead.get("pos") == 1 else self.race_gap_seconds(ahead.get("gap"))
         if behind_gap is not None and ahead_gap is not None and behind_gap >= ahead_gap:
             return behind_gap - ahead_gap
-        interval = self.race_gap_seconds(behind.get("interval"))
-        return interval
+        return None
 
     @staticmethod
     def race_lap_interval(value):

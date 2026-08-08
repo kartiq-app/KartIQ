@@ -1,3 +1,14 @@
+# Velocity V7.2.127 — Delta Apex natif
+
+- Focus Sprint, Focus Endurance et Équipe suivie utilisent désormais une source Delta commune.
+- `interval` (`data-type="int"`) Apex devient la source prioritaire pour l'écart au concurrent immédiatement devant.
+- L'écart derrière utilise l'`interval` Apex du concurrent P+1, donc son retard direct sur l'équipe suivie.
+- `gap` au leader n'est utilisé qu'en fallback si `interval` est indisponible.
+- Suppression de la priorité donnée au recalcul par nombre de tours dans la carte Équipe suivie.
+- Les couleurs vert/orange utilisent exactement les mêmes valeurs que les écarts affichés.
+- L'historique Delta est réinitialisé séparément lorsque P-1 ou P+1 change, pour éviter de comparer deux adversaires différents.
+- Le backend applique la même priorité Apex native pour rester cohérent avec l'interface.
+
 # Velocity V7.2.126 — Notifications Analyzer Apex
 
 - Analyzer : nouvelle notification orange en haut à droite, à l’opposé de **ENDURANCE**, pour les nouveaux événements Apex.

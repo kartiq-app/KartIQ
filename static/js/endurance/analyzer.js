@@ -1390,7 +1390,7 @@ function analyzerRefreshKartRelayCountdowns(){
 }
 if(!window.__kartiqRelayCountdownTimer){window.__kartiqRelayCountdownTimer=setInterval(analyzerRefreshKartRelayCountdowns,1000)}
 
-const analyzerFollowedDeltaHistory={driver:'',signature:null,ahead:null,behind:null,aheadTrend:'neutral',behindTrend:'neutral'};
+const analyzerFollowedDeltaHistory={driver:'',signature:null,ahead:null,behind:null,aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'};
 function analyzerGapSeconds(value){
  const raw=String(value??'').trim().replace(',','.');
  if(!raw||raw==='—'||raw==='--'||/lap|tour/i.test(raw))return null;
@@ -1410,41 +1410,62 @@ function analyzerDeltaSignature(followed){
  const lastPart=String(followed.last||followed.last_lap||'').trim();
  return `${lapPart}|${lastPart}`;
 }
+function analyzerDeltaCompetitorKey(driver){
+ if(!driver)return '';
+ const apexRow=Number(driver.apex_row);
+ if(Number.isFinite(apexRow)&&apexRow>0)return `r${apexRow}`;
+ return String(driver.driver||driver.team||driver.pos||'');
+}
 function analyzerFollowedNeighbors(followed){
- if(!followed)return {ahead:null,behind:null,aheadValue:null,behindValue:null,aheadText:'—',behindText:'—'};
- // Source unique avec les modes Focus Sprint / Endurance.
+ if(!followed)return {ahead:null,behind:null,aheadValue:null,behindValue:null,aheadText:'—',behindText:'—',aheadKey:'',behindKey:''};
  const ahead=typeof sprintDriverAhead==='function'?sprintDriverAhead(followed):null;
  const behind=typeof sprintDriverBehind==='function'?sprintDriverBehind(followed):null;
- const lapDiffAhead=ahead?Math.max(0,(Number(ahead.laps)||0)-(Number(followed?.laps)||0)):0;
- const lapDiffBehind=behind?Math.max(0,(Number(followed?.laps)||0)-(Number(behind.laps)||0)):0;
- const aheadText=lapDiffAhead>=1?`+${lapDiffAhead} ${lapDiffAhead===1?'tour':'tours'}`:(ahead&&typeof sprintGapAhead==='function'?sprintGapAhead(followed):'—');
- const behindText=lapDiffBehind>=1?`-${lapDiffBehind} ${lapDiffBehind===1?'tour':'tours'}`:(behind&&typeof sprintGapBehind==='function'?sprintGapBehind(followed):'—');
+ // Même source que Focus Sprint / Endurance : formatRaceInterval privilégie
+ // data-type="int" Apex, puis gap leader, puis renvoie -- si rien n'est exploitable.
+ const aheadText=ahead&&typeof formatRaceInterval==='function'?formatRaceInterval(followed,ahead,'+'):'—';
+ const behindText=behind&&typeof formatRaceInterval==='function'?formatRaceInterval(behind,followed,'-'):'—';
  return {
   ahead,behind,
   aheadValue:ahead?analyzerGapSeconds(aheadText):null,
   behindValue:behind?analyzerGapSeconds(behindText):null,
   aheadText:aheadText&&aheadText!=='--'?aheadText:'—',
-  behindText:behindText&&behindText!=='--'?behindText:'—'
+  behindText:behindText&&behindText!=='--'?behindText:'—',
+  aheadKey:analyzerDeltaCompetitorKey(ahead),
+  behindKey:analyzerDeltaCompetitorKey(behind)
  };
 }
 function analyzerUpdateFollowedDeltas(followed){
  const data=analyzerFollowedNeighbors(followed);
- if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',signature:null,ahead:null,behind:null,aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
- const driverKey=String(followed.driver||state?.followed_driver||followed.pos||'');
+ if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',signature:null,ahead:null,behind:null,aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
+ const driverKey=analyzerDeltaCompetitorKey(followed)||String(state?.followed_driver||followed.pos||'');
  const signature=analyzerDeltaSignature(followed);
  if(analyzerFollowedDeltaHistory.driver!==driverKey){
-  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,signature,ahead:data.aheadValue,behind:data.behindValue,aheadTrend:'neutral',behindTrend:'neutral'});
- }else if(signature&&signature!==analyzerFollowedDeltaHistory.signature){
+  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,signature,ahead:data.aheadValue,behind:data.behindValue,aheadKey:data.aheadKey,behindKey:data.behindKey,aheadTrend:'neutral',behindTrend:'neutral'});
+  return {...data,aheadTrend:'neutral',behindTrend:'neutral'};
+ }
+ // Un dépassement, un pit ou un changement de position peut remplacer P-1/P+1.
+ // On ne compare jamais le nouvel adversaire à l'historique de l'ancien.
+ if(analyzerFollowedDeltaHistory.aheadKey!==data.aheadKey){
+  analyzerFollowedDeltaHistory.aheadKey=data.aheadKey;
+  analyzerFollowedDeltaHistory.ahead=data.aheadValue;
+  analyzerFollowedDeltaHistory.aheadTrend='neutral';
+ }
+ if(analyzerFollowedDeltaHistory.behindKey!==data.behindKey){
+  analyzerFollowedDeltaHistory.behindKey=data.behindKey;
+  analyzerFollowedDeltaHistory.behind=data.behindValue;
+  analyzerFollowedDeltaHistory.behindTrend='neutral';
+ }
+ if(signature&&signature!==analyzerFollowedDeltaHistory.signature){
   const tolerance=.001;
   if(Number.isFinite(data.aheadValue)&&Number.isFinite(analyzerFollowedDeltaHistory.ahead)){
    analyzerFollowedDeltaHistory.aheadTrend=data.aheadValue<analyzerFollowedDeltaHistory.ahead-tolerance?'good':data.aheadValue>analyzerFollowedDeltaHistory.ahead+tolerance?'bad':'neutral';
-  }
+  }else if(!Number.isFinite(data.aheadValue))analyzerFollowedDeltaHistory.aheadTrend='neutral';
   if(Number.isFinite(data.behindValue)&&Number.isFinite(analyzerFollowedDeltaHistory.behind)){
    analyzerFollowedDeltaHistory.behindTrend=data.behindValue>analyzerFollowedDeltaHistory.behind+tolerance?'good':data.behindValue<analyzerFollowedDeltaHistory.behind-tolerance?'bad':'neutral';
-  }
+  }else if(!Number.isFinite(data.behindValue))analyzerFollowedDeltaHistory.behindTrend='neutral';
   analyzerFollowedDeltaHistory.signature=signature;
-  if(Number.isFinite(data.aheadValue))analyzerFollowedDeltaHistory.ahead=data.aheadValue;
-  if(Number.isFinite(data.behindValue))analyzerFollowedDeltaHistory.behind=data.behindValue;
+  analyzerFollowedDeltaHistory.ahead=Number.isFinite(data.aheadValue)?data.aheadValue:null;
+  analyzerFollowedDeltaHistory.behind=Number.isFinite(data.behindValue)?data.behindValue:null;
  }
  return {...data,aheadTrend:analyzerFollowedDeltaHistory.aheadTrend,behindTrend:analyzerFollowedDeltaHistory.behindTrend};
 }

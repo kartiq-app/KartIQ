@@ -151,7 +151,7 @@ function sprintReferenceFor(driver){
 }
 function raceGapSeconds(value){
  const raw=String(value??'').trim().replace(',', '.');
- if(!raw||raw==='—'||raw==='--')return 0;
+ if(!raw||raw==='—'||raw==='--')return null;
  if(/lap|tour/i.test(raw))return null;
  const cleaned=raw.replace(/[+\s]|s(ec)?\.?$/gi,'');
  const parts=cleaned.split(':').map(Number);
@@ -167,13 +167,17 @@ function formatRaceGap(seconds){
 }
 function directRaceGap(behind,ahead){
  if(!behind||!ahead)return null;
+ // Source native Apex prioritaire : l'intervalle de la ligne "behind" est
+ // directement son écart avec le concurrent qui la précède.
+ const interval=raceGapSeconds(behind.interval);
+ if(Number.isFinite(interval))return Math.max(0,interval);
+ // Fallback uniquement si la piste/session ne fournit pas data-type="int".
  const behindGap=raceGapSeconds(behind.gap);
  const aheadGap=Number(ahead.pos)===1?0:raceGapSeconds(ahead.gap);
  if(Number.isFinite(behindGap)&&Number.isFinite(aheadGap)&&behindGap>=aheadGap){
   return behindGap-aheadGap;
  }
- const interval=raceGapSeconds(behind.interval);
- return Number.isFinite(interval)?interval:null;
+ return null;
 }
 function raceLapInterval(value){
  const raw=String(value??'').trim();
