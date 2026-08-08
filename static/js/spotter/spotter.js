@@ -1,10 +1,10 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.101';
+const SPOTTER_APP_RELEASE='7.2.102';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
- freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,incomingQueueSelections:{},undoSnapshot:null
+ freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,autoNextFile:1,incomingQueueSelections:{},undoSnapshot:null
 };
 function spotterPadKv(index){return `KV${String(index+1).padStart(2,'0')}`}
 function spotterKvFromNumber(number){return `KV${String(Math.max(1,Number(number)||1)).padStart(2,'0')}`}
@@ -28,6 +28,7 @@ function spotterEnsureSetupDefaults(){
  if(!Array.isArray(spotterState.incoming))spotterState.incoming=[];
  spotterState.incoming=spotterState.incoming.filter(item=>item&&item.id&&item.team&&item.returnedKv&&item.source!=='dev');
  if(typeof spotterState.freeMode!=='boolean')spotterState.freeMode=false;
+ if(!Number.isFinite(Number(spotterState.autoNextFile)))spotterState.autoNextFile=1;
  if(!Number.isFinite(Number(spotterState.freePitIns)))spotterState.freePitIns=0;
  if(!Number.isFinite(Number(spotterState.freePitOuts)))spotterState.freePitOuts=0;
  if(typeof spotterState.freeNeedsRecalibration!=='boolean')spotterState.freeNeedsRecalibration=false;
@@ -71,7 +72,8 @@ function spotterUndoState(){
   freePitIns:Number(spotterState.freePitIns)||0,
   freePitOuts:Number(spotterState.freePitOuts)||0,
   freeNeedsRecalibration:Boolean(spotterState.freeNeedsRecalibration),
-  recalibrating:Boolean(spotterState.recalibrating)
+  recalibrating:Boolean(spotterState.recalibrating),
+  autoNextFile:Number(spotterState.autoNextFile)||1
  };
 }
 function spotterRememberUndo(){spotterState.undoSnapshot=spotterUndoState()}
@@ -113,6 +115,7 @@ function spotterApplyRemoteSnapshot(remote){
   spotterState.freeStartedAt=remote.free_started_at||null;
   spotterState.freePitIns=Number(remote.pit_ins)||0;
   spotterState.freePitOuts=Number(remote.pit_outs)||0;
+  spotterState.autoNextFile=Math.max(1,Math.min(spotterState.mode,Number(remote.auto_next_file)||1));
   spotterPublishSharedState(remote);
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:5,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
   if(document.body.classList.contains('current-spotter')&&!spotterDrag?.active&&!spotterDrag?.timer){
@@ -161,7 +164,7 @@ function spotterSharedSnapshot(){
   mode:spotterState.recalibrating?'recalibrating':(spotterState.freeMode?'auto':'live'),
   queue:clone(spotterState.queue||[]),maintenance:clone(spotterState.maintenance||[]),incoming:clone(spotterState.incoming||[]),
   assignments:clone(spotterState.assignments||{}),movement_log:clone((spotterState.movementLog||[]).slice(0,40)),incoming_queue_selections:clone(spotterState.incomingQueueSelections||{}),
-  free_started_at:spotterState.freeStartedAt||null,pit_ins:Number(spotterState.freePitIns)||0,pit_outs:Number(spotterState.freePitOuts)||0,recalibrating:Boolean(spotterState.recalibrating)
+  free_started_at:spotterState.freeStartedAt||null,pit_ins:Number(spotterState.freePitIns)||0,pit_outs:Number(spotterState.freePitOuts)||0,recalibrating:Boolean(spotterState.recalibrating),auto_next_file:Number(spotterState.autoNextFile)||1
  };
 }
 function spotterPublishSharedState(snapshot=null){
@@ -297,7 +300,7 @@ function launchSpotterFoundation(){
  const karts=spotterState.setupKarts.filter(kart=>String(kart||'').trim()).map((kart,index)=>({cardId:spotterCardId('queue'),kv:spotterPadKv(index),apexKart:String(kart).trim(),lastTeam:'Initialisation',score:null,confidence:null,status:'available',queueFile:(index%spotterState.mode)+1}));
  if(!karts.length)return;
  const seeded=spotterSeedGridAssignments(karts.length+1);
- spotterState.queue=karts;spotterState.incoming=[];spotterState.maintenance=[];spotterState.assignments=seeded.assignments;spotterState.nextKvNumber=seeded.next;spotterState.movementLog=[];spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;spotterState.freeMode=false;spotterState.freeStartedAt=null;spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.configured=true;
+ spotterState.queue=karts;spotterState.incoming=[];spotterState.maintenance=[];spotterState.assignments=seeded.assignments;spotterState.nextKvNumber=seeded.next;spotterState.movementLog=[];spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;spotterState.freeMode=false;spotterState.freeStartedAt=null;spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.autoNextFile=1;spotterState.configured=true;
  const setupOrigin=spotterSetupOrigin;spotterSetupDraft=null;spotterSetupOrigin='spotter';spotterSetupRequested=false;
  saveSpotterFoundation();spotterUiStep='live';renderSpotterFoundation('live');
  if(setupOrigin==='analyzer')setTimeout(()=>showMode('analyzer'),0);
@@ -307,7 +310,7 @@ function launchSpotterFoundation(){
 }
 function resetSpotterFoundation(){
  if(!confirm('Réinitialiser la configuration Spotter ?'))return;
- Object.assign(spotterState,{mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,configured:false});
+ Object.assign(spotterState,{mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,autoNextFile:1,configured:false});
  saveSpotterFoundation();spotterUiStep='mode';renderSpotterFoundation('mode');
 }
 function spotterAllocateKv(){const kv=spotterKvFromNumber(spotterState.nextKvNumber);spotterState.nextKvNumber+=1;return kv}
@@ -319,6 +322,26 @@ function spotterEnsureAssignment(team,driver=null){
  const metrics=spotterMetricsForDriver(driver||spotterFindDriver(key));
  const assignment={cardId:spotterCardId('track'),kv:spotterAllocateKv(),apexKart:String(driver?.apex||driver?.kart||'—'),lastTeam:key,currentTeam:key,score:metrics.score,confidence:metrics.confidence,status:'track'};
  spotterState.assignments[key]=assignment;return assignment;
+}
+function spotterAutoQueueFile(){
+ const count=Math.max(1,Math.min(3,Number(spotterState.mode)||1));
+ const start=Math.max(1,Math.min(count,Number(spotterState.autoNextFile)||1));
+ for(let offset=0;offset<count;offset++){
+  const file=((start-1+offset)%count)+1;
+  if(spotterAvailableIndexInFile(file)>=0){spotterState.autoNextFile=(file%count)+1;return file}
+ }
+ return 0;
+}
+function spotterAutoProcessPending(){
+ if(!spotterState.freeMode||!Array.isArray(spotterState.incoming)||!spotterState.incoming.length)return false;
+ let changed=false;
+ for(const incoming of [...spotterState.incoming]){
+  const autoFile=spotterAutoQueueFile();
+  if(!autoFile)break;
+  spotterState.incomingQueueSelections[incoming.id]=autoFile;
+  if(spotterValidateIncoming(incoming.id,false,{silent:true,estimated:true,targetFile:autoFile}))changed=true;
+ }
+ return changed;
 }
 function spotterAddIncoming(team,driver=null,{source='apex'}={}){
  const key=String(team||'').trim();if(!key)return false;
@@ -334,9 +357,19 @@ function spotterAddIncoming(team,driver=null,{source='apex'}={}){
  spotterState.incoming.push(incoming);
  if(spotterState.freeMode){spotterState.freePitIns+=1;spotterState.freeNeedsRecalibration=true;}
  spotterLogMovement('pit_in',{team:key,kv:assignment.kv,source,estimated:Boolean(spotterState.freeMode)});
- // Même en mode Auto, une entrée Apex reste dans « Karts entrants »
- // jusqu'à validation humaine vers une file ou Maintenance. Le mode Auto
- // automatise la détection, pas la décision opérationnelle du Spotter.
+ // En mode AUTO, Velocity gère le Quick Change sans validation humaine :
+ // choix d'une file par rotation, réservation du premier kart disponible de
+ // cette file et ajout du kart rendu au fond de la même file.
+ if(spotterState.freeMode){
+  const autoFile=spotterAutoQueueFile();
+  if(autoFile){
+   spotterState.incomingQueueSelections[incoming.id]=autoFile;
+   const ok=spotterValidateIncoming(incoming.id,false,{silent:true,estimated:true,targetFile:autoFile});
+   if(ok){renderSpotterFoundation('live');return true}
+  }
+  // Si aucune file n'a de kart disponible, on conserve exceptionnellement le
+  // kart dans Entrants afin de ne jamais perdre l'événement Apex.
+ }
  saveSpotterFoundation();renderSpotterFoundation('live');return true;
 }
 function simulateSpotterPitIn(){
@@ -354,7 +387,7 @@ function simulateSpotterPitOut(){
 }
 function spotterLogMovement(type,data={}){spotterState.movementLog.unshift({type,at:Date.now(),...data});spotterState.movementLog=spotterState.movementLog.slice(0,80)}
 function spotterAvailableIndex(){return spotterState.queue.findIndex(item=>item.status==='available')}
-// Velocity V7.2.101 — sélection du premier kart disponible dans la file choisie
+// Velocity V7.2.102 — sélection du premier kart disponible dans la file choisie
 function spotterAvailableIndexInFile(file){
  const target=Math.max(1,Math.min(spotterState.mode,Number(file)||1));
  return spotterState.queue.findIndex(item=>item.status==='available'&&(Number(item.queueFile)||1)===target);
@@ -465,8 +498,12 @@ function spotterMonitorApex(){
 
 function spotterActivateFree(){
  if(!spotterState.configured||spotterState.freeMode)return;
- spotterState.freeMode=true;spotterState.freeStartedAt=Date.now();spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;
- spotterLogMovement('auto_start',{at:spotterState.freeStartedAt});saveSpotterFoundation();renderSpotterFoundation('live');
+ spotterState.freeMode=true;spotterState.freeStartedAt=Date.now();spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.autoNextFile=1;
+ spotterLogMovement('auto_start',{at:spotterState.freeStartedAt});
+ // Si des karts étaient déjà dans « Entrants » au moment d'activer AUTO, ils
+ // sont immédiatement intégrés aux files sans attendre une nouvelle transition Apex.
+ spotterAutoProcessPending();
+ saveSpotterFoundation();renderSpotterFoundation('live');
 }
 function spotterRequestResume(){
  if(!spotterState.freeMode)return;

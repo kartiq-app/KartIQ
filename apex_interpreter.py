@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 LAP_RE = re.compile(r"^(?:(\d+):)?(\d{1,2})\.(\d{3})$")
+DRIVER_STINT_RE = re.compile(r"^(.*?)\s*\[(\d{1,3}:\d{2}(?::\d{2})?)\]\s*$")
 
 FIELD_BY_APEX_TYPE = {
     "rk": "position",
@@ -131,13 +132,19 @@ class ApexInterpreter:
         # Certaines pistes utilisent un type Apex personnalisé pour cette colonne.
         # Le libellé de grille permet alors d'identifier STANDS / PITS / ARRÊTS.
         if field is None and col is not None:
+            # Les installations Apex peuvent traduire les libellés sans renseigner
+            # data-type (ex. Belgique : « Rondes » pour les tours). On mappe donc
+            # les colonnes métier par libellé en dernier recours.
+            if label in {"tours", "tour", "laps", "lap", "rondes", "ronde"}:
+                field = "laps"
+            elif label in {"en piste", "temps en piste", "on track", "on track time", "track time", "rijtijd", "op de baan"}:
+                field = "on_track_timer"
             # Apex abrège souvent la colonne des pénalités en « Péna. ».
-            # On retire les accents et la ponctuation pour reconnaître aussi
-            # « Pena », « Pénalité », « Penalty » et « Sanction ».
-            if any(token in label for token in ("stand", "pit", "arret")):
-                field = "pit_stops"
             elif any(token in label for token in ("pena", "penalite", "penalty", "sanction")):
                 field = "penalty"
+            # Ne pas confondre « Totale pit tijd » (durée) et « Pits » (nombre).
+            elif label in {"pits", "pit stops", "stops", "arrets", "arret", "stands"}:
+                field = "pit_stops"
 
         if field in {"position", "kart", "laps", "pit_stops"}:
             parsed = self._as_int(value)
@@ -147,7 +154,26 @@ class ApexInterpreter:
                 if field == "laps" and old is not None and parsed > old and not initial:
                     self._emit(update.row, "lap_count", "Nouveau tour", f"Tour {parsed}", str(parsed))
         elif field == "name":
-            row["name"] = value.strip() or None
+            cleaned = value.strip()
+            stint = DRIVER_STINT_RE.match(cleaned)
+            if stint:
+                # Certaines courses endurance affichent le pilote courant sous la
+                # forme « NOM [0:04] ». Le compteur entre crochets est le temps de
+                # roulage du pilote. On l'expose comme pilote + EN PISTE sans
+                # dépendre d'une colonne `otr` absente.
+                pilot_name = stint.group(1).strip()
+                driver_time = stint.group(2).strip()
+                # Le format Apex [H:MM] exprime heures:minutes, pas minutes:secondes.
+                # On normalise en HH:MM:SS pour les calculateurs Analyzer.
+                parts = driver_time.split(":")
+                normalized_driver_time = f"{int(parts[0]):02d}:{int(parts[1]):02d}:00" if len(parts) == 2 else driver_time
+                row["name"] = pilot_name or None
+                row["pilot"] = pilot_name or row.get("pilot")
+                if row.get("status") != "pit":
+                    row["track_timer"] = normalized_driver_time
+                    row["timer"] = normalized_driver_time
+            else:
+                row["name"] = cleaned or None
         elif field == "pilot":
             row["pilot"] = value.strip() or None
         elif field == "penalty":
@@ -187,6 +213,14 @@ class ApexInterpreter:
                 row["status_source"] = "sta"
                 if not initial and old == "pit":
                     self._emit(update.row, "pit_out", "Sortie du statut IN", "Statut Apex damier (sta/sf)", value, "track")
+            else:
+                # `sr`, `su`, `sd` et les autres classes de statut non-IN sont
+                # des états piste/position. Il faut explicitement effacer un ancien
+                # `pit`, sinon l'équipe reste bloquée avec la mention IN.
+                if old == "pit" and row.get("status_source") == "sta" and not initial:
+                    self._emit(update.row, "pit_out", "Sortie des stands", f"Statut Apex {code or 'normal'}", value, "track")
+                row["status"] = "track"
+                row["status_source"] = "sta"
         elif field == "on_track_timer":
             # La colonne Apex `otr` porte le compteur du relais en cours.
             # Sa classe `to` correspond au compteur de stand, tandis que `in`
