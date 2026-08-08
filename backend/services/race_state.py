@@ -65,6 +65,7 @@ class RaceStateService:
         self.last_lap_marker = {}
         self.followed_crossing_marker = {}
         self.penalty_first_seen = {}
+        self.penalty_history = {}
         self.comment_penalty_history = {}
 
     def clear_session_history(self):
@@ -74,6 +75,7 @@ class RaceStateService:
         self.last_lap_marker.clear()
         self.followed_crossing_marker.clear()
         self.penalty_first_seen.clear()
+        self.penalty_history.clear()
         self.comment_penalty_history.clear()
 
     def reset_state(self, circuit_id):
@@ -96,6 +98,7 @@ class RaceStateService:
             "fastest_last_lap": {"driver": "—", "lap": "—"},
             "drivers": [],
             "penalties": [],
+            "penalty_history": [],
             "comment_penalties": [],
             "quick_change": [],
             "qualif_crossing": None,
@@ -336,18 +339,25 @@ class RaceStateService:
                         penalty_key,
                         datetime.now().isoformat(timespec="seconds"),
                     )
-                    apex_penalties.append({
+                    penalty_item = {
                         "driver": display_name,
+                        "kart": str(driver.get("apex") or "").strip(),
                         "penalty": raw_penalty,
                         "at": first_seen,
                         "time": first_seen[11:16],
-                    })
+                    }
+                    apex_penalties.append(penalty_item)
+                    history_key = f"{first_seen}|{display_name}|{raw_penalty}"
+                    self.penalty_history.setdefault(history_key, dict(penalty_item, id=history_key))
             # Une pénalité disparue de la colonne Apex est retirée de l'état courant.
             for penalty_key in list(self.penalty_first_seen):
                 if penalty_key not in active_penalty_keys:
                     self.penalty_first_seen.pop(penalty_key, None)
             apex_penalties.sort(key=lambda item: item.get("at", ""), reverse=True)
             self.state["penalties"] = apex_penalties
+            penalty_history = list(self.penalty_history.values())
+            penalty_history.sort(key=lambda item: item.get("at", ""), reverse=True)
+            self.state["penalty_history"] = penalty_history
             # Le Focus Sprint utilise exclusivement la zone Commentaires Apex.
             self.state["comment_penalties"] = self._comment_penalties(snapshot, live_drivers)
             # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.

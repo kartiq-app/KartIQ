@@ -1,3 +1,11 @@
+# V7.2.110 — Layout Analyzer équilibré & Pénalités Apex
+
+- **Conformité réglementaire** prend désormais toute la hauteur de la carte **Équipe suivie** afin d'agrandir les cartes pilotes.
+- **Météo** est compactée et **Messagerie Pilote** est placée juste dessous ; les deux cartes cumulées ont la même hauteur qu'Équipe suivie / Conformité.
+- Nouvelle carte **PÉNALITÉS** sous **Classement Live**, alimentée par le flux Apex.
+- Historique complet des pénalités : fusion de la zone Commentaires Apex et de l'historique de la colonne Péna., tri du plus récent au plus ancien, heure et kart conservés lorsqu'ils sont fournis.
+- La carte Pénalités est scrollable pour conserver toutes les sanctions sans agrandir excessivement la page.
+
 # V7.2.109 — Temps pilotes officiels Apex
 
 - Conformité réglementaire : temps pilotes alimentés par `driver_total_time` Apex, sans reconstruction locale des relais.

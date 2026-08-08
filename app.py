@@ -69,6 +69,8 @@ STATE = {
     "fastest_last_lap": {"driver": "—", "lap": "—"},
     "drivers": [],
     "penalties": [],
+    "penalty_history": [],
+    "comment_penalties": [],
     "quick_change": [],
     "qualif_crossing": None,
     "generic_alert": None,

@@ -1520,6 +1520,42 @@ function analyzerRenderMapFocus(){
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver),pace=analyzerMapPaceData(drivers),order=['fastest','excellent','good','medium','average','slow'],labels={fastest:'🔥 LES PLUS RAPIDES',excellent:'🟢 EXCELLENT RYTHME',good:'🟡 BON RYTHME',medium:'🟠 MOYEN',average:'🔴 TRÈS MOYEN',slow:'⚫ LENT'};
  if(ranking)ranking.innerHTML=order.map(cat=>{const rows=drivers.filter(d=>(pace.map.get(d)?.category||'slow')===cat).sort((a,b)=>(pace.map.get(a)?.lap??9999)-(pace.map.get(b)?.lap??9999));return `<section class="map-focus-group"><h3>${labels[cat]}</h3><div class="map-focus-head"><span>ÉQUIPE</span><span>DERNIER TEMPS</span><span>FIN RELAIS</span></div>${rows.map(d=>`<div class="map-focus-row${d.driver===state.followed_driver?' followed':''}"><span>${analyzerEscape(d.driver)}</span><b>${analyzerEscape(d.last||'—')}</b><b>${analyzerEscape(analyzerRelayEndLabel(d))}</b></div>`).join('')||'<div class="map-focus-empty">—</div>'}</section>`}).join('');
 }
+function analyzerPenaltyTimeLabel(p){
+ const direct=String(p?.time||'').trim();if(direct)return direct.slice(0,5);
+ const at=String(p?.at||'').trim();return at.length>=16?at.slice(11,16):'--:--';
+}
+function analyzerPenaltyClockMinutes(p){
+ const value=analyzerPenaltyTimeLabel(p),m=value.match(/^(\d{1,2}):(\d{2})$/);return m?Number(m[1])*60+Number(m[2]):NaN;
+}
+function analyzerPenaltyItems(){
+ const comments=Array.isArray(state?.comment_penalties)?state.comment_penalties:[];
+ const history=Array.isArray(state?.penalty_history)?state.penalty_history:[];
+ const active=Array.isArray(state?.penalties)?state.penalties:[];
+ const merged=comments.map(p=>({...p,source:'comments'}));
+ const candidates=history.length?history:active;
+ candidates.forEach(p=>{
+  const driver=String(p?.driver||'').trim().toLowerCase(),text=String(p?.penalty||p?.comment||'').trim().toLowerCase(),mins=analyzerPenaltyClockMinutes(p);
+  const duplicate=merged.some(x=>{
+   if(String(x?.driver||'').trim().toLowerCase()!==driver||String(x?.penalty||x?.comment||'').trim().toLowerCase()!==text)return false;
+   const xm=analyzerPenaltyClockMinutes(x);return !Number.isFinite(mins)||!Number.isFinite(xm)||Math.abs(xm-mins)<=5;
+  });
+  if(!duplicate)merged.push({...p,source:'grid'});
+ });
+ return merged.sort((a,b)=>{
+  const aa=String(a?.at||''),bb=String(b?.at||'');if(aa&&bb&&aa!==bb)return bb.localeCompare(aa);
+  return analyzerPenaltyTimeLabel(b).localeCompare(analyzerPenaltyTimeLabel(a));
+ });
+}
+function renderAnalyzerPenalties(){
+ const host=document.getElementById('analyzerPenaltiesList'),count=document.getElementById('analyzerPenaltiesCount');if(!host)return;
+ const items=analyzerPenaltyItems();if(count)count.textContent=`${items.length} pénalité${items.length>1?'s':''}`;
+ if(!items.length){host.innerHTML='<div class="analyzer-empty">Aucune pénalité Apex.</div>';return;}
+ host.innerHTML=items.map(p=>{
+  const team=String(p?.driver||'—'),kart=String(p?.kart||'').trim(),text=String(p?.penalty||p?.comment||'Pénalité').trim()||'Pénalité';
+  return `<div class="analyzer-penalty-row"><span class="analyzer-penalty-time">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-team"><strong>${analyzerEscape(team)}</strong>${kart?`<small>Kart ${analyzerEscape(kart)}</small>`:''}</span><span class="analyzer-penalty-text">${analyzerEscape(text)}</span></div>`;
+ }).join('');
+}
+
 function renderAnalyzer(){
  ensureAnalyzerWeather();
  if(!document.getElementById('analyzerTable'))return;
@@ -1599,6 +1635,7 @@ function renderAnalyzer(){
   return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerSpotterStatusLabel(analyzerSpotterAssignmentForTeam(d.driver)))}">${analyzerEscape(analyzerSpotterKvLabel(d.driver,x.history.virtualKart))}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
  }).join('');
  if(typeof rankingAnimateRows==='function'&&analyzerRankingMode==='general')rankingAnimateRows(analyzerRankingBody,analyzerPreviousRows);
+ renderAnalyzerPenalties();
  analyzerRenderPitSimulator();
  renderAnalyzerQueueAdvice();
  analyzerRenderSpotterSync();

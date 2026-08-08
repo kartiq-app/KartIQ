@@ -139,8 +139,7 @@
           </div>
         </div>
       </article>
-      <div class="analyzer-rules-message-stack">
-        <article class="analyzer-hero-card rules-card">
+      <article class="analyzer-hero-card rules-card">
           <div class="analyzer-card-title-row analyzer-rules-title-row">
             <span class="analyzer-card-label">CONFORMITÉ RÈGLEMENTAIRE</span>
             <button class="rules-card-button" type="button" onclick="openAnalyzerRules()">RÈGLEMENT</button>
@@ -154,6 +153,23 @@
           </div>
           <div id="analyzerRulesPilots" class="rules-pilots" hidden></div>
         </article>
+      <div class="analyzer-weather-message-stack">
+        <article class="analyzer-hero-card weather-card" id="analyzerWeatherCard">
+        <span class="analyzer-card-label">MÉTÉO</span>
+        <div class="weather-main">
+          <div class="weather-current-left"><img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo"><div class="weather-current"><strong id="analyzerWeatherTemperature">—</strong><span id="analyzerWeatherCondition">En attente…</span></div></div>
+          <div class="weather-local-block"><span id="analyzerWeatherLocalTime" class="weather-local-time">--:--</span><span id="analyzerWeatherCircuitName" class="weather-circuit-name">—</span></div>
+        </div>
+        <div class="weather-stats">
+          <div><span>Vent</span><b id="analyzerWeatherWind">—</b></div>
+          <div><span>Pluie</span><b id="analyzerWeatherRain">—</b></div>
+        </div>
+        <div class="weather-timeline-wrap">
+          <div class="weather-timeline" id="analyzerWeatherTimeline" aria-label="Douze prévisions météo horaires locales">
+            <div class="weather-timeline-empty">Sélectionnez un circuit pour charger la météo.</div>
+          </div>
+        </div>
+      </article>
         <article class="analyzer-hero-card analyzer-driver-message-card" aria-label="Envoyer un message au pilote">
           <div class="analyzer-driver-message-title-row">
             <span class="analyzer-driver-message-icon" aria-hidden="true">📨</span>
@@ -170,25 +186,10 @@
           <div id="analyzerDriverMessageStatus" class="analyzer-driver-message-status" aria-live="polite"></div>
         </article>
       </div>
-      <article class="analyzer-hero-card weather-card" id="analyzerWeatherCard">
-        <span class="analyzer-card-label">MÉTÉO</span>
-        <div class="weather-main">
-          <div class="weather-current-left"><img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo"><div class="weather-current"><strong id="analyzerWeatherTemperature">—</strong><span id="analyzerWeatherCondition">En attente…</span></div></div>
-          <div class="weather-local-block"><span id="analyzerWeatherLocalTime" class="weather-local-time">--:--</span><span id="analyzerWeatherCircuitName" class="weather-circuit-name">—</span></div>
-        </div>
-        <div class="weather-stats">
-          <div><span>Vent</span><b id="analyzerWeatherWind">—</b></div>
-          <div><span>Pluie</span><b id="analyzerWeatherRain">—</b></div>
-        </div>
-        <div class="weather-timeline-wrap">
-          <div class="weather-timeline" id="analyzerWeatherTimeline" aria-label="Douze prévisions météo horaires locales">
-            <div class="weather-timeline-empty">Sélectionnez un circuit pour charger la météo.</div>
-          </div>
-        </div>
-      </article>
     </section>
 
     <div class="analyzer-desktop-dashboard">
+      <div class="analyzer-ranking-column">
       <section class="panel analyzer-ranking-panel">
         <div class="analyzer-panel-title analyzer-ranking-title">
           <div class="analyzer-ranking-heading">
@@ -217,6 +218,11 @@
           </table>
         </div>
       </section>
+      <section class="panel analyzer-penalties-panel" aria-labelledby="analyzerPenaltiesTitle">
+        <div class="analyzer-panel-title analyzer-penalties-title"><span id="analyzerPenaltiesTitle" class="analyzer-static-ranking-tab">PÉNALITÉS</span><small id="analyzerPenaltiesCount">0 pénalité</small></div>
+        <div id="analyzerPenaltiesList" class="analyzer-penalties-list"><div class="analyzer-empty">Aucune pénalité Apex.</div></div>
+      </section>
+      </div>
 
       <aside class="analyzer-strategy-column" aria-label="Outils stratégiques">
         <section class="panel analyzer-panel analyzer-market-panel">
