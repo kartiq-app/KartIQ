@@ -2137,7 +2137,7 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .analyzer-ranking-table th:nth-child(16),.analyzer-ranking-table td:nth-child(16){width:62px!important}
 
 
-/* Velocity V7.2.114 — LIVE sans scroll horizontal, règle pilote, pénalités compactes */
+/* Velocity V7.2.115 — journal Apex complet dans Analyzer, autres modes inchangés */
 /* Classement LIVE : toutes les colonnes restent visibles dans la largeur de la carte. */
 .analyzer-ranking-wrap{overflow-x:hidden!important;overflow-y:auto!important}
 .analyzer-ranking-table{

@@ -1528,6 +1528,12 @@ function analyzerPenaltyClockMinutes(p){
  const value=analyzerPenaltyTimeLabel(p),m=value.match(/^(\d{1,2}):(\d{2})$/);return m?Number(m[1])*60+Number(m[2]):NaN;
 }
 function analyzerPenaltyItems(){
+ const events=Array.isArray(state?.comment_events)?state.comment_events:[];
+ if(events.length)return [...events].sort((a,b)=>{
+  const aa=String(a?.at||''),bb=String(b?.at||'');if(aa&&bb&&aa!==bb)return bb.localeCompare(aa);
+  return analyzerPenaltyTimeLabel(b).localeCompare(analyzerPenaltyTimeLabel(a));
+ });
+ // Fallback rétrocompatible si le serveur n'a pas encore publié comment_events.
  const comments=Array.isArray(state?.comment_penalties)?state.comment_penalties:[];
  const history=Array.isArray(state?.penalty_history)?state.penalty_history:[];
  const active=Array.isArray(state?.penalties)?state.penalties:[];
@@ -1546,6 +1552,7 @@ function analyzerPenaltyItems(){
   return analyzerPenaltyTimeLabel(b).localeCompare(analyzerPenaltyTimeLabel(a));
  });
 }
+
 function analyzerSyncPenaltyColumns(){
  const ranking=document.querySelector('.analyzer-ranking-table');
  const head=document.querySelector('.analyzer-penalties-head');
@@ -1564,11 +1571,12 @@ function analyzerSyncPenaltyColumns(){
 }
 function renderAnalyzerPenalties(){
  const host=document.getElementById('analyzerPenaltiesList'),count=document.getElementById('analyzerPenaltiesCount');if(!host)return;
- const items=analyzerPenaltyItems();if(count)count.textContent=`${items.length} pénalité${items.length>1?'s':''}`;
- if(!items.length){host.innerHTML='<div class="analyzer-empty">Aucune pénalité Apex.</div>';analyzerSyncPenaltyColumns();return;}
+ const items=analyzerPenaltyItems();if(count)count.textContent=`${items.length} information${items.length>1?'s':''}`;
+ if(!items.length){host.innerHTML='<div class="analyzer-empty">Aucune pénalité ou information Apex.</div>';analyzerSyncPenaltyColumns();return;}
  host.innerHTML=items.map(p=>{
-  const team=String(p?.driver||'—'),kart=String(p?.kart||'').trim(),text=String(p?.penalty||p?.comment||'Pénalité').trim()||'Pénalité';
-  return `<div class="analyzer-penalty-row" role="row"><span class="analyzer-penalty-time" role="cell">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-kart" role="cell">${kart?analyzerEscape(kart):'—'}</span><span class="analyzer-penalty-combined" role="cell"><strong class="analyzer-penalty-team">${analyzerEscape(team)}</strong><span class="analyzer-penalty-separator"> : </span><span class="analyzer-penalty-text">${analyzerEscape(text)}</span></span></div>`;
+  const team=String(p?.driver||'').trim(),kart=String(p?.kart||'').trim(),text=String(p?.comment||p?.penalty||'').trim();
+  const combined=team?`<strong class="analyzer-penalty-team">${analyzerEscape(team)}</strong><span class="analyzer-penalty-separator"> : </span><span class="analyzer-penalty-text">${analyzerEscape(text)}</span>`:`<span class="analyzer-penalty-text">${analyzerEscape(text)}</span>`;
+  return `<div class="analyzer-penalty-row" role="row"><span class="analyzer-penalty-time" role="cell">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-kart" role="cell">${kart?analyzerEscape(kart):''}</span><span class="analyzer-penalty-combined" role="cell">${combined}</span></div>`;
  }).join('');
  analyzerSyncPenaltyColumns();
 }

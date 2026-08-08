@@ -71,6 +71,7 @@ STATE = {
     "penalties": [],
     "penalty_history": [],
     "comment_penalties": [],
+    "comment_events": [],
     "quick_change": [],
     "qualif_crossing": None,
     "generic_alert": None,

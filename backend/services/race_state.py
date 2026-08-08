@@ -20,12 +20,15 @@ class _ApexCommentsParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if tag == "p":
-            self.current = {"time": "", "kart": "", "text_parts": [], "is_penalty": False}
+            self.current = {"time": "", "kart": "", "text_parts": [], "is_penalty": False, "flag": ""}
         elif self.current is not None and tag == "b":
             self._capture_time = True
         elif self.current is not None and tag == "span":
             classes = str(attrs.get("class", "")).split()
-            if attrs.get("data-flag") == "penalty":
+            flag = str(attrs.get("data-flag") or "").strip()
+            if flag:
+                self.current["flag"] = flag
+            if flag == "penalty":
                 self.current["is_penalty"] = True
             if "com_no" in classes:
                 self._capture_kart = True
@@ -67,6 +70,7 @@ class RaceStateService:
         self.penalty_first_seen = {}
         self.penalty_history = {}
         self.comment_penalty_history = {}
+        self.comment_event_history = {}
 
     def clear_session_history(self):
         self.lap_history.clear()
@@ -77,6 +81,7 @@ class RaceStateService:
         self.penalty_first_seen.clear()
         self.penalty_history.clear()
         self.comment_penalty_history.clear()
+        self.comment_event_history.clear()
 
     def reset_state(self, circuit_id):
         self.clear_session_history()
@@ -100,6 +105,7 @@ class RaceStateService:
             "penalties": [],
             "penalty_history": [],
             "comment_penalties": [],
+            "comment_events": [],
             "quick_change": [],
             "qualif_crossing": None,
             "generic_alert": None,
@@ -246,6 +252,52 @@ class RaceStateService:
         values.sort(key=lambda item: (item.get("time", ""), item.get("at", "")), reverse=True)
         return values
 
+
+    def _comment_events(self, snapshot, drivers):
+        """Historique complet du journal Apex com|| pour Analyzer uniquement.
+
+        Contrairement à _comment_penalties, cette vue conserve aussi les
+        avertissements et messages d'information (data-flag=msg, etc.).
+        Les autres modes continuent d'utiliser comment_penalties inchangé.
+        """
+        raw = str((snapshot.get("comments") or {}).get("raw") or "").strip()
+        if raw:
+            parser = _ApexCommentsParser()
+            try:
+                parser.feed(raw)
+                parser.close()
+            except Exception:
+                parser.entries = []
+
+            drivers_by_kart = {
+                str(d.get("apex") or "").strip(): str(d.get("driver") or "").strip()
+                for d in drivers
+                if str(d.get("apex") or "").strip() not in {"", "—"}
+            }
+            for entry in parser.entries:
+                shown_time = str(entry.get("time") or "").strip()[:5] or datetime.now().strftime("%H:%M")
+                kart = str(entry.get("kart") or "").strip()
+                text = str(entry.get("text") or "").strip()
+                flag = str(entry.get("flag") or "").strip()
+                if not text:
+                    continue
+                driver = drivers_by_kart.get(kart, "") if kart else ""
+                key = f"{shown_time}|{flag}|{kart}|{text}"
+                self.comment_event_history.setdefault(key, {
+                    "id": key,
+                    "driver": driver,
+                    "kart": kart,
+                    "comment": text,
+                    "penalty": text if flag == "penalty" else "",
+                    "time": shown_time,
+                    "flag": flag,
+                    "at": datetime.now().isoformat(timespec="seconds"),
+                })
+
+        values = list(self.comment_event_history.values())
+        values.sort(key=lambda item: (item.get("time", ""), item.get("at", "")), reverse=True)
+        return values
+
     def sync_state_from_race(self, snapshot, interpreted_events=None):
         """Injecte le modèle unifié Apex dans l'interface moderne Velocity."""
         previous_drivers = {d.get("driver"): d for d in self.state.get("drivers", [])}
@@ -360,6 +412,8 @@ class RaceStateService:
             self.state["penalty_history"] = penalty_history
             # Le Focus Sprint utilise exclusivement la zone Commentaires Apex.
             self.state["comment_penalties"] = self._comment_penalties(snapshot, live_drivers)
+            # Analyzer reçoit le journal Apex complet, sans modifier les blocs pénalités des autres modes.
+            self.state["comment_events"] = self._comment_events(snapshot, live_drivers)
             # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.
             # Mode LOCK : après un clic, on conserve impérativement le même pilote,
             # même si une trame Apex intermédiaire ne contient pas sa ligne.

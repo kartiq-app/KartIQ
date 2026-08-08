@@ -1,3 +1,10 @@
+# V7.2.115
+
+- Analyzer uniquement : la carte PÉNALITÉS devient **PÉNALITÉS ET INFORMATIONS**.
+- La carte reprend désormais l’intégralité du journal Apex `comments` : pénalités, avertissements et messages d’information.
+- Les messages sans kart/équipe (ex. Start kartwissel) sont conservés tels quels, sans association artificielle.
+- Les blocs pénalités Sprint, Qualif, Focus et autres modes restent inchangés.
+
 # V7.2.114
 
 - Analyzer : le Classement Live tient désormais intégralement dans la largeur de sa carte sur desktop, sans défilement horizontal.
