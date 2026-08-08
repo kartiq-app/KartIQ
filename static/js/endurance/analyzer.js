@@ -1390,7 +1390,7 @@ function analyzerRefreshKartRelayCountdowns(){
 }
 if(!window.__kartiqRelayCountdownTimer){window.__kartiqRelayCountdownTimer=setInterval(analyzerRefreshKartRelayCountdowns,1000)}
 
-const analyzerFollowedDeltaHistory={driver:'',aheadSignature:null,behindSignature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'};
+const analyzerFollowedDeltaHistory={driver:'',position:null,aheadSignature:null,behindSignature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'};
 function analyzerGapMetric(value){
  const raw=String(value??'').trim();
  if(!raw||raw==='—'||raw==='--')return {value:null,unit:''};
@@ -1445,7 +1445,7 @@ function analyzerFollowedNeighbors(followed){
 }
 function analyzerUpdateFollowedDeltas(followed){
  const data=analyzerFollowedNeighbors(followed);
- if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',aheadSignature:null,behindSignature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
+ if(!followed){Object.assign(analyzerFollowedDeltaHistory,{driver:'',position:null,aheadSignature:null,behindSignature:null,ahead:null,behind:null,aheadUnit:'',behindUnit:'',aheadKey:'',behindKey:'',aheadTrend:'neutral',behindTrend:'neutral'});return {...data,aheadTrend:'neutral',behindTrend:'neutral'}}
  const driverKey=analyzerDeltaCompetitorKey(followed)||String(state?.followed_driver||followed.pos||'');
  // Les deux deltas sont volontairement indépendants :
  // - DEVANT vient de followed.interval et est échantillonné au passage de l'équipe suivie.
@@ -1454,9 +1454,17 @@ function analyzerUpdateFollowedDeltas(followed){
  const aheadSignature=analyzerDeltaSignature(followed);
  const behindSignature=data.behind?analyzerDeltaSignature(data.behind):'';
  if(analyzerFollowedDeltaHistory.driver!==driverKey){
-  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,aheadSignature,behindSignature,ahead:data.aheadValue,behind:data.behindValue,aheadUnit:data.aheadUnit,behindUnit:data.behindUnit,aheadKey:data.aheadKey,behindKey:data.behindKey,aheadTrend:'neutral',behindTrend:'neutral'});
+  Object.assign(analyzerFollowedDeltaHistory,{driver:driverKey,position:Number.isFinite(Number(followed.pos))?Number(followed.pos):null,aheadSignature,behindSignature,ahead:data.aheadValue,behind:data.behindValue,aheadUnit:data.aheadUnit,behindUnit:data.behindUnit,aheadKey:data.aheadKey,behindKey:data.behindKey,aheadTrend:'neutral',behindTrend:'neutral'});
   return {...data,aheadTrend:'neutral',behindTrend:'neutral'};
  }
+ // V7.2.130 — fait de course prioritaire : si l'équipe suivie perd une place
+ // au franchissement de la ligne, le Delta DEVANT est ORANGE même si P-1 vient
+ // de changer et que son historique d'intervalle doit être réinitialisé.
+ const currentPosition=Number(followed.pos);
+ const previousPosition=Number(analyzerFollowedDeltaHistory.position);
+ const followedCrossedLine=Boolean(aheadSignature&&aheadSignature!==analyzerFollowedDeltaHistory.aheadSignature);
+ const lostPositionAtLine=followedCrossedLine&&Number.isFinite(currentPosition)&&Number.isFinite(previousPosition)&&currentPosition>previousPosition;
+ if(followedCrossedLine&&Number.isFinite(currentPosition))analyzerFollowedDeltaHistory.position=currentPosition;
  // Un dépassement, un pit ou un changement de position peut remplacer P-1/P+1.
  // Chaque côté repart de zéro indépendamment afin de ne jamais comparer deux adversaires différents.
  if(analyzerFollowedDeltaHistory.aheadKey!==data.aheadKey){
@@ -1464,7 +1472,7 @@ function analyzerUpdateFollowedDeltas(followed){
   analyzerFollowedDeltaHistory.ahead=data.aheadValue;
   analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit;
   analyzerFollowedDeltaHistory.aheadSignature=aheadSignature;
-  analyzerFollowedDeltaHistory.aheadTrend='neutral';
+  analyzerFollowedDeltaHistory.aheadTrend=lostPositionAtLine?'bad':'neutral';
  }
  if(analyzerFollowedDeltaHistory.behindKey!==data.behindKey){
   analyzerFollowedDeltaHistory.behindKey=data.behindKey;
@@ -1483,6 +1491,9 @@ function analyzerUpdateFollowedDeltas(followed){
   analyzerFollowedDeltaHistory.ahead=Number.isFinite(data.aheadValue)?data.aheadValue:null;
   analyzerFollowedDeltaHistory.aheadUnit=data.aheadUnit||'';
  }
+ // Une perte de place connue est prioritaire sur la tendance d'intervalle :
+ // c'est un fait de course négatif Velocity, donc ORANGE côté DEVANT.
+ if(lostPositionAtLine)analyzerFollowedDeltaHistory.aheadTrend='bad';
  // Règle Velocity DERRIÈRE : si notre avance augmente, on s'éloigne => VERT.
  // Si elle diminue, le poursuivant revient => ORANGE.
  if(behindSignature&&behindSignature!==analyzerFollowedDeltaHistory.behindSignature){

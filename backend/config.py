@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.129"
+APP_VERSION = "7.2.130"
 APP_RELEASE_NAME = "DELTA APEX TOURS"
 
 

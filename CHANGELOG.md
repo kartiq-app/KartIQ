@@ -1,3 +1,10 @@
+## V7.2.130 — Delta : perte de position orange
+
+- Le Delta DEVANT passe en orange lorsque l'équipe suivie franchit la ligne en ayant perdu au moins une position.
+- Cette règle de fait de course est prioritaire sur la réinitialisation normale provoquée par le changement de P-1.
+- Le Delta DERRIÈRE reste totalement indépendant et conserve ses règles Velocity.
+- Après ce passage, le Delta DEVANT reprend la tendance normale avec le nouveau concurrent devant.
+
 # Velocity V7.2.129 — Delta devant / derrière indépendants
 
 - Sépare complètement l’historique de tendance du Delta devant et du Delta derrière.
