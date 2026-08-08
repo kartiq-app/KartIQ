@@ -36,6 +36,79 @@ let analyzerSessionCircuitId=null;
 let analyzerLastSessionSaveAt=0;
 let analyzerSessionAutosaveTimer=null;
 let analyzerSessionRestoreLock=false;
+let analyzerEventNoticeCircuitId='';
+let analyzerEventNoticeInitialized=false;
+let analyzerEventNoticeKnownIds=new Set();
+let analyzerEventNoticeUnread=new Map();
+let analyzerEventNoticePreviousCount=0;
+
+function analyzerEventNoticeNormalizeText(value){return String(value||'').replace(/\s+/g,' ').trim().toLocaleLowerCase('fr-FR')}
+function analyzerEventNoticeId(event){
+ const explicit=String(event?.id||'').trim();
+ if(explicit)return explicit;
+ return `${String(event?.time||event?.at||'')}|${String(event?.flag||'')}|${String(event?.kart||'')}|${analyzerEventNoticeNormalizeText(event?.comment||event?.penalty||'')}`;
+}
+function analyzerEventNoticeClockMinutes(event){
+ const value=analyzerPenaltyTimeLabel(event),match=value.match(/^(\d{1,2}):(\d{2})$/);return match?Number(match[1])*60+Number(match[2]):NaN;
+}
+function analyzerEventNoticeReset(items=[]){
+ analyzerEventNoticeKnownIds=new Set(items.map(analyzerEventNoticeId));
+ analyzerEventNoticeUnread.clear();
+ analyzerEventNoticePreviousCount=items.length;
+ analyzerEventNoticeInitialized=true;
+ analyzerRenderEventNotice();
+}
+function analyzerEventNoticeSameInstantMessage(a,b){
+ if(String(a?.source||'')!=='msgt')return false;
+ if(analyzerEventNoticeNormalizeText(a?.comment||a?.penalty)!==analyzerEventNoticeNormalizeText(b?.comment||b?.penalty))return false;
+ const am=analyzerEventNoticeClockMinutes(a),bm=analyzerEventNoticeClockMinutes(b);
+ return !Number.isFinite(am)||!Number.isFinite(bm)||Math.abs(am-bm)<=2;
+}
+function analyzerUpdateEventNotice(items){
+ items=Array.isArray(items)?items:[];
+ const circuit=String(state?.circuit_id||'');
+ if(circuit!==analyzerEventNoticeCircuitId){analyzerEventNoticeCircuitId=circuit;analyzerEventNoticeInitialized=false;analyzerEventNoticeKnownIds=new Set();analyzerEventNoticeUnread.clear();analyzerEventNoticePreviousCount=0;}
+ if(!analyzerEventNoticeInitialized){analyzerEventNoticeReset(items);return;}
+ // Si le journal disparaît après une session active, considérer le prochain état comme une nouvelle base.
+ if(analyzerEventNoticePreviousCount>0&&!items.length){analyzerEventNoticeReset([]);return;}
+ for(const event of items){
+  const id=analyzerEventNoticeId(event);if(analyzerEventNoticeKnownIds.has(id))continue;
+  analyzerEventNoticeKnownIds.add(id);
+  // msg|msgt peut précéder com|| de quelques secondes. Quand com|| arrive,
+  // remplacer la notification instantanée au lieu de compter deux événements.
+  if(String(event?.source||'')==='com'){
+   let replacementKey=null;
+   for(const [key,pending] of analyzerEventNoticeUnread){if(analyzerEventNoticeSameInstantMessage(pending,event)){replacementKey=key;break}}
+   if(replacementKey!==null)analyzerEventNoticeUnread.delete(replacementKey);
+  }
+  analyzerEventNoticeUnread.set(id,event);
+ }
+ analyzerEventNoticePreviousCount=items.length;
+ analyzerRenderEventNotice();
+}
+function analyzerRenderEventNotice(){
+ const notice=document.getElementById('analyzerEventNotice'),text=document.getElementById('analyzerEventNoticeText'),badge=document.getElementById('analyzerEventNoticeBadge');if(!notice||!text||!badge)return;
+ const unread=[...analyzerEventNoticeUnread.values()];
+ if(!unread.length){notice.hidden=true;badge.hidden=true;return}
+ const penalties=unread.filter(event=>String(event?.kind||'')==='penalty'||String(event?.flag||'')==='penalty');
+ const informations=unread.filter(event=>!penalties.includes(event));
+ let label='Informations';
+ if(penalties.length&&informations.length)label='Pénalité & Informations';
+ else if(penalties.length){
+  const teams=[...new Set(penalties.map(event=>String(event?.driver||'').trim()).filter(Boolean))];
+  if(teams.length===1)label=`Pénalité ${teams[0]}`;
+  else if(penalties.length===1&&teams.length===0)label='Pénalité';
+  else label='Pénalités';
+ }
+ text.textContent=label;
+ notice.title=`${unread.length} notification${unread.length>1?'s':''} non lue${unread.length>1?'s':''} — ouvrir Pénalités et Informations`;
+ notice.hidden=false;
+ if(unread.length>1){badge.textContent=String(unread.length);badge.hidden=false}else badge.hidden=true;
+}
+function openAnalyzerEventNotifications(){
+ const target=document.getElementById('analyzerPenaltiesPanel');if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+ analyzerEventNoticeUnread.clear();analyzerRenderEventNotice();
+}
 
 // Trafic devant : suivi persistant des passages de ligne et des cercles DOM.
 const analyzerTrafficMotion=new Map();
@@ -1638,7 +1711,7 @@ function analyzerSyncPenaltyColumns(){
 }
 function renderAnalyzerPenalties(){
  const host=document.getElementById('analyzerPenaltiesList'),count=document.getElementById('analyzerPenaltiesCount');if(!host)return;
- const items=analyzerPenaltyItems();if(count)count.textContent=`${items.length} information${items.length>1?'s':''}`;
+ const items=analyzerPenaltyItems();analyzerUpdateEventNotice(items);if(count)count.textContent=`${items.length} information${items.length>1?'s':''}`;
  if(!items.length){host.innerHTML='<div class="analyzer-empty">Aucune pénalité ou information Apex.</div>';analyzerSyncPenaltyColumns();return;}
  host.innerHTML=items.map(p=>{
   const team=String(p?.driver||'').trim(),kart=String(p?.kart||'').trim(),text=String(p?.comment||p?.penalty||'').trim();

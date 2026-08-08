@@ -94,6 +94,7 @@
     <div class="analyzer-toolbar">
       <button class="inline-home-btn analyzer-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button>
       <div class="analyzer-heading"><span class="analyzer-kicker">ENDURANCE</span></div>
+      <button id="analyzerEventNotice" class="analyzer-event-notice" type="button" onclick="openAnalyzerEventNotifications()" aria-label="Voir les nouvelles pénalités et informations" hidden><span class="analyzer-event-notice-icon" aria-hidden="true">✉️</span><span id="analyzerEventNoticeText" class="analyzer-event-notice-text">Informations</span><span id="analyzerEventNoticeBadge" class="analyzer-event-notice-badge" hidden>1</span></button>
       <input id="analyzerSessionImport" type="file" accept="application/json,.json" hidden onchange="importAnalyzerSession(event)">
     </div>
 
@@ -218,7 +219,7 @@
           </table>
         </div>
       </section>
-      <section class="panel analyzer-penalties-panel" aria-labelledby="analyzerPenaltiesTitle">
+      <section id="analyzerPenaltiesPanel" class="panel analyzer-penalties-panel" aria-labelledby="analyzerPenaltiesTitle">
         <div class="analyzer-panel-title analyzer-penalties-title"><span id="analyzerPenaltiesTitle" class="analyzer-static-ranking-tab">PÉNALITÉS ET INFORMATIONS</span><small id="analyzerPenaltiesCount">0 information</small></div>
         <div class="analyzer-penalties-table" role="table" aria-label="Pénalités et informations Apex">
           <div class="analyzer-penalties-head" role="row">

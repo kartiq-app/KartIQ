@@ -1,3 +1,13 @@
+# Velocity V7.2.126 — Notifications Analyzer Apex
+
+- Analyzer : nouvelle notification orange en haut à droite, à l’opposé de **ENDURANCE**, pour les nouveaux événements Apex.
+- Clic sur la notification : défilement direct vers **PÉNALITÉS ET INFORMATIONS** et remise à zéro des non-lus.
+- Libellé dynamique : **Pénalité [équipe]**, **Informations**, **Pénalité & Informations** ou **Pénalités** selon les événements non lus.
+- Badge numérique uniquement à partir de 2 événements non lus.
+- Le premier `com||` reçu sert de base : l’historique antérieur à la connexion ne génère aucune fausse notification.
+- Déduplication de la notification instantanée `msg|msgt` lorsque le même événement arrive ensuite dans `com||`.
+- Aucun changement sur les blocs pénalités des autres modes.
+
 # Velocity V7.2.125 — Événements Apex natifs
 
 - Analyzer : `com||` devient la source de vérité structurée de **PÉNALITÉS ET INFORMATIONS**.

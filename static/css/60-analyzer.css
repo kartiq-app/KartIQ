@@ -2231,3 +2231,15 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .analyzer-strategy-column .relay-score-xscroll table.relay-score-table col.relay-score-width-col{width:56px!important;min-width:56px!important;max-width:56px!important}
 .analyzer-strategy-column .relay-score-xscroll table.relay-score-table th.relay-score-col,
 .analyzer-strategy-column .relay-score-xscroll table.relay-score-table td.relay-score-col{width:56px!important;min-width:56px!important;max-width:56px!important;padding-left:6px!important;padding-right:6px!important;text-align:center!important;box-sizing:border-box!important}
+
+/* Velocity V7.2.126 — notification Analyzer Pénalités & Informations */
+.analyzer-event-notice{margin-left:auto;display:inline-flex;align-items:center;gap:8px;min-height:34px;max-width:min(52vw,520px);padding:7px 10px;border:1px solid #ff9b3d;border-radius:7px;background:#ff7a00;color:#090b0f;box-shadow:0 0 10px rgba(255,122,0,.38),0 0 22px rgba(255,122,0,.16);font-family:var(--font-torque,Arial,sans-serif);font-size:11px;font-weight:900;letter-spacing:.025em;cursor:pointer;white-space:nowrap;overflow:hidden;transition:transform .15s ease,box-shadow .15s ease,filter .15s ease}
+.analyzer-event-notice[hidden]{display:none!important}
+.analyzer-event-notice:hover{transform:translateY(-1px);filter:brightness(1.05);box-shadow:0 0 13px rgba(255,122,0,.52),0 0 26px rgba(255,122,0,.2)}
+.analyzer-event-notice:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.analyzer-event-notice-icon{flex:0 0 auto;font-size:15px;line-height:1}
+.analyzer-event-notice-text{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.analyzer-event-notice-badge{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#090b0f;color:#ff9a35;font-family:Arial,sans-serif;font-size:11px;font-weight:900;line-height:1}
+.analyzer-event-notice-badge[hidden]{display:none!important}
+#analyzerPenaltiesPanel{scroll-margin-top:14px}
+@media(max-width:700px){.analyzer-event-notice{margin-left:auto;max-width:calc(100vw - 78px);min-height:32px;padding:6px 8px;font-size:9px;gap:6px}.analyzer-event-notice-icon{font-size:13px}.analyzer-event-notice-badge{min-width:18px;height:18px;font-size:10px;padding:0 5px}}
