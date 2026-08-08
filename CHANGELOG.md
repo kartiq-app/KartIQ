@@ -1,3 +1,10 @@
+# V7.2.120 — Score Relais : R1 réellement accessible
+
+- Séparation physique des colonnes fixes TOP / POS / KART / ÉQUIPE et de la zone horizontale R1 → Rn.
+- R1 et R2 ne peuvent plus être masqués sous les colonnes fixes lorsque le scroll est déjà à zéro.
+- Navigation horizontale libre de R1 au dernier relais, avec conservation de la position pendant les rafraîchissements.
+- Aucun changement des calculs de Score Relais.
+
 # V7.2.119 — Navigation complète Score Relais
 
 - La vue SCORE RELAIS s’ouvre désormais systématiquement sur R1.

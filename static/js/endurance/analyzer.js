@@ -1007,8 +1007,8 @@ function setAnalyzerVelocityView(view){
  renderAnalyzer();
  if(analyzerVelocityView==='relays'){
   requestAnimationFrame(()=>{
-   const host=document.getElementById('analyzerKartMarket');
-   if(host)host.scrollLeft=enteringRelays?0:Math.min(analyzerRelayScoreScrollLeft,Math.max(0,host.scrollWidth-host.clientWidth));
+   const xscroll=document.getElementById('analyzerRelayScoreXScroll');
+   if(xscroll)xscroll.scrollLeft=enteringRelays?0:Math.min(analyzerRelayScoreScrollLeft,Math.max(0,xscroll.scrollWidth-xscroll.clientWidth));
   });
   analyzerLoadRelayScores();
  }
@@ -1021,22 +1021,22 @@ function analyzerRenderRelayScoreTable(marketByScore){
  if(Date.now()-data.updatedAt>60000&&!analyzerRelayScoreLoading)setTimeout(()=>analyzerLoadRelayScores({force:true}),0);
  const maxRelay=Math.max(1,data.maxRelay||0),relayHeaders=Array.from({length:maxRelay},(_,i)=>`<th class="relay-score-col">R${i+1}</th>`).join('');
  const byRow=new Map(data.teams.map(team=>[Number(team.driver.apex_row),team]));
- const rows=ordered.map(item=>{
+ const fixedRows=[],relayRows=[];
+ ordered.forEach(item=>{
   const d=item.driver,rowId=Number(d.apex_row),team=byRow.get(rowId),scores=data.matrix.get(rowId)||new Map(),kart=validKartNumber(d)||d.apex||'—';
+  const follow=`followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})`;
+  fixedRows.push(`<tr onclick="${follow}"><td class="kartiq-top relay-fixed-top">${item.kartiqTop}</td><td class="kartiq-pos relay-fixed-pos">${analyzerEscape(d.pos||'—')}</td><td class="kartiq-kart relay-fixed-kart">${analyzerEscape(kart)}</td><td class="kartiq-team relay-fixed-team" title="${analyzerEscape(analyzerRelayScorePilotLabel(d))}">${analyzerEscape(analyzerRelayScorePilotLabel(d))}</td></tr>`);
   const relays=Array.from({length:maxRelay},(_,i)=>{const cell=scores.get(i+1),relay=team?.relays?.find(r=>r.index===i+1);if(!cell)return `<td class="relay-score-col empty" title="${relay&&relay.laps<3?'Moins de 3 tours exploitables':'Relais non disponible'}">—</td>`;const delta=Number.isFinite(cell.correctedDelta)?` · Δ ${analyzerKartDeltaLabel(cell.correctedDelta)}`:'';return `<td class="relay-score-col ${analyzerScoreClass(cell.score)} kartiq-tooltip" data-tooltip="R${i+1} · ${relay.laps} tours · T.MOYEN ${formatApexMilliseconds(relay.average*1000)}${delta}">${cell.score}</td>`}).join('');
-  return `<tr onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="kartiq-top sticky-id sticky-top">${item.kartiqTop}</td><td class="kartiq-pos sticky-id sticky-pos">${analyzerEscape(d.pos||'—')}</td><td class="kartiq-kart sticky-id sticky-kart">${analyzerEscape(kart)}</td><td class="kartiq-team sticky-id sticky-team" title="${analyzerEscape(analyzerRelayScorePilotLabel(d))}">${analyzerEscape(analyzerRelayScorePilotLabel(d))}</td>${relays}</tr>`;
- }).join('');
- const qualLabel=data.qualification?.session?.name?`R1 référencé sur ${analyzerEscape(data.qualification.session.name)}`:'R1 sans qualification reconnue : transition neutralisée';
- host.innerHTML=`<div class="relay-score-meta">${qualLabel} · Scores reconstruits depuis les tours et arrêts STATS Apex.</div><table class="analyzer-kartiq-table relay-score-table"><thead><tr><th class="sticky-id sticky-top">TOP</th><th class="sticky-id sticky-pos">POS</th><th class="sticky-id sticky-kart">KART</th><th class="sticky-id sticky-team">ÉQUIPE / PILOTE</th>${relayHeaders}</tr></thead><tbody>${rows}</tbody></table>`;
- host.classList.add('relay-score-scroll-host');
- if(!host.dataset.relayScoreScrollBound){
-  host.addEventListener('scroll',()=>{if(analyzerVelocityView==='relays')analyzerRelayScoreScrollLeft=host.scrollLeft},{passive:true});
-  host.dataset.relayScoreScrollBound='1';
- }
- requestAnimationFrame(()=>{
-  const maxScroll=Math.max(0,host.scrollWidth-host.clientWidth);
-  host.scrollLeft=Math.min(Math.max(0,analyzerRelayScoreScrollLeft),maxScroll);
+  relayRows.push(`<tr onclick="${follow}">${relays}</tr>`);
  });
+ const qualLabel=data.qualification?.session?.name?`R1 référencé sur ${analyzerEscape(data.qualification.session.name)}`:'R1 sans qualification reconnue : transition neutralisée';
+ host.innerHTML=`<div class="relay-score-meta">${qualLabel} · Scores reconstruits depuis les tours et arrêts STATS Apex.</div><div class="relay-score-grid"><div class="relay-score-fixed"><table class="analyzer-kartiq-table relay-score-fixed-table"><thead><tr><th class="relay-fixed-top">TOP</th><th class="relay-fixed-pos">POS</th><th class="relay-fixed-kart">KART</th><th class="relay-fixed-team">ÉQUIPE / PILOTE</th></tr></thead><tbody>${fixedRows.join('')}</tbody></table></div><div class="relay-score-xscroll" id="analyzerRelayScoreXScroll"><table class="analyzer-kartiq-table relay-score-table"><thead><tr>${relayHeaders}</tr></thead><tbody>${relayRows.join('')}</tbody></table></div></div>`;
+ host.classList.add('relay-score-scroll-host');
+ const xscroll=document.getElementById('analyzerRelayScoreXScroll');
+ if(xscroll){
+  xscroll.addEventListener('scroll',()=>{if(analyzerVelocityView==='relays')analyzerRelayScoreScrollLeft=xscroll.scrollLeft},{passive:true});
+  requestAnimationFrame(()=>{const maxScroll=Math.max(0,xscroll.scrollWidth-xscroll.clientWidth);xscroll.scrollLeft=Math.min(Math.max(0,analyzerRelayScoreScrollLeft),maxScroll)});
+ }
 }
 
 const VELOCITY_ENGINE_VERSION='1.0';

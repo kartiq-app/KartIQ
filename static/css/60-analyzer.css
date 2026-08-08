@@ -2205,3 +2205,19 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .analyzer-penalty-combined{font-size:13.75px!important}
 .analyzer-penalty-combined .analyzer-penalty-team{font-size:13.75px!important}
 .analyzer-penalty-separator,.analyzer-penalty-combined .analyzer-penalty-text{font-size:13.75px!important}
+
+/* Velocity V7.2.120 — Score Relais : identite fixe et relais dans un vrai viewport horizontal separe */
+.relay-score-scroll-host{overflow-x:hidden!important}
+.relay-score-grid{display:flex;align-items:flex-start;width:100%;min-width:0}
+.relay-score-fixed{flex:0 0 304px;width:304px;position:relative;z-index:10;background:#0b1017;box-shadow:6px 0 10px rgba(0,0,0,.22)}
+.relay-score-xscroll{flex:1 1 auto;min-width:0;overflow-x:auto!important;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;scroll-behavior:auto}
+.relay-score-fixed-table{width:304px!important;min-width:304px!important;max-width:304px!important;table-layout:fixed!important}
+.relay-score-fixed-table .relay-fixed-top{width:34px!important;min-width:34px!important;max-width:34px!important}
+.relay-score-fixed-table .relay-fixed-pos{width:36px!important;min-width:36px!important;max-width:36px!important}
+.relay-score-fixed-table .relay-fixed-kart{width:44px!important;min-width:44px!important;max-width:44px!important}
+.relay-score-fixed-table .relay-fixed-team{width:190px!important;min-width:190px!important;max-width:190px!important;text-align:left!important;overflow:hidden;text-overflow:ellipsis}
+.relay-score-xscroll .relay-score-table{width:max-content!important;min-width:max-content!important;table-layout:fixed!important}
+.relay-score-fixed-table th,.relay-score-fixed-table td,.relay-score-xscroll .relay-score-table th,.relay-score-xscroll .relay-score-table td{height:38px!important;box-sizing:border-box!important}
+.relay-score-fixed-table thead th,.relay-score-xscroll .relay-score-table thead th{height:36px!important}
+@media(min-width:1400px){.relay-score-fixed{flex-basis:294px;width:294px}.relay-score-fixed-table{width:294px!important;min-width:294px!important;max-width:294px!important}.relay-score-fixed-table .relay-fixed-team{width:180px!important;min-width:180px!important;max-width:180px!important}}
+@media(max-width:700px){.relay-score-fixed{flex-basis:259px;width:259px}.relay-score-fixed-table{width:259px!important;min-width:259px!important;max-width:259px!important}.relay-score-fixed-table .relay-fixed-team{width:145px!important;min-width:145px!important;max-width:145px!important}}
