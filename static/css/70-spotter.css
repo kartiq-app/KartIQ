@@ -1798,10 +1798,15 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-cancel-setup{width:100%;margin-top:10px;text-transform:uppercase;letter-spacing:.06em}
 
 
-/* Velocity V7.2.99 — lecture immédiate des disponibilités par file */
-/* Rouge = kart en partance, vert = premier disponible, orange = karts en attente derrière. */
+/* Velocity V7.2.101 — lecture immédiate des disponibilités par file */
+/* Rouge = kart en partance, vert plein = premier disponible, filet orange = attente derrière. */
+.spotter-queue-card.available:not(.waiting){
+  background:linear-gradient(135deg,#0b6f3b,#064d2a)!important;
+  border-color:#2fd77c!important;
+  box-shadow:0 0 0 1px rgba(47,215,124,.18),0 9px 22px rgba(0,0,0,.38),0 0 18px rgba(47,215,124,.18)!important;
+}
 .spotter-queue-card.available.waiting{
-  background:linear-gradient(135deg,#8a4a08,#4f2b05)!important;
+  background:linear-gradient(180deg,#171b22,#0b0e13)!important;
   border-color:#ff981f!important;
-  box-shadow:0 0 0 1px rgba(255,152,31,.16),0 9px 22px rgba(0,0,0,.38),0 0 16px rgba(255,152,31,.12)!important;
+  box-shadow:0 0 0 1px rgba(255,152,31,.16),0 9px 22px rgba(0,0,0,.38),0 0 12px rgba(255,152,31,.08)!important;
 }

@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.100';
+const SPOTTER_APP_RELEASE='7.2.101';
 const spotterState={
  version:5,mode:1,setupKarts:['X','Y','Z'],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -354,7 +354,7 @@ function simulateSpotterPitOut(){
 }
 function spotterLogMovement(type,data={}){spotterState.movementLog.unshift({type,at:Date.now(),...data});spotterState.movementLog=spotterState.movementLog.slice(0,80)}
 function spotterAvailableIndex(){return spotterState.queue.findIndex(item=>item.status==='available')}
-// Velocity V7.2.100 — sélection du premier kart disponible dans la file choisie
+// Velocity V7.2.101 — sélection du premier kart disponible dans la file choisie
 function spotterAvailableIndexInFile(file){
  const target=Math.max(1,Math.min(spotterState.mode,Number(file)||1));
  return spotterState.queue.findIndex(item=>item.status==='available'&&(Number(item.queueFile)||1)===target);

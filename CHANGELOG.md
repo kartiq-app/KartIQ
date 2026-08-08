@@ -1,4 +1,9 @@
-# Velocity V7.2.100 — Correction multi-files Spotter
+## V7.2.101
+- Spotter/STANDS : cartes en attente = fond sombre + filet orange uniquement.
+- Spotter/STANDS : premier kart disponible = fond vert renforcé.
+- Analyzer Trafic : détection de course active durcie pour supprimer les cercles adverses fantômes hors session.
+
+# Velocity V7.2.101 — Correction multi-files Spotter
 
 - La validation d’un kart entrant détermine désormais la file choisie avant de sélectionner le kart à attribuer.
 - Velocity prend uniquement le premier kart `available` de la file sélectionnée (File 1, 2 ou 3).
