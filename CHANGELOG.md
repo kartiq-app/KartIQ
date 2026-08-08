@@ -1,4 +1,11 @@
-# Velocity V7.2.96 — Synchronisation STANDS / Spotter
+# Velocity V7.2.97 — Identité unique des cartes Spotter
+
+- Correction de la validation d’un kart entrant quand son libellé KV est identique à celui d’une autre carte déjà présente dans une autre file.
+- La validation, le déplacement et la maintenance ciblent désormais une instance de carte via `cardId`, et non le seul libellé `KVxx`.
+- Un kart entrant validé en File 1 ne peut plus supprimer par erreur une carte de File 2 portant le même libellé KV.
+- Migration automatique des anciennes cartes/assignations sans `cardId`.
+
+# Velocity V7.2.97 — Synchronisation STANDS / Spotter
 
 - STANDS Analyzer consomme désormais le même état partagé que le mode Spotter, issu de `/api/spotter-state`.
 - Ajout d'un cache navigateur `velocitySharedSpotterState` alimenté à la fois par les modifications locales et par le polling serveur Spotter.
