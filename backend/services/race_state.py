@@ -254,13 +254,29 @@ class RaceStateService:
 
 
     def _comment_events(self, snapshot, drivers):
-        """Historique complet du journal Apex com|| pour Analyzer uniquement.
+        """Journal Analyzer : com|| est la vérité, msg|msgt sert au temps réel.
 
-        Contrairement à _comment_penalties, cette vue conserve aussi les
-        avertissements et messages d'information (data-flag=msg, etc.).
-        Les autres modes continuent d'utiliser comment_penalties inchangé.
+        Les entrées com|| sont structurées avec heure, data-flag, kart éventuel et
+        texte. Une notification msg|msgt peut être affichée immédiatement si le
+        même texte n'est pas encore présent dans com|| ; dès que com|| arrive,
+        elle est automatiquement dédupliquée. Les autres modes restent inchangés.
         """
-        raw = str((snapshot.get("comments") or {}).get("raw") or "").strip()
+        comments = snapshot.get("comments") or {}
+        raw = str(comments.get("raw") or "").strip()
+        authoritative_texts = set()
+        drivers_by_kart = {
+            str(d.get("apex") or "").strip(): str(d.get("driver") or "").strip()
+            for d in drivers
+            if str(d.get("apex") or "").strip() not in {"", "—"}
+        }
+        flag_kinds = {
+            "penalty": "penalty",
+            "warning": "warning",
+            "msg": "information",
+            "msg_warning": "important_information",
+            "green": "race_event",
+        }
+
         if raw:
             parser = _ApexCommentsParser()
             try:
@@ -269,18 +285,14 @@ class RaceStateService:
             except Exception:
                 parser.entries = []
 
-            drivers_by_kart = {
-                str(d.get("apex") or "").strip(): str(d.get("driver") or "").strip()
-                for d in drivers
-                if str(d.get("apex") or "").strip() not in {"", "—"}
-            }
             for entry in parser.entries:
                 shown_time = str(entry.get("time") or "").strip()[:5] or datetime.now().strftime("%H:%M")
                 kart = str(entry.get("kart") or "").strip()
                 text = str(entry.get("text") or "").strip()
-                flag = str(entry.get("flag") or "").strip()
+                flag = str(entry.get("flag") or "").strip() or "msg"
                 if not text:
                     continue
+                authoritative_texts.add(re.sub(r"\s+", " ", text).strip().casefold())
                 driver = drivers_by_kart.get(kart, "") if kart else ""
                 key = f"{shown_time}|{flag}|{kart}|{text}"
                 self.comment_event_history.setdefault(key, {
@@ -291,10 +303,42 @@ class RaceStateService:
                     "penalty": text if flag == "penalty" else "",
                     "time": shown_time,
                     "flag": flag,
+                    "kind": flag_kinds.get(flag, "information"),
+                    "source": "com",
                     "at": datetime.now().isoformat(timespec="seconds"),
                 })
 
         values = list(self.comment_event_history.values())
+
+        # msg|msgt n'est qu'un canal instantané. On ne le persiste pas dans
+        # comment_event_history : ainsi com|| le remplace naturellement sans
+        # créer de doublon dans l'historique.
+        now_ms = int(time.time() * 1000)
+        for message in comments.get("instant") or []:
+            text = str(message.get("text") or "").strip()
+            received_at_ms = int(message.get("received_at_ms") or 0)
+            normalized = re.sub(r"\s+", " ", text).strip().casefold()
+            if not text or normalized in authoritative_texts:
+                continue
+            # Une notification instantanée n'a de valeur que quelques secondes ;
+            # si com|| n'arrive jamais, on évite de polluer durablement le journal.
+            if received_at_ms and now_ms - received_at_ms > 30_000:
+                continue
+            dt = datetime.fromtimestamp(received_at_ms / 1000) if received_at_ms else datetime.now()
+            shown_time = dt.strftime("%H:%M")
+            values.append({
+                "id": f"msgt|{received_at_ms}|{text}",
+                "driver": "",
+                "kart": "",
+                "comment": text,
+                "penalty": "",
+                "time": shown_time,
+                "flag": "msg",
+                "kind": "information",
+                "source": "msgt",
+                "at": dt.isoformat(timespec="seconds"),
+            })
+
         values.sort(key=lambda item: (item.get("time", ""), item.get("at", "")), reverse=True)
         return values
 

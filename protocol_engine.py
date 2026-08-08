@@ -38,6 +38,7 @@ class ProtocolEngine:
         self.lap_progress_updated_at_ms: int | None = None
         self.comments_raw: str = ""
         self.comments_updated_at_ms: int | None = None
+        self.instant_messages: list[dict[str, Any]] = []
 
     def observe_frame(self, frame: str, grid: Any | None, updates: list[Any]) -> None:
         self.frames += 1
@@ -108,6 +109,24 @@ class ProtocolEngine:
             if raw_comment:
                 self.comments_raw = raw_comment
                 self.comments_updated_at_ms = int(time.time() * 1000)
+
+        # Apex pousse aussi le dernier message de direction de course via
+        # msg|msgt|... . Cette voie sert uniquement à l'affichage immédiat :
+        # com|| reste la source de vérité et RaceState déduplique les deux flux.
+        instant_pattern = re.compile(
+            r"(?:^|[\r\n\s])msg\|msgt\|(.*?)(?=(?:[\r\n]|\s+(?:com|grid|init|dyn\d+|gmt|track|r\d+(?:c\d+)?)\|)|$)",
+            re.IGNORECASE | re.DOTALL,
+        )
+        for instant_match in instant_pattern.finditer(frame):
+            text = re.sub(r"\s+", " ", instant_match.group(1)).strip()
+            if not text:
+                continue
+            now_ms = int(time.time() * 1000)
+            # Une même notification peut être répétée par Apex. On garde une
+            # fenêtre courte et on évite les doublons stricts successifs.
+            if not self.instant_messages or self.instant_messages[-1].get("text") != text:
+                self.instant_messages.append({"text": text, "received_at_ms": now_ms, "flag": "msg"})
+                self.instant_messages = self.instant_messages[-20:]
         if "init|" in frame:
             self.init_frames += 1
         if grid:
@@ -228,5 +247,6 @@ class ProtocolEngine:
         snap["comments"] = {
             "raw": self.comments_raw,
             "updated_at_ms": self.comments_updated_at_ms,
+            "instant": list(self.instant_messages),
         }
         return snap

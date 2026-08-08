@@ -1643,7 +1643,8 @@ function renderAnalyzerPenalties(){
  host.innerHTML=items.map(p=>{
   const team=String(p?.driver||'').trim(),kart=String(p?.kart||'').trim(),text=String(p?.comment||p?.penalty||'').trim();
   const combined=team?`<strong class="analyzer-penalty-team">${analyzerEscape(team)}</strong><span class="analyzer-penalty-separator"> : </span><span class="analyzer-penalty-text">${analyzerEscape(text)}</span>`:`<span class="analyzer-penalty-text">${analyzerEscape(text)}</span>`;
-  return `<div class="analyzer-penalty-row" role="row"><span class="analyzer-penalty-time" role="cell">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-kart" role="cell">${kart?analyzerEscape(kart):''}</span><span class="analyzer-penalty-combined" role="cell">${combined}</span></div>`;
+  const flag=String(p?.flag||'msg').trim(),source=String(p?.source||'com').trim(),kind=String(p?.kind||'information').trim();
+  return `<div class="analyzer-penalty-row" role="row" data-apex-flag="${analyzerEscape(flag)}" data-apex-kind="${analyzerEscape(kind)}" data-apex-source="${analyzerEscape(source)}"><span class="analyzer-penalty-time" role="cell">${analyzerEscape(analyzerPenaltyTimeLabel(p))}</span><span class="analyzer-penalty-kart" role="cell">${kart?analyzerEscape(kart):''}</span><span class="analyzer-penalty-combined" role="cell">${combined}</span></div>`;
  }).join('');
  analyzerSyncPenaltyColumns();
 }

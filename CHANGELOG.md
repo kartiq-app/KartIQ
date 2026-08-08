@@ -1,3 +1,13 @@
+# Velocity V7.2.125 — Événements Apex natifs
+
+- Analyzer : `com||` devient la source de vérité structurée de **PÉNALITÉS ET INFORMATIONS**.
+- Parsing natif de l'heure, `data-flag`, numéro de kart éventuel et texte complet.
+- Typage Apex conservé : `penalty`, `warning`, `msg`, `msg_warning`, `green`.
+- Les informations générales sans kart sont conservées.
+- Association kart → équipe lorsqu'elle est disponible au moment de l'ingestion.
+- `msg|msgt|...` sert de notification immédiate temporaire et est dédupliqué automatiquement dès que la même information apparaît dans `com||`.
+- Aucun changement sur les blocs pénalités Qualification, Sprint ou Focus.
+
 # V7.2.124 — Schéma Apex + sessions natives
 
 - Le schéma fourni par le `grid` Apex via `data-type` devient explicitement la source de vérité dès qu’il est disponible ; aucun mapping relatif `cX` ne peut ensuite le remplacer.
