@@ -352,7 +352,7 @@
   <div class="velocity-lab-overlay" id="velocityLabOverlay" role="dialog" aria-modal="true" aria-labelledby="velocityLabTitle">
     <div class="velocity-lab-page">
       <header class="velocity-lab-head">
-        <div><span class="velocity-lab-kicker">VELOCITY ENGINE <b>V1.1 LAB</b></span><h2 id="velocityLabTitle">VELOCITY LAB</h2><p>Comparer l’algorithme officiel et expérimenter le Score Sprint sans modifier Analyzer.</p></div>
+        <div><span class="velocity-lab-kicker">VELOCITY ENGINE <b>V2 LAB</b></span><h2 id="velocityLabTitle">VELOCITY LAB</h2><p>Auditer l’algorithme V2 relatif au plateau et le Score Sprint multi-sessions.</p></div>
         <button class="velocity-lab-close" type="button" onclick="closeVelocityLab()" aria-label="Quitter Velocity Lab">×</button>
       </header>
       <div class="velocity-lab-mode-switch" role="group" aria-label="Mode Velocity Lab">
@@ -376,7 +376,7 @@
           <div id="velocityLabSprintSessions" class="velocity-lab-sprint-sessions"><div class="analyzer-empty">Aucune session chargée.</div></div>
           <div class="velocity-lab-sprint-actions">
             <button id="velocityLabSprintAnalyzeButton" type="button" onclick="runVelocityLabSprintAnalysis()" disabled>CALCULER LE SCORE SPRINT</button>
-            <small>Les sessions sont validées manuellement avant calcul. Score Sprint reste strictement isolé du Score Relais et du classement Velocity de l’Analyzer.</small>
+            <small>Les sessions sont validées manuellement avant calcul. Score Sprint utilise la même logique V2 relative au plateau que l’Analyzer, avec pondération Transition pilotée par la force statistique du signal.</small>
           </div>
         </div>
         <div id="velocityLabSprintResults" class="velocity-lab-sprint-results" aria-live="polite"><div class="velocity-lab-placeholder">Validez les sessions puis lancez le calcul.</div></div>

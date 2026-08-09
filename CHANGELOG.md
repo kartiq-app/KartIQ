@@ -1,3 +1,15 @@
+# V7.2.134 — ALGO V2 PLATEAU RELATIF
+
+- Analyzer passe au moteur **Velocity V2** validé sur les jeux de données historiques Sprint et Endurance.
+- Suppression des seuils absolus en secondes pour la composante Transition.
+- Le Δ reste calculé comme `Δ pilote - Δ plateau`, puis sa force est normalisée par la dispersion robuste du plateau (médiane + MAD, exprimée en σ).
+- Pondération adaptative : Transition varie progressivement de **25 à 45 %** selon la force statistique du signal ; Rythme varie de **45 à 25 %**.
+- Sans transition exploitable, les autres facteurs sont renormalisés automatiquement.
+- En Endurance, SCORE RELAIS compare chaque relais à une **fenêtre de tours comparable**, afin de tenir compte des changements de kart asynchrones entre équipes.
+- La confiance affichée distingue mieux l’attribution au kart : même pilote avant/après = confiance renforcée ; changement de pilote ou pilote inconnu = confiance réduite.
+- Velocity Lab / Score Sprint utilise désormais la même logique V2 relative au plateau.
+- Home et User-Agent mis à jour en **Velocity V7.2.134**.
+
 # V7.2.133 — VELOCITY LAB MATRICES + EXPORT PDF
 
 - Ajout des matrices **ÉVOLUTION PAR PILOTE** : score par Qualif/Course avec numéro de kart sous le score.

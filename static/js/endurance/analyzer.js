@@ -860,6 +860,34 @@ function analyzerPercentileScore(value,values,{lowerIsBetter=true}={}){
  const percentile=midRank/Math.max(1,clean.length-1);
  return Math.round((lowerIsBetter?1-percentile:percentile)*100);
 }
+// Velocity V2 — force statistique relative au plateau (robuste aux valeurs extrêmes).
+function analyzerRobustDistribution(values){
+ const clean=(values||[]).filter(Number.isFinite);
+ if(!clean.length)return {median:null,mad:null,sigma:null};
+ const median=analyzerMedian(clean),deviations=clean.map(v=>Math.abs(v-median)),mad=analyzerMedian(deviations);
+ let sigma=Number.isFinite(mad)&&mad>1e-9?1.4826*mad:analyzerStdDev(clean);
+ if(!Number.isFinite(sigma)||sigma<=1e-9)sigma=null;
+ return {median,mad,sigma};
+}
+function analyzerTransitionSignal(delta,values){
+ if(!Number.isFinite(delta))return {z:null,median:null,sigma:null};
+ const dist=analyzerRobustDistribution(values);
+ const z=Number.isFinite(dist.sigma)?(delta-dist.median)/dist.sigma:0;
+ return {z,median:dist.median,sigma:dist.sigma};
+}
+function analyzerTransitionAdaptiveWeights(z,hasTransition=true){
+ if(!hasTransition||!Number.isFinite(z))return {pace:.60,transition:0,potential:.20,consistency:.133333,sample:.066667};
+ // Signal normal jusqu'à 0,5σ ; montée progressive ; poids max à partir de 2σ.
+ const strength=Math.max(0,Math.min(1,(Math.abs(z)-.5)/1.5));
+ const transition=.25+.20*strength,pace=.45-.20*strength;
+ return {pace,transition,potential:.15,consistency:.10,sample:.05};
+}
+function analyzerKartAttributionConfidence(raw,baseConfidence){
+ let confidence=Number(baseConfidence)||0;
+ const current=analyzerNormalizePilot(raw?.currentPilot||''),previous=analyzerNormalizePilot(raw?.previousPilot||'');
+ if(current&&previous){confidence+=current===previous?5:-20}else if(Number.isFinite(raw?.correctedDelta)){confidence-=10}
+ return Math.max(20,Math.min(95,confidence));
+}
 function analyzerRelayMetrics(driver){
  const population=analyzerRelayPopulation();
  const sharedGrid=population[0]?.gridNow??analyzerMedian(analyzerGridPace());
@@ -867,20 +895,24 @@ function analyzerRelayMetrics(driver){
  const eligible=population.length?population:[raw].filter(item=>Number.isFinite(item.average)&&item.laps>=3);
  const paceScore=analyzerPercentileScore(raw.average,eligible.map(item=>item.average));
  const transitionValues=eligible.map(item=>item.correctedDelta).filter(Number.isFinite);
- const transitionScore=Number.isFinite(raw.correctedDelta)&&transitionValues.length?analyzerPercentileScore(raw.correctedDelta,transitionValues,{lowerIsBetter:true}):50;
+ const hasTransition=Number.isFinite(raw.correctedDelta)&&transitionValues.length>=3;
+ const transitionScore=hasTransition?analyzerPercentileScore(raw.correctedDelta,transitionValues,{lowerIsBetter:true}):null;
+ const signal=hasTransition?analyzerTransitionSignal(raw.correctedDelta,transitionValues):{z:null,median:null,sigma:null};
+ const weights=analyzerTransitionAdaptiveWeights(signal.z,hasTransition);
  const potentialValues=eligible.map(item=>item.best3).filter(Number.isFinite);
  const potentialScore=Number.isFinite(raw.best3)&&potentialValues.length?analyzerPercentileScore(raw.best3,potentialValues):paceScore;
  const consistencyValues=eligible.map(item=>item.consistency).filter(Number.isFinite);
  const consistencyScore=Number.isFinite(raw.consistency)&&consistencyValues.length?analyzerPercentileScore(raw.consistency,consistencyValues):50;
  const lapValues=eligible.map(item=>item.laps).filter(Number.isFinite);
- const confidenceScore=lapValues.length?analyzerPercentileScore(raw.laps,lapValues,{lowerIsBetter:false}):50;
- const score=Math.round(paceScore*.50+transitionScore*.20+potentialScore*.15+consistencyScore*.10+confidenceScore*.05);
+ const sampleScore=lapValues.length?analyzerPercentileScore(raw.laps,lapValues,{lowerIsBetter:false}):50;
+ const score=Math.round(paceScore*weights.pace+(transitionScore??0)*weights.transition+potentialScore*weights.potential+consistencyScore*weights.consistency+sampleScore*weights.sample);
  let confidence=raw.laps<3?20:raw.laps<5?40:raw.laps<8?65:85;
  if(Number.isFinite(raw.correctedDelta)&&Number.isFinite(raw.gridNow))confidence+=5;
  if(population.length>=6)confidence+=5;
- confidence=Math.min(95,confidence);
- return {...raw,score:Math.max(0,Math.min(100,score)),confidence,criteria:{pace:paceScore,transition:transitionScore,potential:potentialScore,consistency:consistencyScore,sample:confidenceScore},criteriaPopulation:{pace:eligible.map(item=>item.average).filter(Number.isFinite).length,transition:transitionValues.length,potential:potentialValues.length,consistency:consistencyValues.length,sample:lapValues.length},populationSize:eligible.length,status:raw.laps<3?'learning':'rated'};
+ confidence=analyzerKartAttributionConfidence(raw,confidence);
+ return {...raw,score:Math.max(0,Math.min(100,score)),confidence,transitionZ:signal.z,transitionMedian:signal.median,transitionSigma:signal.sigma,weights,criteria:{pace:paceScore,transition:transitionScore,potential:potentialScore,consistency:consistencyScore,sample:sampleScore},criteriaPopulation:{pace:eligible.map(item=>item.average).filter(Number.isFinite).length,transition:transitionValues.length,potential:potentialValues.length,consistency:consistencyValues.length,sample:lapValues.length},populationSize:eligible.length,status:raw.laps<3?'learning':'rated'};
 }
+
 
 
 /* Velocity V7.2.107 — Score Relais reconstruit depuis les STATS Apex */
@@ -913,7 +945,7 @@ function analyzerRelayScoreSlices(laps,pits,driver=null){
   // Le dernier relais sans arrêt terminé utilise le pilote courant officiel de .INF.
   const completedPilot=String(chronologicalPits[i]?.driverName||'').trim();
   const currentPilot=i===bounds.length-2?String(analyzerOfficialCurrentPilot(driver)||'').trim():'';
-  relays.push({index:i+1,from:segment[0]?.lap||null,to:segment[segment.length-1]?.lap||null,laps:values.length,average:analyzerMean(values),best3:analyzerMean(top3),consistency:analyzerStdDev(values),values,pilot:completedPilot||currentPilot||null});
+  relays.push({index:i+1,from:segment[0]?.lap||null,to:segment[segment.length-1]?.lap||null,laps:values.length,average:analyzerMean(values),best3:analyzerMean(top3),consistency:analyzerStdDev(values),values,lapPoints:segment.map(l=>({lap:Number(l.lap),seconds:Number(l.seconds)})).filter(l=>Number.isFinite(l.lap)&&Number.isFinite(l.seconds)),pilot:completedPilot||currentPilot||null});
  }
  return relays;
 }
@@ -946,33 +978,51 @@ async function analyzerRelayScoreQualificationContext(drivers){
  }
  return {session,grid:analyzerMedian(averages),byRow};
 }
+function analyzerRelayWindowValues(team,from,to){
+ const values=[];
+ for(const relay of (team?.relays||[]))for(const point of (relay?.lapPoints||[]))if(Number(point.lap)>=Number(from)&&Number(point.lap)<=Number(to)&&Number.isFinite(Number(point.seconds)))values.push(Number(point.seconds));
+ return values;
+}
+function analyzerRelayWindowPeerMetrics(teams,relay){
+ const from=Number(relay?.from),to=Number(relay?.to);if(!Number.isFinite(from)||!Number.isFinite(to))return [];
+ return (teams||[]).map(team=>{const values=analyzerRelayWindowValues(team,from,to);if(values.length<3)return null;const sorted=values.slice().sort((a,b)=>a-b);return {team,average:analyzerMean(values),best3:analyzerMean(sorted.slice(0,3)),consistency:analyzerStdDev(values),laps:values.length}}).filter(Boolean);
+}
+function analyzerRelayWindowGrid(teams,relay){return analyzerMedian(analyzerRelayWindowPeerMetrics(teams,relay).map(x=>x.average).filter(Number.isFinite))}
 function analyzerRelayScoreCompute(teams,qualification){
- const maxRelay=Math.max(0,...teams.map(team=>team.relays.length)),matrix=new Map();
- const gridByRelay=new Map();
- for(let index=1;index<=maxRelay;index++){
-  const averages=teams.map(team=>team.relays.find(r=>r.index===index)?.average).filter(Number.isFinite);
-  gridByRelay.set(index,analyzerMedian(averages));
- }
- for(let index=1;index<=maxRelay;index++){
-  const eligible=teams.map(team=>({team,relay:team.relays.find(r=>r.index===index)})).filter(x=>x.relay&&x.relay.laps>=3&&Number.isFinite(x.relay.average));
-  const gridNow=gridByRelay.get(index),previousGrid=index===1?qualification.grid:gridByRelay.get(index-1);
-  const raws=eligible.map(({team,relay})=>{
-   const previousAverage=index===1?qualification.byRow.get(Number(team.driver.apex_row)):team.relays.find(r=>r.index===index-1)?.average;
+ const maxRelay=Math.max(0,...teams.map(team=>team.relays.length)),matrix=new Map(),gridByRelay=new Map(),allTransitions=[];
+ // Pré-calcul des transitions avec une référence plateau sur la même fenêtre de tours.
+ for(const team of teams){
+  for(const relay of team.relays){
+   if(relay.laps<3||!Number.isFinite(relay.average))continue;
+   const previous=team.relays.find(r=>r.index===relay.index-1)||null;
+   const gridNow=analyzerRelayWindowGrid(teams,relay);
+   const previousGrid=previous?analyzerRelayWindowGrid(teams,previous):qualification.grid;
+   const previousAverage=previous?.average??qualification.byRow.get(Number(team.driver.apex_row));
    const rawDelta=Number.isFinite(previousAverage)?relay.average-previousAverage:null;
    const gridDelta=Number.isFinite(gridNow)&&Number.isFinite(previousGrid)?gridNow-previousGrid:0;
    const correctedDelta=Number.isFinite(rawDelta)?rawDelta-gridDelta:null;
-   return {team,relay,previousAverage,rawDelta,gridDelta,correctedDelta};
-  });
-  const paceValues=raws.map(x=>x.relay.average).filter(Number.isFinite),transitionValues=raws.map(x=>x.correctedDelta).filter(Number.isFinite),potentialValues=raws.map(x=>x.relay.best3).filter(Number.isFinite),consistencyValues=raws.map(x=>x.relay.consistency).filter(Number.isFinite),lapValues=raws.map(x=>x.relay.laps).filter(Number.isFinite);
-  for(const raw of raws){
-   const pace=analyzerPercentileScore(raw.relay.average,paceValues),transition=Number.isFinite(raw.correctedDelta)&&transitionValues.length?analyzerPercentileScore(raw.correctedDelta,transitionValues):50,potential=Number.isFinite(raw.relay.best3)?analyzerPercentileScore(raw.relay.best3,potentialValues):50,consistency=Number.isFinite(raw.relay.consistency)?analyzerPercentileScore(raw.relay.consistency,consistencyValues):50,sample=analyzerPercentileScore(raw.relay.laps,lapValues,{lowerIsBetter:false});
-   const score=Math.max(0,Math.min(100,Math.round(pace*.50+transition*.20+potential*.15+consistency*.10+sample*.05)));
-   if(!matrix.has(Number(raw.team.driver.apex_row)))matrix.set(Number(raw.team.driver.apex_row),new Map());
-   matrix.get(Number(raw.team.driver.apex_row)).set(index,{...raw,score,gridNow,previousGrid,criteria:{pace,transition,potential,consistency,sample}});
+   const midpoint=(Number(relay.from)+Number(relay.to))/2;
+   allTransitions.push({team,relay,previous,previousAverage,gridNow,previousGrid,rawDelta,gridDelta,correctedDelta,midpoint});
   }
+ }
+ for(let index=1;index<=maxRelay;index++){
+  const indexRows=allTransitions.filter(x=>x.relay.index===index);gridByRelay.set(index,analyzerMedian(indexRows.map(x=>x.gridNow).filter(Number.isFinite)));
+ }
+ for(const raw of allTransitions){
+  const peers=analyzerRelayWindowPeerMetrics(teams,raw.relay);
+  const paceValues=peers.map(x=>x.average).filter(Number.isFinite),potentialValues=peers.map(x=>x.best3).filter(Number.isFinite),consistencyValues=peers.map(x=>x.consistency).filter(Number.isFinite),lapValues=peers.map(x=>x.laps).filter(Number.isFinite);
+  let transitionPeers=allTransitions.filter(x=>Number.isFinite(x.correctedDelta)&&Number.isFinite(x.midpoint)&&Math.abs(x.midpoint-raw.midpoint)<=30).map(x=>x.correctedDelta);
+  if(transitionPeers.length<6)transitionPeers=allTransitions.map(x=>x.correctedDelta).filter(Number.isFinite);
+  const hasTransition=Number.isFinite(raw.correctedDelta)&&transitionPeers.length>=3;
+  const pace=analyzerPercentileScore(raw.relay.average,paceValues),transition=hasTransition?analyzerPercentileScore(raw.correctedDelta,transitionPeers):null,potential=Number.isFinite(raw.relay.best3)?analyzerPercentileScore(raw.relay.best3,potentialValues):50,consistency=Number.isFinite(raw.relay.consistency)?analyzerPercentileScore(raw.relay.consistency,consistencyValues):50,sample=analyzerPercentileScore(raw.relay.laps,lapValues,{lowerIsBetter:false});
+  const signal=hasTransition?analyzerTransitionSignal(raw.correctedDelta,transitionPeers):{z:null,median:null,sigma:null},weights=analyzerTransitionAdaptiveWeights(signal.z,hasTransition);
+  const score=Math.max(0,Math.min(100,Math.round(pace*weights.pace+(transition??0)*weights.transition+potential*weights.potential+consistency*weights.consistency+sample*weights.sample)));
+  if(!matrix.has(Number(raw.team.driver.apex_row)))matrix.set(Number(raw.team.driver.apex_row),new Map());
+  matrix.get(Number(raw.team.driver.apex_row)).set(raw.relay.index,{...raw,score,criteria:{pace,transition,potential,consistency,sample},weights,transitionZ:signal.z,transitionMedian:signal.median,transitionSigma:signal.sigma,transitionPopulation:transitionPeers.length});
  }
  return {maxRelay,matrix,gridByRelay};
 }
+
 async function analyzerLoadRelayScores({force=false}={}){
  if(analyzerRelayScoreLoading)return;
  if(!force&&analyzerRelayScoreData&&Date.now()-analyzerRelayScoreData.updatedAt<60000){
@@ -1031,7 +1081,7 @@ function analyzerVelocityUnifiedMetrics(driver){
  let confidence=laps<3?20:laps<5?40:laps<8?65:85;
  if(Number.isFinite(cell.correctedDelta)&&Number.isFinite(cell.gridNow))confidence+=5;
  if(populationSize>=6)confidence+=5;
- confidence=Math.min(95,confidence);
+ confidence=analyzerKartAttributionConfidence({currentPilot:relay.pilot||analyzerOfficialCurrentPilot(driver)||fallback.currentPilot||null,previousPilot:cell.previous?.pilot||fallback.previousPilot||null,correctedDelta:cell.correctedDelta},confidence);
  const bestLaps=(relay.values||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b).slice(0,3);
  return {
   ...fallback,
@@ -1054,6 +1104,10 @@ function analyzerVelocityUnifiedMetrics(driver){
   relayIndex:index,
   score:cell.score,
   confidence,
+  transitionZ:cell.transitionZ,
+  transitionMedian:cell.transitionMedian,
+  transitionSigma:cell.transitionSigma,
+  weights:{...(cell.weights||{})},
   criteria:{...cell.criteria},
   criteriaPopulation:{pace:populationSize,transition:populationSize,potential:populationSize,consistency:populationSize,sample:populationSize},
   populationSize,
@@ -1188,7 +1242,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.133 — Velocity Lab / matrices Pilotes-Karts + export PDF.
+/* Velocity V7.2.134 — Velocity Lab / matrices Pilotes-Karts + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];
@@ -1281,13 +1335,7 @@ async function velocityLabSprintLiveData(progress){
  const entries=rows.filter(Boolean),grid=analyzerMedian(entries.map(x=>x.average).filter(Number.isFinite));
  return {id:'live',name:'SESSION LIVE',kind:'race',live:true,entries,grid};
 }
-function velocityLabSprintAdaptiveWeights(delta){
- if(!Number.isFinite(delta))return {pace:.60,transition:0,potential:.20,consistency:.133333,sample:.066667,label:'Sans transition'};
- const a=Math.abs(delta);let pace=.45,transition=.25;
- if(a>=.50){pace=.25;transition=.45}else if(a>=.35){pace=.30;transition=.40}else if(a>=.20){pace=.35;transition=.35}else if(a>=.10){pace=.40;transition=.30}
- return {pace,transition,potential:.15,consistency:.10,sample:.05,label:`Δ ${a.toFixed(3)} s`};
-}
-function velocityLabSprintTransitionNote(delta){return Number.isFinite(delta)?Math.max(0,Math.min(100,Math.round(50-delta*100))):null}
+function velocityLabSprintAdaptiveWeights(z,hasTransition=true){return analyzerTransitionAdaptiveWeights(z,hasTransition)}
 function velocityLabSprintBuildAnalysis(sessions){
  const previousByPilot=new Map(),allRows=[];
  sessions.forEach((session,sessionIndex)=>{
@@ -1301,12 +1349,13 @@ function velocityLabSprintBuildAnalysis(sessions){
    const correctedDelta=Number.isFinite(rawDelta)&&Number.isFinite(gridDelta)?rawDelta-gridDelta:null;
    stage.push({session,sessionIndex,entry,previous,rawDelta,gridDelta,correctedDelta});
   });
+  const transitionVals=stage.map(r=>r.correctedDelta).filter(Number.isFinite);
   stage.forEach(row=>{
-   const {entry,correctedDelta}=row;
+   const {entry,correctedDelta}=row,hasTransition=Number.isFinite(correctedDelta)&&transitionVals.length>=3;
    const pace=analyzerPercentileScore(entry.average,paceVals),potential=analyzerPercentileScore(entry.best3,potentialVals),consistency=analyzerPercentileScore(entry.consistency,consistencyVals),sample=analyzerPercentileScore(entry.laps,sampleVals,{lowerIsBetter:false});
-   const transition=velocityLabSprintTransitionNote(correctedDelta),weights=velocityLabSprintAdaptiveWeights(correctedDelta);
+   const transition=hasTransition?analyzerPercentileScore(correctedDelta,transitionVals):null,signal=hasTransition?analyzerTransitionSignal(correctedDelta,transitionVals):{z:null,median:null,sigma:null},weights=velocityLabSprintAdaptiveWeights(signal.z,hasTransition);
    const score=Math.max(0,Math.min(100,Math.round(pace*weights.pace+(transition??0)*weights.transition+potential*weights.potential+consistency*weights.consistency+sample*weights.sample)));
-   Object.assign(row,{criteria:{pace,transition,potential,consistency,sample},weights,score});allRows.push(row);
+   Object.assign(row,{criteria:{pace,transition,potential,consistency,sample},weights,transitionZ:signal.z,transitionMedian:signal.median,transitionSigma:signal.sigma,score});allRows.push(row);
   });
   eligible.forEach(entry=>previousByPilot.set(entry.pilotKey,{...entry,sessionId:session.id,sessionName:session.name,sessionGrid:session.grid}));
  });
@@ -1340,14 +1389,14 @@ function renderVelocityLabSprintResults(){
  const current=analysis.latest;
  if(!current.length){host.innerHTML='<div class="analyzer-empty">Aucun pilote avec au moins 3 tours exploitables dans la dernière session.</div>';return}
  const summary=current.map((r,index)=>`<tr><td>${index+1}</td><td class="velocity-lab-kart">${analyzerEscape(r.entry.kart)}</td><td class="velocity-lab-team">${analyzerEscape(r.entry.pilot)}</td><td><b class="velocity-lab-score ${analyzerScoreClass(r.score)}">${r.score}</b></td><td>${analyzerVelocityLabFormatTime(r.entry.average)}</td><td class="sprint-delta ${velocityLabSprintDeltaClass(r.correctedDelta)}">${analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true})}</td><td>${Math.round(r.weights.pace*100)}%</td><td>${Math.round(r.weights.transition*100)}%</td><td>${r.previous?analyzerEscape(r.previous.sessionName):'—'}</td><td>${r.previous?analyzerEscape(r.previous.kart):'—'}</td></tr>`).join('');
- const history=analysis.rows.map(r=>`<tr><td>${analyzerEscape(r.session.name)}</td><td>${analyzerEscape(r.entry.pilot)}</td><td>${analyzerEscape(r.entry.kart)}</td><td>${analyzerVelocityLabFormatTime(r.entry.average)}</td><td>${r.previous?analyzerVelocityLabFormatTime(r.previous.average):'—'}</td><td>${analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true})}</td><td>${analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true})}</td><td class="sprint-delta ${velocityLabSprintDeltaClass(r.correctedDelta)}">${analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true})}</td><td>${r.criteria.transition??'—'}</td><td>${Math.round(r.weights.transition*100)}%</td><td><b>${r.score}</b></td></tr>`).join('');
+ const history=analysis.rows.map(r=>`<tr><td>${analyzerEscape(r.session.name)}</td><td>${analyzerEscape(r.entry.pilot)}</td><td>${analyzerEscape(r.entry.kart)}</td><td>${analyzerVelocityLabFormatTime(r.entry.average)}</td><td>${r.previous?analyzerVelocityLabFormatTime(r.previous.average):'—'}</td><td>${analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true})}</td><td>${analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true})}</td><td class="sprint-delta ${velocityLabSprintDeltaClass(r.correctedDelta)}">${analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true})}</td><td>${r.criteria.transition??'—'}</td><td>${Number.isFinite(r.transitionZ)?r.transitionZ.toFixed(2)+'σ':'—'}</td><td>${Math.round(r.weights.transition*100)}%</td><td><b>${r.score}</b></td></tr>`).join('');
  const matrices=velocityLabSprintMatrices(analysis),pilotMatrix=velocityLabSprintMatrixHtml('ÉVOLUTION PAR PILOTE','PILOTE',matrices.pilots,matrices.stages,row=>`KART ${row.entry.kart}`),kartMatrix=velocityLabSprintMatrixHtml('STABILITÉ PAR KART','KART',matrices.karts,matrices.stages,row=>row.entry.pilot);
- host.innerHTML=`<div class="velocity-lab-sprint-result-head"><div><span>SCORE SPRINT EXPÉRIMENTAL</span><h3>${analyzerEscape(current[0].session.name)}</h3></div><div class="velocity-lab-sprint-result-tools"><small>${analysis.sessions.length} étape(s) · pondération adaptative · aucune incidence sur Analyzer</small><button id="velocityLabSprintPdfButton" type="button" onclick="exportVelocityLabSprintPdf()">EXPORTER EN PDF</button></div></div><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table velocity-lab-sprint-ranking"><thead><tr><th>TOP</th><th>KART</th><th>PILOTE</th><th>SCORE</th><th>T.MOYEN</th><th>Δ CORRIGÉ</th><th>PACE</th><th>TRANSITION</th><th>RÉF. PRÉC.</th><th>KART PRÉC.</th></tr></thead><tbody>${summary}</tbody></table></div><div class="velocity-lab-matrices">${pilotMatrix}${kartMatrix}</div><details class="velocity-lab-sprint-details"><summary>DÉTAIL DE TOUTES LES TRANSITIONS (${analysis.rows.length})</summary><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table"><thead><tr><th>SESSION</th><th>PILOTE</th><th>KART</th><th>T.MOYEN</th><th>AVANT</th><th>Δ PILOTE</th><th>Δ PLATEAU</th><th>Δ CORRIGÉ</th><th>NOTE TRANS.</th><th>POIDS TRANS.</th><th>SCORE</th></tr></thead><tbody>${history}</tbody></table></div></details><div class="velocity-lab-note"><b>Règle expérimentale :</b> plus |Δ corrigé| est élevé, plus TRANSITION prend du poids (25 → 45 %) et PACE en perd (45 → 25 %). Le signe agit dans les deux sens : amélioration = kart valorisé, dégradation = kart sanctionné. Sans référence antérieure exploitable, Transition est absente et les autres critères sont renormalisés.</div>`;
+ host.innerHTML=`<div class="velocity-lab-sprint-result-head"><div><span>SCORE SPRINT EXPÉRIMENTAL</span><h3>${analyzerEscape(current[0].session.name)}</h3></div><div class="velocity-lab-sprint-result-tools"><small>${analysis.sessions.length} étape(s) · pondération adaptative · aucune incidence sur Analyzer</small><button id="velocityLabSprintPdfButton" type="button" onclick="exportVelocityLabSprintPdf()">EXPORTER EN PDF</button></div></div><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table velocity-lab-sprint-ranking"><thead><tr><th>TOP</th><th>KART</th><th>PILOTE</th><th>SCORE</th><th>T.MOYEN</th><th>Δ CORRIGÉ</th><th>PACE</th><th>TRANSITION</th><th>RÉF. PRÉC.</th><th>KART PRÉC.</th></tr></thead><tbody>${summary}</tbody></table></div><div class="velocity-lab-matrices">${pilotMatrix}${kartMatrix}</div><details class="velocity-lab-sprint-details"><summary>DÉTAIL DE TOUTES LES TRANSITIONS (${analysis.rows.length})</summary><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table"><thead><tr><th>SESSION</th><th>PILOTE</th><th>KART</th><th>T.MOYEN</th><th>AVANT</th><th>Δ PILOTE</th><th>Δ PLATEAU</th><th>Δ CORRIGÉ</th><th>NOTE TRANS.</th><th>SIGNAL</th><th>POIDS TRANS.</th><th>SCORE</th></tr></thead><tbody>${history}</tbody></table></div></details><div class="velocity-lab-note"><b>Règle expérimentale :</b> plus le Δ corrigé est statistiquement anormal par rapport au plateau (|σ|), plus TRANSITION prend du poids (25 → 45 %) et PACE en perd (45 → 25 %). Le signe agit dans les deux sens : amélioration = kart valorisé, dégradation = kart sanctionné. Sans référence antérieure exploitable, Transition est absente et les autres critères sont renormalisés.</div>`;
 }
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.133`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.134`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -1358,12 +1407,12 @@ async function exportVelocityLabSprintPdf(){
  try{
   const pages=[],matrices=velocityLabSprintMatrices(analysis),generated=new Date(),latest=analysis.latest||[];
   let page=velocityLabSprintPdfPage('RÉSULTATS SCORE SPRINT',`Rapport complet généré le ${generated.toLocaleString('fr-FR')} · ${analysis.sessions.length} session(s) · ${analysis.rows.length} performance(s)`);
-  const rankingRows=latest.map((r,i)=>[i+1,r.entry.pilot,`K${r.entry.kart}`,r.score,analyzerVelocityLabFormatTime(r.entry.average),analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),`${Math.round(r.weights.transition*100)}%`]);
-  analyzerDebriefPdfTable(page,['TOP','PILOTE','KART','SCORE','T.MOYEN','Δ CORR.','TRANS.'],rankingRows.slice(0,24),[70,300,90,100,170,170,140],48);pages.push(page);
+  const rankingRows=latest.map((r,i)=>[i+1,r.entry.pilot,`K${r.entry.kart}`,r.score,analyzerVelocityLabFormatTime(r.entry.average),analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),Number.isFinite(r.transitionZ)?`${r.transitionZ.toFixed(2)}σ`:'—',`${Math.round(r.weights.transition*100)}%`]);
+  analyzerDebriefPdfTable(page,['TOP','PILOTE','KART','SCORE','T.MOYEN','Δ CORR.','SIGNAL','TRANS.'],rankingRows.slice(0,24),[60,250,75,85,145,145,110,110],48);pages.push(page);
   const pChunk=18;for(let i=0;i<matrices.pilots.length;i+=pChunk)pages.push(velocityLabSprintPdfMatrixPage('ÉVOLUTION PAR PILOTE',matrices.pilots.slice(i,i+pChunk),matrices.stages,row=>`KART ${row.entry.kart}`));
   const kChunk=18;for(let i=0;i<matrices.karts.length;i+=kChunk)pages.push(velocityLabSprintPdfMatrixPage('STABILITÉ PAR KART',matrices.karts.slice(i,i+kChunk),matrices.stages,row=>row.entry.pilot));
-  const transitionRows=analysis.rows.map(r=>[r.session.name,r.entry.pilot,`K${r.entry.kart}`,r.score,analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),`${Math.round(r.weights.transition*100)}%`]);
-  for(let i=0;i<transitionRows.length;i+=22){page=velocityLabSprintPdfPage('DÉTAIL DES TRANSITIONS',`Performances ${i+1} à ${Math.min(transitionRows.length,i+22)} sur ${transitionRows.length}`);analyzerDebriefPdfTable(page,['SESSION','PILOTE','KART','SCORE','Δ PIL.','Δ PLAT.','Δ CORR.','TRANS.'],transitionRows.slice(i,i+22),[210,260,80,90,120,120,120,100],45);pages.push(page)}
+  const transitionRows=analysis.rows.map(r=>[r.session.name,r.entry.pilot,`K${r.entry.kart}`,r.score,analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),Number.isFinite(r.transitionZ)?`${r.transitionZ.toFixed(2)}σ`:'—',`${Math.round(r.weights.transition*100)}%`]);
+  for(let i=0;i<transitionRows.length;i+=22){page=velocityLabSprintPdfPage('DÉTAIL DES TRANSITIONS',`Performances ${i+1} à ${Math.min(transitionRows.length,i+22)} sur ${transitionRows.length}`);analyzerDebriefPdfTable(page,['SESSION','PILOTE','KART','SCORE','Δ PIL.','Δ PLAT.','Δ CORR.','SIGNAL','TRANS.'],transitionRows.slice(i,i+22),[170,210,65,75,100,100,100,90,90],45);pages.push(page)}
   pages.forEach((p,i)=>velocityLabSprintPdfFooter(p,i+1,pages.length));
   const jpegs=pages.map(({canvas})=>{const url=canvas.toDataURL('image/jpeg',.92);return {width:canvas.width,height:canvas.height,bytes:analyzerDebriefPdfDataUrlBytes(url)}}),pdf=analyzerDebriefPdfBuild(jpegs),blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`VelocityLab_ScoreSprint_${generated.toISOString().slice(0,10)}.pdf`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
  }catch(error){console.error('[Velocity Lab PDF]',error);window.alert(`Impossible de générer le PDF Velocity Lab : ${error.message}`)}finally{if(button){button.disabled=false;button.textContent='EXPORTER EN PDF'}}
