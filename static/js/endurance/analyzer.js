@@ -1242,7 +1242,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.143 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.144 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];
@@ -1569,28 +1569,92 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.143`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.144`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
  rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(Number.isFinite(row.score)?String(row.score):'—',x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(row.insufficient?'Données insuffisantes':String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
 }
+function velocityLabSprintPdfRankingRows(rows){
+ return (rows||[]).slice().sort(velocityLabSprintScoreSort).map((r,i)=>[
+  i+1,
+  r.entry.pilot,
+  `K${r.entry.kart}`,
+  Number.isFinite(r.score)?r.score:'—',
+  Number.isFinite(r.entry.average)?analyzerVelocityLabFormatTime(r.entry.average):'—',
+  analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),
+  Number.isFinite(r.transitionZ)?`${r.transitionZ.toFixed(2)}σ`:'—',
+  Number.isFinite(r.score)?`${Math.round(r.weights.transition*100)}%`:'—'
+ ]);
+}
+function velocityLabSprintPdfAddRankingPages(pages,title,rows,subtitle){
+ const rankingRows=velocityLabSprintPdfRankingRows(rows),rankChunk=24;
+ for(let i=0;i<Math.max(1,Math.ceil(rankingRows.length/rankChunk));i++){
+  const page=velocityLabSprintPdfPage(title,`${subtitle} · ${rankingRows.length} pilote(s)`);
+  analyzerDebriefPdfTable(page,['TOP','PILOTE','KART','SCORE','T.MOYEN','Δ CORR.','SIGNAL','TRANS.'],rankingRows.slice(i*rankChunk,(i+1)*rankChunk),[60,250,75,85,145,145,110,110],48);
+  pages.push(page);
+ }
+}
 async function exportVelocityLabSprintPdf(){
  const analysis=velocityLabSprintAnalysis,button=document.getElementById('velocityLabSprintPdfButton');if(!analysis?.rows?.length)return;if(button){button.disabled=true;button.textContent='GÉNÉRATION…'}
  try{
-  const pages=[],matrices=velocityLabSprintMatrices(analysis),generated=new Date(),latest=analysis.latest||[],trackKarts=Boolean(analysis.trackKartNumbers),modeLabel=trackKarts?'MODE SUIVI KARTS — numéros de kart suivis':'MODE RELAIS — numéros affichés, non pris en compte';
-  const scoredCount=analysis.rows.filter(r=>Number.isFinite(r.score)).length,totalCount=analysis.rows.length,latestStage=analysis.displayStages?.[analysis.displayStages.length-1],latestLabel=latestStage?.label||'DERNIÈRE ÉTAPE';
-  const rankingRows=latest.map((r,i)=>[i+1,r.entry.pilot,`K${r.entry.kart}`,Number.isFinite(r.score)?r.score:'—',Number.isFinite(r.entry.average)?analyzerVelocityLabFormatTime(r.entry.average):'—',analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),Number.isFinite(r.transitionZ)?`${r.transitionZ.toFixed(2)}σ`:'—',Number.isFinite(r.score)?`${Math.round(r.weights.transition*100)}%`:'—']);
-  const rankChunk=24;
-  for(let i=0;i<Math.max(1,Math.ceil(rankingRows.length/rankChunk));i++){
-   page=velocityLabSprintPdfPage(`RÉSULTATS SCORE SPRINT — ${latestLabel}`,`${modeLabel} · ${generated.toLocaleString('fr-FR')} · ${analysis.displayStages?.length||analysis.sessions.length} étape(s) · ${totalCount} pilote/session(s), ${scoredCount} scorée(s)`);
-   analyzerDebriefPdfTable(page,['TOP','PILOTE','KART','SCORE','T.MOYEN','Δ CORR.','SIGNAL','TRANS.'],rankingRows.slice(i*rankChunk,(i+1)*rankChunk),[60,250,75,85,145,145,110,110],48);
+  const pages=[],matrices=velocityLabSprintMatrices(analysis),generated=new Date(),trackKarts=Boolean(analysis.trackKartNumbers),modeLabel=trackKarts?'MODE SUIVI KARTS — numéros de kart suivis':'MODE RELAIS — numéros affichés, non pris en compte';
+  const stages=analysis.displayStages?.length?analysis.displayStages:velocityLabSprintDisplayStages(analysis.sessions||[]);
+  const sessionLabels=new Map();
+  stages.forEach(stage=>{
+   stage.sessionIndexes.forEach((sessionIndex,subIndex)=>{
+    const suffix=stage.sessionIndexes.length>1?` ${String.fromCharCode(65+subIndex)}`:'';
+    sessionLabels.set(sessionIndex,`${stage.label}${suffix}`);
+   });
+  });
+
+  // 1) Résultats de CHAQUE session/groupe dans l'ordre chronologique.
+  for(let sessionIndex=0;sessionIndex<(analysis.sessions||[]).length;sessionIndex++){
+   const session=analysis.sessions[sessionIndex],rows=analysis.rows.filter(r=>r.rawSessionIndex===sessionIndex);
+   if(!rows.length)continue;
+   const label=sessionLabels.get(sessionIndex)||String(session?.name||`SESSION ${sessionIndex+1}`).toUpperCase();
+   velocityLabSprintPdfAddRankingPages(
+    pages,
+    `RÉSULTATS — ${label}`,
+    rows,
+    `${modeLabel} · ${generated.toLocaleString('fr-FR')} · session Apex : ${session?.name||label}`
+   );
+  }
+
+  // 2) Après chaque course A/B : classement consolidé de la manche.
+  // Les scores restent ceux calculés dans le plateau propre de chaque groupe.
+  stages.filter(stage=>stage.kind==='race').forEach(stage=>{
+   const indexes=new Set(stage.sessionIndexes||[]);
+   const rows=analysis.rows.filter(r=>indexes.has(r.rawSessionIndex));
+   if(!rows.length)return;
+   velocityLabSprintPdfAddRankingPages(
+    pages,
+    `CLASSEMENT ${stage.label}`,
+    rows,
+    `${modeLabel} · consolidation des groupes ${stage.sessionIndexes.length>1?'A + B':'de la session'} · scores calculés dans chaque plateau d'origine`
+   );
+  });
+
+  // 3) Matrices d'évolution conservées.
+  const pChunk=18,pilotSub=trackKarts?(row=>`KART ${row.entry.kart}`):(row=>`KART ${row.entry.kart} · non pris en compte`);
+  for(let i=0;i<matrices.pilots.length;i+=pChunk)pages.push(velocityLabSprintPdfMatrixPage('ÉVOLUTION PAR PILOTE',matrices.pilots.slice(i,i+pChunk),matrices.stages,pilotSub));
+  if(trackKarts){
+   const kChunk=18;
+   for(let i=0;i<matrices.karts.length;i+=kChunk)pages.push(velocityLabSprintPdfMatrixPage('STABILITÉ PAR KART',matrices.karts.slice(i,i+kChunk),matrices.stages,row=>row.entry.pilot));
+  }
+
+  // 4) Détail des transitions conservé.
+  const transitionRows=analysis.rows.map(r=>trackKarts?
+   [sessionLabels.get(r.rawSessionIndex)||r.session.name,r.entry.pilot,`K${r.entry.kart}`,Number.isFinite(r.score)?r.score:'—',analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),Number.isFinite(r.transitionZ)?`${r.transitionZ.toFixed(2)}σ`:'—',Number.isFinite(r.score)?`${Math.round(r.weights.transition*100)}%`:'—']:
+   [sessionLabels.get(r.rawSessionIndex)||r.session.name,r.entry.pilot,Number.isFinite(r.score)?r.score:'—',analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),Number.isFinite(r.transitionZ)?`${r.transitionZ.toFixed(2)}σ`:'—',Number.isFinite(r.score)?`${Math.round(r.weights.transition*100)}%`:'—']
+  );
+  for(let i=0;i<transitionRows.length;i+=22){
+   const page=velocityLabSprintPdfPage('DÉTAIL DES TRANSITIONS',`${modeLabel} · performances ${i+1} à ${Math.min(transitionRows.length,i+22)} sur ${transitionRows.length}`);
+   if(trackKarts)analyzerDebriefPdfTable(page,['SESSION','PILOTE','KART','SCORE','Δ PIL.','Δ PLAT.','Δ CORR.','SIGNAL','TRANS.'],transitionRows.slice(i,i+22),[170,210,65,75,100,100,100,90,90],45);
+   else analyzerDebriefPdfTable(page,['SESSION','PILOTE','SCORE','Δ PIL.','Δ PLAT.','Δ CORR.','SIGNAL','TRANS.'],transitionRows.slice(i,i+22),[190,235,80,115,115,115,100,100],45);
    pages.push(page);
   }
-  const pChunk=18,pilotSub=trackKarts?(row=>`KART ${row.entry.kart}`):(row=>`KART ${row.entry.kart} · non pris en compte`);for(let i=0;i<matrices.pilots.length;i+=pChunk)pages.push(velocityLabSprintPdfMatrixPage('ÉVOLUTION PAR PILOTE',matrices.pilots.slice(i,i+pChunk),matrices.stages,pilotSub));
-  if(trackKarts){const kChunk=18;for(let i=0;i<matrices.karts.length;i+=kChunk)pages.push(velocityLabSprintPdfMatrixPage('STABILITÉ PAR KART',matrices.karts.slice(i,i+kChunk),matrices.stages,row=>row.entry.pilot))}
-  const transitionRows=analysis.rows.map(r=>trackKarts?[r.session.name,r.entry.pilot,`K${r.entry.kart}`,Number.isFinite(r.score)?r.score:'—',analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),Number.isFinite(r.transitionZ)?`${r.transitionZ.toFixed(2)}σ`:'—',Number.isFinite(r.score)?`${Math.round(r.weights.transition*100)}%`:'—']:[r.session.name,r.entry.pilot,Number.isFinite(r.score)?r.score:'—',analyzerVelocityLabFormatSeconds(r.rawDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.gridDelta,{signed:true}),analyzerVelocityLabFormatSeconds(r.correctedDelta,{signed:true}),Number.isFinite(r.transitionZ)?`${r.transitionZ.toFixed(2)}σ`:'—',Number.isFinite(r.score)?`${Math.round(r.weights.transition*100)}%`:'—']);
-  for(let i=0;i<transitionRows.length;i+=22){page=velocityLabSprintPdfPage('DÉTAIL DES TRANSITIONS',`${modeLabel} · performances ${i+1} à ${Math.min(transitionRows.length,i+22)} sur ${transitionRows.length}`);if(trackKarts)analyzerDebriefPdfTable(page,['SESSION','PILOTE','KART','SCORE','Δ PIL.','Δ PLAT.','Δ CORR.','SIGNAL','TRANS.'],transitionRows.slice(i,i+22),[170,210,65,75,100,100,100,90,90],45);else analyzerDebriefPdfTable(page,['SESSION','PILOTE','SCORE','Δ PIL.','Δ PLAT.','Δ CORR.','SIGNAL','TRANS.'],transitionRows.slice(i,i+22),[190,235,80,115,115,115,100,100],45);pages.push(page)}
+
   if(!pages.length)throw new Error('Aucune page PDF à générer');
   pages.forEach((p,i)=>velocityLabSprintPdfFooter(p,i+1,pages.length));
   const jpegs=pages.map(({canvas},index)=>{if(!canvas||typeof canvas.toDataURL!=='function')throw new Error(`Page PDF ${index+1} invalide`);const dataUrl=canvas.toDataURL('image/jpeg',.92);if(!dataUrl||!dataUrl.includes(','))throw new Error(`Conversion PDF impossible page ${index+1}`);return {width:canvas.width,height:canvas.height,bytes:analyzerDebriefPdfDataUrlBytes(dataUrl)}});
