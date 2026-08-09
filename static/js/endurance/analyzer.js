@@ -1242,7 +1242,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.145 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.146 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];let velocityLabSprintImportedRows=new Map(),velocityLabSprintImportedParticipants=new Map(),velocityLabSprintImportedSessions=new Map(),velocityLabSprintImportOrder=[];
@@ -1389,6 +1389,38 @@ function resetVelocityLabSprintImport(){
  velocityLabSprintImportSummary();renderVelocityLabSprintSessions();
  const status=document.getElementById('velocityLabSprintSessionStatus');if(status)status.textContent='Import CSV/ZIP effacé.';
 }
+
+function velocityLabSprintChronologyInfo(session){
+ const original=String(session?.name||'');
+ const raw=original.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[–—_-]+/g,' ').replace(/\s+/g,' ').trim();
+ const isQual=/\b(qualif|qualification|qualifying|chrono|chronos|time trial)\b/.test(raw);
+ const isRace=/\b(course|race|manche|heat|finale|final|sprint)\b/.test(raw)||!isQual;
+ let round=0;
+ if(isRace&&!isQual){
+  const rm=raw.match(/\b(?:course|race|manche|heat|sprint)\s*(\d+)\b/)||raw.match(/\b(\d+)\s*(?:course|race|manche|heat)\b/);
+  round=rm?Number(rm[1]):999;
+ }
+ let group='';
+ const gm=raw.match(/\b(?:groupe|group|serie|s[eé]rie)?\s*([ab])\b/)||raw.match(/\b([ab])\s*(?:groupe|group|serie|s[eé]rie)\b/);
+ if(gm)group=String(gm[1]||'').toUpperCase();
+ // Cas usuels Apex : "... QUALIF A - 5T", "... QUALIF B - 5T".
+ if(!group&&isQual){
+  const qm=raw.match(/\b(?:qualif|qualification|qualifying|chrono|chronos)\s*([ab])\b/);
+  if(qm)group=String(qm[1]||'').toUpperCase();
+ }
+ const groupRank=group==='A'?0:group==='B'?1:5;
+ // Toutes les qualifications précèdent les courses. Les courses sont ensuite
+ // classées par numéro de manche. L'ordre d'origine sert de dernier recours.
+ return {phase:isQual?0:1,round:isQual?0:round,group,groupRank,raw};
+}
+function velocityLabSprintChronologySort(sessions){
+ return (sessions||[]).map((session,index)=>({session,index,info:velocityLabSprintChronologyInfo(session)})).sort((a,b)=>
+  a.info.phase-b.info.phase||
+  a.info.round-b.info.round||
+  a.info.groupRank-b.info.groupRank||
+  a.index-b.index
+ ).map(x=>x.session);
+}
 function velocityLabSprintRebuildImportedSessions(){
  const datasets=[];
  for(const sessionKey of velocityLabSprintImportOrder){
@@ -1402,7 +1434,7 @@ function velocityLabSprintRebuildImportedSessions(){
   const grid=analyzerMedian(entries.map(x=>x.average).filter(Number.isFinite));
   datasets.push({id:meta.id,name:meta.name,kind:meta.kind,live:false,source:'import',importKey:sessionKey,entries,grid});
  }
- return datasets;
+ return velocityLabSprintChronologySort(datasets);
 }
 async function importVelocityLabSprintFiles(fileList){
  const files=[...(fileList||[])];if(!files.length)return;
@@ -1445,6 +1477,7 @@ async function importVelocityLabSprintFiles(fileList){
    }
   }
   const datasets=velocityLabSprintRebuildImportedSessions();
+  velocityLabSprintImportOrder=datasets.map(d=>d.importKey);
   velocityLabSprintSessions=datasets.map((d,index)=>({id:d.id,name:d.name,kind:d.kind,source:'import',importKey:d.importKey,labOrder:index}));
   velocityLabSprintSelected=new Set(velocityLabSprintSessions.map(s=>String(s.id)));velocityLabSprintAnalysis=null;
   const includeLive=document.getElementById('velocityLabSprintIncludeLive');if(includeLive)includeLive.checked=false;
@@ -1598,6 +1631,8 @@ function velocityLabSprintLogicalStageInfo(session){
  if(gm)group=String(gm[1]||'').toUpperCase();
  let base=raw
   .replace(/(?:^|\s)(?:groupe|group|serie|s[eé]rie)\s*[ab](?=\s|$)/gi,' ')
+  .replace(/\b(qualif|qualification|qualifying|chrono|chronos)\s*[ab]\b/gi,'$1')
+  .replace(/\b(course|race|manche|heat|sprint)\s*(\d+)\s*[ab]\b/gi,'$1 $2')
   .replace(/\s[ab]$/i,' ')
   .replace(/\s+/g,' ').trim();
  // Uniformise les variantes usuelles sans fusionner Qualif 1 et Qualif 2.
@@ -1735,7 +1770,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.145`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.146`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -1841,8 +1876,9 @@ async function runVelocityLabSprintAnalysis(){
    if(session.source==='import'){const data=importedByKey.get(session.importKey);if(data)datasets.push(data)}
    else datasets.push(await velocityLabSprintHistoricalData(session,progress));
   }
-  if(includeLive)datasets.push(await velocityLabSprintLiveData(progress));
-  velocityLabSprintAnalysis=velocityLabSprintBuildAnalysis(datasets,trackKarts);progress(`${datasets.length} étape(s) analysée(s) · ${velocityLabSprintAnalysis.rows.length} performance(s) exploitable(s).`);renderVelocityLabSprintResults();
+  const orderedDatasets=velocityLabSprintChronologySort(datasets);
+  if(includeLive)orderedDatasets.push(await velocityLabSprintLiveData(progress));
+  velocityLabSprintAnalysis=velocityLabSprintBuildAnalysis(orderedDatasets,trackKarts);progress(`${datasets.length} étape(s) analysée(s) · ${velocityLabSprintAnalysis.rows.length} performance(s) exploitable(s).`);renderVelocityLabSprintResults();
  }catch(error){if(results)results.innerHTML=`<div class="analyzer-empty">Score Sprint indisponible : ${analyzerEscape(error.message)}</div>`;if(status)status.textContent='Erreur pendant le calcul.'}
  finally{velocityLabSprintLoading=false;renderVelocityLabSprintSessions()}
 }
