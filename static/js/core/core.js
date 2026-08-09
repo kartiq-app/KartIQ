@@ -28,6 +28,7 @@ let circuitChangeInProgress=false,pendingCircuitId='';
 let stateLoadInFlight=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
+let elapsedCountMs=null,elapsedCountPerfAt=0,elapsedCountDirectSyncAt=0;
 const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
 
 // Journal local du décodeur Apex. Les trames sont conservées uniquement dans
@@ -136,12 +137,26 @@ function ingestApexCountdown(frame){
  if(!matches.length)return false;
  return syncRemainingFromApex(Number(matches[matches.length-1][1]),{direct:true});
 }
+function syncElapsedFromApex(milliseconds,{direct=false}={}){
+ const ms=Number(milliseconds);
+ if(!Number.isFinite(ms)||ms<0)return false;
+ elapsedCountMs=Math.max(0,ms);
+ elapsedCountPerfAt=Date.now();
+ if(direct)elapsedCountDirectSyncAt=Date.now();
+ state={...(state||{}),time_elapsed_ms:elapsedCountMs,time_elapsed_updated_at_ms:Date.now()};
+ updateRemainingDisplay();
+ return true;
+}
 function ingestApexElapsed(frame){
  const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|count\|(\d+)/g)];
  if(!matches.length)return false;
- const ms=Math.max(0,Number(matches[matches.length-1][1])||0);
- state={...(state||{}),time_elapsed_ms:ms,time_elapsed_updated_at_ms:Date.now()};
- return true;
+ return syncElapsedFromApex(Number(matches[matches.length-1][1]),{direct:true});
+}
+function liveElapsedMilliseconds(){
+ if(Number.isFinite(elapsedCountMs)&&elapsedCountPerfAt)return Math.max(0,elapsedCountMs+(Date.now()-elapsedCountPerfAt));
+ const base=Number(state?.time_elapsed_ms),serverAt=Number(state?.time_elapsed_updated_at_ms);
+ if(Number.isFinite(base)&&base>=0&&Number.isFinite(serverAt))return Math.max(0,base+(Date.now()-serverAt));
+ return null;
 }
 function ingestApexLapProgress(frame){
  const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|text\|[^\r\n]*?(?:giro|giri|tour|tours|lap|laps|vuelta|vueltas|runde|runden|volta|voltas|ronde|rondes|okrazenie|okrazenia|okrążenie|okrążenia)\s*(\d+)\s*\/\s*(\d+)/gi)];
@@ -155,6 +170,14 @@ function ingestApexLapProgress(frame){
  return true;
 }
 function syncRemainingFromState(nextState){
+ const elapsedBase=Number(nextState?.time_elapsed_ms),elapsedAt=Number(nextState?.time_elapsed_updated_at_ms);
+ if(Number.isFinite(elapsedBase)&&elapsedBase>=0){
+  const directElapsedFresh=elapsedCountDirectSyncAt>0&&(Date.now()-elapsedCountDirectSyncAt)<45000;
+  if(!directElapsedFresh){
+   elapsedCountMs=elapsedBase;
+   elapsedCountPerfAt=Number.isFinite(elapsedAt)?elapsedAt:Date.now();
+  }
+ }
  if(Number(nextState?.total_laps)>0){remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownUsesHours=false;remainingCountdownDirectSyncAt=0;updateRemainingDisplay();return}
  const endAt=Number(nextState?.time_remaining_end_at_ms);
  let candidate=null;
@@ -238,9 +261,16 @@ function mainSessionProgressDisplay(){
 }
 function updateRemainingDisplay(){
  const lapMode=raceUsesLapTarget();
- const ms=lapMode?null:liveRemainingMilliseconds();
- const display=lapMode?formatRaceLapProgress():formatMainRemainingDisplay(ms,state.time_remaining||'—');
- const seconds=ms===null?null:ms/1000;
+ const remaining=lapMode?null:liveRemainingMilliseconds();
+ const elapsed=!lapMode&&!Number.isFinite(remaining)?liveElapsedMilliseconds():null;
+ const display=lapMode
+  ?formatRaceLapProgress()
+  :Number.isFinite(remaining)
+   ?formatMainRemainingDisplay(remaining,state.time_remaining||'—')
+   :Number.isFinite(elapsed)
+    ?formatRemainingMilliseconds(elapsed)
+    :(state.time_remaining||'—');
+ const seconds=Number.isFinite(remaining)?remaining/1000:null;
  const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
@@ -464,3 +494,5 @@ function showMode(mode){
 }
 
 let sprintFocusWakeLock=null;
+
+if(!window.__velocitySessionClockTimer){window.__velocitySessionClockTimer=setInterval(updateRemainingDisplay,1000)}

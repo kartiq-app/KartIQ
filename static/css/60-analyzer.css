@@ -2357,3 +2357,6 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .analyzer-ranking-table thead{z-index:5}
 .analyzer-ranking-table tbody tr.followed~*{}
 .analyzer-ranking-table.general-ranking-mode tbody tr:hover td{position:relative;z-index:2}
+
+.analyzer-race-remaining{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+#analyzerRaceRemainingLabel{font-size:8px;line-height:1;color:#8d96a4;font-weight:900;letter-spacing:.08em;white-space:nowrap}
