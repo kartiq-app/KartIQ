@@ -2282,3 +2282,11 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .velocity-lab-sprint-options label{display:flex;align-items:center;gap:7px;color:#aeb6c1;font-size:10px;font-weight:800;white-space:nowrap;cursor:pointer}
 .velocity-lab-sprint-options input{accent-color:#b8131b}
 @media(max-width:700px){.velocity-lab-sprint-options{align-items:flex-start;flex-direction:column;gap:9px}}
+
+/* Velocity V7.2.137 — Score Sprint : sélecteur de mode toujours visible */
+.velocity-lab-sprint-mode-card{margin:12px 0 14px;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.035)}
+.velocity-lab-sprint-track-karts-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;color:#f2f2f2}
+.velocity-lab-sprint-track-karts-label input{margin-top:3px;transform:scale(1.2);accent-color:#b8131b;flex:0 0 auto}
+.velocity-lab-sprint-track-karts-label span{display:flex;flex-direction:column;gap:3px}
+.velocity-lab-sprint-track-karts-label strong{font-size:11px;letter-spacing:.04em}
+.velocity-lab-sprint-track-karts-label small{font-size:10px;line-height:1.35;color:#9ca6b2;font-weight:600}

@@ -135,8 +135,20 @@ class ApexInterpreter:
             # Les installations Apex peuvent traduire les libellés sans renseigner
             # data-type (ex. Belgique : « Rondes » pour les tours). On mappe donc
             # les colonnes métier par libellé en dernier recours.
-            if label in {"tours", "tour", "laps", "lap", "rondes", "ronde"}:
+            if label in {"position", "pos", "clt", "classement", "rang", "rank"}:
+                field = "position"
+            elif label in {"kart", "no", "n", "numero", "numero kart", "kart no", "kart number"}:
+                field = "kart"
+            elif label in {"tours", "tour", "laps", "lap", "rondes", "ronde"}:
                 field = "laps"
+            elif label in {"dernier", "dernier tour", "last", "last lap", "tour precedent", "temps dernier tour"}:
+                field = "last_lap"
+            elif label in {"meilleur", "meilleur tour", "best", "best lap", "record", "temps meilleur"}:
+                field = "best_lap"
+            elif label in {"ecart", "gap", "difference"}:
+                field = "gap"
+            elif label in {"intervalle", "interval", "interv", "int"}:
+                field = "interval"
             elif label in {"en piste", "temps en piste", "on track", "on track time", "track time", "rijtijd", "op de baan"}:
                 field = "on_track_timer"
             # Apex abrège souvent la colonne des pénalités en « Péna. ».

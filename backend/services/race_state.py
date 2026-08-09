@@ -357,11 +357,16 @@ class RaceStateService:
             position = row.get("position")
             if not name and not pilot and position is None:
                 continue
-            best = row.get("best_lap") or "—"
-            last = row.get("last_lap") or "—"
             driver_name = name or pilot or f"Ligne Apex {row.get('row', '?')}"
+            previous = previous_drivers.get(driver_name) or {}
+            # V7.2.137 — certaines configurations Apex envoient des mises à jour
+            # partielles : le nom est présent mais une ou plusieurs cellules métier
+            # n'arrivent que dans une trame suivante. On conserve alors la dernière
+            # valeur valide de la session au lieu de vider le Classement Live.
+            best = row.get("best_lap") or previous.get("best") or "—"
+            last = row.get("last_lap") or previous.get("last") or "—"
             history_key = str(row.get("row") if row.get("row") is not None else driver_name)
-            lap_number = row.get("laps") if row.get("laps") is not None else 0
+            lap_number = row.get("laps") if row.get("laps") is not None else previous.get("laps", 0)
             lap_seconds = self.time_to_seconds(last)
             marker = (lap_number, last)
             # Une valeur de dernier tour n'est ajoutée qu'une fois, au passage d'un nouveau tour.
@@ -396,23 +401,23 @@ class RaceStateService:
             pace5_seconds = sum(recent_five) / len(recent_five) if recent_five else None
             pace5 = self.format_lap_seconds(pace5_seconds) if pace5_seconds is not None else "—"
             live_drivers.append({
-                "pos": position if position is not None else 999,
+                "pos": position if position is not None else previous.get("pos", 999),
                 "driver": driver_name,
                 "pilot": pilot or None,
-                "apex": row.get("kart") if row.get("kart") is not None else "—",
+                "apex": row.get("kart") if row.get("kart") is not None else previous.get("apex", "—"),
                 "laps": lap_number,
-                "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else "—",
-                "penalty": row.get("penalty") or "",
+                "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else previous.get("pit_stops", "—"),
+                "penalty": row.get("penalty") if row.get("penalty") is not None else previous.get("penalty", ""),
                 "last": last,
                 "best": best,
-                "gap": row.get("gap") or "—",
-                "interval": row.get("interval") or "—",
+                "gap": row.get("gap") if row.get("gap") not in (None, "") else previous.get("gap", "—"),
+                "interval": row.get("interval") if row.get("interval") not in (None, "") else previous.get("interval", "—"),
                 "pace5": pace5,
                 "pace5_laps": len(recent_five),
-                "status": row.get("status", "unknown"),
-                "status_source": row.get("status_source"),
-                "pit_timer": row.get("pit_timer") or None,
-                "track_timer": row.get("track_timer") or None,
+                "status": row.get("status") if row.get("status") not in (None, "unknown") else previous.get("status", "unknown"),
+                "status_source": row.get("status_source") or previous.get("status_source"),
+                "pit_timer": row.get("pit_timer") or previous.get("pit_timer") or None,
+                "track_timer": row.get("track_timer") or previous.get("track_timer") or None,
                 "apex_row": row.get("row"),
                 "last_improved_personal_best": bool(
                     self.last_lap_performance.get(history_key, {}).get("marker") == marker

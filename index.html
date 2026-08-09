@@ -371,8 +371,11 @@
           <div><span>LABORATOIRE MULTI-SESSIONS</span><h3>SCORE SPRINT</h3><p>Qualification → Course 1 → Course 2 → … : Velocity compare chaque pilote à sa dernière session pertinente et corrige son évolution par celle du plateau.</p></div>
           <button id="velocityLabSprintLoadButton" type="button" onclick="loadVelocityLabSprintSessions()">DÉTECTER LES SESSIONS</button>
         </div>
+        <div class="velocity-lab-sprint-mode-card">
+          <label class="velocity-lab-sprint-track-karts-label"><input id="velocityLabSprintTrackKarts" type="checkbox" onchange="toggleVelocityLabSprintTrackKarts(this.checked)"><span><strong>SUIVRE LES NUMÉROS DE KART</strong><small>Décoché : les numéros restent affichés mais ne sont pas pris en compte dans le calcul. Coché : ils servent aussi au suivi et à la matrice Karts.</small></span></label>
+        </div>
         <div class="velocity-lab-sprint-config">
-          <div class="velocity-lab-sprint-config-head"><div><strong>SESSIONS DE L’ÉVÉNEMENT</strong><span id="velocityLabSprintSessionStatus">Cliquez sur DÉTECTER LES SESSIONS.</span></div><div class="velocity-lab-sprint-options"><label><input id="velocityLabSprintTrackKarts" type="checkbox" onchange="toggleVelocityLabSprintTrackKarts(this.checked)"> Suivre les numéros de kart</label><label><input id="velocityLabSprintIncludeLive" type="checkbox" checked onchange="renderVelocityLabSprintSessions()"> Inclure la session LIVE</label></div></div>
+          <div class="velocity-lab-sprint-config-head"><div><strong>SESSIONS DE L’ÉVÉNEMENT</strong><span id="velocityLabSprintSessionStatus">Cliquez sur DÉTECTER LES SESSIONS.</span></div><div class="velocity-lab-sprint-options"><label><input id="velocityLabSprintIncludeLive" type="checkbox" checked onchange="renderVelocityLabSprintSessions()"> Inclure la session LIVE</label></div></div>
           <div id="velocityLabSprintSessions" class="velocity-lab-sprint-sessions"><div class="analyzer-empty">Aucune session chargée.</div></div>
           <div class="velocity-lab-sprint-actions">
             <button id="velocityLabSprintAnalyzeButton" type="button" onclick="runVelocityLabSprintAnalysis()" disabled>CALCULER LE SCORE SPRINT</button>
