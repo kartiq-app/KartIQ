@@ -504,7 +504,7 @@ function analyzerApexStablePhase(driver,at=Date.now()){
  return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
 function analyzerLiveProgressPhase(driver,nowDate=Date.now(),nowPerf=performance.now()){
- // Moteur commun V7.2.151 : les filets du Classement Live et TRAFIC
+ // Moteur commun V7.2.152 : les filets du Classement Live et TRAFIC
  // s'appuient sur la même position virtuelle du kart entre deux passages.
  const apexPhase=analyzerApexStablePhase(driver,nowDate);
  if(Number.isFinite(apexPhase))return {phase:apexPhase,source:'apex'};
@@ -520,51 +520,77 @@ function analyzerRankingProgressMeta(driver,nowDate=Date.now()){
  if(!Number.isFinite(phase))return null;
  const lapSeconds=analyzerTrafficLapSeconds(driver);
  if(!Number.isFinite(lapSeconds)||lapSeconds<=0)return null;
- // Apex utilise un filet fixe d'environ 13 % de la largeur et déplace sa
- // position. On conserve ce principe : l'extrémité droite du filet représente
- // la progression estimée du kart dans le tour.
  const normalized=Math.max(0,Math.min(1,phase));
- return {
-  phase:normalized,
-  lapSeconds,
-  source,
-  widthRatio:.13,
-  remainingMs:Math.max(250,(1.13-normalized)*lapSeconds*1000)
- };
+ return {phase:normalized,lapSeconds,source,widthRatio:.13};
+}
+// V7.2.152 — moteur persistant 60 fps pour les filets du Classement Live.
+// Contrairement à l'ancienne version, les animations ne sont plus recréées à
+// chaque rendu du tableau : les éléments restent en place et leur transform est
+// mis à jour à chaque frame à partir de la phase live commune.
+const analyzerRankingProgressRuntime={items:new Map(),frame:0,overlay:null,table:null,body:null,lastLayoutAt:0};
+function analyzerRankingProgressStop({clear=false}={}){
+ if(analyzerRankingProgressRuntime.frame){cancelAnimationFrame(analyzerRankingProgressRuntime.frame);analyzerRankingProgressRuntime.frame=0}
+ if(clear){
+  analyzerRankingProgressRuntime.items.clear();
+  if(analyzerRankingProgressRuntime.overlay)analyzerRankingProgressRuntime.overlay.replaceChildren();
+ }
+}
+function analyzerRankingProgressEnsureLoop(){
+ if(analyzerRankingProgressRuntime.frame)return;
+ analyzerRankingProgressRuntime.frame=requestAnimationFrame(analyzerRankingProgressFrame);
+}
+function analyzerRankingProgressFrame(){
+ analyzerRankingProgressRuntime.frame=0;
+ const rt=analyzerRankingProgressRuntime,overlay=rt.overlay,table=rt.table;
+ if(!overlay||!table||analyzerRankingMode!=='general'||!analyzerApexRaceIsActive()){
+  analyzerRankingProgressStop({clear:true});return;
+ }
+ const tableWidth=Math.max(table.scrollWidth,table.getBoundingClientRect().width);
+ const nowDate=Date.now(),nowPerf=performance.now();
+ for(const [key,item] of rt.items){
+  const line=item.line,driver=item.driver;
+  if(!line?.isConnected||!driver||driver.status==='pit'){line?.remove();rt.items.delete(key);continue}
+  const motion=analyzerLiveProgressPhase(driver,nowDate,nowPerf),phase=motion.phase;
+  if(!Number.isFinite(phase)){line.style.opacity='0';continue}
+  const normalized=Math.max(0,Math.min(1,phase)),lineWidth=tableWidth*item.widthRatio;
+  // translate3d est composité par le navigateur/GPU et évite les recalculs de
+  // layout provoqués par l'ancienne animation de la propriété left.
+  const x=normalized*tableWidth-lineWidth;
+  line.style.width=`${lineWidth}px`;
+  line.style.transform=`translate3d(${x}px,0,0)`;
+  line.style.opacity='.92';
+  line.dataset.source=motion.source||'none';
+ }
+ analyzerRankingProgressEnsureLoop();
 }
 function analyzerRenderRankingProgressLines(rows){
  const wrap=document.querySelector('.analyzer-ranking-wrap'),table=wrap?.querySelector('.analyzer-ranking-table'),body=document.getElementById('analyzerTable');
  if(!wrap||!table||!body)return;
  let overlay=wrap.querySelector('.analyzer-ranking-progress-overlay');
  if(!overlay){overlay=document.createElement('div');overlay.className='analyzer-ranking-progress-overlay';wrap.appendChild(overlay)}
- overlay.replaceChildren();
- if(analyzerRankingMode!=='general'||!analyzerApexRaceIsActive())return;
+ const rt=analyzerRankingProgressRuntime;rt.overlay=overlay;rt.table=table;rt.body=body;
+ if(analyzerRankingMode!=='general'||!analyzerApexRaceIsActive()){
+  analyzerRankingProgressStop({clear:true});return;
+ }
  const tableWidth=Math.max(table.scrollWidth,table.getBoundingClientRect().width),tableHeight=Math.max(table.scrollHeight,table.getBoundingClientRect().height);
  overlay.style.width=`${tableWidth}px`;overlay.style.height=`${tableHeight}px`;
  const byKey=new Map((rows||[]).map(x=>[String(typeof rankingDriverKey==='function'?rankingDriverKey(x.driver):(x.driver?.apex_row??x.driver?.driver??x.driver?.pos)),x.driver]));
- const now=Date.now();
+ const tableRect=table.getBoundingClientRect(),seen=new Set();
  [...body.querySelectorAll('tr[data-driver]')].forEach(tr=>{
-  const driver=byKey.get(String(tr.dataset.driver||''));if(!driver)return;
-  const meta=analyzerRankingProgressMeta(driver,now);if(!meta)return;
-  const tableRect=table.getBoundingClientRect(),rowRect=tr.getBoundingClientRect();
-  const rectTop=rowRect.bottom-tableRect.top-1,lineWidth=tableWidth*meta.widthRatio;
-  const startLeft=meta.phase*tableWidth-lineWidth;
-  const endLeft=tableWidth;
-  const line=document.createElement('span');
-  line.className='analyzer-ranking-progress-line';
-  line.dataset.driver=String(tr.dataset.driver||'');
-  line.dataset.source=meta.source;
-  line.style.top=`${rectTop}px`;
-  line.style.left=`${startLeft}px`;
-  line.style.width=`${lineWidth}px`;
-  overlay.appendChild(line);
-  try{
-   line.animate([{left:`${startLeft}px`},{left:`${endLeft}px`}],{duration:meta.remainingMs,easing:'linear',fill:'forwards'});
-  }catch(_){
-   line.style.transition=`left ${meta.remainingMs}ms linear`;
-   requestAnimationFrame(()=>{line.style.left=`${endLeft}px`});
+  const key=String(tr.dataset.driver||''),driver=byKey.get(key);if(!driver)return;
+  const meta=analyzerRankingProgressMeta(driver,Date.now());if(!meta)return;
+  seen.add(key);
+  let item=rt.items.get(key);
+  if(!item){
+   const line=document.createElement('span');line.className='analyzer-ranking-progress-line';line.dataset.driver=key;line.style.left='0px';overlay.appendChild(line);
+   item={line,driver,widthRatio:meta.widthRatio};rt.items.set(key,item);
   }
+  item.driver=driver;item.widthRatio=meta.widthRatio;
+  const rowRect=tr.getBoundingClientRect();
+  item.line.style.top=`${rowRect.bottom-tableRect.top-1}px`;
  });
+ for(const [key,item] of [...rt.items])if(!seen.has(key)){item.line.remove();rt.items.delete(key)}
+ analyzerRankingProgressEnsureLoop();
 }
 function analyzerDriverPhase(driver){
  const motion=analyzerLiveProgressPhase(driver,Date.now(),performance.now());
@@ -1332,7 +1358,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.151 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.152 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];let velocityLabSprintImportedRows=new Map(),velocityLabSprintImportedParticipants=new Map(),velocityLabSprintImportedSessions=new Map(),velocityLabSprintImportOrder=[];
@@ -1894,7 +1920,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.151`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.152`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -2406,7 +2432,7 @@ function analyzerTrafficApexPhase(driver,now=Date.now()){
 }
 function analyzerTrafficSignedGapFromPhases(followedPhase,driverPhase,followed){
  if(!Number.isFinite(followedPhase)||!Number.isFinite(driverPhase))return null;
- // V7.2.151 — TRAFIC doit raconter exactement la même position que les filets.
+ // V7.2.152 — TRAFIC doit raconter exactement la même position que les filets.
  // On ne replie plus automatiquement l'écart dans [-0,5 ; +0,5] tour : ce
  // wrap pouvait transformer un kart visuellement derrière dans CLASSEMENT LIVE
  // en kart "devant" dans TRAFIC. La différence reste donc linéaire sur le tour.

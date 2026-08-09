@@ -2325,7 +2325,7 @@ html.velocity-member-shared-mode .testbar{display:none!important}
   rgba(255,255,255,.98) 100%);
  box-shadow:0 0 5px rgba(231,241,250,.14);
  opacity:.92;
- will-change:left;
+ will-change:transform;
  pointer-events:none;
 }
 .analyzer-ranking-progress-line::after{
@@ -2360,3 +2360,6 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 
 .analyzer-race-remaining{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
 #analyzerRaceRemainingLabel{font-size:8px;line-height:1;color:#8d96a4;font-weight:900;letter-spacing:.08em;white-space:nowrap}
+
+/* Velocity V7.2.152 — déplacement GPU continu des filets */
+.analyzer-ranking-progress-line{left:0;transition:none!important;backface-visibility:hidden;transform:translate3d(-9999px,0,0)}
