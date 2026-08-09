@@ -1242,10 +1242,11 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.144 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.145 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
-let velocityLabSprintSessions=[];
+let velocityLabSprintSessions=[];let velocityLabSprintImportedRows=new Map(),velocityLabSprintImportedParticipants=new Map(),velocityLabSprintImportedSessions=new Map(),velocityLabSprintImportOrder=[];
+
 let velocityLabSprintSelected=new Set();
 let velocityLabSprintLoading=false;
 let velocityLabSprintAnalysis=null;
@@ -1297,10 +1298,169 @@ function moveVelocityLabSprintSession(id,direction){
  const index=velocityLabSprintSessions.findIndex(s=>String(s.id)===String(id)),next=index+Number(direction);if(index<0||next<0||next>=velocityLabSprintSessions.length)return;
  const copy=velocityLabSprintSessions.slice(),tmp=copy[index];copy[index]=copy[next];copy[next]=tmp;velocityLabSprintSessions=copy;velocityLabSprintAnalysis=null;renderVelocityLabSprintSessions();
 }
+
+function velocityLabSprintNormalizeHeader(value){
+ return String(value??'').replace(/^\ufeff/,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,'');
+}
+function velocityLabSprintParseCsv(text){
+ const source=String(text??'').replace(/^\ufeff/,'');
+ const firstLine=(source.match(/^[^\r\n]*/)||[''])[0];
+ const candidates=[';',',','\t'];
+ const delimiter=candidates.sort((a,b)=>(firstLine.split(b).length-firstLine.split(a).length))[0]||';';
+ const rows=[];let row=[],cell='',quoted=false;
+ for(let i=0;i<source.length;i++){
+  const ch=source[i];
+  if(quoted){
+   if(ch==='"'&&source[i+1]==='"'){cell+='"';i++}
+   else if(ch==='"')quoted=false;
+   else cell+=ch;
+  }else{
+   if(ch==='"')quoted=true;
+   else if(ch===delimiter){row.push(cell);cell=''}
+   else if(ch==='\n'||ch==='\r'){
+    if(ch==='\r'&&source[i+1]==='\n')i++;
+    row.push(cell);cell='';
+    if(row.some(v=>String(v).trim()!==''))rows.push(row);
+    row=[];
+   }else cell+=ch;
+  }
+ }
+ row.push(cell);if(row.some(v=>String(v).trim()!==''))rows.push(row);
+ if(!rows.length)return [];
+ const headers=rows.shift().map(velocityLabSprintNormalizeHeader);
+ return rows.map(cols=>Object.fromEntries(headers.map((h,i)=>[h,String(cols[i]??'').trim()])));
+}
+function velocityLabSprintTimeToMs(value){
+ const raw=String(value??'').trim().replace(',','.');
+ if(!raw)return 0;
+ if(/^\d+(?:\.\d+)?$/.test(raw))return Math.round(Number(raw)*1000);
+ const parts=raw.split(':').map(Number);if(parts.some(v=>!Number.isFinite(v)))return 0;
+ if(parts.length===2)return Math.round((parts[0]*60+parts[1])*1000);
+ if(parts.length===3)return Math.round((parts[0]*3600+parts[1]*60+parts[2])*1000);
+ return 0;
+}
+function velocityLabSprintImportField(row,...names){
+ for(const name of names){const key=velocityLabSprintNormalizeHeader(name);if(row[key]!=null&&String(row[key]).trim()!=='')return String(row[key]).trim()}
+ return '';
+}
+function velocityLabSprintImportedSessionKey(row){
+ const id=velocityLabSprintImportField(row,'SESSION_ID','SESSIONID'),name=velocityLabSprintImportField(row,'SESSION','SESSION_NAME','SESSIONNAME');
+ return id&&id.toLowerCase()!=='live'?`id:${id}`:`name:${normalizeApexTeamName(name)||'session'}`;
+}
+function velocityLabSprintImportedLapKey(sessionKey,pilot,lap){
+ return `${sessionKey}|${velocityLabSprintPilotKey(pilot)}|${Number(lap)||0}`;
+}
+async function velocityLabSprintInflateRaw(bytes){
+ if(typeof DecompressionStream!=='function')throw new Error('Décompression ZIP non supportée par ce navigateur.');
+ const ds=new DecompressionStream('deflate-raw'),writer=ds.writable.getWriter();writer.write(bytes);writer.close();
+ return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+}
+function velocityLabSprintU16(view,offset){return view.getUint16(offset,true)}
+function velocityLabSprintU32(view,offset){return view.getUint32(offset,true)}
+async function velocityLabSprintZipCsvFiles(file){
+ const bytes=new Uint8Array(await file.arrayBuffer()),view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ let eocd=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){if(velocityLabSprintU32(view,i)===0x06054b50){eocd=i;break}}
+ if(eocd<0)throw new Error(`ZIP illisible : ${file.name}`);
+ const total=velocityLabSprintU16(view,eocd+10),centralOffset=velocityLabSprintU32(view,eocd+16),decoder=new TextDecoder('utf-8'),files=[];let pos=centralOffset;
+ for(let n=0;n<total;n++){
+  if(velocityLabSprintU32(view,pos)!==0x02014b50)throw new Error('Table ZIP invalide.');
+  const method=velocityLabSprintU16(view,pos+10),compressedSize=velocityLabSprintU32(view,pos+20),nameLen=velocityLabSprintU16(view,pos+28),extraLen=velocityLabSprintU16(view,pos+30),commentLen=velocityLabSprintU16(view,pos+32),localOffset=velocityLabSprintU32(view,pos+42);
+  const name=decoder.decode(bytes.slice(pos+46,pos+46+nameLen));pos+=46+nameLen+extraLen+commentLen;
+  if(!/\.csv$/i.test(name)||name.endsWith('/'))continue;
+  if(velocityLabSprintU32(view,localOffset)!==0x04034b50)continue;
+  const localNameLen=velocityLabSprintU16(view,localOffset+26),localExtraLen=velocityLabSprintU16(view,localOffset+28),dataStart=localOffset+30+localNameLen+localExtraLen,compressed=bytes.slice(dataStart,dataStart+compressedSize);
+  let raw;if(method===0)raw=compressed;else if(method===8)raw=await velocityLabSprintInflateRaw(compressed);else throw new Error(`Compression ZIP non supportée (${method}) dans ${name}`);
+  files.push({name,text:decoder.decode(raw)});
+ }
+ return files;
+}
+function velocityLabSprintImportSummary(){
+ const status=document.getElementById('velocityLabSprintImportStatus'),reset=document.getElementById('velocityLabSprintResetImportButton');
+ if(!status)return;
+ const sessions=velocityLabSprintImportOrder.length,participants=velocityLabSprintImportedParticipants.size,laps=velocityLabSprintImportedRows.size;
+ status.hidden=!sessions;status.textContent=sessions?`${sessions} session(s) importée(s) · ${participants} pilote/session(s) · ${laps} tour(s) en base cumulative.`:'';
+ if(reset)reset.hidden=!sessions;
+}
+function openVelocityLabSprintImport(){document.getElementById('velocityLabSprintImportInput')?.click()}
+function resetVelocityLabSprintImport(){
+ velocityLabSprintImportedRows.clear();velocityLabSprintImportedParticipants.clear();velocityLabSprintImportedSessions.clear();velocityLabSprintImportOrder=[];
+ velocityLabSprintSessions=[];velocityLabSprintSelected=new Set();velocityLabSprintAnalysis=null;
+ const input=document.getElementById('velocityLabSprintImportInput');if(input)input.value='';
+ velocityLabSprintImportSummary();renderVelocityLabSprintSessions();
+ const status=document.getElementById('velocityLabSprintSessionStatus');if(status)status.textContent='Import CSV/ZIP effacé.';
+}
+function velocityLabSprintRebuildImportedSessions(){
+ const datasets=[];
+ for(const sessionKey of velocityLabSprintImportOrder){
+  const meta=velocityLabSprintImportedSessions.get(sessionKey);if(!meta)continue;
+  const participants=[...velocityLabSprintImportedParticipants.values()].filter(p=>p.sessionKey===sessionKey);
+  const entries=participants.map(p=>{
+   const laps=[...velocityLabSprintImportedRows.values()].filter(r=>r.sessionKey===sessionKey&&r.pilotKey===p.pilotKey).map(r=>r.lapData).sort((a,b)=>a.lap-b.lap);
+   const metrics=velocityLabSprintMetricsFromLaps(laps);
+   return {pilot:p.pilot,pilotKey:p.pilotKey,kart:p.kart||'—',rowId:Number(p.rowId)||0,...(metrics||{laps:0,average:null,best3:null,consistency:null,values:[]}),insufficient:!metrics,rawLaps:laps};
+  });
+  const grid=analyzerMedian(entries.map(x=>x.average).filter(Number.isFinite));
+  datasets.push({id:meta.id,name:meta.name,kind:meta.kind,live:false,source:'import',importKey:sessionKey,entries,grid});
+ }
+ return datasets;
+}
+async function importVelocityLabSprintFiles(fileList){
+ const files=[...(fileList||[])];if(!files.length)return;
+ const button=document.getElementById('velocityLabSprintImportButton'),status=document.getElementById('velocityLabSprintSessionStatus');
+ const input=document.getElementById('velocityLabSprintImportInput');if(button){button.disabled=true;button.textContent='IMPORT…'}
+ let read=0,added=0,updated=0,identical=0,invalid=0;
+ try{
+  const csvFiles=[];
+  for(const file of files){
+   if(/\.zip$/i.test(file.name))csvFiles.push(...await velocityLabSprintZipCsvFiles(file));
+   else if(/\.csv$/i.test(file.name))csvFiles.push({name:file.name,text:await file.text()});
+  }
+  if(!csvFiles.length)throw new Error('Aucun CSV trouvé dans la sélection.');
+  for(const csv of csvFiles){
+   const rows=velocityLabSprintParseCsv(csv.text);
+   for(const row of rows){
+    read++;
+    const sessionKey=velocityLabSprintImportedSessionKey(row),sessionId=velocityLabSprintImportField(row,'SESSION_ID','SESSIONID'),sessionName=velocityLabSprintImportField(row,'SESSION','SESSION_NAME','SESSIONNAME')||sessionId||'SESSION';
+    const typeRaw=velocityLabSprintImportField(row,'TYPE','KIND'),pilot=velocityLabSprintImportField(row,'PILOTE','DRIVER','NOM','NAME'),kart=velocityLabSprintImportField(row,'KART','NUMERO_KART','KART_NUMBER')||'—',rowId=velocityLabSprintImportField(row,'APEX_ROW','ROW_ID');
+    if(!pilot||/^pilote$|^driver$/i.test(pilot)||!sessionName){invalid++;continue}
+    if(!velocityLabSprintImportedSessions.has(sessionKey)){
+     velocityLabSprintImportedSessions.set(sessionKey,{id:sessionId||sessionKey,name:sessionName,kind:/qualif|chrono/i.test(typeRaw+' '+sessionName)?'qualification':'race',sessionKey});
+     velocityLabSprintImportOrder.push(sessionKey);
+    }else{
+     const meta=velocityLabSprintImportedSessions.get(sessionKey);meta.name=sessionName||meta.name;meta.kind=/qualif|chrono/i.test(typeRaw+' '+sessionName)?'qualification':meta.kind;
+    }
+    const pilotKey=velocityLabSprintPilotKey(pilot),participantKey=`${sessionKey}|${pilotKey}`;
+    velocityLabSprintImportedParticipants.set(participantKey,{sessionKey,pilot,pilotKey,kart,rowId});
+    const lap=Number(velocityLabSprintImportField(row,'TOUR','LAP','LAP_NUMBER'));
+    let lapTime=Number(velocityLabSprintImportField(row,'TEMPS_MS','LAP_TIME_MS','LAPTIME_MS'))||velocityLabSprintTimeToMs(velocityLabSprintImportField(row,'TEMPS','LAP_TIME','LAPTIME'));
+    if(!lap||!lapTime)continue;
+    const sector1=Number(velocityLabSprintImportField(row,'S1_MS','SECTOR1_MS'))||velocityLabSprintTimeToMs(velocityLabSprintImportField(row,'S1','SECTOR1'));
+    const sector2=Number(velocityLabSprintImportField(row,'S2_MS','SECTOR2_MS'))||velocityLabSprintTimeToMs(velocityLabSprintImportField(row,'S2','SECTOR2'));
+    const sector3=Number(velocityLabSprintImportField(row,'S3_MS','SECTOR3_MS'))||velocityLabSprintTimeToMs(velocityLabSprintImportField(row,'S3','SECTOR3'));
+    const key=velocityLabSprintImportedLapKey(sessionKey,pilot,lap),next={sessionKey,pilot,pilotKey,kart,rowId,lapData:{lap,lapTime,sector1,sector2,sector3}};
+    const prev=velocityLabSprintImportedRows.get(key);
+    if(!prev){velocityLabSprintImportedRows.set(key,next);added++}
+    else if(JSON.stringify(prev)===JSON.stringify(next))identical++;
+    else{velocityLabSprintImportedRows.set(key,next);updated++}
+   }
+  }
+  const datasets=velocityLabSprintRebuildImportedSessions();
+  velocityLabSprintSessions=datasets.map((d,index)=>({id:d.id,name:d.name,kind:d.kind,source:'import',importKey:d.importKey,labOrder:index}));
+  velocityLabSprintSelected=new Set(velocityLabSprintSessions.map(s=>String(s.id)));velocityLabSprintAnalysis=null;
+  const includeLive=document.getElementById('velocityLabSprintIncludeLive');if(includeLive)includeLive.checked=false;
+  if(status)status.textContent=`Import terminé : ${read} ligne(s) lue(s) · ${added} nouvelle(s) · ${updated} mise(s) à jour · ${identical} déjà identique(s) · ${invalid} ignorée(s).`;
+  velocityLabSprintImportSummary();renderVelocityLabSprintSessions();
+ }catch(error){
+  if(status)status.textContent=`Import impossible : ${error.message}`;
+ }finally{
+  if(button){button.disabled=false;button.textContent='IMPORTER CSV / ZIP'}
+  if(input)input.value='';
+ }
+}
 function renderVelocityLabSprintSessions(){
  const host=document.getElementById('velocityLabSprintSessions'),analyze=document.getElementById('velocityLabSprintAnalyzeButton'),download=document.getElementById('velocityLabSprintDownloadLapsButton'),includeLive=Boolean(document.getElementById('velocityLabSprintIncludeLive')?.checked);if(!host)return;
  if(!velocityLabSprintSessions.length){host.innerHTML='<div class="analyzer-empty">Aucune session chargée.</div>';if(analyze)analyze.disabled=true;if(download)download.disabled=true;return}
- host.innerHTML=velocityLabSprintSessions.map((s,index)=>{const checked=velocityLabSprintSelected.has(String(s.id)),kind=analyzerSessionKind(s)==='qualification'?'QUALIF':'COURSE';return `<div class="velocity-lab-sprint-session ${checked?'selected':''}"><label><input type="checkbox" ${checked?'checked':''} onchange="toggleVelocityLabSprintSession('${analyzerEscape(String(s.id))}',this.checked)"><b>${kind}</b><span>${analyzerEscape(s.name)}</span><small>ID ${analyzerEscape(String(s.id))}</small></label><div><button type="button" onclick="moveVelocityLabSprintSession('${analyzerEscape(String(s.id))}',-1)" ${index===0?'disabled':''}>↑</button><button type="button" onclick="moveVelocityLabSprintSession('${analyzerEscape(String(s.id))}',1)" ${index===velocityLabSprintSessions.length-1?'disabled':''}>↓</button></div></div>`}).join('')+(includeLive?'<div class="velocity-lab-sprint-session live selected"><label><input type="checkbox" checked disabled><b>LIVE</b><span>SESSION EN COURS</span><small>Dernière étape</small></label></div>':'');
+ host.innerHTML=velocityLabSprintSessions.map((s,index)=>{const checked=velocityLabSprintSelected.has(String(s.id)),kind=analyzerSessionKind(s)==='qualification'?'QUALIF':'COURSE',source=s.source==='import'?'CSV':'APEX';return `<div class="velocity-lab-sprint-session ${checked?'selected':''}"><label><input type="checkbox" ${checked?'checked':''} onchange="toggleVelocityLabSprintSession('${analyzerEscape(String(s.id))}',this.checked)"><b>${kind}</b><span>${analyzerEscape(s.name)}</span><small>${source} · ID ${analyzerEscape(String(s.id))}</small></label><div><button type="button" onclick="moveVelocityLabSprintSession('${analyzerEscape(String(s.id))}',-1)" ${index===0?'disabled':''}>↑</button><button type="button" onclick="moveVelocityLabSprintSession('${analyzerEscape(String(s.id))}',1)" ${index===velocityLabSprintSessions.length-1?'disabled':''}>↓</button></div></div>`}).join('')+(includeLive?'<div class="velocity-lab-sprint-session live selected"><label><input type="checkbox" checked disabled><b>LIVE</b><span>SESSION EN COURS</span><small>Dernière étape</small></label></div>':'');
  const noSelection=!velocityLabSprintSelected.size&&!includeLive;
  if(analyze)analyze.disabled=velocityLabSprintLoading||noSelection;
  if(download)download.disabled=velocityLabSprintLoading||noSelection;
@@ -1346,7 +1506,13 @@ async function downloadVelocityLabSprintAllLaps(){
  const progress=text=>{if(status)status.textContent=text};
  try{
   const all=[];
-  for(const session of selected)all.push(...await velocityLabSprintRawHistoricalLaps(session,progress));
+  const importedDatasets=velocityLabSprintRebuildImportedSessions(),importedByKey=new Map(importedDatasets.map(d=>[d.importKey,d]));
+  for(const session of selected){
+   if(session.source==='import'){
+    const data=importedByKey.get(session.importKey);
+    if(data)for(const entry of data.entries||[])all.push({sessionId:String(data.id),sessionName:data.name,kind:data.kind,pilot:entry.pilot,kart:entry.kart,rowId:entry.rowId,laps:entry.rawLaps||[]});
+   }else all.push(...await velocityLabSprintRawHistoricalLaps(session,progress));
+  }
   if(includeLive)all.push(...await velocityLabSprintRawLiveLaps(progress));
   const headers=['SESSION_ID','SESSION','TYPE','PILOTE','KART','APEX_ROW','STATUS','TOUR','TEMPS_MS','TEMPS','S1_MS','S1','S2_MS','S2','S3_MS','S3'];
   const lines=[headers.join(';')];
@@ -1569,7 +1735,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.144`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.145`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -1670,7 +1836,11 @@ async function runVelocityLabSprintAnalysis(){
  velocityLabSprintLoading=true;if(button)button.disabled=true;if(results)results.innerHTML='<div class="velocity-lab-placeholder">Chargement des tours Apex…</div>';
  const progress=text=>{if(status)status.textContent=text};
  try{
-  const datasets=[];for(const session of selected){datasets.push(await velocityLabSprintHistoricalData(session,progress))}
+  const importedByKey=new Map(velocityLabSprintRebuildImportedSessions().map(d=>[d.importKey,d]));
+  const datasets=[];for(const session of selected){
+   if(session.source==='import'){const data=importedByKey.get(session.importKey);if(data)datasets.push(data)}
+   else datasets.push(await velocityLabSprintHistoricalData(session,progress));
+  }
   if(includeLive)datasets.push(await velocityLabSprintLiveData(progress));
   velocityLabSprintAnalysis=velocityLabSprintBuildAnalysis(datasets,trackKarts);progress(`${datasets.length} étape(s) analysée(s) · ${velocityLabSprintAnalysis.rows.length} performance(s) exploitable(s).`);renderVelocityLabSprintResults();
  }catch(error){if(results)results.innerHTML=`<div class="analyzer-empty">Score Sprint indisponible : ${analyzerEscape(error.message)}</div>`;if(status)status.textContent='Erreur pendant le calcul.'}

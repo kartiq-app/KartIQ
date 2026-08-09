@@ -381,8 +381,12 @@
             <div class="velocity-lab-sprint-action-buttons">
               <button id="velocityLabSprintAnalyzeButton" type="button" onclick="runVelocityLabSprintAnalysis()" disabled>CALCULER LE SCORE SPRINT</button>
               <button id="velocityLabSprintDownloadLapsButton" type="button" onclick="downloadVelocityLabSprintAllLaps()" disabled>TÉLÉCHARGER TOUS LES TOURS</button>
+              <button id="velocityLabSprintImportButton" type="button" onclick="openVelocityLabSprintImport()">IMPORTER CSV / ZIP</button>
+              <button id="velocityLabSprintResetImportButton" type="button" onclick="resetVelocityLabSprintImport()" hidden>EFFACER L’IMPORT</button>
+              <input id="velocityLabSprintImportInput" type="file" accept=".csv,.zip,text/csv,application/zip" multiple hidden onchange="importVelocityLabSprintFiles(this.files)">
             </div>
-            <small>Les sessions sont validées manuellement avant calcul. « Télécharger tous les tours » exporte les données Apex brutes de toutes les sessions cochées, sans nettoyage de l’algo.</small>
+            <div id="velocityLabSprintImportStatus" class="velocity-lab-sprint-import-status" hidden></div>
+            <small>Les sessions sont validées manuellement avant calcul. L’import accepte un CSV, plusieurs CSV ou un ZIP de CSV. Les imports sont cumulatifs : une même ligne Session + Pilote + Tour est remplacée par la version la plus récente, jamais dupliquée.</small>
           </div>
         </div>
         <div id="velocityLabSprintResults" class="velocity-lab-sprint-results" aria-live="polite"><div class="velocity-lab-placeholder">Validez les sessions puis lancez le calcul.</div></div>
