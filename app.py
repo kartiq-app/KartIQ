@@ -988,7 +988,7 @@ def _apex_http_request(circuit, command):
         "https://live-data.apex-timing.com/live-timing/commonv2/functions/request.php",
         data=encoded,
         headers={
-            "User-Agent": "Mozilla/5.0 Velocity/7.2.132",
+            "User-Agent": "Mozilla/5.0 Velocity/7.2.133",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": circuit.get("live_url") or "https://www.apex-timing.com",
             "Referer": circuit.get("live_url") or "https://www.apex-timing.com/",
