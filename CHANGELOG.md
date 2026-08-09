@@ -1,4 +1,12 @@
-# V7.2.132 — Velocity Lab : Score Sprint expérimental
+# V7.2.133 — VELOCITY LAB MATRICES + EXPORT PDF
+
+- Ajout des matrices **ÉVOLUTION PAR PILOTE** : score par Qualif/Course avec numéro de kart sous le score.
+- Ajout des matrices **STABILITÉ PAR KART** : score par Qualif/Course avec nom du pilote sous le score.
+- Ajout du bouton **EXPORTER EN PDF** dans Score Sprint.
+- Le PDF contient : classement de la dernière session, matrice Pilotes, matrice Karts et détail complet des transitions/Δ corrigés.
+- Aucun changement du classement Velocity officiel ni du Score Relais.
+
+# V7.2.133 — Velocity Lab : Score Sprint expérimental
 
 - Ajout d’un mode **SCORE SPRINT** exclusivement dans Velocity Lab ; aucun changement du classement Velocity ni de SCORE RELAIS dans Analyzer.
 - Détection des anciennes sessions Apex de type Qualification / Course avec sélection manuelle et réorganisation avant calcul.

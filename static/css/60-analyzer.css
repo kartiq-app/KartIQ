@@ -2258,3 +2258,21 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .velocity-lab-sprint-actions{display:flex;align-items:center;gap:14px;padding:12px 14px;border-top:1px solid #272e38}.velocity-lab-sprint-actions small{color:#717c89;font-size:9px;line-height:1.4}
 .velocity-lab-sprint-results{margin-top:16px}.velocity-lab-sprint-result-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid #2c333d;border-bottom:0;border-radius:10px 10px 0 0;background:#151a23}.velocity-lab-sprint-result-head small{color:#808b99;font-size:9px;text-align:right}.velocity-lab-sprint-table-wrap{overflow:auto;border:1px solid #2c333d}.velocity-lab-sprint-ranking{min-width:980px}.velocity-lab-sprint-details{margin-top:12px;border:1px solid #2d3540;border-radius:8px;background:#0d1117}.velocity-lab-sprint-details summary{padding:11px 13px;color:#ff9b32;font-size:10px;font-weight:900;cursor:pointer}.velocity-lab-sprint-details .velocity-lab-sprint-table-wrap{border:0;border-top:1px solid #2d3540}.velocity-lab-sprint-table-wrap .velocity-lab-table{min-width:1100px}.velocity-lab-sprint-table-wrap .velocity-lab-table th,.velocity-lab-sprint-table-wrap .velocity-lab-table td{white-space:nowrap}.velocity-lab-table .sprint-delta.good{color:#62df86;font-weight:900}.velocity-lab-table .sprint-delta.bad{color:#ff9b32;font-weight:900}.velocity-lab-table .sprint-delta.neutral{color:#aab3bf}
 @media(max-width:700px){.velocity-lab-mode-switch{flex-direction:column}.velocity-lab-sprint-intro,.velocity-lab-sprint-config-head,.velocity-lab-sprint-actions{align-items:stretch;flex-direction:column}.velocity-lab-sprint-intro button,.velocity-lab-sprint-actions button{width:100%}.velocity-lab-sprint-session label{grid-template-columns:auto 54px minmax(110px,1fr)}.velocity-lab-sprint-session label small{display:none}.velocity-lab-sprint-result-head{align-items:flex-start;flex-direction:column}.velocity-lab-sprint-result-head small{text-align:left}}
+
+/* Velocity V7.2.133 — matrices de validation Score Sprint + export PDF */
+.velocity-lab-sprint-result-tools{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+#velocityLabSprintPdfButton{border:1px solid #b8131b;background:#b8131b;color:#fff;font:700 13px/1 'F1 Torque',Arial,sans-serif;letter-spacing:.04em;padding:12px 16px;border-radius:7px;cursor:pointer;white-space:nowrap}
+#velocityLabSprintPdfButton:hover{filter:brightness(1.12)}
+#velocityLabSprintPdfButton:disabled{opacity:.55;cursor:default}
+.velocity-lab-matrices{display:grid;gap:18px;margin-top:18px}
+.velocity-lab-matrix-card{border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden;background:#111}
+.velocity-lab-matrix-title{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;background:#181818;border-bottom:2px solid #b8131b}
+.velocity-lab-matrix-title strong{font:700 15px/1 'F1 Torque',Arial,sans-serif;color:#fff;letter-spacing:.04em}
+.velocity-lab-matrix-title span{font-size:12px;color:#8f8f8f}
+.velocity-lab-matrix th:first-child{position:sticky;left:0;z-index:2;min-width:210px;background:#181818;text-align:left}
+.velocity-lab-matrix tbody th:first-child{background:#121212;color:#fff;padding-left:14px}
+.velocity-lab-matrix td{min-width:120px;text-align:center;vertical-align:middle;padding:10px 8px}
+.velocity-lab-matrix-score{display:block;font-size:22px;line-height:1;margin-bottom:5px}
+.velocity-lab-matrix td small{display:block;color:#8f8f8f;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;margin:auto}
+.velocity-lab-matrix-empty{color:#555!important;font-size:18px}
+@media(max-width:800px){.velocity-lab-sprint-result-tools{align-items:stretch;justify-content:stretch;width:100%}#velocityLabSprintPdfButton{width:100%}.velocity-lab-matrix th:first-child{min-width:160px}.velocity-lab-matrix td{min-width:105px}}
