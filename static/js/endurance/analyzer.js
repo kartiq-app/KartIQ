@@ -421,28 +421,36 @@ function analyzerApexRaceIsActive(){
  const connected=['connected','receiving','test'].includes(liveStatus)||connection.includes('connect')||connection.includes('test');
  if(!connected)return false;
 
- // V7.2.107 — une grille Apex encore affichée ne signifie pas qu'une course roule.
- // Si Apex fournit une cible tours, elle est prioritaire.
+ const sportingDrivers=drivers.filter(driver=>{
+  const laps=Number(driver?.laps),last=String(driver?.last||'').trim(),best=String(driver?.best||'').trim();
+  return (Number.isFinite(laps)&&laps>0)||(last&&last!=='—')||(best&&best!=='—')||Number.isFinite(Number(driver?.pos));
+ });
+ if(!sportingDrivers.length)return false;
+
+ const now=Date.now();
+ const rowFresh=sportingDrivers.some(driver=>{
+  const stamp=Date.parse(String(driver?.apex_updated_at||''));
+  return Number.isFinite(stamp)&&now-stamp>=0&&now-stamp<=15000;
+ });
+ const elapsedUpdated=Number(state?.time_elapsed_updated_at_ms);
+ const elapsedFresh=Number.isFinite(elapsedUpdated)&&now-elapsedUpdated<=15000;
+
  const totalLaps=Number(state?.total_laps),currentLap=Number(state?.current_lap);
  if(Number.isFinite(totalLaps)&&totalLaps>0&&Number.isFinite(currentLap))return currentLap<totalLaps;
 
- // Même règle pour les sessions au temps : 00:00 / 00:00:00 = session inactive.
  const remainingMs=typeof liveRemainingMilliseconds==='function'?liveRemainingMilliseconds():Number(state?.time_remaining_ms);
- if(Number.isFinite(remainingMs))return remainingMs>0;
- const raw=String(state?.time_remaining??'').trim();
- const parts=raw.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
+ if(Number.isFinite(remainingMs)&&remainingMs>0)return true;
+ const raw=String(state?.time_remaining??'').trim(),parts=raw.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
  if(parts){
-  const seconds=parts[3]===undefined
-   ?Number(parts[1])*60+Number(parts[2])
-   :Number(parts[1])*3600+Number(parts[2])*60+Number(parts[3]);
-  if(Number.isFinite(seconds))return seconds>0;
+  const seconds=parts[3]===undefined?Number(parts[1])*60+Number(parts[2]):Number(parts[1])*3600+Number(parts[2])*60+Number(parts[3]);
+  if(Number.isFinite(seconds)&&seconds>0)return true;
  }
 
- // Seulement si Apex ne donne aucun compteur exploitable : présence réelle
- // d'au moins un kart hors pit. Cela évite les cercles fantômes d'une session finie.
- return drivers.some(driver=>{
-  try{return typeof velocityKartIsInPit==='function'?!velocityKartIsInPit(driver):String(driver?.status||'').toLowerCase()!=='pit'}catch(_){return false}
- });
+ // Configurations Apex sans countdown (ex. dyn1|count à Campillos).
+ if(rowFresh||elapsedFresh)return true;
+ const registry=analyzerApexMapRegistry();
+ if(Number(registry?.lastEventAt)>0&&now-Number(registry.lastEventAt)<=15000)return true;
+ return false;
 }
 function analyzerAnimatedTrackSeconds(driver){
  const key=String(driver?.driver||driver?.apex||driver?.pos||'unknown');
@@ -481,7 +489,7 @@ function analyzerApexStablePhase(driver,at=Date.now()){
  return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
 function analyzerLiveProgressPhase(driver,nowDate=Date.now(),nowPerf=performance.now()){
- // Moteur commun V7.2.149 : les filets du Classement Live et TRAFIC
+ // Moteur commun V7.2.150 : les filets du Classement Live et TRAFIC
  // s'appuient sur la même position virtuelle du kart entre deux passages.
  const apexPhase=analyzerApexStablePhase(driver,nowDate);
  if(Number.isFinite(apexPhase))return {phase:apexPhase,source:'apex'};
@@ -544,10 +552,8 @@ function analyzerRenderRankingProgressLines(rows){
  });
 }
 function analyzerDriverPhase(driver){
- const eventPhase=analyzerApexStablePhase(driver);if(Number.isFinite(eventPhase))return eventPhase;
- const pace=analyzerDriverPace(driver);if(!Number.isFinite(pace)||pace<=0)return 0;
- const track=analyzerAnimatedTrackSeconds(driver);if(Number.isFinite(track)&&track>=0)return ((track%pace)+pace)%pace/pace;
- return 0;
+ const motion=analyzerLiveProgressPhase(driver,Date.now(),performance.now());
+ return Number.isFinite(motion.phase)?motion.phase:0;
 }
 const analyzerMapPaceFilters=new Set(['fastest','excellent','good','medium','average','slow']);
 let analyzerMapHighlight='none';
@@ -560,7 +566,13 @@ function analyzerMapLastLap(driver){const value=analyzerParseDuration(driver?.la
 function analyzerMapPaceCategory(delta){if(delta<=.10)return 'fastest';if(delta<=.29)return 'excellent';if(delta<=.49)return 'good';if(delta<=.79)return 'medium';if(delta<=.99)return 'average';return 'slow'}
 function analyzerMapPaceData(drivers){const valid=(drivers||[]).filter(d=>!(typeof velocityKartIsInPit==='function'?velocityKartIsInPit(d):d?.status==='pit')).map(d=>({driver:d,lap:analyzerMapLastLap(d)})).filter(x=>Number.isFinite(x.lap));const best=valid.length?Math.min(...valid.map(x=>x.lap)):null;const map=new Map();for(const d of drivers||[]){const lap=analyzerMapLastLap(d),delta=Number.isFinite(best)&&Number.isFinite(lap)?Math.max(0,lap-best):null;map.set(d,{lap,delta,category:Number.isFinite(delta)?analyzerMapPaceCategory(delta):'slow'})}return {best,map}}
 function analyzerTrackPoint(phase,radius=121,cx=analyzerMapGeometry.cx,cy=analyzerMapGeometry.cy){const angle=(Number(phase)||0)*Math.PI*2-Math.PI/2;return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius}}
-function analyzerMapPoint(driver,radius=121){const entry=analyzerApexMapEntry(driver),phase=analyzerApexStablePhase(driver);if(!entry||!Number.isFinite(phase))return null;return {...analyzerTrackPoint(phase,radius),phase,inPit:Boolean(entry.inPit),entry}}
+function analyzerMapPoint(driver,radius=121){
+ const entry=analyzerApexMapEntry(driver);
+ if(typeof velocityKartIsInPit==='function'?velocityKartIsInPit(driver):(driver?.status==='pit'||Boolean(entry?.inPit)))return null;
+ const motion=analyzerLiveProgressPhase(driver,Date.now(),performance.now()),phase=motion.phase;
+ if(!Number.isFinite(phase))return null;
+ return {...analyzerTrackPoint(phase,radius),phase,inPit:false,entry:entry||null,source:motion.source};
+}
 function analyzerMapRadarMarkup(){const {cx,cy}=analyzerMapGeometry;const rings=Object.entries(analyzerMapRings).map(([category,r])=>`<circle class="map-radar-ring ${category}" cx="${cx}" cy="${cy}" r="${r}"></circle>`).join('');const rays=Array.from({length:8},(_,i)=>{const a=i*Math.PI/4-Math.PI/2,x1=cx+Math.cos(a)*41.25,y1=cy+Math.sin(a)*41.25,x2=cx+Math.cos(a)*124.85,y2=cy+Math.sin(a)*124.85;return `<line class="map-radar-ray" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"></line>`}).join('');const checker=Array.from({length:12},(_,i)=>{const y=cy-10*(i+1),alt=i%2;return `<rect class="map-finish-square ${alt?'alt':''}" x="${cx-5}" y="${y}" width="5" height="10"></rect><rect class="map-finish-square ${alt?'':'alt'}" x="${cx}" y="${y}" width="5" height="10"></rect>`}).join('');return `${rays}${rings}<g class="map-finish-line">${checker}</g>`}
 function analyzerSimulationKartLabel(driver){return String(validKartNumber(driver)||driver?.apex||driver?.pos||'—').slice(0,3)}
 function analyzerMapTop5Set(drivers){return new Set((drivers||[]).slice().sort((a,b)=>(Number(a.velocity_score??a.kart_score??0)||0)-(Number(b.velocity_score??b.kart_score??0)||0)).slice(-5).map(d=>d.driver))}
@@ -1305,7 +1317,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.149 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.150 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];let velocityLabSprintImportedRows=new Map(),velocityLabSprintImportedParticipants=new Map(),velocityLabSprintImportedSessions=new Map(),velocityLabSprintImportOrder=[];
@@ -1867,7 +1879,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.149`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.150`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -2379,7 +2391,7 @@ function analyzerTrafficApexPhase(driver,now=Date.now()){
 }
 function analyzerTrafficSignedGapFromPhases(followedPhase,driverPhase,followed){
  if(!Number.isFinite(followedPhase)||!Number.isFinite(driverPhase))return null;
- // V7.2.149 — TRAFIC doit raconter exactement la même position que les filets.
+ // V7.2.150 — TRAFIC doit raconter exactement la même position que les filets.
  // On ne replie plus automatiquement l'écart dans [-0,5 ; +0,5] tour : ce
  // wrap pouvait transformer un kart visuellement derrière dans CLASSEMENT LIVE
  // en kart "devant" dans TRAFIC. La différence reste donc linéaire sur le tour.

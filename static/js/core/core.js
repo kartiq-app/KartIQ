@@ -136,8 +136,15 @@ function ingestApexCountdown(frame){
  if(!matches.length)return false;
  return syncRemainingFromApex(Number(matches[matches.length-1][1]),{direct:true});
 }
+function ingestApexElapsed(frame){
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|count\|(\d+)/g)];
+ if(!matches.length)return false;
+ const ms=Math.max(0,Number(matches[matches.length-1][1])||0);
+ state={...(state||{}),time_elapsed_ms:ms,time_elapsed_updated_at_ms:Date.now()};
+ return true;
+}
 function ingestApexLapProgress(frame){
- const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|text\|[^\r\n]*?(?:giro|giri|tour|tours|lap|laps)\s*(\d+)\s*\/\s*(\d+)/gi)];
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|text\|[^\r\n]*?(?:giro|giri|tour|tours|lap|laps|vuelta|vueltas|runde|runden|volta|voltas|ronde|rondes|okrazenie|okrazenia|okrążenie|okrążenia)\s*(\d+)\s*\/\s*(\d+)/gi)];
  if(!matches.length)return false;
  const match=matches[matches.length-1];
  const current=Math.max(0,Number(match[1])||0),total=Math.max(0,Number(match[2])||0);
@@ -406,6 +413,7 @@ function connectApexBrowser(force=false){
   recordApexFrameReceived(frame,circuit.id);
   const lapProgressFrame=ingestApexLapProgress(frame);
   if(!lapProgressFrame)ingestApexCountdown(frame);
+  ingestApexElapsed(frame);
   ingestApexMapEvents(frame,circuit.id);
   try{
    const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});

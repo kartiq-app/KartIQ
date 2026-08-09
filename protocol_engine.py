@@ -33,6 +33,8 @@ class ProtocolEngine:
         self.remaining_ms: int | None = None
         self.remaining_updated_at_ms: int | None = None
         self.remaining_end_at_ms: int | None = None
+        self.elapsed_ms: int | None = None
+        self.elapsed_updated_at_ms: int | None = None
         self.current_lap: int | None = None
         self.total_laps: int | None = None
         self.lap_progress_updated_at_ms: int | None = None
@@ -53,7 +55,7 @@ class ProtocolEngine:
         # cible de tours ; elle prévaut sur un ancien compte à rebours mémorisé.
         lap_progresses = re.findall(
             r"(?:^|[\r\n])dyn1\|text\|[^\r\n]*?"
-            r"(?:giro|giri|tour|tours|lap|laps)\s*(\d+)\s*/\s*(\d+)",
+            r"(?:giro|giri|tour|tours|lap|laps|vuelta|vueltas|runde|runden|volta|voltas|ronde|rondes|okrazenie|okrazenia|okrążenie|okrążenia)\s*(\d+)\s*/\s*(\d+)",
             frame,
             re.IGNORECASE,
         )
@@ -66,6 +68,13 @@ class ProtocolEngine:
                 self.remaining_ms = None
                 self.remaining_updated_at_ms = None
                 self.remaining_end_at_ms = None
+
+        # Certaines configurations internationales publient un chrono montant :
+        # dyn1|count|<millisecondes>. Il s'agit du temps ÉCOULÉ, jamais du temps restant.
+        counts = re.findall(r"(?:^|[\r\n])dyn1\|count\|(\d+)", frame)
+        if counts:
+            self.elapsed_ms = max(0, int(counts[-1]))
+            self.elapsed_updated_at_ms = received_at_ms
 
         # Apex publie le temps restant sous la forme
         # dyn1|countdown|<millisecondes>. On ne l'applique que si la même trame
@@ -240,6 +249,9 @@ class ProtocolEngine:
             "remaining_updated_at_ms": self.remaining_updated_at_ms if countdown_fresh else None,
             "remaining_end_at_ms": self.remaining_end_at_ms if countdown_fresh else None,
             "countdown_fresh": countdown_fresh,
+            "elapsed_ms": self.elapsed_ms if (self.elapsed_updated_at_ms is not None and now_ms - self.elapsed_updated_at_ms <= 45_000) else None,
+            "elapsed_updated_at_ms": self.elapsed_updated_at_ms if (self.elapsed_updated_at_ms is not None and now_ms - self.elapsed_updated_at_ms <= 45_000) else None,
+            "elapsed_fresh": bool(self.elapsed_updated_at_ms is not None and now_ms - self.elapsed_updated_at_ms <= 45_000),
             "current_lap": self.current_lap,
             "total_laps": self.total_laps,
             "lap_progress_updated_at_ms": self.lap_progress_updated_at_ms,

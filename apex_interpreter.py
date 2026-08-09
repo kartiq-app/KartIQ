@@ -139,7 +139,11 @@ class ApexInterpreter:
                 field = "position"
             elif label in {"kart", "no", "n", "numero", "numero kart", "kart no", "kart number"}:
                 field = "kart"
-            elif label in {"tours", "tour", "laps", "lap", "rondes", "ronde"}:
+            elif label in {
+                "tours", "tour", "laps", "lap", "rondes", "ronde",
+                "vueltas", "vuelta", "giri", "giro", "runden", "runde",
+                "voltas", "volta", "okrążenia", "okrążenie", "okrazenia", "okrazenie"
+            }:
                 field = "laps"
             elif label in {"dernier", "dernier tour", "last", "last lap", "tour precedent", "temps dernier tour"}:
                 field = "last_lap"

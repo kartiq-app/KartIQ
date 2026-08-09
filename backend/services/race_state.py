@@ -96,6 +96,9 @@ class RaceStateService:
             "time_remaining_ms": None,
             "time_remaining_updated_at_ms": None,
             "time_remaining_end_at_ms": None,
+            "time_elapsed": "—",
+            "time_elapsed_ms": None,
+            "time_elapsed_updated_at_ms": None,
             "apex_laps_remaining": "—",
             "current_lap": 0,
             "total_laps": 0,
@@ -359,7 +362,7 @@ class RaceStateService:
                 continue
             driver_name = name or pilot or f"Ligne Apex {row.get('row', '?')}"
             previous = previous_drivers.get(driver_name) or {}
-            # V7.2.149 — certaines configurations Apex envoient des mises à jour
+            # V7.2.150 — certaines configurations Apex envoient des mises à jour
             # partielles : le nom est présent mais une ou plusieurs cellules métier
             # n'arrivent que dans une trame suivante. On conserve alors la dernière
             # valeur valide de la session au lieu de vider le Classement Live.
@@ -419,6 +422,7 @@ class RaceStateService:
                 "pit_timer": row.get("pit_timer") or previous.get("pit_timer") or None,
                 "track_timer": row.get("track_timer") or previous.get("track_timer") or None,
                 "apex_row": row.get("row"),
+                "apex_updated_at": row.get("updated_at"),
                 "last_improved_personal_best": bool(
                     self.last_lap_performance.get(history_key, {}).get("marker") == marker
                     and self.last_lap_performance.get(history_key, {}).get("improved_personal_best")
@@ -585,6 +589,17 @@ class RaceStateService:
         self.state["time_remaining_ms"] = current_remaining_ms
         self.state["time_remaining_updated_at_ms"] = now_ms if current_remaining_ms is not None else None
         self.state["time_remaining_end_at_ms"] = end_at_ms
+
+        # dyn1|count est un chrono montant : on l'expose séparément pour
+        # qualifier l'activité live sans fabriquer un faux temps restant.
+        elapsed_ms = session.get("elapsed_ms") if session.get("elapsed_fresh") and has_active_grid else None
+        try:
+            elapsed_ms = int(elapsed_ms) if elapsed_ms is not None else None
+        except (TypeError, ValueError):
+            elapsed_ms = None
+        self.state["time_elapsed_ms"] = elapsed_ms
+        self.state["time_elapsed"] = self._format_remaining(elapsed_ms)
+        self.state["time_elapsed_updated_at_ms"] = now_ms if elapsed_ms is not None else None
 
         # Apex ne fournit pas toujours un objectif de tours. Lorsque ce total est
         # disponible, on affiche les tours restants ; sinon on affiche le nombre de
