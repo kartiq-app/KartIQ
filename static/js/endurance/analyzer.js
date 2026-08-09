@@ -481,7 +481,7 @@ function analyzerApexStablePhase(driver,at=Date.now()){
  return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
 function analyzerLiveProgressPhase(driver,nowDate=Date.now(),nowPerf=performance.now()){
- // Moteur commun V7.2.148 : les filets du Classement Live et TRAFIC
+ // Moteur commun V7.2.149 : les filets du Classement Live et TRAFIC
  // s'appuient sur la même position virtuelle du kart entre deux passages.
  const apexPhase=analyzerApexStablePhase(driver,nowDate);
  if(Number.isFinite(apexPhase))return {phase:apexPhase,source:'apex'};
@@ -1305,7 +1305,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.148 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.149 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];let velocityLabSprintImportedRows=new Map(),velocityLabSprintImportedParticipants=new Map(),velocityLabSprintImportedSessions=new Map(),velocityLabSprintImportOrder=[];
@@ -1867,7 +1867,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.148`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.149`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -2379,18 +2379,21 @@ function analyzerTrafficApexPhase(driver,now=Date.now()){
 }
 function analyzerTrafficSignedGapFromPhases(followedPhase,driverPhase,followed){
  if(!Number.isFinite(followedPhase)||!Number.isFinite(driverPhase))return null;
- let fraction=driverPhase-followedPhase;
- if(fraction>.5)fraction-=1;
- else if(fraction<=-.5)fraction+=1;
+ // V7.2.149 — TRAFIC doit raconter exactement la même position que les filets.
+ // On ne replie plus automatiquement l'écart dans [-0,5 ; +0,5] tour : ce
+ // wrap pouvait transformer un kart visuellement derrière dans CLASSEMENT LIVE
+ // en kart "devant" dans TRAFIC. La différence reste donc linéaire sur le tour.
+ const fraction=driverPhase-followedPhase;
  if(Math.abs(fraction)<=1e-6)return 0;
  return fraction*analyzerTrafficLapSeconds(followed);
 }
 function analyzerTrafficSignedGap(followed,driver,now,source='fallback'){
- if(source==='apex'){
-  return analyzerTrafficSignedGapFromPhases(analyzerTrafficApexPhase(followed,now),analyzerTrafficApexPhase(driver,now),followed);
- }
- const followedPhase=analyzerTrafficFallbackPhase(followed,now),driverPhase=analyzerTrafficFallbackPhase(driver,now);
- const phaseGap=analyzerTrafficSignedGapFromPhases(followedPhase,driverPhase,followed);
+ // Une seule source géométrique pour TRAFIC et les filets : même phase virtuelle,
+ // même instant de calcul, même sens gauche/droite.
+ const dateNow=source==='apex'?now:Date.now(),perfNow=source==='apex'?performance.now():now;
+ const followedMotion=analyzerLiveProgressPhase(followed,dateNow,perfNow);
+ const driverMotion=analyzerLiveProgressPhase(driver,dateNow,perfNow);
+ const phaseGap=analyzerTrafficSignedGapFromPhases(followedMotion.phase,driverMotion.phase,followed);
  if(Number.isFinite(phaseGap))return phaseGap;
  if(typeof directRaceGap==='function'){
   const ahead=directRaceGap(followed,driver);
@@ -2403,12 +2406,13 @@ function analyzerTrafficSignedGap(followed,driver,now,source='fallback'){
 function analyzerTrafficAround(followed){
  if(!followed)return [];
  const drivers=state.drivers||[],nowDate=Date.now(),pace=analyzerMapPaceData(drivers);
- const useApexTracking=analyzerTrafficTrackingIsLive(nowDate)&&Number.isFinite(analyzerTrafficApexPhase(followed,nowDate));
+ const useApexTracking=analyzerTrafficTrackingIsLive(nowDate)&&Number.isFinite(analyzerLiveProgressPhase(followed,nowDate,performance.now()).phase);
  if(!useApexTracking)analyzerTrafficUpdateMotion(drivers);
  else analyzerTrafficMotion.clear();
+ const commonNow=useApexTracking?nowDate:performance.now();
  return drivers
   .filter(driver=>driver&&driver.driver!==followed.driver&&driver.status!=='pit')
-  .map(driver=>({driver,gap:analyzerTrafficSignedGap(followed,driver,useApexTracking?nowDate:performance.now(),useApexTracking?'apex':'fallback'),category:pace.map.get(driver)?.category||'slow',key:analyzerTrafficKey(driver)}))
+  .map(driver=>({driver,gap:analyzerTrafficSignedGap(followed,driver,commonNow,useApexTracking?'apex':'fallback'),category:pace.map.get(driver)?.category||'slow',key:analyzerTrafficKey(driver)}))
   .filter(item=>Number.isFinite(item.gap)&&Math.abs(item.gap)<=ANALYZER_TRAFFIC_HYSTERESIS_SECONDS)
   .sort((a,b)=>a.gap-b.gap);
 }

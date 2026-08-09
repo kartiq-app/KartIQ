@@ -359,7 +359,7 @@ class RaceStateService:
                 continue
             driver_name = name or pilot or f"Ligne Apex {row.get('row', '?')}"
             previous = previous_drivers.get(driver_name) or {}
-            # V7.2.148 — certaines configurations Apex envoient des mises à jour
+            # V7.2.149 — certaines configurations Apex envoient des mises à jour
             # partielles : le nom est présent mais une ou plusieurs cellules métier
             # n'arrivent que dans une trame suivante. On conserve alors la dernière
             # valeur valide de la session au lieu de vider le Classement Live.
