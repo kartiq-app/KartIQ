@@ -1242,7 +1242,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.146 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.147 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];let velocityLabSprintImportedRows=new Map(),velocityLabSprintImportedParticipants=new Map(),velocityLabSprintImportedSessions=new Map(),velocityLabSprintImportOrder=[];
@@ -1640,6 +1640,34 @@ function velocityLabSprintLogicalStageInfo(session){
  if(!base)base=kind;
  return {kind,group,key:`${kind}:${base}`,base};
 }
+function velocityLabSprintGroupIdentity(session){
+ const raw=String(session?.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[–—_-]+/g,' ').replace(/\s+/g,' ').trim();
+ if(/\b(elite|eli)\b/.test(raw))return 'ELITE';
+ if(/\b(espoir|espoirs|esp|es)\b/.test(raw))return 'ESPOIR';
+ let m=raw.match(/\b(?:groupe|group)\s*([12])\b/);if(m)return `GROUPE ${m[1]}`;
+ m=raw.match(/\b(?:groupe|group)\s*([ab])\b/);if(m)return `GROUPE ${String(m[1]).toUpperCase()}`;
+ m=raw.match(/\b(?:qualif|qualification|qualifying|chrono|chronos)\s*([ab])\b/);if(m)return `GROUPE ${String(m[1]).toUpperCase()}`;
+ m=raw.match(/\b(?:course|race|manche|heat|sprint)\s*\d+\s*([ab])\b/);if(m)return `GROUPE ${String(m[1]).toUpperCase()}`;
+ return '';
+}
+function velocityLabSprintDestinationReference(sessions,displayStages,stageIndexByRaw,rawIndex,entry,previous){
+ if(!previous||!Number.isFinite(entry?.average))return null;
+ const currentGroup=velocityLabSprintGroupIdentity(sessions?.[rawIndex]),previousGroup=String(previous.sessionGroup||'');
+ if(!currentGroup||!previousGroup||currentGroup===previousGroup)return null;
+ const currentStageIndex=stageIndexByRaw.get(rawIndex);if(!Number.isFinite(currentStageIndex)||currentStageIndex<=0)return null;
+ const previousStage=displayStages[currentStageIndex-1];if(!previousStage)return null;
+ const previousDestinationIndex=(previousStage.sessionIndexes||[]).find(index=>velocityLabSprintGroupIdentity(sessions?.[index])===currentGroup);
+ if(previousDestinationIndex==null)return null;
+ const previousDestination=sessions[previousDestinationIndex],priorByPilot=new Map((previousDestination?.entries||[]).filter(e=>e?.laps>=3&&Number.isFinite(e?.average)).map(e=>[e.pilotKey||velocityLabSprintPilotKey(e.pilot),e]));
+ const stableDeltas=(sessions?.[rawIndex]?.entries||[]).filter(e=>e?.laps>=3&&Number.isFinite(e?.average)).map(e=>{
+  const prior=priorByPilot.get(e.pilotKey||velocityLabSprintPilotKey(e.pilot));return prior&&Number.isFinite(prior.average)?e.average-prior.average:null;
+ }).filter(Number.isFinite);
+ // La référence du groupe d'arrivée doit rester robuste. En dessous de 5 pilotes
+ // stables on conserve le calcul Sprint historique plutôt que de sur-interpréter
+ // un petit échantillon.
+ if(stableDeltas.length<5)return null;
+ return {delta:analyzerMedian(stableDeltas),count:stableDeltas.length,currentGroup,previousGroup,previousDestinationIndex,mode:'DESTINATION_STABLE'};
+}
 function velocityLabSprintEntryKeys(session){
  return new Set((session?.entries||[]).map(e=>e?.pilotKey||velocityLabSprintPilotKey(e?.pilot)).filter(Boolean));
 }
@@ -1674,7 +1702,8 @@ function velocityLabSprintScoreSort(a,b){
  return String(a?.entry?.pilot||'').localeCompare(String(b?.entry?.pilot||''),'fr',{sensitivity:'base'});
 }
 function velocityLabSprintBuildAnalysis(sessions,trackKartNumbers=false){
- const previousByPilot=new Map(),allRows=[],logicalStages=[],stageByKey=new Map();
+ const previousByPilot=new Map(),allRows=[],logicalStages=[],stageByKey=new Map(),displayStages=velocityLabSprintDisplayStages(sessions),stageIndexByRaw=new Map();
+ displayStages.forEach((stage,stageIndex)=>(stage.sessionIndexes||[]).forEach(rawIndex=>stageIndexByRaw.set(rawIndex,stageIndex)));
  (sessions||[]).forEach((session,rawIndex)=>{
   const info=velocityLabSprintLogicalStageInfo(session);
   let logical=stageByKey.get(info.key);
@@ -1693,9 +1722,14 @@ function velocityLabSprintBuildAnalysis(sessions,trackKartNumbers=false){
    eligible.forEach(entry=>{
     const previous=previousByPilot.get(entry.pilotKey)||null;
     const rawDelta=previous?entry.average-previous.average:null;
-    const gridDelta=previous&&Number.isFinite(session.grid)&&Number.isFinite(previous.sessionGrid)?session.grid-previous.sessionGrid:null;
+    const defaultGridDelta=previous&&Number.isFinite(session.grid)&&Number.isFinite(previous.sessionGrid)?session.grid-previous.sessionGrid:null;
+    // SCORE SPRINT uniquement : si le pilote change de groupe/niveau, la simple
+    // différence de médianes mélange évolution de piste et niveau des groupes.
+    // On mesure alors l'évolution des pilotes restés dans le GROUPE D'ARRIVÉE.
+    const destinationReference=velocityLabSprintDestinationReference(sessions,displayStages,stageIndexByRaw,rawIndex,entry,previous);
+    const gridDelta=destinationReference?destinationReference.delta:defaultGridDelta;
     const correctedDelta=Number.isFinite(rawDelta)&&Number.isFinite(gridDelta)?rawDelta-gridDelta:null;
-    stage.push({session,rawSessionIndex:rawIndex,sessionIndex:logical.index,logicalStageKey:logical.key,logicalStage:logical,group,entry,previous,rawDelta,gridDelta,correctedDelta});
+    stage.push({session,rawSessionIndex:rawIndex,sessionIndex:logical.index,logicalStageKey:logical.key,logicalStage:logical,group,entry,previous,rawDelta,gridDelta,defaultGridDelta,correctedDelta,transitionReference:destinationReference?.mode||'PLATEAU_MEDIAN',transitionReferenceCount:destinationReference?.count||0,transitionFromGroup:destinationReference?.previousGroup||'',transitionToGroup:destinationReference?.currentGroup||''});
    });
    // Important : A et B ont chacun leur propre plateau statistique.
    const transitionVals=stage.map(r=>r.correctedDelta).filter(Number.isFinite);
@@ -1711,13 +1745,13 @@ function velocityLabSprintBuildAnalysis(sessions,trackKartNumbers=false){
    (session.entries||[]).filter(entry=>!eligible.includes(entry)).forEach(entry=>{
     allRows.push({session,rawSessionIndex:rawIndex,sessionIndex:logical.index,logicalStageKey:logical.key,logicalStage:logical,group,entry,previous:previousByPilot.get(entry.pilotKey)||null,rawDelta:null,gridDelta:null,correctedDelta:null,criteria:{pace:null,transition:null,potential:null,consistency:null,sample:null},weights:{pace:0,transition:0,potential:0,consistency:0,sample:0},transitionZ:null,transitionMedian:null,transitionSigma:null,score:null,insufficient:true});
    });
-   eligible.forEach(entry=>pendingPrevious.push([entry.pilotKey,{...entry,sessionId:session.id,sessionName:session.name,sessionGrid:session.grid,logicalStageKey:logical.key}]));
+   const sessionGroup=velocityLabSprintGroupIdentity(session);
+   eligible.forEach(entry=>pendingPrevious.push([entry.pilotKey,{...entry,sessionId:session.id,sessionName:session.name,sessionGrid:session.grid,logicalStageKey:logical.key,sessionGroup,rawSessionIndex:rawIndex}]));
   });
   // On ne met à jour la référence pilote qu'après avoir traité TOUS les groupes
   // de la même étape : Qualif B n'est donc jamais comparée à Qualif A.
   pendingPrevious.forEach(([key,value])=>previousByPilot.set(key,value));
  });
- const displayStages=velocityLabSprintDisplayStages(sessions);
  const latestDisplay=displayStages[displayStages.length-1]||null;
  const latestIndexes=new Set(latestDisplay?.sessionIndexes||[]);
  const latest=allRows.filter(r=>latestIndexes.has(r.rawSessionIndex)).sort(velocityLabSprintScoreSort);
@@ -1770,7 +1804,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.146`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.147`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
