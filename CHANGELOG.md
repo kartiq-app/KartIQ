@@ -1,4 +1,14 @@
-# V7.2.147 — SCORE SPRINT : TRANSITIONS ENTRE GROUPES
+# V7.2.148 — ANALYZER : FILETS LIVE + MOTEUR COMMUN TRAFIC
+- Ajout de filets fins gris/blanc sous chaque ligne du **CLASSEMENT LIVE** Analyzer.
+- Les filets ont une longueur fixe d’environ **13 %** de la largeur du classement ; c’est leur **position horizontale** qui évolue, comme le principe observé sur Apex Timing.
+- Le leader possède lui aussi son filet afin de conserver une référence visuelle complète.
+- L’extrémité du filet représente la progression virtuelle du kart entre deux passages de chronométrage.
+- Animation linéaire continue jusqu’au passage suivant ; la position est recalée à chaque mise à jour live.
+- Les filets et **TRAFIC** utilisent désormais le même moteur de phase virtuelle (`analyzerLiveProgressPhase`) : position Apex en priorité, puis fallback Velocity si le tracking détaillé n’est pas disponible.
+- Aucun filet n’est affiché hors course, au stand ou dans le **Classement virtuel**.
+- Aucun changement sur **Score Relais** ni sur **Score Sprint**.
+
+# V7.2.148 — SCORE SPRINT : TRANSITIONS ENTRE GROUPES
 - Modification **uniquement du Score Sprint**. Le Score Relais reste strictement inchangé.
 - Détection des changements de niveau/groupe : `Espoir ↔ Elite`, `Groupe 2 ↔ Groupe 1`, `Groupe B ↔ Groupe A` et variantes équivalentes dans les noms de session.
 - Lorsqu’un pilote change de groupe, son Δ personnel n’est plus corrigé par la simple différence de médiane entre son ancien groupe et son nouveau groupe.
@@ -7,7 +17,7 @@
 - La nouvelle référence exige au moins **5 pilotes stables** dans le groupe d’arrivée ; sinon Velocity conserve automatiquement l’ancienne référence Sprint.
 - La normalisation médiane + MAD, le signal en σ et les poids adaptatifs Transition/Rythme restent inchangés.
 
-# V7.2.147 — SCORE SPRINT : ORDRE CHRONOLOGIQUE DES SESSIONS
+# V7.2.148 — SCORE SPRINT : ORDRE CHRONOLOGIQUE DES SESSIONS
 - Les imports CSV/ZIP ne conservent plus l’ordre arbitraire des fichiers dans l’archive.
 - Tri automatique avant calcul : **QUALIF A → QUALIF B → COURSE 1 A → COURSE 1 B → COURSE 2 A → COURSE 2 B → …**.
 - Reconnaissance des libellés Apex `QUALIF / QUALIFICATION / CHRONO` et `COURSE / RACE / MANCHE / HEAT / SPRINT`.
@@ -16,7 +26,7 @@
 - Le même ordre est utilisé par le calcul Score Sprint, le PDF, **ÉVOLUTION PAR PILOTE** et **DÉTAIL DES TRANSITIONS**.
 - L’ordre normalisé est conservé lors des imports cumulatifs suivants.
 
-# V7.2.147 — VELOCITY LAB : IMPORT CSV / MULTI-CSV / ZIP
+# V7.2.148 — VELOCITY LAB : IMPORT CSV / MULTI-CSV / ZIP
 - Nouveau bouton **IMPORTER CSV / ZIP** dans Score Sprint.
 - Accepte un CSV, plusieurs CSV sélectionnés en une fois ou un ZIP contenant plusieurs CSV.
 - Les imports sont **cumulatifs** pendant la session Velocity Lab.
@@ -28,7 +38,7 @@
 - Bouton **EFFACER L’IMPORT** pour repartir d’une base vide.
 - Les données importées peuvent ensuite être réexportées avec **TÉLÉCHARGER TOUS LES TOURS** et utilisées pour le PDF complet.
 
-# V7.2.147 — PDF SCORE SPRINT : RAPPORT COMPLET DE L’ÉVÉNEMENT
+# V7.2.148 — PDF SCORE SPRINT : RAPPORT COMPLET DE L’ÉVÉNEMENT
 - Le PDF n’est plus centré uniquement sur la dernière course.
 - Un tableau de résultats est généré pour **chaque session sélectionnée** : `QUALIF A`, `QUALIF B`, `COURSE 1 A`, `COURSE 1 B`, etc.
 - Après chaque manche de course, ajout d’un **CLASSEMENT COURSE 1**, **CLASSEMENT COURSE 2**, etc., consolidant les groupes A+B.
@@ -37,7 +47,7 @@
 - La matrice **STABILITÉ PAR KART** reste présente lorsque le suivi des numéros est activé.
 - Le **DÉTAIL DES TRANSITIONS** est conservé et utilise les libellés explicites des sessions (QUALIF A/B, COURSE 1 A/B...).
 
-# V7.2.147 — STATS APEX : RETRY + EXPORT DIAGNOSTIC
+# V7.2.148 — STATS APEX : RETRY + EXPORT DIAGNOSTIC
 - Les réponses Apex vides ne sont plus considérées immédiatement comme définitives.
 - Jusqu’à 3 tentatives sur la première fenêtre de tours, puis nouvelles tentatives sur les fenêtres suivantes.
 - Score Sprint charge les pilotes historiques séquentiellement afin de limiter les réponses Apex manquantes lors des rafales de requêtes.
@@ -46,7 +56,7 @@
 - Tout pilote présent dans la grille est exporté même si Apex ne renvoie aucun tour : `AUCUN TOUR RETOURNÉ`.
 - Le résumé indique le nombre de pilotes/session sans retour Apex.
 
-# V7.2.147 — VELOCITY LAB : TÉLÉCHARGER TOUS LES TOURS
+# V7.2.148 — VELOCITY LAB : TÉLÉCHARGER TOUS LES TOURS
 - Nouveau bouton **TÉLÉCHARGER TOUS LES TOURS** dans Score Sprint.
 - L’export utilise toutes les sessions cochées dans Velocity Lab ; la session LIVE est ajoutée uniquement si l’option correspondante est cochée.
 - Export CSV compatible Excel, une ligne par tour et par pilote.
@@ -54,21 +64,21 @@
 - Les données sont les **données Apex brutes** : aucun nettoyage, aucun retrait de tour de lancement, aucun filtre Velocity.
 - L’export est indépendant du calcul Score Sprint et permet d’auditer précisément les données reçues par Velocity.
 
-# V7.2.147 — SCORE SPRINT : RÉCUPÉRATION STATS HISTORIQUES
+# V7.2.148 — SCORE SPRINT : RÉCUPÉRATION STATS HISTORIQUES
 - Correction effective du double retrait du tour de lancement dans Score Sprint.
 - Anthony Silik : 1:29.111 écarté, puis 1:00.227 / 1:00.014 / 1:00.200 conservés = 3 tours exploitables.
 - Suppression robuste des fausses lignes d’en-tête Apex `Pilote / Kart`.
 - Les matrices écran et PDF n’affichent plus jamais littéralement `null`.
 - Un vrai manque de données est affiché `— / Données insuffisantes`.
 
-# V7.2.147 — SCORE SPRINT : FIX TOURS EXPLOITABLES
+# V7.2.148 — SCORE SPRINT : FIX TOURS EXPLOITABLES
 - Correction du double retrait du tour de lancement dans Score Sprint.
 - Si le tour de lancement a déjà été écarté par le filtre d’outlier, Velocity ne supprime plus le tour propre suivant.
 - Cas de contrôle Anthony Silik : 1:29.111 écarté, puis 1:00.227 / 1:00.014 / 1:00.200 conservés = 3 tours exploitables, donc score calculable.
 - Filtrage de la fausse ligne historique Apex `Pilote / Kart`.
 - Aucun score insuffisant ne doit désormais apparaître littéralement sous forme `null` : affichage `— / Données insuffisantes`.
 
-# V7.2.147 — SCORE SPRINT : 42 PILOTES A+B
+# V7.2.148 — SCORE SPRINT : 42 PILOTES A+B
 - Le tableau **SCORE SPRINT EXPÉRIMENTAL** réunit désormais tous les pilotes des deux groupes de la dernière étape (ex. 21 Groupe A + 21 Groupe B = 42 pilotes).
 - Les scores restent calculés séparément dans chaque groupe : le plateau A n’est pas mélangé au plateau B.
 - La matrice **ÉVOLUTION PAR PILOTE** affiche explicitement `QUALIF A / QUALIF B`, puis `COURSE 1 A / COURSE 1 B`, etc.

@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.147"
+APP_VERSION = "7.2.148"
 APP_RELEASE_NAME = "ALGO V2 PLATEAU RELATIF"
 
 

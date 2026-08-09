@@ -480,6 +480,69 @@ function analyzerApexStablePhase(driver,at=Date.now()){
  const phase=analyzerApexEntryPhase(entry,at);
  return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
+function analyzerLiveProgressPhase(driver,nowDate=Date.now(),nowPerf=performance.now()){
+ // Moteur commun V7.2.148 : les filets du Classement Live et TRAFIC
+ // s'appuient sur la même position virtuelle du kart entre deux passages.
+ const apexPhase=analyzerApexStablePhase(driver,nowDate);
+ if(Number.isFinite(apexPhase))return {phase:apexPhase,source:'apex'};
+ const fallback=analyzerTrafficFallbackPhase(driver,nowPerf);
+ if(Number.isFinite(fallback))return {phase:fallback,source:'fallback'};
+ const pace=analyzerTrafficLapSeconds(driver),track=analyzerAnimatedTrackSeconds(driver);
+ if(Number.isFinite(track)&&Number.isFinite(pace)&&pace>0)return {phase:((track%pace)+pace)%pace/pace,source:'track'};
+ return {phase:null,source:'none'};
+}
+function analyzerRankingProgressMeta(driver,nowDate=Date.now()){
+ if(analyzerRankingMode!=='general'||!analyzerApexRaceIsActive()||!driver||driver.status==='pit')return null;
+ const {phase,source}=analyzerLiveProgressPhase(driver,nowDate,performance.now());
+ if(!Number.isFinite(phase))return null;
+ const lapSeconds=analyzerTrafficLapSeconds(driver);
+ if(!Number.isFinite(lapSeconds)||lapSeconds<=0)return null;
+ // Apex utilise un filet fixe d'environ 13 % de la largeur et déplace sa
+ // position. On conserve ce principe : l'extrémité droite du filet représente
+ // la progression estimée du kart dans le tour.
+ const normalized=Math.max(0,Math.min(1,phase));
+ return {
+  phase:normalized,
+  lapSeconds,
+  source,
+  widthRatio:.13,
+  remainingMs:Math.max(250,(1.13-normalized)*lapSeconds*1000)
+ };
+}
+function analyzerRenderRankingProgressLines(rows){
+ const wrap=document.querySelector('.analyzer-ranking-wrap'),table=wrap?.querySelector('.analyzer-ranking-table'),body=document.getElementById('analyzerTable');
+ if(!wrap||!table||!body)return;
+ let overlay=wrap.querySelector('.analyzer-ranking-progress-overlay');
+ if(!overlay){overlay=document.createElement('div');overlay.className='analyzer-ranking-progress-overlay';wrap.appendChild(overlay)}
+ overlay.replaceChildren();
+ if(analyzerRankingMode!=='general'||!analyzerApexRaceIsActive())return;
+ const tableWidth=Math.max(table.scrollWidth,table.getBoundingClientRect().width),tableHeight=Math.max(table.scrollHeight,table.getBoundingClientRect().height);
+ overlay.style.width=`${tableWidth}px`;overlay.style.height=`${tableHeight}px`;
+ const byKey=new Map((rows||[]).map(x=>[String(typeof rankingDriverKey==='function'?rankingDriverKey(x.driver):(x.driver?.apex_row??x.driver?.driver??x.driver?.pos)),x.driver]));
+ const now=Date.now();
+ [...body.querySelectorAll('tr[data-driver]')].forEach(tr=>{
+  const driver=byKey.get(String(tr.dataset.driver||''));if(!driver)return;
+  const meta=analyzerRankingProgressMeta(driver,now);if(!meta)return;
+  const tableRect=table.getBoundingClientRect(),rowRect=tr.getBoundingClientRect();
+  const rectTop=rowRect.bottom-tableRect.top-1,lineWidth=tableWidth*meta.widthRatio;
+  const startLeft=meta.phase*tableWidth-lineWidth;
+  const endLeft=tableWidth;
+  const line=document.createElement('span');
+  line.className='analyzer-ranking-progress-line';
+  line.dataset.driver=String(tr.dataset.driver||'');
+  line.dataset.source=meta.source;
+  line.style.top=`${rectTop}px`;
+  line.style.left=`${startLeft}px`;
+  line.style.width=`${lineWidth}px`;
+  overlay.appendChild(line);
+  try{
+   line.animate([{left:`${startLeft}px`},{left:`${endLeft}px`}],{duration:meta.remainingMs,easing:'linear',fill:'forwards'});
+  }catch(_){
+   line.style.transition=`left ${meta.remainingMs}ms linear`;
+   requestAnimationFrame(()=>{line.style.left=`${endLeft}px`});
+  }
+ });
+}
 function analyzerDriverPhase(driver){
  const eventPhase=analyzerApexStablePhase(driver);if(Number.isFinite(eventPhase))return eventPhase;
  const pace=analyzerDriverPace(driver);if(!Number.isFinite(pace)||pace<=0)return 0;
@@ -1242,7 +1305,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.147 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.148 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];let velocityLabSprintImportedRows=new Map(),velocityLabSprintImportedParticipants=new Map(),velocityLabSprintImportedSessions=new Map(),velocityLabSprintImportOrder=[];
@@ -1804,7 +1867,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.147`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.148`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -2311,7 +2374,8 @@ function analyzerTrafficTrackingIsLive(now=Date.now()){
  return now-Number(registry.lastEventAt)<=90000;
 }
 function analyzerTrafficApexPhase(driver,now=Date.now()){
- return analyzerApexStablePhase(driver,now);
+ const shared=analyzerLiveProgressPhase(driver,now,performance.now());
+ return Number.isFinite(shared.phase)?shared.phase:null;
 }
 function analyzerTrafficSignedGapFromPhases(followedPhase,driverPhase,followed){
  if(!Number.isFinite(followedPhase)||!Number.isFinite(driverPhase))return null;
@@ -2593,6 +2657,7 @@ function renderAnalyzer(){
   return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerSpotterStatusLabel(analyzerSpotterAssignmentForTeam(d.driver)))}">${analyzerEscape(analyzerSpotterKvLabel(d.driver,x.history.virtualKart))}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
  }).join('');
  if(typeof rankingAnimateRows==='function'&&analyzerRankingMode==='general')rankingAnimateRows(analyzerRankingBody,analyzerPreviousRows);
+ analyzerRenderRankingProgressLines(sorted);
  renderAnalyzerPenalties();
  analyzerRenderPitSimulator();
  renderAnalyzerQueueAdvice();
