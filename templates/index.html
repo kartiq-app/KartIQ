@@ -372,7 +372,7 @@
           <button id="velocityLabSprintLoadButton" type="button" onclick="loadVelocityLabSprintSessions()">DÉTECTER LES SESSIONS</button>
         </div>
         <div class="velocity-lab-sprint-config">
-          <div class="velocity-lab-sprint-config-head"><div><strong>SESSIONS DE L’ÉVÉNEMENT</strong><span id="velocityLabSprintSessionStatus">Cliquez sur DÉTECTER LES SESSIONS.</span></div><label><input id="velocityLabSprintIncludeLive" type="checkbox" checked onchange="renderVelocityLabSprintSessions()"> Inclure la session LIVE</label></div>
+          <div class="velocity-lab-sprint-config-head"><div><strong>SESSIONS DE L’ÉVÉNEMENT</strong><span id="velocityLabSprintSessionStatus">Cliquez sur DÉTECTER LES SESSIONS.</span></div><div class="velocity-lab-sprint-options"><label><input id="velocityLabSprintTrackKarts" type="checkbox" onchange="toggleVelocityLabSprintTrackKarts(this.checked)"> Suivre les numéros de kart</label><label><input id="velocityLabSprintIncludeLive" type="checkbox" checked onchange="renderVelocityLabSprintSessions()"> Inclure la session LIVE</label></div></div>
           <div id="velocityLabSprintSessions" class="velocity-lab-sprint-sessions"><div class="analyzer-empty">Aucune session chargée.</div></div>
           <div class="velocity-lab-sprint-actions">
             <button id="velocityLabSprintAnalyzeButton" type="button" onclick="runVelocityLabSprintAnalysis()" disabled>CALCULER LE SCORE SPRINT</button>

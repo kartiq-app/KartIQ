@@ -1,3 +1,20 @@
+# V7.2.136 — SCORE SPRINT : KARTS AFFICHÉS EN MODE RELAIS
+- En **MODE RELAIS** (option « Suivre les numéros de kart » décochée), les numéros de kart restent visibles à titre informatif.
+- Une mention explicite indique que les numéros de kart **ne sont pas pris en compte dans le calcul**.
+- La matrice Pilotes conserve le numéro de kart sous le score, avec la mention « non pris en compte ».
+- La matrice **Stabilité par kart** reste réservée au MODE SUIVI KARTS.
+- L’export PDF conserve également les numéros de kart en MODE RELAIS et précise qu’ils ne participent pas à l’analyse.
+
+# V7.2.136 — SCORE SPRINT : MODE RELAIS / SUIVI KARTS
+
+- Ajout dans Velocity Lab / Score Sprint de l’option **Suivre les numéros de kart**, décochée par défaut.
+- Option décochée : **MODE RELAIS**. Les numéros de kart sont ignorés dans la lecture des résultats ; l’analyse suit uniquement chaque pilote de session en session avec l’Algo V2 relatif au plateau.
+- Option cochée : **MODE SUIVI KARTS**. Le numéro de kart est affiché sous le score pilote et la matrice **Stabilité par kart** est activée.
+- Le tableau de classement et le détail des transitions masquent les colonnes Kart en mode Relais.
+- L’export PDF indique explicitement le mode utilisé et supprime toutes les références aux numéros de kart en mode Relais.
+- En mode Relais, la matrice Pilotes affiche sous le score le Δ corrigé et le signal σ à la place du numéro de kart.
+- Home, pied de page PDF et User-Agent mis à jour en **Velocity V7.2.136**.
+
 # V7.2.134 — ALGO V2 PLATEAU RELATIF
 
 - Analyzer passe au moteur **Velocity V2** validé sur les jeux de données historiques Sprint et Endurance.
