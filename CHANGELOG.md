@@ -1,3 +1,11 @@
+# V7.2.139 — SCORE SPRINT : 42 PILOTES A+B
+- Le tableau **SCORE SPRINT EXPÉRIMENTAL** réunit désormais tous les pilotes des deux groupes de la dernière étape (ex. 21 Groupe A + 21 Groupe B = 42 pilotes).
+- Les scores restent calculés séparément dans chaque groupe : le plateau A n’est pas mélangé au plateau B.
+- La matrice **ÉVOLUTION PAR PILOTE** affiche explicitement `QUALIF A / QUALIF B`, puis `COURSE 1 A / COURSE 1 B`, etc.
+- Les pilotes présents dans la grille mais avec trop peu de tours exploitables restent visibles avec `—` et la mention **Données insuffisantes**.
+- Une session LIVE encore vide n’est plus considérée comme la dernière étape de résultats.
+- L’export PDF reprend tous les pilotes de l’étape principale sur plusieurs pages si nécessaire.
+
 # V7.2.138 — SCORE SPRINT : GROUPES A/B + EXPORT PDF
 - Velocity Lab reconnaît désormais **Groupe A / Groupe B** comme deux sous-sessions d’une même étape.
 - `Qualif A + Qualif B` produit une seule étape **QUALIF** regroupant tous les pilotes.
