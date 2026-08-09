@@ -1,4 +1,13 @@
-# V7.2.142 — VELOCITY LAB : TÉLÉCHARGER TOUS LES TOURS
+# V7.2.143 — STATS APEX : RETRY + EXPORT DIAGNOSTIC
+- Les réponses Apex vides ne sont plus considérées immédiatement comme définitives.
+- Jusqu’à 3 tentatives sur la première fenêtre de tours, puis nouvelles tentatives sur les fenêtres suivantes.
+- Score Sprint charge les pilotes historiques séquentiellement afin de limiter les réponses Apex manquantes lors des rafales de requêtes.
+- « Télécharger tous les tours » utilise la même récupération robuste.
+- Le CSV contient désormais une colonne **STATUS**.
+- Tout pilote présent dans la grille est exporté même si Apex ne renvoie aucun tour : `AUCUN TOUR RETOURNÉ`.
+- Le résumé indique le nombre de pilotes/session sans retour Apex.
+
+# V7.2.143 — VELOCITY LAB : TÉLÉCHARGER TOUS LES TOURS
 - Nouveau bouton **TÉLÉCHARGER TOUS LES TOURS** dans Score Sprint.
 - L’export utilise toutes les sessions cochées dans Velocity Lab ; la session LIVE est ajoutée uniquement si l’option correspondante est cochée.
 - Export CSV compatible Excel, une ligne par tour et par pilote.
@@ -6,21 +15,21 @@
 - Les données sont les **données Apex brutes** : aucun nettoyage, aucun retrait de tour de lancement, aucun filtre Velocity.
 - L’export est indépendant du calcul Score Sprint et permet d’auditer précisément les données reçues par Velocity.
 
-# V7.2.142 — SCORE SPRINT : RÉCUPÉRATION STATS HISTORIQUES
+# V7.2.143 — SCORE SPRINT : RÉCUPÉRATION STATS HISTORIQUES
 - Correction effective du double retrait du tour de lancement dans Score Sprint.
 - Anthony Silik : 1:29.111 écarté, puis 1:00.227 / 1:00.014 / 1:00.200 conservés = 3 tours exploitables.
 - Suppression robuste des fausses lignes d’en-tête Apex `Pilote / Kart`.
 - Les matrices écran et PDF n’affichent plus jamais littéralement `null`.
 - Un vrai manque de données est affiché `— / Données insuffisantes`.
 
-# V7.2.142 — SCORE SPRINT : FIX TOURS EXPLOITABLES
+# V7.2.143 — SCORE SPRINT : FIX TOURS EXPLOITABLES
 - Correction du double retrait du tour de lancement dans Score Sprint.
 - Si le tour de lancement a déjà été écarté par le filtre d’outlier, Velocity ne supprime plus le tour propre suivant.
 - Cas de contrôle Anthony Silik : 1:29.111 écarté, puis 1:00.227 / 1:00.014 / 1:00.200 conservés = 3 tours exploitables, donc score calculable.
 - Filtrage de la fausse ligne historique Apex `Pilote / Kart`.
 - Aucun score insuffisant ne doit désormais apparaître littéralement sous forme `null` : affichage `— / Données insuffisantes`.
 
-# V7.2.142 — SCORE SPRINT : 42 PILOTES A+B
+# V7.2.143 — SCORE SPRINT : 42 PILOTES A+B
 - Le tableau **SCORE SPRINT EXPÉRIMENTAL** réunit désormais tous les pilotes des deux groupes de la dernière étape (ex. 21 Groupe A + 21 Groupe B = 42 pilotes).
 - Les scores restent calculés séparément dans chaque groupe : le plateau A n’est pas mélangé au plateau B.
 - La matrice **ÉVOLUTION PAR PILOTE** affiche explicitement `QUALIF A / QUALIF B`, puis `COURSE 1 A / COURSE 1 B`, etc.

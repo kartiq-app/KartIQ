@@ -1242,7 +1242,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.142 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.143 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];
@@ -1322,7 +1322,7 @@ async function velocityLabSprintRawHistoricalLaps(session,progress){
   if(progress)progress(`Export ${session.name} · ${index+1}/${snapshot.length}`);
   const laps=await fetchAllApexTeamLaps(team.rowId,session.id,null).catch(()=>[]);
   return {sessionId:String(session.id),sessionName:session.name,kind:analyzerSessionKind(session),pilot:team.name,kart:team.kart||'—',rowId:team.rowId,laps};
- },4);
+ },1);
  return datasets.filter(Boolean);
 }
 async function velocityLabSprintRawLiveLaps(progress){
@@ -1348,16 +1348,19 @@ async function downloadVelocityLabSprintAllLaps(){
   const all=[];
   for(const session of selected)all.push(...await velocityLabSprintRawHistoricalLaps(session,progress));
   if(includeLive)all.push(...await velocityLabSprintRawLiveLaps(progress));
-  const headers=['SESSION_ID','SESSION','TYPE','PILOTE','KART','APEX_ROW','TOUR','TEMPS_MS','TEMPS','S1_MS','S1','S2_MS','S2','S3_MS','S3'];
+  const headers=['SESSION_ID','SESSION','TYPE','PILOTE','KART','APEX_ROW','STATUS','TOUR','TEMPS_MS','TEMPS','S1_MS','S1','S2_MS','S2','S3_MS','S3'];
   const lines=[headers.join(';')];
   let lapCount=0;
   for(const dataset of all){
-   const laps=(dataset.laps||[]).slice().sort((a,b)=>Number(a.lap)-Number(b.lap));
+   const laps=(dataset.laps||[]).slice().sort((a,b)=>Number(a.lap)-Number(b.lap)).filter(lap=>Number(lap?.lap)&&Number(lap?.lapTime));
+   if(!laps.length){
+    lines.push([dataset.sessionId,dataset.sessionName,dataset.kind,dataset.pilot,dataset.kart,dataset.rowId,'AUCUN TOUR RETOURNÉ','','','','','','','','',''].map(velocityLabSprintCsvCell).join(';'));
+    continue;
+   }
    for(const lap of laps){
-    if(!Number(lap?.lap)||!Number(lap?.lapTime))continue;
     lapCount++;
     lines.push([
-     dataset.sessionId,dataset.sessionName,dataset.kind,dataset.pilot,dataset.kart,dataset.rowId,
+     dataset.sessionId,dataset.sessionName,dataset.kind,dataset.pilot,dataset.kart,dataset.rowId,'OK',
      Number(lap.lap),Number(lap.lapTime)||'',velocityLabSprintCsvTime(lap.lapTime),
      Number(lap.sector1)||'',velocityLabSprintCsvTime(lap.sector1),
      Number(lap.sector2)||'',velocityLabSprintCsvTime(lap.sector2),
@@ -1367,7 +1370,8 @@ async function downloadVelocityLabSprintAllLaps(){
   }
   const stamp=new Date().toISOString().replace(/[:T]/g,'-').slice(0,16);
   velocityLabSprintDownloadBlob('\ufeff'+lines.join('\r\n'),`VelocityLab_Tous_Les_Tours_${stamp}.csv`);
-  progress(`${all.length} pilote/session(s) · ${lapCount} tour(s) exporté(s).`);
+  const missingCount=all.filter(d=>!(d.laps||[]).some(l=>Number(l?.lap)&&Number(l?.lapTime))).length;
+  progress(`${all.length} pilote/session(s) · ${lapCount} tour(s) exporté(s) · ${missingCount} sans retour Apex.`);
  }catch(error){
   if(status)status.textContent=`Export des tours impossible : ${error.message}`;
  }finally{
@@ -1402,7 +1406,7 @@ async function velocityLabSprintHistoricalData(session,progress){
   let laps=[];try{laps=await fetchAllApexTeamLaps(team.rowId,session.id,null)}catch(_){}
   const metrics=velocityLabSprintMetricsFromLaps(laps);
   return {pilot:team.name,pilotKey:velocityLabSprintPilotKey(team.name),kart:team.kart||'—',rowId:team.rowId,...(metrics||{laps:0,average:null,best3:null,consistency:null,values:[]}),insufficient:!metrics};
- },4);
+ },1);
  const entries=rows.filter(Boolean),grid=analyzerMedian(entries.map(x=>x.average).filter(Number.isFinite));
  return {id:String(session.id),name:session.name,kind:analyzerSessionKind(session),live:false,entries,grid};
 }
@@ -1565,7 +1569,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.142`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.143`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -2625,18 +2629,27 @@ function formatApexMilliseconds(ms){
  const minutes=Math.floor(value/60000),seconds=Math.floor((value%60000)/1000),millis=Math.floor(value%1000);
  return minutes?`${minutes}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`:`${seconds}.${String(millis).padStart(3,'0')}`;
 }
+function apexHistorySleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function fetchAllApexTeamLaps(rowId,sessionId,status){
  const prefix=sessionId?`S#${sessionId}#`:'';
- // Apex charge d'abord 30 tours, puis élargit la fenêtre. On reproduit ce mécanisme
- // plutôt que d'envoyer une valeur hors protocole comme -9999.
+ // Apex peut répondre ponctuellement vide alors que les stats existent.
+ // Une réponse vide n'est donc jamais considérée comme définitive au premier essai.
  const windows=[30,100,300,750,1500,3000];
  let latest=[];
- for(const count of windows){
+ for(let wi=0;wi<windows.length;wi++){
+  const count=windows[wi],maxAttempts=wi===0?3:2;
   if(status)status.textContent=`Chargement des tours Apex… fenêtre ${count}`;
   const command=`${prefix}D#-${count}#D${rowId}.L#-999#D${rowId}.P#2#D${rowId}.B#1#D${rowId}.INF`;
-  const parsed=parseApexTeamData(await apexHistoryRequest(command),rowId).laps;
-  if(parsed.length)latest=parsed;
-  // Moins de lignes que la fenêtre demandée, ou présence du tour 1 : historique complet.
+  let parsed=[];
+  for(let attempt=1;attempt<=maxAttempts;attempt++){
+   try{parsed=parseApexTeamData(await apexHistoryRequest(command),rowId).laps}catch(_){parsed=[]}
+   if(parsed.length)break;
+   if(attempt<maxAttempts)await apexHistorySleep(120*attempt);
+  }
+  if(!parsed.length)continue;
+  latest=parsed;
+  // Dès qu'Apex renvoie une vraie réponse, moins de lignes que la fenêtre
+  // demandée (ou présence du tour 1) signifie que l'historique est complet.
   if(parsed.some(l=>l.lap===1)||parsed.length<count)return parsed;
  }
  return latest;
