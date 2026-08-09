@@ -504,7 +504,7 @@ function analyzerApexStablePhase(driver,at=Date.now()){
  return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
 function analyzerLiveProgressPhase(driver,nowDate=Date.now(),nowPerf=performance.now()){
- // Moteur commun V7.2.152 : les filets du Classement Live et TRAFIC
+ // Moteur commun V7.2.153 : les filets du Classement Live et TRAFIC
  // s'appuient sur la même position virtuelle du kart entre deux passages.
  const apexPhase=analyzerApexStablePhase(driver,nowDate);
  if(Number.isFinite(apexPhase))return {phase:apexPhase,source:'apex'};
@@ -523,7 +523,7 @@ function analyzerRankingProgressMeta(driver,nowDate=Date.now()){
  const normalized=Math.max(0,Math.min(1,phase));
  return {phase:normalized,lapSeconds,source,widthRatio:.13};
 }
-// V7.2.152 — moteur persistant 60 fps pour les filets du Classement Live.
+// V7.2.153 — moteur persistant 60 fps pour les filets du Classement Live.
 // Contrairement à l'ancienne version, les animations ne sont plus recréées à
 // chaque rendu du tableau : les éléments restent en place et leur transform est
 // mis à jour à chaque frame à partir de la phase live commune.
@@ -629,8 +629,27 @@ function analyzerRenderPitSimulator(){
  const top5=analyzerMapTop5Set(drivers),pitQueue=analyzerMapPitQueue(drivers),pitNames=new Set(pitQueue.map(x=>x.driver.driver));
  const visible=drivers.map(driver=>{const info=paceData.map.get(driver)||{category:'slow',delta:null};const point=analyzerMapPoint(driver,analyzerMapRings[info.category]);return {driver,info,point}}).filter(item=>item.point&&!pitNames.has(item.driver.driver)&&(analyzerMapPaceFilters.has(item.info.category)||item.driver.driver===state.followed_driver));
  const simulation=analyzerPitSimulation,horizon=Number(simulation?.horizon??simulation?.horizonSeconds)||0;
- const dots=visible.map(({driver,info,point})=>{let p=point;if(simulation&&driver.driver!==simulation.followedName&&!(typeof velocityKartIsInPit==='function'?velocityKartIsInPit(driver):driver.status==='pit'))p=analyzerTrackPoint((point.phase+horizon/Math.max(1,analyzerDriverPace(driver)))%1,analyzerMapRings[info.category]);if(simulation&&driver.driver===simulation.followedName)p=analyzerTrackPoint(0,analyzerMapRings[info.category]);const classes=['pit-simulator-dot','pace-'+info.category];if(driver.driver===state.followed_driver)classes.push('followed');if(analyzerMapIsHighlighted(driver,info.category,top5))classes.push('highlighted');if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,info.category,top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');const title=Number.isFinite(info.delta)?`${driver.driver} · +${info.delta.toFixed(3)} s`:driver.driver;return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><title>${analyzerEscape(title)}</title><circle r="${info.category==='fastest'?10.45:9.35}"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`}).join('');
- const pitDots=analyzerPitLaneDots(pitQueue,top5),projected=simulation?'<circle class="pit-simulator-projected" cx="135" cy="25" r="12.1"></circle>':'',followed=drivers.find(d=>d.driver===state.followed_driver)||null,centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(horizon):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
+ const projectedByName=new Map((simulation?.traffic?.entries||[]).map(entry=>[entry.driver?.driver,entry]));
+ const dots=visible.map(({driver,info,point})=>{
+  let p=point;
+  if(simulation){
+   if(driver.driver===simulation.followedName){
+    p=analyzerTrackPoint(Number.isFinite(simulation.rejoinPhase)?simulation.rejoinPhase:0,analyzerMapRings[info.category]);
+   }else{
+    const projectedEntry=projectedByName.get(driver.driver);
+    if(projectedEntry&&Number.isFinite(projectedEntry.phase))p=analyzerTrackPoint(projectedEntry.phase,analyzerMapRings[info.category]);
+   }
+  }
+  const classes=['pit-simulator-dot','pace-'+info.category];
+  if(driver.driver===state.followed_driver)classes.push('followed');
+  if(analyzerMapIsHighlighted(driver,info.category,top5))classes.push('highlighted');
+  if(analyzerMapHighlight!=='none'&&!analyzerMapIsHighlighted(driver,info.category,top5)&&driver.driver!==state.followed_driver)classes.push('dimmed');
+  const title=Number.isFinite(info.delta)?`${driver.driver} · +${info.delta.toFixed(3)} s`:driver.driver;
+  return `<g class="${classes.join(' ')}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})"><title>${analyzerEscape(title)}</title><circle r="${info.category==='fastest'?10.45:9.35}"></circle><text y=".5">${analyzerEscape(analyzerSimulationKartLabel(driver))}</text></g>`
+ }).join('');
+ const rejoinPoint=simulation?analyzerTrackPoint(Number.isFinite(simulation.rejoinPhase)?simulation.rejoinPhase:0,128):null;
+ const projected=simulation&&rejoinPoint?`<g class="pit-simulator-rejoin-ghost" transform="translate(${rejoinPoint.x.toFixed(2)} ${rejoinPoint.y.toFixed(2)})"><circle r="12.1"></circle><circle class="pit-simulator-rejoin-pulse" r="16"></circle><text y="-18">SORTIE</text></g>`:'';
+ const pitDots=analyzerPitLaneDots(pitQueue,top5),followed=drivers.find(d=>d.driver===state.followed_driver)||null,centerTitle=simulation?'RESSORTIE DANS':'ÉQUIPE SUIVIE',centerValue=simulation?analyzerFormatDuration(horizon):(followed?analyzerEscape(analyzerSimulationKartLabel(followed)):'—');
  const waiting=!visible.length?'<text class="pit-simulator-center-value pit-simulator-center-value-idle" x="135" y="184">En attente d’un passage Apex</text>':'';
  host.innerHTML=`<div class="map-stage"><div class="map-radar-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Radar de rythme synchronisé avec Apex Timing">${radar}${dots}${projected}<text class="pit-simulator-center-title" x="135" y="145">${centerTitle}</text><text class="pit-simulator-center-value" x="135" y="163">${centerValue}</text>${waiting}</svg></div><div class="map-pitlane-pane"><svg viewBox="0 0 270 292" role="img" aria-label="Karts dans la pit lane">${pitBase}${pitDots}</svg></div></div>`;
  if(document.getElementById('analyzerMapFocus')?.classList.contains('show'))analyzerRenderMapFocus();
@@ -649,17 +668,78 @@ function analyzerPitLaneDifferential(laps,pits,pitAverage){
  }).filter(Number.isFinite);
  return analyzerMedian(values)??0;
 }
-function analyzerProjectedTraffic(followed,horizon){
- const others=(state.drivers||[]).filter(d=>d.driver&&d.driver!==followed.driver&&d.status!=='pit').map(driver=>{
-  const pace=analyzerDriverPace(driver);const phase=(analyzerDriverPhase(driver)+horizon/Math.max(1,pace))%1;
-  return {driver,pace,phase};
- });
- if(!others.length)return {ahead:null,behind:null};
- const ahead=others.slice().sort((a,b)=>a.phase-b.phase)[0];
- const behind=others.slice().sort((a,b)=>b.phase-a.phase)[0];
+function analyzerPitCleanDurations(values){
+ const clean=(values||[]).map(Number).filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b);
+ if(clean.length<4)return clean;
+ const median=analyzerMedian(clean),deviations=clean.map(v=>Math.abs(v-median)),mad=analyzerMedian(deviations);
+ if(!Number.isFinite(mad)||mad<=0)return clean;
+ const robust=clean.filter(v=>Math.abs(v-median)<=3*1.4826*mad);
+ return robust.length>=2?robust:clean;
+}
+function analyzerPitOperationalBenchmark(values){
+ const clean=analyzerPitCleanDurations(values);
+ if(!clean.length)return {seconds:analyzerRules.minPitSeconds,samples:0,mode:'règlement'};
+ const best=clean.slice(0,Math.min(3,clean.length));
+ return {seconds:analyzerMedian(best)??analyzerMean(best)??analyzerRules.minPitSeconds,samples:best.length,mode:clean.length>=3?'3 meilleurs':'historique'};
+}
+function analyzerDriverRaceDistance(driver,phase=null){
+ const laps=Number(driver?.laps);
+ const p=Number.isFinite(phase)?phase:analyzerDriverPhase(driver);
+ if(!Number.isFinite(laps)||!Number.isFinite(p))return null;
+ return Math.max(0,laps)+Math.max(0,Math.min(.999999,p));
+}
+function analyzerProjectedPitState(followed,horizon,followedPhase=null){
+ const drivers=(state.drivers||[]).filter(d=>d&&d.driver);
+ const phase0=Number.isFinite(followedPhase)?followedPhase:analyzerDriverPhase(followed);
+ const followedLaps=Number(followed?.laps);
+ const followedPace=analyzerDriverPace(followed);
+ if(!Number.isFinite(phase0)||!Number.isFinite(followedLaps)||!Number.isFinite(followedPace)||followedPace<=0){
+  return {ahead:null,behind:null,projectedPos:null,nearby5:0,nearby10:0,rejoinPhase:0,entries:[]};
+ }
+ // Hypothèse de géométrie actuellement disponible dans Velocity : l'entrée/sortie
+ // des stands est ramenée à la ligne de chronométrage. Le kart suivi termine sa
+ // fraction de tour en cours puis ressort à phase 0 après le coût complet d'arrêt.
+ const currentFollowedDistance=Math.max(0,followedLaps)+phase0;
+ const rejoinDistance=currentFollowedDistance+(1-phase0);
+ const rejoinPhase=((rejoinDistance%1)+1)%1;
+ const entries=[];
+ for(const driver of drivers){
+  if(driver.driver===followed.driver)continue;
+  if(typeof velocityKartIsInPit==='function'?velocityKartIsInPit(driver):driver.status==='pit')continue;
+  const motion=analyzerLiveProgressPhase(driver,Date.now(),performance.now());
+  const phase=motion.phase,pace=analyzerDriverPace(driver),distance=analyzerDriverRaceDistance(driver,phase);
+  if(!Number.isFinite(phase)||!Number.isFinite(pace)||pace<=0||!Number.isFinite(distance))continue;
+  const projectedDistance=distance+horizon/pace;
+  const projectedPhase=((projectedDistance%1)+1)%1;
+  entries.push({driver,pace,phase:projectedPhase,distance:projectedDistance,source:motion.source});
+ }
+ const standings=[...entries.map(x=>({name:x.driver.driver,distance:x.distance,driver:x.driver})),{name:followed.driver,distance:rejoinDistance,driver:followed,followed:true}]
+  .sort((a,b)=>b.distance-a.distance);
+ const projectedPos=standings.findIndex(x=>x.followed)+1;
+
+ // Trafic physique autour de la sortie : on mesure la distance au point de sortie
+ // sur le tour, indépendamment du nombre de tours de classement.
+ const physical=entries.map(entry=>{
+  let fraction=entry.phase-rejoinPhase;
+  if(fraction>.5)fraction-=1;
+  else if(fraction<=-.5)fraction+=1;
+  const seconds=fraction>=0?fraction*entry.pace:fraction*entry.pace;
+  return {...entry,fraction,gap:seconds};
+ }).sort((a,b)=>a.gap-b.gap);
+ const ahead=physical.filter(x=>x.gap>=0).sort((a,b)=>a.gap-b.gap)[0]||null;
+ const behind=physical.filter(x=>x.gap<0).sort((a,b)=>b.gap-a.gap)[0]||null;
+ const nearby5=physical.filter(x=>Math.abs(x.gap)<=5).length;
+ const nearby10=physical.filter(x=>Math.abs(x.gap)<=10).length;
  return {
-  ahead:{...ahead,gap:Math.max(0,ahead.phase*ahead.pace)},
-  behind:{...behind,gap:Math.max(0,(1-behind.phase)*behind.pace)}
+  ahead:ahead?{...ahead,gap:Math.abs(ahead.gap)}:null,
+  behind:behind?{...behind,gap:Math.abs(behind.gap)}:null,
+  projectedPos,
+  nearby5,
+  nearby10,
+  rejoinPhase,
+  rejoinDistance,
+  entries,
+  standings
  };
 }
 async function simulateAnalyzerPitStop(){
@@ -674,21 +754,31 @@ async function simulateAnalyzerPitStop(){
   const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(Number(followed.apex_row),'',null),fetchAllApexTeamPits(Number(followed.apex_row),'',null)]);
   const completed=(pits||[]).filter(p=>Number(p.pitOutMs)>Number(p.pitInMs));
   const pitDurations=completed.map(p=>(p.pitOutMs-p.pitInMs)/1000).filter(v=>Number.isFinite(v)&&v>0);
-  const pitAverage=analyzerMean(pitDurations)??analyzerRules.minPitSeconds;
-  const pace=analyzerDriverPace(followed),phase=analyzerDriverPhase(followed);
+  const benchmark=analyzerPitOperationalBenchmark(pitDurations),pitAverage=benchmark.seconds;
+  const pace=analyzerDriverPace(followed);
+  const liveMotion=analyzerLiveProgressPhase(followed,Date.now(),performance.now()),phase=Number.isFinite(liveMotion.phase)?liveMotion.phase:analyzerDriverPhase(followed);
   const timeToPit=Math.max(0,(1-phase)*pace);
   const laneDifferential=analyzerPitLaneDifferential(laps,completed,pitAverage);
   const horizon=timeToPit+laneDifferential+pitAverage;
-  const traffic=analyzerProjectedTraffic(followed,horizon);
-  analyzerPitSimulation={followedName:followed.driver,createdAt:Date.now(),timeToPit,laneDifferential,pitAverage,horizon,traffic,samples:pitDurations.length};
+  const traffic=analyzerProjectedPitState(followed,horizon,phase);
+  analyzerPitSimulation={
+   followedName:followed.driver,createdAt:Date.now(),timeToPit,laneDifferential,pitAverage,horizon,traffic,
+   samples:pitDurations.length,benchmarkSamples:benchmark.samples,benchmarkMode:benchmark.mode,
+   startPhase:phase,startSource:liveMotion.source,rejoinPhase:traffic.rejoinPhase,projectedPos:traffic.projectedPos
+  };
   const breakdown=document.getElementById('pitSimulatorBreakdown'),result=document.getElementById('pitSimulatorResult');
-  if(status)status.textContent=`Projection figée au clic pour ${followed.driver}. Relancez la simulation pour actualiser.`;
-  if(breakdown)breakdown.innerHTML=`<div><span>Temps moyen pour rallier les stands</span><b>${analyzerFormatDuration(timeToPit)}</b></div><div><span>Différentiel estimé de la voie des stands</span><b>${analyzerFormatDuration(laneDifferential)}</b></div><div><span>Arrêt moyen de l’équipe (${pitDurations.length||0})</span><b>${analyzerFormatDuration(pitAverage)}</b></div><div><span>Ressortie estimée dans</span><b>${analyzerFormatDuration(horizon)}</b></div>`;
+  if(status)status.textContent=`Projection temporelle figée au clic pour ${followed.driver}. Relancez la simulation pour actualiser.`;
+  if(breakdown)breakdown.innerHTML=`<div><span>Temps jusqu’à l’entrée des stands</span><b>${analyzerFormatDuration(timeToPit)}</b></div><div><span>Différentiel estimé de la voie des stands</span><b>${analyzerFormatDuration(laneDifferential)}</b></div><div><span>Référence arrêt · ${benchmark.mode} (${benchmark.samples})</span><b>${analyzerFormatDuration(pitAverage)}</b></div><div><span>Ressortie estimée dans</span><b>${analyzerFormatDuration(horizon)}</b></div>`;
   if(result){
    const ahead=traffic.ahead,behind=traffic.behind;
-   const front=ahead?`Vous ressortirez <strong>derrière ${analyzerEscape(ahead.driver.driver)}</strong> avec <strong>${ahead.gap.toFixed(1)} s</strong> de retard.`:'Aucune équipe détectée immédiatement devant.';
-   const rear=behind?`Vous ressortirez <strong>devant ${analyzerEscape(behind.driver.driver)}</strong> avec <strong>${behind.gap.toFixed(1)} s</strong> d’avance.`:'Aucune équipe détectée immédiatement derrière.';
-   const nearest=Math.min(ahead?.gap??999,behind?.gap??999);result.className='pit-simulator-result '+(nearest<3?'dense':nearest>5?'good':'');result.innerHTML=`${front}<br>${rear}`;const ok=document.getElementById('pitSimulatorOkButton');if(ok)ok.hidden=false;
+   const position=Number.isFinite(traffic.projectedPos)?`Position projetée : <strong>P${traffic.projectedPos}</strong>. `:'';
+   const front=ahead?`Sortie <strong>derrière ${analyzerEscape(ahead.driver.driver)}</strong> à <strong>${ahead.gap.toFixed(1)} s</strong>.`:'Aucun kart détecté immédiatement devant la sortie.';
+   const rear=behind?`<strong>${analyzerEscape(behind.driver.driver)}</strong> serait à <strong>${behind.gap.toFixed(1)} s</strong> derrière.`:'Aucun kart détecté immédiatement derrière la sortie.';
+   const density=`Trafic : <strong>${traffic.nearby5}</strong> kart${traffic.nearby5>1?'s':''} dans ±5 s · ${traffic.nearby10} dans ±10 s.`;
+   const nearest=Math.min(ahead?.gap??999,behind?.gap??999);
+   result.className='pit-simulator-result '+(nearest<3||traffic.nearby5>=3?'dense':nearest>5&&traffic.nearby5<=1?'good':'');
+   result.innerHTML=`${position}${front}<br>${rear}<br>${density}`;
+   const ok=document.getElementById('pitSimulatorOkButton');if(ok)ok.hidden=false;
   }
   analyzerRenderPitSimulator();
  }catch(error){if(status)status.textContent=`Simulation impossible : ${error.message}`;console.warn('[Velocity] Simulation arrêt',error)}
@@ -1358,7 +1448,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.152 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.153 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];let velocityLabSprintImportedRows=new Map(),velocityLabSprintImportedParticipants=new Map(),velocityLabSprintImportedSessions=new Map(),velocityLabSprintImportOrder=[];
@@ -1920,7 +2010,7 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.152`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.153`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
@@ -2432,7 +2522,7 @@ function analyzerTrafficApexPhase(driver,now=Date.now()){
 }
 function analyzerTrafficSignedGapFromPhases(followedPhase,driverPhase,followed){
  if(!Number.isFinite(followedPhase)||!Number.isFinite(driverPhase))return null;
- // V7.2.152 — TRAFIC doit raconter exactement la même position que les filets.
+ // V7.2.153 — TRAFIC doit raconter exactement la même position que les filets.
  // On ne replie plus automatiquement l'écart dans [-0,5 ; +0,5] tour : ce
  // wrap pouvait transformer un kart visuellement derrière dans CLASSEMENT LIVE
  // en kart "devant" dans TRAFIC. La différence reste donc linéaire sur le tour.
