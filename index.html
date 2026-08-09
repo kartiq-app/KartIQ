@@ -378,8 +378,11 @@
           <div class="velocity-lab-sprint-config-head"><div><strong>SESSIONS DE L’ÉVÉNEMENT</strong><span id="velocityLabSprintSessionStatus">Cliquez sur DÉTECTER LES SESSIONS.</span></div><div class="velocity-lab-sprint-options"><label><input id="velocityLabSprintIncludeLive" type="checkbox" checked onchange="renderVelocityLabSprintSessions()"> Inclure la session LIVE</label></div></div>
           <div id="velocityLabSprintSessions" class="velocity-lab-sprint-sessions"><div class="analyzer-empty">Aucune session chargée.</div></div>
           <div class="velocity-lab-sprint-actions">
-            <button id="velocityLabSprintAnalyzeButton" type="button" onclick="runVelocityLabSprintAnalysis()" disabled>CALCULER LE SCORE SPRINT</button>
-            <small>Les sessions sont validées manuellement avant calcul. Score Sprint utilise la même logique V2 relative au plateau que l’Analyzer, avec pondération Transition pilotée par la force statistique du signal.</small>
+            <div class="velocity-lab-sprint-action-buttons">
+              <button id="velocityLabSprintAnalyzeButton" type="button" onclick="runVelocityLabSprintAnalysis()" disabled>CALCULER LE SCORE SPRINT</button>
+              <button id="velocityLabSprintDownloadLapsButton" type="button" onclick="downloadVelocityLabSprintAllLaps()" disabled>TÉLÉCHARGER TOUS LES TOURS</button>
+            </div>
+            <small>Les sessions sont validées manuellement avant calcul. « Télécharger tous les tours » exporte les données Apex brutes de toutes les sessions cochées, sans nettoyage de l’algo.</small>
           </div>
         </div>
         <div id="velocityLabSprintResults" class="velocity-lab-sprint-results" aria-live="polite"><div class="velocity-lab-placeholder">Validez les sessions puis lancez le calcul.</div></div>

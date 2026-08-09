@@ -1242,7 +1242,7 @@ function analyzerVelocityLabRawRows(metrics,key){
  ];
 }
 
-/* Velocity V7.2.140 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
+/* Velocity V7.2.142 — Velocity Lab / mode Relais ou suivi des numéros de kart + export PDF.
    Strictement isolé du classement Velocity et de SCORE RELAIS dans Analyzer. */
 let velocityLabMode='official';
 let velocityLabSprintSessions=[];
@@ -1298,15 +1298,95 @@ function moveVelocityLabSprintSession(id,direction){
  const copy=velocityLabSprintSessions.slice(),tmp=copy[index];copy[index]=copy[next];copy[next]=tmp;velocityLabSprintSessions=copy;velocityLabSprintAnalysis=null;renderVelocityLabSprintSessions();
 }
 function renderVelocityLabSprintSessions(){
- const host=document.getElementById('velocityLabSprintSessions'),analyze=document.getElementById('velocityLabSprintAnalyzeButton'),includeLive=Boolean(document.getElementById('velocityLabSprintIncludeLive')?.checked);if(!host)return;
- if(!velocityLabSprintSessions.length){host.innerHTML='<div class="analyzer-empty">Aucune session chargée.</div>';if(analyze)analyze.disabled=true;return}
+ const host=document.getElementById('velocityLabSprintSessions'),analyze=document.getElementById('velocityLabSprintAnalyzeButton'),download=document.getElementById('velocityLabSprintDownloadLapsButton'),includeLive=Boolean(document.getElementById('velocityLabSprintIncludeLive')?.checked);if(!host)return;
+ if(!velocityLabSprintSessions.length){host.innerHTML='<div class="analyzer-empty">Aucune session chargée.</div>';if(analyze)analyze.disabled=true;if(download)download.disabled=true;return}
  host.innerHTML=velocityLabSprintSessions.map((s,index)=>{const checked=velocityLabSprintSelected.has(String(s.id)),kind=analyzerSessionKind(s)==='qualification'?'QUALIF':'COURSE';return `<div class="velocity-lab-sprint-session ${checked?'selected':''}"><label><input type="checkbox" ${checked?'checked':''} onchange="toggleVelocityLabSprintSession('${analyzerEscape(String(s.id))}',this.checked)"><b>${kind}</b><span>${analyzerEscape(s.name)}</span><small>ID ${analyzerEscape(String(s.id))}</small></label><div><button type="button" onclick="moveVelocityLabSprintSession('${analyzerEscape(String(s.id))}',-1)" ${index===0?'disabled':''}>↑</button><button type="button" onclick="moveVelocityLabSprintSession('${analyzerEscape(String(s.id))}',1)" ${index===velocityLabSprintSessions.length-1?'disabled':''}>↓</button></div></div>`}).join('')+(includeLive?'<div class="velocity-lab-sprint-session live selected"><label><input type="checkbox" checked disabled><b>LIVE</b><span>SESSION EN COURS</span><small>Dernière étape</small></label></div>':'');
- if(analyze)analyze.disabled=velocityLabSprintLoading||(!velocityLabSprintSelected.size&&!includeLive);
+ const noSelection=!velocityLabSprintSelected.size&&!includeLive;
+ if(analyze)analyze.disabled=velocityLabSprintLoading||noSelection;
+ if(download)download.disabled=velocityLabSprintLoading||noSelection;
+}
+
+function velocityLabSprintCsvCell(value){
+ const text=String(value??'').replace(/\r?\n/g,' ').trim();
+ return /[;"\r\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;
+}
+function velocityLabSprintCsvTime(ms){return Number(ms)>0?formatApexMilliseconds(Number(ms)):''}
+function velocityLabSprintDownloadBlob(content,filename,type='text/csv;charset=utf-8'){
+ const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=filename;a.style.display='none';document.body.appendChild(a);a.click();
+ setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},15000);
+}
+async function velocityLabSprintRawHistoricalLaps(session,progress){
+ const snapshot=parseApexSnapshotTeams(await apexHistoryRequest(`S#${session.id}`));
+ const datasets=await velocityLabSprintPool(snapshot,async(team,index)=>{
+  if(progress)progress(`Export ${session.name} · ${index+1}/${snapshot.length}`);
+  const laps=await fetchAllApexTeamLaps(team.rowId,session.id,null).catch(()=>[]);
+  return {sessionId:String(session.id),sessionName:session.name,kind:analyzerSessionKind(session),pilot:team.name,kart:team.kart||'—',rowId:team.rowId,laps};
+ },4);
+ return datasets.filter(Boolean);
+}
+async function velocityLabSprintRawLiveLaps(progress){
+ const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0&&String(d.driver||'').trim());
+ const datasets=await velocityLabSprintPool(drivers,async(driver,index)=>{
+  if(progress)progress(`Export SESSION LIVE · ${index+1}/${drivers.length}`);
+  const rowId=Number(driver.apex_row),laps=await fetchAllApexTeamLaps(rowId,'',null).catch(()=>[]);
+  const pilot=String(driver.driver||analyzerOfficialCurrentPilot(driver)||'').trim()||`Pilote ${rowId}`;
+  const kart=String(analyzerOfficialCurrentKart(driver)||validKartNumber(driver)||driver.apex||'—');
+  return {sessionId:'live',sessionName:'SESSION LIVE',kind:'live',pilot,kart,rowId,laps};
+ },4);
+ return datasets.filter(Boolean);
+}
+async function downloadVelocityLabSprintAllLaps(){
+ const button=document.getElementById('velocityLabSprintDownloadLapsButton'),status=document.getElementById('velocityLabSprintSessionStatus');
+ const selected=velocityLabSprintSessions.filter(s=>velocityLabSprintSelected.has(String(s.id)));
+ const includeLive=Boolean(document.getElementById('velocityLabSprintIncludeLive')?.checked);
+ if(!selected.length&&!includeLive)return;
+ const original=button?.textContent||'TÉLÉCHARGER TOUS LES TOURS';
+ velocityLabSprintLoading=true;if(button){button.disabled=true;button.textContent='PRÉPARATION…'}renderVelocityLabSprintSessions();
+ const progress=text=>{if(status)status.textContent=text};
+ try{
+  const all=[];
+  for(const session of selected)all.push(...await velocityLabSprintRawHistoricalLaps(session,progress));
+  if(includeLive)all.push(...await velocityLabSprintRawLiveLaps(progress));
+  const headers=['SESSION_ID','SESSION','TYPE','PILOTE','KART','APEX_ROW','TOUR','TEMPS_MS','TEMPS','S1_MS','S1','S2_MS','S2','S3_MS','S3'];
+  const lines=[headers.join(';')];
+  let lapCount=0;
+  for(const dataset of all){
+   const laps=(dataset.laps||[]).slice().sort((a,b)=>Number(a.lap)-Number(b.lap));
+   for(const lap of laps){
+    if(!Number(lap?.lap)||!Number(lap?.lapTime))continue;
+    lapCount++;
+    lines.push([
+     dataset.sessionId,dataset.sessionName,dataset.kind,dataset.pilot,dataset.kart,dataset.rowId,
+     Number(lap.lap),Number(lap.lapTime)||'',velocityLabSprintCsvTime(lap.lapTime),
+     Number(lap.sector1)||'',velocityLabSprintCsvTime(lap.sector1),
+     Number(lap.sector2)||'',velocityLabSprintCsvTime(lap.sector2),
+     Number(lap.sector3)||'',velocityLabSprintCsvTime(lap.sector3)
+    ].map(velocityLabSprintCsvCell).join(';'));
+   }
+  }
+  const stamp=new Date().toISOString().replace(/[:T]/g,'-').slice(0,16);
+  velocityLabSprintDownloadBlob('\ufeff'+lines.join('\r\n'),`VelocityLab_Tous_Les_Tours_${stamp}.csv`);
+  progress(`${all.length} pilote/session(s) · ${lapCount} tour(s) exporté(s).`);
+ }catch(error){
+  if(status)status.textContent=`Export des tours impossible : ${error.message}`;
+ }finally{
+  velocityLabSprintLoading=false;
+  if(button)button.textContent=original;
+  renderVelocityLabSprintSessions();
+ }
 }
 function velocityLabSprintPilotKey(value){return normalizeApexTeamName(value)}
 function velocityLabSprintMetricsFromLaps(laps){
- let clean=analyzerDebriefCleanLaps(laps||[],[]);if(clean.length>1)clean=clean.slice(1);
- const values=clean.map(l=>Number(l.seconds)).filter(v=>Number.isFinite(v)&&v>0);if(values.length<3)return null;
+ const raw=(laps||[]).filter(l=>Number(l?.lap)>0&&Number(l?.lapTime)>0).slice().sort((a,b)=>Number(a.lap)-Number(b.lap));
+ const firstRawLap=raw.length?Number(raw[0].lap):null;
+ let clean=analyzerDebriefCleanLaps(laps||[],[]);
+ // Ne retirer le tour de lancement que s'il a survécu au nettoyage.
+ // Exemple Anthony Silik : le 1:29.111 est déjà écarté comme outlier ;
+ // les 1:00.227 / 1:00.014 / 1:00.200 doivent donc tous rester.
+ if(clean.length>1&&Number.isFinite(firstRawLap)&&Number(clean[0]?.lap)===firstRawLap)clean=clean.slice(1);
+ const values=clean.map(l=>Number(l.seconds)).filter(v=>Number.isFinite(v)&&v>0);
+ if(values.length<3)return null;
  const sorted=values.slice().sort((a,b)=>a-b),top3=sorted.slice(0,3);
  return {laps:values.length,average:analyzerMean(values),best3:analyzerMean(top3),consistency:analyzerStdDev(values),values};
 }
@@ -1485,11 +1565,11 @@ function renderVelocityLabSprintResults(){
 function velocityLabSprintPdfPage(title,subtitle){
  const page=analyzerDebriefPdfCreatePage(),ctx=page.ctx;ctx.fillStyle='#111';ctx.fillRect(0,0,page.canvas.width,28);ctx.fillStyle='#bb1018';ctx.fillRect(0,28,page.canvas.width,12);ctx.fillStyle='#111';ctx.font='700 40px Arial';ctx.fillText(title,80,108);ctx.fillStyle='#bb1018';ctx.font='700 21px Arial';ctx.fillText('VELOCITY LAB — SCORE SPRINT',80,148);ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText(subtitle,80,184);page.y=230;return page
 }
-function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.140`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
+function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ctx.strokeStyle='#c9c9c5';ctx.beginPath();ctx.moveTo(80,1668);ctx.lineTo(canvas.width-80,1668);ctx.stroke();ctx.font='16px Arial';ctx.fillStyle='#666';ctx.fillText(`Velocity Lab · V7.2.142`,80,1702);ctx.fillText(`Page ${index} / ${total}`,canvas.width-165,1702)}
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
- rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(String(row.score),x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
+ rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(Number.isFinite(row.score)?String(row.score):'—',x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(row.insufficient?'Données insuffisantes':String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
 }
 async function exportVelocityLabSprintPdf(){
  const analysis=velocityLabSprintAnalysis,button=document.getElementById('velocityLabSprintPdfButton');if(!analysis?.rows?.length)return;if(button){button.disabled=true;button.textContent='GÉNÉRATION…'}
@@ -2488,6 +2568,9 @@ function parseApexSnapshotTeams(raw){
   const rawId=row.getAttribute('data-id')||'';if(!/^r\d+$/.test(rawId))return;
   const name=(row.querySelector('[data-type="dr"],td.dr')?.textContent||'').trim();if(!name)return;
   const kart=(row.querySelector('[data-type="no"],td.no')?.textContent||'').trim();
+  const normalizedName=normalizeApexTeamName(name);
+  // Apex peut injecter une fausse ligne d'en-tête dans le tbody.
+  if(['pilote','driver','nom','name'].includes(normalizedName))return;
   teams.push({rowId:Number(rawId.replace('r','')),name,kart});
  });
  return teams;
