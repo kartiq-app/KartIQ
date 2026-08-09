@@ -1,4 +1,11 @@
-# V7.2.139 — SCORE SPRINT : 42 PILOTES A+B
+# V7.2.140 — SCORE SPRINT : FIX TOURS EXPLOITABLES
+- Correction du double retrait du tour de lancement dans Score Sprint.
+- Si le tour de lancement a déjà été écarté par le filtre d’outlier, Velocity ne supprime plus le tour propre suivant.
+- Cas de contrôle Anthony Silik : 1:29.111 écarté, puis 1:00.227 / 1:00.014 / 1:00.200 conservés = 3 tours exploitables, donc score calculable.
+- Filtrage de la fausse ligne historique Apex `Pilote / Kart`.
+- Aucun score insuffisant ne doit désormais apparaître littéralement sous forme `null` : affichage `— / Données insuffisantes`.
+
+# V7.2.140 — SCORE SPRINT : 42 PILOTES A+B
 - Le tableau **SCORE SPRINT EXPÉRIMENTAL** réunit désormais tous les pilotes des deux groupes de la dernière étape (ex. 21 Groupe A + 21 Groupe B = 42 pilotes).
 - Les scores restent calculés séparément dans chaque groupe : le plateau A n’est pas mélangé au plateau B.
 - La matrice **ÉVOLUTION PAR PILOTE** affiche explicitement `QUALIF A / QUALIF B`, puis `COURSE 1 A / COURSE 1 B`, etc.
