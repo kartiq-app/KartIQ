@@ -1,0 +1,95 @@
+/* Velocity V7.2.154 — Analyzer smartphone portrait dédié.
+   Présentation uniquement : aucun calcul Analyzer n'est dupliqué ici. */
+.analyzer-mobile-nav{display:none}
+
+@media (max-width:700px) and (orientation:portrait){
+ body.current-analyzer header{display:none!important}
+ body.current-analyzer .analyzer-screen{padding:0!important}
+ body.current-analyzer .analyzer-shell{display:flex!important;flex-direction:column;gap:8px;padding:0 0 16px!important;overflow:visible!important}
+ body.current-analyzer .analyzer-toolbar{display:none!important}
+
+ /* Navigation persistante : 3 dalles puis 2 dalles. */
+ body.current-analyzer .analyzer-mobile-nav{display:grid;grid-template-columns:20% 40% 40%;position:sticky;top:0;z-index:1200;background:#0b0d12;border-top:3px solid #ff8a00;border-bottom:1px solid #2a2e36;box-shadow:0 5px 16px rgba(0,0,0,.42);padding-top:env(safe-area-inset-top)}
+ body.current-analyzer .analyzer-mobile-nav button{min-width:0;border:0;border-right:1px solid #292d35;border-bottom:1px solid #292d35;background:#0d0f14;color:#fff;min-height:70px;padding:8px 6px;font-family:inherit;font-weight:900;letter-spacing:.03em}
+ body.current-analyzer .analyzer-mobile-nav-menu{font-size:27px}
+ body.current-analyzer .analyzer-mobile-nav-team,body.current-analyzer .analyzer-mobile-nav-velocity,body.current-analyzer .analyzer-mobile-nav-track{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+ body.current-analyzer .analyzer-mobile-nav-team span{font-size:22px;font-family:'F1 Torque',Arial,sans-serif}
+ body.current-analyzer .analyzer-mobile-nav-team strong{max-width:100%;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ body.current-analyzer .analyzer-mobile-nav-velocity span,body.current-analyzer .analyzer-mobile-nav-track span{font-size:9px;color:#9299a5}
+ body.current-analyzer .analyzer-mobile-nav-velocity strong{font-size:24px;color:#35e892;font-family:'F1 Torque',Arial,sans-serif}
+ body.current-analyzer .analyzer-mobile-nav-ranking{grid-column:1/3;min-height:54px!important;color:#ff941d!important;font-size:11px}
+ body.current-analyzer .analyzer-mobile-nav-track{grid-column:3;min-height:54px!important}
+ body.current-analyzer .analyzer-mobile-nav-track strong{font-size:16px}
+
+ /* Les wrappers desktop deviennent transparents au layout afin de respecter l'ordre mobile. */
+ body.current-analyzer .analyzer-hero,
+ body.current-analyzer .analyzer-desktop-dashboard,
+ body.current-analyzer .analyzer-ranking-column,
+ body.current-analyzer .analyzer-strategy-column,
+ body.current-analyzer .analyzer-weather-message-stack{display:contents!important}
+
+ body.current-analyzer #analyzerFollowedCard{order:10}
+ body.current-analyzer #analyzerRankingPanel{order:20}
+ body.current-analyzer #analyzerVelocityPanel{order:30}
+ body.current-analyzer #analyzerHeatMapPanel{order:40}
+ body.current-analyzer #analyzerSpotterCards{order:50}
+ body.current-analyzer #analyzerRulesCard{order:60}
+ body.current-analyzer #analyzerPenaltiesPanel{order:70}
+ body.current-analyzer #analyzerWeatherCard{order:80}
+ body.current-analyzer #analyzerDriverMessageCard{order:90}
+ body.current-analyzer .analyzer-opportunity-panel{display:none!important}
+ body.current-analyzer .analyzer-footer{order:100}
+
+ body.current-analyzer #analyzerFollowedCard,
+ body.current-analyzer #analyzerRankingPanel,
+ body.current-analyzer #analyzerVelocityPanel,
+ body.current-analyzer #analyzerHeatMapPanel,
+ body.current-analyzer #analyzerSpotterCards,
+ body.current-analyzer #analyzerRulesCard,
+ body.current-analyzer #analyzerPenaltiesPanel,
+ body.current-analyzer #analyzerWeatherCard,
+ body.current-analyzer #analyzerDriverMessageCard{scroll-margin-top:132px;margin-left:0!important;margin-right:0!important;width:100%!important;box-sizing:border-box}
+
+ /* Classement Live : colonnes utiles uniquement. */
+ body.current-analyzer #analyzerRankingPanel .analyzer-ranking-toolbar-left{display:flex;align-items:center;gap:6px;width:100%;flex-wrap:wrap}
+ body.current-analyzer #analyzerRankingPanel .analyzer-race-remaining{display:none!important}
+ body.current-analyzer #analyzerRankingPanel .analyzer-ranking-switch{display:flex;flex:1 1 auto;min-width:0}
+ body.current-analyzer #analyzerRankingPanel .analyzer-ranking-switch button{padding:8px 7px;font-size:8px;white-space:nowrap}
+ body.current-analyzer #analyzerRankingPanel .analyzer-table-controls label{font-size:0!important}
+ body.current-analyzer #analyzerRankingPanel .analyzer-table-controls select{font-size:9px;min-height:32px;padding:4px 22px 4px 7px}
+ body.current-analyzer .analyzer-ranking-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+ body.current-analyzer .analyzer-ranking-table{min-width:760px}
+ body.current-analyzer .analyzer-ranking-table th:nth-child(5),body.current-analyzer .analyzer-ranking-table td:nth-child(5),
+ body.current-analyzer .analyzer-ranking-table th:nth-child(6),body.current-analyzer .analyzer-ranking-table td:nth-child(6),
+ body.current-analyzer .analyzer-ranking-table th:nth-child(10),body.current-analyzer .analyzer-ranking-table td:nth-child(10),
+ body.current-analyzer .analyzer-ranking-table th:nth-child(13),body.current-analyzer .analyzer-ranking-table td:nth-child(13),
+ body.current-analyzer .analyzer-ranking-table th:nth-child(15),body.current-analyzer .analyzer-ranking-table td:nth-child(15),
+ body.current-analyzer .analyzer-ranking-table th:nth-child(16),body.current-analyzer .analyzer-ranking-table td:nth-child(16){display:none!important}
+
+ /* Velocity : EVOL., R et TOURS masqués en portrait. */
+ body.current-analyzer #analyzerVelocityPanel .kartiq-evolution,
+ body.current-analyzer #analyzerVelocityPanel .kartiq-relay-index,
+ body.current-analyzer #analyzerVelocityPanel .kartiq-relay-laps{display:none!important}
+ body.current-analyzer #analyzerVelocityPanel .analyzer-kartiq-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+ /* Heat Map : uniquement Heat Map, Simuler un arrêt et plein écran. */
+ body.current-analyzer #analyzerHeatMapPanel .map-control{display:none!important}
+ body.current-analyzer #analyzerHeatMapPanel .analyzer-pit-simulator-title{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px}
+ body.current-analyzer #analyzerHeatMapPanel .analyzer-heatmap-title-group,body.current-analyzer #analyzerHeatMapPanel .analyzer-map-actions{display:contents!important}
+ body.current-analyzer #analyzerHeatMapPanel #pitSimulatorTitle{order:1}
+ body.current-analyzer #analyzerHeatMapPanel #pitSimulatorButton{order:2;font-size:8px;padding:8px 9px;white-space:nowrap}
+ body.current-analyzer #analyzerHeatMapPanel .analyzer-heatmap-expand{order:3;margin-left:auto}
+
+ /* STANDS et pénalités : titres alignés à gauche. */
+ body.current-analyzer #analyzerSpotterCards .analyzer-panel-title,
+ body.current-analyzer #analyzerPenaltiesPanel .analyzer-panel-title{justify-content:flex-start!important;text-align:left!important}
+ body.current-analyzer #analyzerPenaltiesCount{display:none!important}
+
+ /* Conformité : plus d'espace aux libellés longs à droite. */
+ body.current-analyzer #analyzerRulesCard .rules-mini-grid{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)!important;column-gap:14px!important}
+ body.current-analyzer #analyzerRulesCard .rules-mini-grid>div:nth-child(even){padding-left:8px}
+ body.current-analyzer #analyzerRulesCard .rules-mini-grid span{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+
+ /* Footer = outils : conserve les fonctions existantes sans perturber les cartes. */
+ body.current-analyzer .analyzer-footer{width:100%;box-sizing:border-box}
+}

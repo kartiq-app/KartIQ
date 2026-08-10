@@ -98,8 +98,16 @@
       <input id="analyzerSessionImport" type="file" accept="application/json,.json" hidden onchange="importAnalyzerSession(event)">
     </div>
 
+    <nav class="analyzer-mobile-nav" aria-label="Navigation Analyzer portrait">
+      <button class="analyzer-mobile-nav-menu" type="button" onclick="showHome()" aria-label="Retour au menu">☰</button>
+      <button class="analyzer-mobile-nav-team" type="button" onclick="analyzerScrollToCard('analyzerFollowedCard')"><span id="analyzerMobileTeamPos">P—</span><strong id="analyzerMobileTeamName">ÉQUIPE SUIVIE</strong></button>
+      <button class="analyzer-mobile-nav-velocity" type="button" onclick="analyzerScrollToCard('analyzerVelocityPanel')"><span>VELOCITY</span><strong id="analyzerMobileVelocityScore">—</strong></button>
+      <button class="analyzer-mobile-nav-ranking" type="button" onclick="analyzerScrollToCard('analyzerRankingPanel')">CLASSEMENT LIVE</button>
+      <button class="analyzer-mobile-nav-track" type="button" onclick="analyzerScrollToCard('analyzerFollowedCard')"><span>TEMPS EN PISTE</span><strong id="analyzerMobileTrackTime">—</strong></button>
+    </nav>
+
     <section class="analyzer-hero" aria-label="Synthèse stratégique">
-      <article class="analyzer-hero-card followed-card">
+      <article id="analyzerFollowedCard" class="analyzer-hero-card followed-card">
         <div class="analyzer-card-title-row analyzer-followed-title-row">
           <span class="analyzer-card-label">ÉQUIPE SUIVIE</span>
           <button id="analyzerDebriefButton" class="analyzer-debrief-button" type="button" onclick="openAnalyzerDebrief()">COMPTE RENDU</button>
@@ -140,7 +148,7 @@
           </div>
         </div>
       </article>
-      <article class="analyzer-hero-card rules-card">
+      <article id="analyzerRulesCard" class="analyzer-hero-card rules-card">
           <div class="analyzer-card-title-row analyzer-rules-title-row">
             <span class="analyzer-card-label">CONFORMITÉ RÈGLEMENTAIRE</span>
             <button class="rules-card-button" type="button" onclick="openAnalyzerRules()">RÈGLEMENT</button>
@@ -171,7 +179,7 @@
           </div>
         </div>
       </article>
-        <article class="analyzer-hero-card analyzer-driver-message-card" aria-label="Envoyer un message au pilote">
+        <article id="analyzerDriverMessageCard" class="analyzer-hero-card analyzer-driver-message-card" aria-label="Envoyer un message au pilote">
           <div class="analyzer-driver-message-title-row">
             <span class="analyzer-driver-message-icon" aria-hidden="true">📨</span>
             <span class="analyzer-card-label analyzer-driver-message-title">MESSAGERIE PILOTE</span>
@@ -191,7 +199,7 @@
 
     <div class="analyzer-desktop-dashboard">
       <div class="analyzer-ranking-column">
-      <section class="panel analyzer-ranking-panel">
+      <section id="analyzerRankingPanel" class="panel analyzer-ranking-panel">
         <div class="analyzer-panel-title analyzer-ranking-title">
           <div class="analyzer-ranking-heading">
             <div class="analyzer-ranking-toolbar-left">
@@ -231,12 +239,12 @@
       </div>
 
       <aside class="analyzer-strategy-column" aria-label="Outils stratégiques">
-        <section class="panel analyzer-panel analyzer-market-panel">
+        <section id="analyzerVelocityPanel" class="panel analyzer-panel analyzer-market-panel">
           <div class="analyzer-panel-title analyzer-velocity-title"><div class="analyzer-ranking-switch analyzer-velocity-switch" role="group" aria-label="Vue Velocity"><button id="analyzerVelocityViewBtn" class="active" type="button" onclick="setAnalyzerVelocityView('velocity')">VELOCITY</button><button id="analyzerRelayScoreViewBtn" type="button" onclick="setAnalyzerVelocityView('relays')">SCORE RELAIS</button></div><label class="analyzer-kartiq-sort">Trier par <select id="analyzerKartSort" onchange="setAnalyzerKartSort(this.value)"><option value="none">Aucun</option><option value="relay-end">Fin relais</option><option value="delta">Delta</option></select></label></div>
           <div id="analyzerKartMarket" class="analyzer-kartiq-wrap"><div class="analyzer-empty">Apprentissage en cours…</div></div>
         </section>
 
-        <section class="panel analyzer-panel analyzer-pit-simulator-panel" aria-labelledby="pitSimulatorTitle">
+        <section id="analyzerHeatMapPanel" class="panel analyzer-panel analyzer-pit-simulator-panel" aria-labelledby="pitSimulatorTitle">
           <div class="analyzer-panel-title analyzer-pit-simulator-title"><span class="analyzer-heatmap-title-group"><span id="pitSimulatorTitle" class="analyzer-static-ranking-tab">HEAT MAP</span><button class="analyzer-heatmap-expand" type="button" onclick="openAnalyzerMapFocus()" aria-label="Agrandir la Heat Map en plein écran" title="Plein écran">⛶</button></span><div class="analyzer-map-actions"><details class="map-control"><summary>AFFICHER LES RYTHMES</summary><div class="map-control-menu" id="mapPaceFilters"><label class="map-filter-none"><input type="checkbox" onchange="setAnalyzerMapNoPaces(this.checked)"> Aucun</label><label><input type="checkbox" value="fastest" checked onchange="setAnalyzerMapPaceFilter(this.value,this.checked)"> <span class="map-pace-copy"><span>🔥 Les plus rapides</span><small>0 à +0,10 s</small></span><b data-map-count="fastest">0</b></label><label><input type="checkbox" value="excellent" checked onchange="setAnalyzerMapPaceFilter(this.value,this.checked)"> <span class="map-pace-copy"><span>🟢 Excellent rythme</span><small>+0,11 à +0,29 s</small></span><b data-map-count="excellent">0</b></label><label><input type="checkbox" value="good" checked onchange="setAnalyzerMapPaceFilter(this.value,this.checked)"> <span class="map-pace-copy"><span>🟡 Bon rythme</span><small>+0,30 à +0,49 s</small></span><b data-map-count="good">0</b></label><label><input type="checkbox" value="medium" checked onchange="setAnalyzerMapPaceFilter(this.value,this.checked)"> <span class="map-pace-copy"><span>🟠 Moyen</span><small>+0,50 à +0,79 s</small></span><b data-map-count="medium">0</b></label><label><input type="checkbox" value="average" checked onchange="setAnalyzerMapPaceFilter(this.value,this.checked)"> <span class="map-pace-copy"><span>🔴 Très moyen</span><small>+0,80 à +0,99 s</small></span><b data-map-count="average">0</b></label><label><input type="checkbox" value="slow" checked onchange="setAnalyzerMapPaceFilter(this.value,this.checked)"> <span class="map-pace-copy"><span>⚫ Lent</span><small>≥ +1,00 s</small></span><b data-map-count="slow">0</b></label></div></details><details class="map-control"><summary>METTRE EN ÉVIDENCE</summary><div class="map-control-menu map-highlight-menu"><label><input type="radio" name="mapHighlight" value="none" checked onchange="setAnalyzerMapHighlight(this.value)"> Aucun</label><label><input type="radio" name="mapHighlight" value="followed" onchange="setAnalyzerMapHighlight(this.value)"> Équipe suivie</label><label><input type="radio" name="mapHighlight" value="top5" onchange="setAnalyzerMapHighlight(this.value)"> Top 5 Velocity</label><label><input type="radio" name="mapHighlight" value="pit" onchange="setAnalyzerMapHighlight(this.value)"> Karts aux stands</label><label><input type="radio" name="mapHighlight" value="fastest" onchange="setAnalyzerMapHighlight(this.value)"> Les plus rapides</label></div></details><button id="pitSimulatorButton" type="button" onclick="simulateAnalyzerPitStop()">SIMULER UN ARRÊT</button></div></div>
           <div class="analyzer-pit-simulator-body">
             <div id="pitSimulatorTrack" class="pit-simulator-track"><div class="analyzer-empty">Sélectionnez une équipe puis lancez la simulation.</div></div>
