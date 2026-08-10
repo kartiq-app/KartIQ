@@ -2841,7 +2841,7 @@ window.addEventListener('velocity:spotter-state',()=>{
  if(analyzerSpotterRenderFrame)return;
  analyzerSpotterRenderFrame=requestAnimationFrame(()=>{
   analyzerSpotterRenderFrame=0;
-  if(!document.body.classList.contains('current-analyzer'))return;
+  if(document.body.dataset.appMode!=='analyzer')return;
   analyzerRenderSpotterSync();
   analyzerRenderSpotterCards();
  });

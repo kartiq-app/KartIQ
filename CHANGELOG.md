@@ -1,15 +1,3 @@
-# V7.2.154 — ANALYZER PORTRAIT SMARTPHONE
-
-- Nouveau menu Analyzer portrait sticky en 2 lignes : Menu / Équipe suivie / Velocity puis Classement Live / Temps en piste.
-- Navigation par ancres vers les cartes sans remonter manuellement la page.
-- Ordre portrait : Équipe suivie + Trafic, Classement Live, Velocity, Heat Map, STANDS, Conformité, Pénalités, Météo, Messagerie.
-- Classement Live portrait allégé : suppression visuelle de STATS, TOURS, MEILLEUR, PÉNA., KART V. et NOTE ; boutons Live/Virtuel et tri conservés sans libellé Trier par.
-- Velocity portrait : EVOL., R et TOURS masqués.
-- Heat Map portrait : commandes réduites à HEAT MAP, SIMULER UN ARRÊT et plein écran.
-- STANDS et Pénalités : titres alignés à gauche ; compteur d'informations masqué.
-- Conformité : colonnes rééquilibrées pour éviter la coupure des libellés Relais / Stand minimum / Temps mini. par pilote.
-- Nouvelle couche CSS dédiée 61-analyzer-mobile-portrait.css ; aucune duplication des calculs Analyzer.
-
 # V7.2.153 — HEAT MAP : SIMULATION D’ARRÊT TEMPORELLE
 - La simulation d’arrêt utilise désormais la **position virtuelle live** commune aux Filets / Trafic / Radar.
 - Au clic, la projection est figée : Velocity fait avancer virtuellement tous les concurrents pendant le temps nécessaire pour rejoindre les stands + le différentiel pit lane + la référence d’arrêt.
