@@ -1,3 +1,13 @@
+# V7.2.159 — SCORE RELAIS ADAPTATIF AUX CONDITIONS
+- Score Relais conserve la logique historique lorsque le rythme du plateau reste stable.
+- Détection d'une évolution réelle de piste à l'intérieur d'un relais via une référence temporelle locale de la grille.
+- En pluie / séchant / transition, chaque tour est normalisé par rapport au plateau au même moment avant d'alimenter PACE, potentiel et régularité.
+- Une forte dispersion entre pilotes sous la pluie n'est pas assimilée à un changement de conditions : le déclencheur repose sur le déplacement de la référence de grille, pas sur l'écart premier / dernier.
+- Correction pilote pluie appliquée uniquement lorsqu'un historique suffisant existe (au moins 12 tours répartis sur 2 relais) ; sinon Velocity conserve le score mais réduit la confiance d'attribution au kart lorsque la grille est très dispersée.
+- Les tours pluie ne sont plus supprimés par le filtre global médiane +5 s pour Score Relais ; les anomalies restent filtrées localement sur piste stable.
+- Un relais sec -> pluie peut désormais recevoir un seul Score Relais cohérent, construit à partir des performances relatives de ses différentes phases.
+- Aucun changement des modes Qualification / Sprint ni des autres modules Analyzer.
+
 # V7.2.158 — COMPATIBILITÉ APEX QUALIF / SPRINT / ENDURANCE
 
 - Support complet de `dyn1|count`, `countdown` et `countdown_text`, y compris valeurs décimales Apex exprimées en secondes.
