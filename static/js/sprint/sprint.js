@@ -77,7 +77,8 @@ function sprintFocusRankMarkup(rank){
 }
 
 function sprintLastLapRanking(driver){
- const valid=(state.drivers||[]).map(d=>({...d,_lastSec:lapSeconds(d.last)})).filter(d=>Number.isFinite(d._lastSec)).sort((a,b)=>a._lastSec-b._lastSec);
+ const followedLaps=Number(driver?.laps);if(!Number.isFinite(followedLaps))return null;
+ const valid=(state.drivers||[]).filter(d=>Number(d?.laps)===followedLaps).map(d=>({...d,_lastSec:lapSeconds(d.last)})).filter(d=>Number.isFinite(d._lastSec)).sort((a,b)=>a._lastSec-b._lastSec);
  const target=valid.find(d=>d.driver===driver?.driver);if(!target)return null;
  const rank=1+valid.filter(d=>d._lastSec<target._lastSec-0.0005).length;
  return {rank,label:`${frenchOrdinal(rank).number}${frenchOrdinal(rank).suffix} temps`,driver:target.driver,lap:target.last};
