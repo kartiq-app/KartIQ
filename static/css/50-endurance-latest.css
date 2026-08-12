@@ -937,3 +937,255 @@ body[data-app-mode="endurance"] #endurance .position-cell{
  .driver-message-body{padding:14px 10px 20px}
  .driver-message-arrows{font-size:20px}
 }
+
+
+/* Velocity V7.2.170 — iPhone Focus en paysage virtuel, OS maintenu en portrait.
+   Android n'est pas concerné : son verrouillage paysage natif reste inchangé. */
+html.iphone-focus-virtual-landscape,
+body.iphone-focus-virtual-landscape{
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+body.iphone-focus-virtual-landscape #qualificationFocus,
+body.iphone-focus-virtual-landscape #sprintFocus,
+body.iphone-focus-virtual-landscape #enduranceFocus{
+  position:fixed!important;
+  inset:auto!important;
+  top:50%!important;
+  left:50%!important;
+  width:100dvh!important;
+  height:100dvw!important;
+  max-width:none!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  padding:0!important;
+  transform:translate(-50%,-50%) rotate(90deg)!important;
+  transform-origin:50% 50%!important;
+}
+/* Le titre est légèrement repoussé vers la droite dans le paysage visible.
+   Le padding droit garantit aussi une séparation nette avec le filet coloré. */
+body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header,
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header{
+  box-sizing:border-box!important;
+  padding-left:clamp(28px,8vw,42px)!important;
+  padding-right:14px!important;
+  column-gap:14px!important;
+}
+body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header>span,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header>span,
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>span{
+  display:block!important;
+  white-space:nowrap!important;
+  padding-right:8px!important;
+  line-height:1!important;
+}
+body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header>i,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header>i,
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
+  min-width:24px!important;
+  margin-left:2px!important;
+}
+/* En portrait verrouillé, vw correspond à la hauteur du paysage virtuel :
+   les règles mobile portrait existantes donnent donc la bonne échelle après rotation. */
+@supports not (height:100dvw){
+  body.iphone-focus-virtual-landscape #qualificationFocus,
+  body.iphone-focus-virtual-landscape #sprintFocus,
+  body.iphone-focus-virtual-landscape #enduranceFocus{
+    width:100vh!important;
+    height:100vw!important;
+  }
+}
+
+
+/* Velocity V7.2.172 — Focus Endurance smartphone : lisibilité maximale.
+   Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
+@media (max-width: 900px), (pointer: coarse){
+  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+    font-size:clamp(78px,19.5vh,221px)!important;
+  }
+  #enduranceFocus .endurance-focus-driver .sprint-focus-name{
+    font-size:110%!important;
+    max-width:100%!important;
+  }
+  #enduranceFocus .endurance-focus-neighbour-name{
+    font-size:clamp(16.5px,2.86vh,33px)!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap-cell{
+    box-sizing:border-box!important;
+    padding:clamp(10px,2.2vw,22px)!important;
+    overflow:hidden!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap{
+    max-width:100%!important;
+    max-height:100%!important;
+    margin:0!important;
+    padding:0!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+}
+
+/* Le mode iPhone paysage virtuel a un viewport OS portrait : on force ici
+   les proportions adaptées au paysage visible sans toucher à Android. */
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+  font-size:clamp(82px,20dvw,220px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
+  font-size:clamp(18px,5.1dvw,38px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
+  font-size:clamp(15px,4.15dvw,30px)!important;
+}
+
+
+/* Velocity V7.2.173 — Focus Endurance smartphone : dernier tour +50 %,
+   deltas parfaitement centrés et noms voisins plus lisibles / détachés. */
+@media (max-width: 900px), (pointer: coarse){
+  #enduranceFocus .endurance-focus-deltas{
+    display:grid!important;
+    grid-template-rows:auto auto 1px auto auto!important;
+    align-content:center!important;
+    align-items:center!important;
+    justify-items:center!important;
+    padding-top:clamp(8px,1.5vw,24px)!important;
+    padding-bottom:clamp(8px,1.5vw,24px)!important;
+    row-gap:clamp(8px,1.3vh,18px)!important;
+  }
+  #enduranceFocus .endurance-focus-neighbour-name{
+    font-size:clamp(19px,3.29vh,38px)!important;
+    margin:0!important;
+    padding:0 .55em!important;
+    line-height:1.08!important;
+    align-self:center!important;
+  }
+  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+    margin:0!important;
+    align-self:center!important;
+    line-height:.88!important;
+  }
+  #enduranceFocus .sprint-focus-divider{margin:0!important}
+  #enduranceFocus .endurance-focus-last-lap-cell{
+    padding:clamp(6px,1.4vw,16px)!important;
+  }
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
+  font-size:clamp(18px,4.77dvw,34.5px)!important;
+}
+
+
+/* Velocity V7.2.175 — Focus Endurance smartphone : dernier tour +30 % réel.
+   Référence : rendu V7.2.163. La rangée basse gagne ~30 % de hauteur,
+   puis le JS ajuste le chrono au maximum sans débordement ni bord collé. */
+@media (max-width: 900px), (pointer: coarse){
+  #enduranceFocus .endurance-focus-main{
+    grid-template-rows:60% 40%!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap-cell{
+    box-sizing:border-box!important;
+    padding:clamp(5px,1vw,12px)!important;
+    overflow:hidden!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    line-height:.86!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:60% 40%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{
+  padding:clamp(4px,.8dvw,10px)!important;
+}
+
+
+/* Velocity V7.2.176 — iPhone Focus Endurance : dernier tour réellement agrandi.
+   Les CSS sont maintenant versionnés directement ; cette règle ne peut plus rester
+   bloquée dans un ancien @import navigateur. On agrandit également la case basse
+   pour donner au chrono la place nécessaire à un gain visuel réel. */
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:57% 43%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{
+  padding:clamp(3px,.55dvw,7px)!important;
+  overflow:hidden!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
+  font-size:clamp(74px,27dvw,154px)!important;
+  line-height:.82!important;
+  letter-spacing:-.025em!important;
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+}
+
+/* Velocity V7.2.178 — Focus Endurance iPhone : rééquilibrage Delta / Dernier tour.
+   On conserve le mécanisme V7.2.176 qui agrandit réellement le chrono, mais on
+   réduit sa taille de 20 % et on rend à la zone Delta sa proportion précédente. */
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:60% 40%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
+  font-size:clamp(59px,21.6dvw,123px)!important;
+}
+
+
+/* Velocity V7.2.178 — Focus Endurance iPhone : colonnes réalignées.
+   La colonne Position (ligne 1) et la colonne Temps en piste (ligne 2)
+   gardent strictement la même largeur, comme sur la V7.2.173. */
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-row-two{
+  grid-template-columns:32% 68%!important;
+}
+
+
+/* Velocity V7.2.179 — Focus Endurance iPhone : hiérarchie verticale nettoyée.
+   Rangée basse (Temps en piste / Dernier tour) réduite de 20 % : 40 % -> 32 %.
+   L'espace libéré revient à Position / Delta : 60 % -> 68 %.
+   Dans Delta : nom avant, valeur, filet, valeur, nom après, sans chevauchement. */
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:68% 32%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas{
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr) 2px minmax(0,1fr) auto!important;
+  align-content:stretch!important;
+  align-items:center!important;
+  justify-items:center!important;
+  row-gap:clamp(5px,1.05dvw,10px)!important;
+  padding:clamp(8px,1.25dvw,14px) clamp(8px,1.3dvw,16px)!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
+  margin:0!important;
+  padding:0 .45em!important;
+  line-height:1.02!important;
+  align-self:center!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+  margin:0!important;
+  padding:0!important;
+  line-height:.82!important;
+  align-self:center!important;
+  justify-self:center!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-divider{
+  width:88%!important;
+  height:2px!important;
+  min-height:2px!important;
+  margin:0!important;
+  align-self:center!important;
+  opacity:.9!important;
+}

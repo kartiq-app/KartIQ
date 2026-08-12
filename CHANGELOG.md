@@ -1,3 +1,9 @@
+# Velocity V7.2.184
+
+- Rebase de récupération sur le socle de chargement stable V7.2.169.
+- Réintégration des fonctions validées jusqu’à V7.2.179 : paysage virtuel iPhone Focus, synchronisation Stratégie Relais, pilotage Focus Endurance par le Team Manager, prise en charge Apex dyn1=countdown et mise en page finale Focus Endurance.
+- Conservation stricte du loader/bootstrap, du Service Worker, de kartiq.css et des pages d’entrée de la V7.2.169 pour retrouver un chargement Desktop fiable.
+
 # V7.2.169 — FOCUS PERSISTANT
 
 - Les modes Focus Qualification, Sprint et Endurance restent actifs tant que le pilote ne les ferme pas explicitement.
