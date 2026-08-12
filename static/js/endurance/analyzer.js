@@ -2384,7 +2384,7 @@ function analyzerStopsInfo(followed){
  return {done,remaining,cadence};
 }
 
-/* V7.2.161 — moteur STRATÉGIE RELAIS : règles + live + Score Relais. */
+/* V7.2.162 — Capital stratégique lisible + ajustements UI Stratégie Relais. */
 function analyzerStrategySignedSeconds(value,digits=2){
  if(!Number.isFinite(value))return '—';
  const sign=value>0?'+':value<0?'−':'';
@@ -2439,7 +2439,11 @@ function analyzerStrategyCapital(followed,stopsInfo=null){
  const initial=initialCalc.remaining;
  if(!Number.isFinite(raceRemaining))return {initial,remaining:null,percent:null,track,configured:true};
  const currentCalc=analyzerStrategyCapitalFromState({raceRemaining,track,stopsRemaining:stops.remaining,rules});
- const remaining=currentCalc.remaining;
+ const rawRemaining=currentCalc.remaining;
+ // Le capital restant ne peut jamais dépasser le capital initial.
+ // Avant le départ, certains flux Apex renvoient 0 s de temps restant :
+ // le calcul brut produit alors une capacité théorique très supérieure au capital réel.
+ const remaining=Number.isFinite(rawRemaining)&&Number.isFinite(initial)?Math.min(initial,rawRemaining):rawRemaining;
  const percent=Number.isFinite(initial)&&initial>0&&Number.isFinite(remaining)?Math.max(0,Math.min(100,remaining/initial*100)):(initial===0?100:null);
  return {initial,remaining,percent,track,configured:true,totalSlack:currentCalc.totalSlack,closureSlack:currentCalc.closureSlack};
 }
@@ -2498,7 +2502,7 @@ function analyzerRenderRelayStrategy(followed,stopsInfo=null){
  if(delta){delta.textContent=analyzerStrategySignedSeconds(data.delta,2);delta.className=Number.isFinite(data.delta)?(data.delta>0?'strategy-loss':data.delta<0?'strategy-gain':''):''}
  if(impact){impact.textContent=analyzerStrategySignedSeconds(data.impact,0);impact.className=Number.isFinite(data.impact)?(data.impact>0?'strategy-loss':data.impact<0?'strategy-gain':''):''}
  const capValue=document.getElementById('analyzerStrategyCapitalValue'),capPercent=document.getElementById('analyzerStrategyCapitalPercent'),capBar=document.getElementById('analyzerStrategyCapitalBar');
- if(capValue){const rem=Number.isFinite(data.capital.remaining)?Math.round(data.capital.remaining/60):null,ini=Number.isFinite(data.capital.initial)?Math.round(data.capital.initial/60):null;capValue.textContent=rem!==null&&ini!==null?`${rem} min / ${ini} min`:'—'}
+ if(capValue){const rem=Number.isFinite(data.capital.remaining)?Math.round(data.capital.remaining/60):null,ini=Number.isFinite(data.capital.initial)?Math.round(data.capital.initial/60):null;capValue.textContent=rem!==null?`${rem} min`:(ini!==null?`${ini} min`:'—')}
  if(capPercent)capPercent.textContent=Number.isFinite(data.capital.percent)?`${Math.round(data.capital.percent)} %`:'—';
  if(capBar)capBar.style.width=Number.isFinite(data.capital.percent)?`${data.capital.percent}%`:'0%';
  const recommendation=document.getElementById('analyzerStrategyRecommendation'),windowEl=document.getElementById('analyzerStrategyWindow'),block=document.getElementById('analyzerRelayStrategy');
