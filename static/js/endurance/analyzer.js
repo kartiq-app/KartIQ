@@ -503,36 +503,29 @@ function analyzerApexStablePhase(driver,at=Date.now()){
  const phase=analyzerApexEntryPhase(entry,at);
  return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
-function analyzerApexTerminalPhase(entry){
- if(!entry)return null;
- const s1=Number(entry.sectors?.s1)||0,s2=Number(entry.sectors?.s2)||0,s3=Number(entry.sectors?.s3)||0;
- const duration=Number(entry.durationMs)||0;
- const total=(s1+s2+s3)>0?s1+s2+s3:(Number(entry.lapDurationMs)||duration);
- if(entry.segment==='track')return 0;
- if(entry.segment==='s1')return total>0?s1/total:null;
- if(entry.segment==='s2')return total>0?(s1+s2)/total:Number(entry.lastPhase);
- if(entry.segment==='s3')return 0;
- return null;
-}
 function analyzerLiveProgressPhase(driver,nowDate=Date.now(),nowPerf=performance.now()){
- // V7.2.190 — une ligne MAP Apex connue reste la source géométrique de référence
- // pour Filets + Trafic + Radar. Quand son animation a dépassé sa durée + 5 s,
- // on conserve l'extrémité du dernier segment Apex jusqu'à l'impulsion suivante
- // au lieu de remplacer la position par track_timer.
+ // V7.2.191 — la géométrie Filets + Trafic + Radar reste exclusivement
+ // calée sur les impulsions MAP Apex lorsqu'une ligne MAP existe.
+ // Si l'impulsion est périmée (> durée + 5 s), on ne fige plus la dernière
+ // position et on n'invente pas de position via track_timer : phase absente
+ // jusqu'à la prochaine impulsion Apex.
  const apexPhase=analyzerApexStablePhase(driver,nowDate);
  if(Number.isFinite(apexPhase))return {phase:apexPhase,source:'apex'};
  const entry=analyzerApexMapEntry(driver);
  if(entry&&!entry.inPit&&analyzerTrafficTrackingIsLive(nowDate)){
   const age=nowDate-Number(entry.startedAt),duration=Number(entry.durationMs);
   if(Number.isFinite(age)&&Number.isFinite(duration)&&duration>0&&age>duration+5000){
-   const held=analyzerApexTerminalPhase(entry);
-   if(Number.isFinite(held))return {phase:((held%1)+1)%1,source:'apex-hold'};
+   return {phase:null,source:'apex-gap'};
   }
  }
- const fallback=analyzerTrafficFallbackPhase(driver,nowPerf);
- if(Number.isFinite(fallback))return {phase:fallback,source:'fallback'};
- const pace=analyzerTrafficLapSeconds(driver),track=analyzerAnimatedTrackSeconds(driver);
- if(Number.isFinite(track)&&Number.isFinite(pace)&&pace>0)return {phase:((track%pace)+pace)%pace/pace,source:'track'};
+ // On ne conserve les anciens fallbacks que pour les pilotes n'ayant aucune
+ // ligne MAP Apex exploitable.
+ if(!entry){
+  const fallback=analyzerTrafficFallbackPhase(driver,nowPerf);
+  if(Number.isFinite(fallback))return {phase:fallback,source:'fallback'};
+  const pace=analyzerTrafficLapSeconds(driver),track=analyzerAnimatedTrackSeconds(driver);
+  if(Number.isFinite(track)&&Number.isFinite(pace)&&pace>0)return {phase:((track%pace)+pace)%pace/pace,source:'track'};
+ }
  return {phase:null,source:'none'};
 }
 function analyzerRankingProgressMeta(driver,nowDate=Date.now()){
@@ -640,10 +633,10 @@ function analyzerMotionDiagnosticUpdate(){
    const entry=analyzerApexMapEntry(driver);
    return {driver,motion,entry};
   });
-  const counts={apex:0,'apex-hold':0,fallback:0,track:0,none:0};
+  const counts={apex:0,'apex-gap':0,fallback:0,track:0,none:0};
   rows.forEach(r=>{const src=r.motion?.source||'none';counts[src]=(counts[src]||0)+1});
   const followed=rows.find(r=>r.driver?.driver===state?.followed_driver)||null;
-  const suspicious=rows.filter(r=>!['apex','apex-hold'].includes(r.motion?.source||'none')).slice(0,6);
+  const suspicious=rows.filter(r=>!['apex','apex-gap'].includes(r.motion?.source||'none')).slice(0,6);
   const fmt=r=>{
    const src=(r.motion?.source||'none').toUpperCase();
    const phase=Number.isFinite(r.motion?.phase)?Math.round(r.motion.phase*100)+'%':'—';
@@ -654,15 +647,15 @@ function analyzerMotionDiagnosticUpdate(){
    const rid=Number(r.driver?.apex_row);return `r${Number.isFinite(rid)?rid:'—'} · ${label} · ${src} · ${phase} · ${seg} · ${age}/${dur}`;
   };
   const lines=[
-   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG APEX HOLD V190</div>`,
-   `<div>APEX ${counts.apex||0} · HOLD ${counts['apex-hold']||0} · FALLBACK ${counts.fallback||0} · TRACK ${counts.track||0} · NONE ${counts.none||0}</div>`
+   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG APEX GAP V191</div>`,
+   `<div>APEX ${counts.apex||0} · GAP ${counts['apex-gap']||0} · FALLBACK ${counts.fallback||0} · TRACK ${counts.track||0} · NONE ${counts.none||0}</div>`
   ];
   if(followed)lines.push(`<div style="margin-top:4px">Suivie: ${fmt(followed)}</div>`);
-  // V7.2.190 — montre les dernières impulsions MAP Apex réellement reçues.
+  // V7.2.191 — montre les dernières impulsions MAP Apex réellement reçues.
   const traceTargets=[];
   if(followed)traceTargets.push(followed);
   suspicious.slice(0,3).forEach(r=>{if(!traceTargets.includes(r))traceTargets.push(r)});
-  // V7.2.190 — contrôle d'identité entre les lignes de classement et les lignes MAP rXXXXX.
+  // V7.2.191 — contrôle d'identité entre les lignes de classement et les lignes MAP rXXXXX.
   const registryRows=window.velocityApexMap?.rows instanceof Map?window.velocityApexMap.rows:new Map();
   const driverByRow=new Map();
   drivers.forEach(d=>{
@@ -709,7 +702,7 @@ function analyzerMotionDiagnosticUpdate(){
   if(suspicious.length){
    lines.push('<div style="margin-top:4px;color:#ffd166">Hors APEX:</div>');
    suspicious.forEach(r=>lines.push(`<div>${fmt(r)}</div>`));
-  }else lines.push('<div style="margin-top:4px;color:#7CFC8A">Tous les karts actifs utilisent APEX / APEX-HOLD</div>');
+  }else lines.push('<div style="margin-top:4px;color:#7CFC8A">Tous les karts actifs utilisent APEX ou attendent la prochaine impulsion</div>');
   box.innerHTML=lines.join('');
  }catch(_){ }
 }

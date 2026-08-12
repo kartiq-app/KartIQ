@@ -453,3 +453,28 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 .race-mode-card .race-icon svg{stroke:currentColor;fill:none}
 .race-mode-card[data-home-mode="analyzer"] .race-icon rect{fill:none;stroke:currentColor}
 @media(max-width:760px){.race-mode-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* V7.2.191 — l'équipe suivie doit pouvoir afficher le flash de passage.
+   Les règles .followed historiques utilisent !important et masquaient
+   l'animation de fond/box-shadow. Ces overrides ne s'appliquent que
+   pendant le flash puis la ligne revient automatiquement au style suivi. */
+.followed.ranking-lap-flash,
+.ranking-lap-flash.followed{
+  animation:ranking-lap-flash 1.9s ease-out 1 !important;
+}
+.followed.ranking-lap-flash.ranking-lap-flash-violet,
+.ranking-lap-flash.followed.ranking-lap-flash-violet{
+  background-color:rgba(172,72,255,.34) !important;
+  box-shadow:inset 6px 0 #ac48ff !important;
+}
+.followed.ranking-lap-flash.ranking-lap-flash-green,
+.ranking-lap-flash.followed.ranking-lap-flash-green{
+  background-color:rgba(47,209,139,.30) !important;
+  box-shadow:inset 6px 0 #2fd18b !important;
+}
+.followed.ranking-lap-flash.ranking-lap-flash-orange,
+.ranking-lap-flash.followed.ranking-lap-flash-orange{
+  background-color:rgba(255,128,0,.30) !important;
+  box-shadow:inset 6px 0 #ff8000 !important;
+}
