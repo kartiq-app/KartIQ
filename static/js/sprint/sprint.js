@@ -446,7 +446,8 @@ function fitEnduranceLastLap(){
  // V7.2.175 : la rangée basse fait 40 % du Focus (≈ +30 % vs V7.2.163).
  // On remplit réellement la case disponible, puis on réduit uniquement si nécessaire.
  const iphoneVirtual=document.body.classList.contains('iphone-focus-virtual-landscape');
- let lo=36,hi=Math.max(36,Math.min(480,maxH*(iphoneVirtual?2.55:2.25))),best=lo;
+ if(iphoneVirtual){el.style.removeProperty('font-size');return}
+ let lo=36,hi=Math.max(36,Math.min(480,maxH*2.25)),best=lo;
  el.style.fontSize=hi+'px';
  for(let i=0;i<10;i++){
   const mid=(lo+hi)/2;el.style.fontSize=mid+'px';

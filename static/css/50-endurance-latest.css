@@ -1101,3 +1101,29 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{
   padding:clamp(4px,.8dvw,10px)!important;
 }
+
+
+/* Velocity V7.2.176 — iPhone Focus Endurance : dernier tour réellement agrandi.
+   Les CSS sont maintenant versionnés directement ; cette règle ne peut plus rester
+   bloquée dans un ancien @import navigateur. On agrandit également la case basse
+   pour donner au chrono la place nécessaire à un gain visuel réel. */
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-row-two{
+  grid-template-columns:26% 74%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:57% 43%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{
+  padding:clamp(3px,.55dvw,7px)!important;
+  overflow:hidden!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
+  font-size:clamp(74px,27dvw,154px)!important;
+  line-height:.82!important;
+  letter-spacing:-.025em!important;
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+}
