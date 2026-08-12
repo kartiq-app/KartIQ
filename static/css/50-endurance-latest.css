@@ -1142,3 +1142,50 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
 body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-row-two{
   grid-template-columns:32% 68%!important;
 }
+
+
+/* Velocity V7.2.179 — Focus Endurance iPhone : hiérarchie verticale nettoyée.
+   Rangée basse (Temps en piste / Dernier tour) réduite de 20 % : 40 % -> 32 %.
+   L'espace libéré revient à Position / Delta : 60 % -> 68 %.
+   Dans Delta : nom avant, valeur, filet, valeur, nom après, sans chevauchement. */
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:68% 32%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas{
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr) 2px minmax(0,1fr) auto!important;
+  align-content:stretch!important;
+  align-items:center!important;
+  justify-items:center!important;
+  row-gap:clamp(5px,1.05dvw,10px)!important;
+  padding:clamp(8px,1.25dvw,14px) clamp(8px,1.3dvw,16px)!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
+  margin:0!important;
+  padding:0 .45em!important;
+  line-height:1.02!important;
+  align-self:center!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+  margin:0!important;
+  padding:0!important;
+  line-height:.82!important;
+  align-self:center!important;
+  justify-self:center!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-divider{
+  width:88%!important;
+  height:2px!important;
+  min-height:2px!important;
+  margin:0!important;
+  align-self:center!important;
+  opacity:.9!important;
+}

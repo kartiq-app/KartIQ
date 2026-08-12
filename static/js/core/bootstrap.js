@@ -33,7 +33,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>{
   setTimeout(async()=>{try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()))}catch(err){console.warn('Retrait service worker desktop',err)}},8000);
   return;
  }
- (async()=>{try{await navigator.serviceWorker.register('/static/sw.js?v=7.2.178',{updateViaCache:'none'});const reg=await navigator.serviceWorker.getRegistration('/static/sw.js');reg?.update().catch(()=>{})}catch(err){console.warn('Service worker',err)}})();
+ (async()=>{try{await navigator.serviceWorker.register('/static/sw.js?v=7.2.179',{updateViaCache:'none'});const reg=await navigator.serviceWorker.getRegistration('/static/sw.js');reg?.update().catch(()=>{})}catch(err){console.warn('Service worker',err)}})();
 })}
 
 setModeClass(currentMode);
