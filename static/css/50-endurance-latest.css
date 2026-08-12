@@ -1072,4 +1072,32 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-n
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
   font-size:clamp(18px,4.77dvw,34.5px)!important;
 }
-\n\n/* Velocity V7.2.174 — Focus Endurance smartphone : dernier tour +30 % réellement visible.\n   On donne davantage de hauteur à la rangée basse et on conserve un blanc tournant. */\n@media (max-width: 900px), (pointer: coarse){\n  #enduranceFocus .endurance-focus-main{grid-template-rows:64% 36%!important}\n  #enduranceFocus .endurance-focus-last-lap-cell{\n    padding:clamp(5px,1vw,12px)!important;\n  }\n  #enduranceFocus .endurance-focus-last-lap{\n    line-height:.82!important;\n  }\n}\nbody.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{grid-template-rows:64% 36%!important}\nbody.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{padding:clamp(4px,.8dvw,10px)!important}\n
+
+
+/* Velocity V7.2.175 — Focus Endurance smartphone : dernier tour +30 % réel.
+   Référence : rendu V7.2.163. La rangée basse gagne ~30 % de hauteur,
+   puis le JS ajuste le chrono au maximum sans débordement ni bord collé. */
+@media (max-width: 900px), (pointer: coarse){
+  #enduranceFocus .endurance-focus-main{
+    grid-template-rows:60% 40%!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap-cell{
+    box-sizing:border-box!important;
+    padding:clamp(5px,1vw,12px)!important;
+    overflow:hidden!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    line-height:.86!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:60% 40%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{
+  padding:clamp(4px,.8dvw,10px)!important;
+}

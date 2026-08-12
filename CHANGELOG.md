@@ -1,3 +1,10 @@
+# Velocity V7.2.175 — Focus Endurance dernier tour + déploiement Chrome
+
+- Focus Endurance smartphone : correction réelle du dernier tour (+30 % vs rendu V7.2.163), avec auto-fit anti-débordement.
+- Suppression du bloc CSS V7.2.174 mal injecté avec des séquences `\n` littérales, qui empêchait la règle d’être interprétée.
+- Service Worker : activation plus prudente, sans `skipWaiting()` ni `clients.claim()`, pour éviter une prise de contrôle de l’onglet en plein redéploiement.
+- URL/version du Service Worker alignée sur V7.2.175.
+
 # Velocity V7.2.174 — Focus Endurance + watchdog déploiement
 
 - Focus Endurance smartphone : dernier tour de la case sous Delta réellement agrandi d’environ 30 %, avec auto-fit et marge intérieure.
