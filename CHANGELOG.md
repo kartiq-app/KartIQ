@@ -1,4 +1,10 @@
-# Velocity V7.2.177 — Rééquilibrage Focus Endurance iPhone
+# Velocity V7.2.178 — Réalignement Focus Endurance iPhone
+
+- Focus Endurance iPhone : la case **Temps en piste** retrouve exactement la même largeur que la case **Position**.
+- La colonne droite **Dernier tour** retrouve donc la même largeur que la colonne **Delta**, comme sur la référence V7.2.173.
+- Conservation de la taille réduite du chrono de dernier tour introduite en V7.2.177.
+
+# Velocity V7.2.178 — Rééquilibrage Focus Endurance iPhone
 
 - Dernier tour : taille réduite de 20 % par rapport à la V7.2.176.
 - Zone Delta : retour à la proportion 60/40 précédente.

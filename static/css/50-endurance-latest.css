@@ -1107,9 +1107,6 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-ce
    Les CSS sont maintenant versionnés directement ; cette règle ne peut plus rester
    bloquée dans un ancien @import navigateur. On agrandit également la case basse
    pour donner au chrono la place nécessaire à un gain visuel réel. */
-body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-row-two{
-  grid-template-columns:26% 74%!important;
-}
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
   grid-template-rows:57% 43%!important;
 }
@@ -1128,7 +1125,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
   overflow:hidden!important;
 }
 
-/* Velocity V7.2.177 — Focus Endurance iPhone : rééquilibrage Delta / Dernier tour.
+/* Velocity V7.2.178 — Focus Endurance iPhone : rééquilibrage Delta / Dernier tour.
    On conserve le mécanisme V7.2.176 qui agrandit réellement le chrono, mais on
    réduit sa taille de 20 % et on rend à la zone Delta sa proportion précédente. */
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
@@ -1136,4 +1133,12 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
   font-size:clamp(59px,21.6dvw,123px)!important;
+}
+
+
+/* Velocity V7.2.178 — Focus Endurance iPhone : colonnes réalignées.
+   La colonne Position (ligne 1) et la colonne Temps en piste (ligne 2)
+   gardent strictement la même largeur, comme sur la V7.2.173. */
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-row-two{
+  grid-template-columns:32% 68%!important;
 }
