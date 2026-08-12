@@ -82,6 +82,7 @@ STATE = {
     "driver_message": None,
     "spotter": {"configured": False, "updated_at_ms": None, "queue_mode": 1, "setup_karts": ["X", "Y", "Z"], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server"},
     "analyzer_rules": None,
+    "analyzer_strategy": None,
 }
 
 
@@ -94,6 +95,7 @@ WEATHER_LOCK = threading.Lock()
 DRIVER_MESSAGE_LOCK = threading.Lock()
 SPOTTER_LOCK = threading.Lock()
 ANALYZER_RULES_LOCK = threading.Lock()
+ANALYZER_STRATEGY_LOCK = threading.Lock()
 RACE_SESSION_LOCK = threading.Lock()
 RACE_SESSION = None
 TEAM_DATA_LOCK = threading.Lock()
@@ -642,6 +644,8 @@ def payload():
         data["spotter"] = deepcopy(STATE.get("spotter") or {})
     with ANALYZER_RULES_LOCK:
         data["analyzer_rules"] = deepcopy(STATE.get("analyzer_rules"))
+    with ANALYZER_STRATEGY_LOCK:
+        data["analyzer_strategy"] = deepcopy(STATE.get("analyzer_strategy"))
     return data
 
 
@@ -672,7 +676,7 @@ def _race_session_public(session, include_assignments=True):
     public = {
         "id": session.get("id"), "name": session.get("name"), "status": session.get("status"),
         "circuit_id": session.get("circuit_id"), "circuit_name": session.get("circuit_name"),
-        "followed_driver": session.get("followed_driver"), "team_id": session.get("team_id"),
+        "followed_driver": session.get("followed_driver"), "pilot_focus_driver": session.get("pilot_focus_driver") or session.get("followed_driver"), "pilot_focus_apex_row": session.get("pilot_focus_apex_row"), "team_id": session.get("team_id"),
         "team_name": session.get("team_name"), "created_at_ms": session.get("created_at_ms"),
         "ended_at_ms": session.get("ended_at_ms"),
     }
@@ -925,7 +929,9 @@ def create_race_session():
                 valid.append(mid)
             clean[role]=valid
         now_ms=int(time.time()*1000); sid=secrets.token_hex(4).upper()
-        session={"id":sid,"name":str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE","status":"active","circuit_id":circuit_id,"circuit_name":str(circuit.get("name") or circuit_id),"followed_driver":str(STATE.get("followed_driver") or "").strip(),"team_id":team.get("id"),"team_name":team.get("name"),"assignments":clean,"created_at_ms":now_ms,"ended_at_ms":None}
+        initial_focus_driver=str(STATE.get("followed_driver") or "").strip()
+        initial_focus_entry=driver_by_name(initial_focus_driver) if initial_focus_driver else None
+        session={"id":sid,"name":str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE","status":"active","circuit_id":circuit_id,"circuit_name":str(circuit.get("name") or circuit_id),"followed_driver":initial_focus_driver,"pilot_focus_driver":initial_focus_driver,"pilot_focus_apex_row":(initial_focus_entry or {}).get("apex_row"),"team_id":team.get("id"),"team_name":team.get("name"),"assignments":clean,"created_at_ms":now_ms,"ended_at_ms":None}
         TEAM_DATA.setdefault("sessions",[]).append(session); TEAM_DATA["active_session_id"]=sid; _save_team_data(TEAM_DATA)
     # Miroir de compatibilité avec le verrouillage déjà présent côté V7.2.87.
     with RACE_SESSION_LOCK: RACE_SESSION=deepcopy(session)
@@ -953,6 +959,37 @@ def update_race_assignments():
             clean[role]=valid
         session["assignments"]=clean; _save_team_data(TEAM_DATA)
     return jsonify(ok=True,session=_race_session_public(session))
+
+
+@app.patch("/api/race-session/pilot-focus")
+def update_race_pilot_focus():
+    """Cible indépendante affichée sur le Focus Endurance des appareils Pilote."""
+    body=request.get_json(force=True,silent=True) or {}
+    requested_row=body.get("apex_row")
+    requested_driver=str(body.get("driver") or "").strip()
+    target=None
+    if requested_row not in (None,""):
+        try:
+            row_num=int(requested_row)
+            target=next((d for d in STATE.get("drivers",[]) if int(d.get("apex_row") or -1)==row_num),None)
+        except (TypeError,ValueError):
+            target=None
+    if target is None and requested_driver:
+        target=driver_by_name(requested_driver)
+    if not target:
+        return jsonify(ok=False,error="Équipe/pilote introuvable dans le live."),400
+    with TEAM_DATA_LOCK:
+        session=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
+        if not session or session.get("status")!="active":
+            return jsonify(ok=False,error="Aucune session active."),400
+        session["pilot_focus_driver"]=str(target.get("driver") or requested_driver).strip()
+        session["pilot_focus_apex_row"]=target.get("apex_row")
+        _save_team_data(TEAM_DATA)
+        public=_race_session_public(session)
+    with RACE_SESSION_LOCK:
+        global RACE_SESSION
+        RACE_SESSION=deepcopy(session)
+    return jsonify(ok=True,session=public)
 
 
 @app.post("/api/race-session/end")
@@ -1105,6 +1142,28 @@ def get_analyzer_rules():
         return jsonify(ok=True, analyzer_rules=deepcopy(STATE.get("analyzer_rules")))
 
 
+@app.post("/api/analyzer-strategy")
+def update_analyzer_strategy():
+    body = request.get_json(force=True, silent=True) or {}
+    snapshot = body.get("strategy")
+    if not isinstance(snapshot, dict):
+        return jsonify(ok=False, error="Stratégie Analyzer invalide"), 400
+    allowed = {"followed_driver", "score", "confidence", "track", "delta", "impact", "capital", "targetLong", "pitCloseRemaining", "recommendation", "windowLabel", "kind", "kartWindow"}
+    clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
+    clean["updated_at_ms"] = int(time.time() * 1000)
+    clean["circuit_id"] = str(STATE.get("circuit_id") or "")
+    clean["app_release"] = APP_VERSION
+    with ANALYZER_STRATEGY_LOCK:
+        STATE["analyzer_strategy"] = clean
+    return jsonify(ok=True, analyzer_strategy=deepcopy(clean))
+
+
+@app.get("/api/analyzer-strategy")
+def get_analyzer_strategy():
+    with ANALYZER_STRATEGY_LOCK:
+        return jsonify(ok=True, analyzer_strategy=deepcopy(STATE.get("analyzer_strategy")))
+
+
 @app.post("/api/spotter-state")
 def update_spotter_state():
     body = request.get_json(force=True, silent=True) or {}
@@ -1145,6 +1204,8 @@ def reset_race_state_for_new_circuit(circuit_id):
     # Un changement de piste ne doit jamais réutiliser les files du circuit précédent.
     with SPOTTER_LOCK:
         STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X", "Y", "Z"], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
+    with ANALYZER_STRATEGY_LOCK:
+        STATE["analyzer_strategy"] = None
     stop_live_connection()
     APEX_TABLE.reset()
     PROTOCOL_ENGINE.reset()

@@ -596,6 +596,105 @@ function analyzerDriverPhase(driver){
  const motion=analyzerLiveProgressPhase(driver,Date.now(),performance.now());
  return Number.isFinite(motion.phase)?motion.phase:0;
 }
+function analyzerMotionDiagnosticEnsure(){
+ let box=document.getElementById('analyzerMotionDiagnostic');
+ if(box)return box;
+ box=document.createElement('div');
+ box.id='analyzerMotionDiagnostic';
+ box.style.cssText='position:fixed;right:10px;bottom:10px;z-index:99999;background:rgba(0,0,0,.88);border:1px solid #ff7a00;border-radius:8px;padding:8px 10px;color:#fff;font:600 11px/1.35 system-ui,-apple-system,sans-serif;max-width:360px;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,.35)';
+ document.body.appendChild(box);
+ return box;
+}
+function analyzerMotionDiagnosticUpdate(){
+ try{
+  if(document.body?.dataset?.appMode!=='analyzer'){
+   document.getElementById('analyzerMotionDiagnostic')?.remove();
+   return;
+  }
+  const box=analyzerMotionDiagnosticEnsure();
+  const drivers=(state?.drivers||[]).filter(d=>d&&d.driver&&!(typeof velocityKartIsInPit==='function'?velocityKartIsInPit(d):d.status==='pit'));
+  const nowDate=Date.now(),nowPerf=performance.now();
+  const rows=drivers.map(driver=>{
+   const motion=analyzerLiveProgressPhase(driver,nowDate,nowPerf);
+   const entry=analyzerApexMapEntry(driver);
+   return {driver,motion,entry};
+  });
+  const counts={apex:0,fallback:0,track:0,none:0};
+  rows.forEach(r=>{const src=r.motion?.source||'none';counts[src]=(counts[src]||0)+1});
+  const followed=rows.find(r=>r.driver?.driver===state?.followed_driver)||null;
+  const suspicious=rows.filter(r=>(r.motion?.source||'none')!=='apex').slice(0,6);
+  const fmt=r=>{
+   const src=(r.motion?.source||'none').toUpperCase();
+   const phase=Number.isFinite(r.motion?.phase)?Math.round(r.motion.phase*100)+'%':'—';
+   const seg=r.entry?.segment||'—';
+   const dur=Number.isFinite(Number(r.entry?.durationMs))?Math.round(Number(r.entry.durationMs))+'ms':'—';
+   const age=Number.isFinite(Number(r.entry?.startedAt))?Math.max(0,Math.round(nowDate-Number(r.entry.startedAt)))+'ms':'—';
+   const label=String(r.driver?.driver||r.driver?.apex||'—').slice(0,22);
+   const rid=Number(r.driver?.apex_row);return `r${Number.isFinite(rid)?rid:'—'} · ${label} · ${src} · ${phase} · ${seg} · ${age}/${dur}`;
+  };
+  const lines=[
+   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG IDENTITÉ V189</div>`,
+   `<div>APEX ${counts.apex||0} · FALLBACK ${counts.fallback||0} · TRACK ${counts.track||0} · NONE ${counts.none||0}</div>`
+  ];
+  if(followed)lines.push(`<div style="margin-top:4px">Suivie: ${fmt(followed)}</div>`);
+  // V7.2.189 — montre les dernières impulsions MAP Apex réellement reçues.
+  const traceTargets=[];
+  if(followed)traceTargets.push(followed);
+  suspicious.slice(0,3).forEach(r=>{if(!traceTargets.includes(r))traceTargets.push(r)});
+  // V7.2.189 — contrôle d'identité entre les lignes de classement et les lignes MAP rXXXXX.
+  const registryRows=window.velocityApexMap?.rows instanceof Map?window.velocityApexMap.rows:new Map();
+  const driverByRow=new Map();
+  drivers.forEach(d=>{
+   const row=Number(d?.apex_row);
+   if(Number.isFinite(row)&&row>0)driverByRow.set(row,d);
+  });
+  const mapOnly=[];
+  registryRows.forEach((entry,row)=>{
+   if(!driverByRow.has(Number(row)))mapOnly.push({row:Number(row),entry});
+  });
+  const driverOnly=[];
+  drivers.forEach(d=>{
+   const row=Number(d?.apex_row);
+   if(Number.isFinite(row)&&row>0&&!registryRows.has(row))driverOnly.push(d);
+  });
+  lines.push(`<div style="margin-top:5px;color:#c6a0ff">IDENTITÉ rXXXXX:</div>`);
+  lines.push(`<div>Drivers ${driverByRow.size} · MAP ${registryRows.size} · sans MAP ${driverOnly.length} · MAP orphelines ${mapOnly.length}</div>`);
+  if(driverOnly.length){
+   lines.push(`<div style="color:#ffcc66">Drivers sans ligne MAP:</div>`);
+   driverOnly.slice(0,6).forEach(d=>lines.push(`<div>r${Number(d.apex_row)} · ${String(d.driver||'—').slice(0,18)} · kart ${String(d.apex||'—')}</div>`));
+  }
+  if(mapOnly.length){
+   lines.push(`<div style="color:#ff7f7f">Lignes MAP sans driver courant:</div>`);
+   mapOnly.slice(0,6).forEach(x=>{
+    const hist=Array.isArray(x.entry?.rawHistory)?x.entry.rawHistory:[];
+    const last=hist.length?hist[hist.length-1]:null;
+    lines.push(`<div>r${x.row} · ${x.entry?.segment||'—'} · ${last?.code||x.entry?.code||'—'} · âge ${Number.isFinite(Number(x.entry?.startedAt))?Math.max(0,Math.round(nowDate-Number(x.entry.startedAt)))+'ms':'—'}</div>`);
+   });
+  }
+  if(traceTargets.length){
+   lines.push('<div style="margin-top:5px;color:#8ecbff">TRAMES MAP BRUTES:</div>');
+   traceTargets.forEach(r=>{
+    const hist=Array.isArray(r.entry?.rawHistory)?r.entry.rawHistory:[];
+    const last=hist.slice(-4).map(ev=>{
+     const age=Math.max(0,Math.round(nowDate-Number(ev.at||0)));
+     const v=Number.isFinite(Number(ev.value))?Math.round(Number(ev.value)):'—';
+     const x=Number.isFinite(Number(ev.extra))?Math.round(Number(ev.extra)):'—';
+     return `${ev.code} ${v}/${x} @-${age}ms`;
+    }).join(' | ');
+    const label=String(r.driver?.driver||r.driver?.apex||'—').slice(0,18);
+    lines.push(`<div>${label}: ${last||'aucune impulsion mémorisée'}</div>`);
+   });
+  }
+  if(suspicious.length){
+   lines.push('<div style="margin-top:4px;color:#ffd166">Hors APEX:</div>');
+   suspicious.forEach(r=>lines.push(`<div>${fmt(r)}</div>`));
+  }else lines.push('<div style="margin-top:4px;color:#7CFC8A">Tous les karts actifs utilisent APEX</div>');
+  box.innerHTML=lines.join('');
+ }catch(_){ }
+}
+if(!window.__velocityMotionDiagTimer){
+ window.__velocityMotionDiagTimer=setInterval(analyzerMotionDiagnosticUpdate,1000);
+}
 const analyzerMapPaceFilters=new Set(['fastest','excellent','good','medium','average','slow']);
 let analyzerMapHighlight='none';
 const analyzerMapGeometry={cx:135,cy:146,viewWidth:270,viewHeight:292};
@@ -2579,6 +2678,43 @@ function toggleAnalyzerStrategyWindowDetails(event){
  el.classList.toggle('show',open);el.hidden=!open;
 }
 window.toggleAnalyzerStrategyWindowDetails=toggleAnalyzerStrategyWindowDetails;
+let analyzerSharedStrategyUpdatedAt=0;
+let analyzerStrategyPublishAt=0;
+let analyzerStrategyPublishSignature='';
+function analyzerStrategyCleanKartWindow(windowData){
+ if(!windowData)return null;
+ const cleanCandidate=c=>({kart:String(c?.kart||''),score:Number(c?.score),confidence:Number(c?.confidence),seconds:Number.isFinite(Number(c?.seconds))?Number(c.seconds):null});
+ return {
+  label:String(windowData.label||'—'),summary:String(windowData.summary||''),targetScore:Number(windowData.targetScore),currentScore:Number(windowData.currentScore),currentConfidence:Number(windowData.currentConfidence),windowStart:Number(windowData.windowStart)||0,windowEnd:Number(windowData.windowEnd)||0,
+  available:(windowData.available||[]).slice(0,6).map(cleanCandidate),incoming:(windowData.incoming||[]).slice(0,10).map(cleanCandidate)
+ };
+}
+function analyzerStrategySnapshot(data,followed){
+ return {followed_driver:String(followed?.driver||''),score:data.score,confidence:data.confidence,track:data.track,delta:data.delta,impact:data.impact,capital:{remaining:data.capital?.remaining,initial:data.capital?.initial,percent:data.capital?.percent},targetLong:data.targetLong,pitCloseRemaining:data.pitCloseRemaining,recommendation:data.recommendation,windowLabel:data.windowLabel,kind:data.kind,kartWindow:analyzerStrategyCleanKartWindow(data.kartWindow)};
+}
+async function analyzerPublishStrategySnapshot(data,followed){
+ if(!analyzerRulesDesktopLeader()||!followed||window.velocityEnduranceTest?.active)return;
+ const now=Date.now();if(now-analyzerStrategyPublishAt<900)return;
+ const snapshot=analyzerStrategySnapshot(data,followed);
+ const signature=JSON.stringify(snapshot);
+ if(signature===analyzerStrategyPublishSignature&&now-analyzerStrategyPublishAt<4500)return;
+ analyzerStrategyPublishAt=now;analyzerStrategyPublishSignature=signature;
+ try{
+  const response=await fetch('/api/analyzer-strategy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({strategy:snapshot})});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const payload=await response.json();const shared=payload?.analyzer_strategy;if(shared){analyzerSharedStrategyUpdatedAt=Number(shared.updated_at_ms)||now;state={...(state||{}),analyzer_strategy:shared}}
+ }catch(error){console.warn('[Velocity Analyzer] Synchronisation Stratégie Relais impossible',error)}
+}
+function analyzerSharedStrategyFor(followed){
+ if(analyzerRulesDesktopLeader())return null;
+ const shared=state?.analyzer_strategy;if(!shared)return null;
+ const circuit=String(state?.circuit_id||analyzerSessionCircuit()||'');
+ if(shared.circuit_id&&circuit&&String(shared.circuit_id)!==circuit)return null;
+ const followedName=String(followed?.driver||'').trim();if(!followedName||String(shared.followed_driver||'').trim()!==followedName)return null;
+ const updated=Number(shared.updated_at_ms)||0;if(!updated||Date.now()-updated>8000)return null;
+ analyzerSharedStrategyUpdatedAt=Math.max(analyzerSharedStrategyUpdatedAt,updated);
+ return {score:Number.isFinite(Number(shared.score))?Number(shared.score):null,confidence:Number.isFinite(Number(shared.confidence))?Number(shared.confidence):null,track:Number(shared.track)||0,delta:Number.isFinite(Number(shared.delta))?Number(shared.delta):null,impact:Number.isFinite(Number(shared.impact))?Number(shared.impact):null,capital:{remaining:Number.isFinite(Number(shared.capital?.remaining))?Number(shared.capital.remaining):null,initial:Number.isFinite(Number(shared.capital?.initial))?Number(shared.capital.initial):null,percent:Number.isFinite(Number(shared.capital?.percent))?Number(shared.capital.percent):null},targetLong:Number(shared.targetLong)||0,pitCloseRemaining:Number.isFinite(Number(shared.pitCloseRemaining))?Number(shared.pitCloseRemaining):null,recommendation:String(shared.recommendation||'—'),windowLabel:String(shared.windowLabel||'—'),kind:String(shared.kind||'neutral'),kartWindow:shared.kartWindow||null};
+}
 function analyzerRelayStrategy(followed,stopsInfo=null){
  const stops=stopsInfo||analyzerStopsInfo(followed);
  const metrics=followed?analyzerVelocityUnifiedMetrics(followed):null;
@@ -2630,7 +2766,10 @@ function analyzerRelayStrategy(followed,stopsInfo=null){
  return {score:Number.isFinite(score)?Math.round(score):null,confidence:Number.isFinite(confidence)?Math.round(confidence):null,track,delta,impact,capital,targetLong,pitCloseRemaining,recommendation,windowLabel,kind,kartWindow};
 }
 function analyzerRenderRelayStrategy(followed,stopsInfo=null){
- const data=analyzerRelayStrategy(followed,stopsInfo);
+ const localData=analyzerRelayStrategy(followed,stopsInfo);
+ const sharedData=analyzerSharedStrategyFor(followed);
+ const data=sharedData||localData;
+ if(analyzerRulesDesktopLeader()&&followed)analyzerPublishStrategySnapshot(localData,followed);
  const score=document.getElementById('analyzerStrategyScore'),confidence=document.getElementById('analyzerStrategyConfidence'),track=document.getElementById('analyzerStrategyTrack'),delta=document.getElementById('analyzerStrategyDelta'),impact=document.getElementById('analyzerStrategyImpact');
  if(score){score.textContent=Number.isFinite(data.score)?String(data.score):'—';score.className=Number.isFinite(data.score)?analyzerScoreClass(data.score):''}
  if(confidence)confidence.textContent=Number.isFinite(data.confidence)?`${data.confidence} %`:'—';
@@ -4218,8 +4357,42 @@ async function inviteRaceMember(memberId,memberName){try{const r=await fetch(`/a
 function renderRaceRolePicker(containerId,role,currentValues=[],active=false){const box=document.getElementById(containerId),team=currentRaceTeam();if(!box)return;const current=new Set((Array.isArray(currentValues)?currentValues:(currentValues?[currentValues]:[])).map(String));const members=(team?.members||[]).filter(m=>(m.roles||[]).includes(role));const attr=active?'data-active-role-member':'data-race-role-member';box.innerHTML=members.length?members.map(m=>`<label><input type="checkbox" ${attr}="${role}" value="${analyzerEscape(m.id)}" ${current.has(String(m.id))?'checked':''}> <span>${analyzerEscape(m.name)}</span></label>`).join(''):'<em>Aucun membre autorisé</em>'}
 function renderRaceAssignmentSelectors(){const team=currentRaceTeam();renderRaceRolePicker('raceAssignTM','team_manager',velocityRaceSession?.assignments?.team_manager||[]);renderRaceRolePicker('raceAssignSpotter','spotter',velocityRaceSession?.assignments?.spotter||[]);renderRaceRolePicker('raceAssignPilot','pilot',velocityRaceSession?.assignments?.pilot||[]);const teamLabel=document.getElementById('raceSessionTeam');if(teamLabel)teamLabel.textContent=team?.name||'—';const circuit=document.getElementById('raceSessionCircuit');if(circuit)circuit.textContent=raceSessionCircuitName()}
 function currentAssignmentPayload(){const out={team_manager:[],spotter:[],pilot:[]};document.querySelectorAll('[data-race-role-member]:checked').forEach(el=>{const role=el.dataset.raceRoleMember;if(out[role])out[role].push(el.value)});return out}
-function raceSessionRender(session){velocityRaceSession=session||null;const empty=document.getElementById('raceSessionEmpty'),active=document.getElementById('raceSessionActive');const isActive=Boolean(session&&session.status==='active');if(empty)empty.hidden=isActive;if(active)active.hidden=!isActive;renderRaceAssignmentSelectors();if(!isActive)return;document.getElementById('raceSessionActiveName').textContent=session.name||'SESSION DE COURSE';document.getElementById('raceSessionActiveCircuit').textContent=session.circuit_name||session.circuit_id||'—';document.getElementById('raceSessionActiveTeam').textContent=session.team_name||'—';renderActiveRaceAssignments()}
+function raceSessionRender(session){velocityRaceSession=session||null;const empty=document.getElementById('raceSessionEmpty'),active=document.getElementById('raceSessionActive');const isActive=Boolean(session&&session.status==='active');if(empty)empty.hidden=isActive;if(active)active.hidden=!isActive;renderRaceAssignmentSelectors();if(!isActive)return;document.getElementById('raceSessionActiveName').textContent=session.name||'SESSION DE COURSE';document.getElementById('raceSessionActiveCircuit').textContent=session.circuit_name||session.circuit_id||'—';document.getElementById('raceSessionActiveTeam').textContent=session.team_name||'—';renderActiveRaceAssignments();renderPilotFocusTargetControl()}
 function renderActiveRaceAssignments(){const box=document.getElementById('raceActiveAssignments');if(!box||!velocityRaceSession)return;const roles=[['team_manager','TEAM MANAGER'],['spotter','SPOTTER'],['pilot','PILOTE']];box.innerHTML=roles.map(([role,label])=>`<div class="race-role-picker active"><span>${label}</span><div id="raceActive-${role}" class="race-role-members"></div></div>`).join('');roles.forEach(([role])=>renderRaceRolePicker(`raceActive-${role}`,role,velocityRaceSession.assignments?.[role]||[],true))}
+function renderPilotFocusTargetControl(){
+ const host=document.getElementById('raceActiveAssignments');if(!host||!velocityRaceSession)return;
+ let control=document.getElementById('racePilotFocusTargetControl');
+ if(!control){control=document.createElement('div');control.id='racePilotFocusTargetControl';control.className='race-pilot-focus-target';host.appendChild(control)}
+ const drivers=(state.drivers||[]).filter(d=>String(d?.driver||'').trim());
+ const currentRow=String(velocityRaceSession.pilot_focus_apex_row??'');
+ const currentName=String(velocityRaceSession.pilot_focus_driver||velocityRaceSession.followed_driver||'').trim();
+ const options=drivers.map(d=>{
+  const row=String(d.apex_row??'');const selected=(currentRow&&row===currentRow)||(!currentRow&&String(d.driver||'')===currentName);
+  const label=`${d.pos?`P${d.pos} · `:''}${String(d.driver||'—')}`;
+  return `<option value="${analyzerEscape(row)}" data-driver="${analyzerEscape(String(d.driver||''))}"${selected?' selected':''}>${analyzerEscape(label)}</option>`;
+ }).join('');
+ control.innerHTML=`<span>FOCUS ENDURANCE PILOTE</span><div><select id="racePilotFocusTarget"${drivers.length?'':' disabled'}>${options||'<option>Aucune équipe live</option>'}</select><small>Indépendant de « Équipe suivie » sur Analyzer. Le Team Manager peut changer cet écran en direct.</small></div>`;
+ const select=document.getElementById('racePilotFocusTarget');
+ if(select)select.onchange=()=>savePilotFocusTarget(select);
+}
+async function savePilotFocusTarget(select){
+ if(!select)return;
+ const option=select.options[select.selectedIndex];const driver=option?.dataset?.driver||'';
+ try{
+  select.disabled=true;
+  const r=await fetch('/api/race-session/pilot-focus',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({apex_row:select.value,driver})});
+  const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Mise à jour impossible');
+  velocityRaceSession=data.session;raceSessionRender(data.session);
+  raceSessionFeedback(`Focus pilote → ${data.session?.pilot_focus_driver||driver}.`);
+ }catch(e){raceSessionFeedback(e.message||String(e),true);select.disabled=false}
+}
+function velocityApplyPilotFocusTarget(session){
+ if(!session)return;
+ const driver=String(session.pilot_focus_driver||session.followed_driver||'').trim();
+ const apexRow=session.pilot_focus_apex_row;
+ window.velocityPilotFocusTarget=driver||apexRow!==undefined&&apexRow!==null?{driver,apex_row:apexRow}:null;
+ try{if(document.getElementById('enduranceFocus')?.classList.contains('show'))renderEnduranceFocus()}catch(_){}
+}
 async function createRaceSession(){const team=currentRaceTeam();if(!team)return raceSessionFeedback('Sélectionnez une Team.',true);const button=document.querySelector('.race-session-create');if(button)button.disabled=true;try{const body={name:document.getElementById('raceSessionName')?.value?.trim()||'',team_id:team.id,assignments:currentAssignmentPayload()};const r=await fetch('/api/race-session/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Création impossible');velocityRaceSession=data.session;raceSessionRender(data.session);raceSessionFeedback('Session active. Tous les membres cochés accèdent au rôle qui leur est affecté.')}catch(e){raceSessionFeedback(e.message||String(e),true)}finally{if(button)button.disabled=false}}
 async function saveRaceAssignments(){const assignments={team_manager:[],spotter:[],pilot:[]};document.querySelectorAll('[data-active-role-member]:checked').forEach(el=>{const role=el.dataset.activeRoleMember;if(assignments[role])assignments[role].push(el.value)});try{const r=await fetch('/api/race-session/assignments',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({assignments})});const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Mise à jour impossible');velocityRaceSession=data.session;raceSessionRender(data.session);raceSessionFeedback('Rôles actifs appliqués. Les appareils se mettent à jour automatiquement.')}catch(e){raceSessionFeedback(e.message||String(e),true)}}
 async function performEndRaceSession(){const r=await fetch('/api/race-session/end',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}),data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Arrêt impossible');velocityRaceSession=null;raceSessionRender(null);raceSessionFeedback('Session terminée. La Team reste enregistrée pour les prochaines courses.')}
@@ -4280,13 +4453,13 @@ async function velocityInviteBootstrap(){
 }
 function velocityDeviceHasStoredIdentity(){let local=false,cookie=false;try{local=Boolean(localStorage.getItem(VELOCITY_DEVICE_KEY))}catch(_){}try{cookie=document.cookie.split(';').some(v=>v.trim().startsWith('velocity_device_id='))}catch(_){}return local||cookie}
 function velocityShowDeviceGate(title='Vérification de votre accès…',message='Connexion à votre Team en cours.',waiting='Veuillez patienter…'){document.body.classList.add('velocity-device-waiting-mode');const w=document.getElementById('velocityDeviceWaiting');if(w)w.hidden=false;const n=document.getElementById('velocityDeviceWaitingName'),t=document.getElementById('velocityDeviceWaitingTeam'),b=w?.querySelector('b');if(n)n.textContent=title;if(t)t.textContent=message;if(b)b.textContent=waiting}
-function velocityResetRoleUI(){document.body.classList.remove('race-role-access','race-role-spotter','race-role-pilot','velocity-device-waiting-mode','velocity-device-pending-mode');document.getElementById('velocityDeviceWaiting').hidden=true;try{document.getElementById('enduranceFocus')?.classList.remove('show')}catch(_){}}
-function velocityDeviceAccessKey(data){const roles=[...(data?.authorized_roles||[])].map(String).sort().join(',');return [data?.paired?'1':'0',String(data?.role||''),String(data?.session_id||data?.session?.id||''),String(data?.device?.id||''),roles].join('|')}
-function velocityApplyDeviceRole(data){const signature=velocityDeviceAccessKey(data);if(signature===velocityDeviceAccessSignature)return;velocityDeviceAccessSignature=signature;const role=String(data?.role||'');velocityDeviceRole=role;velocityResetRoleUI();if(data?.paired)velocitySetDeveloperToolsHidden(true);if(!data?.paired){if(velocityDeviceHasStoredIdentity()){velocitySetDeveloperToolsHidden(true);velocityShowDeviceGate('Appareil non reconnu','Cet appareil était associé à Velocity mais son accès n’est plus valide.','Demandez au Team Manager de réassocier cet appareil.');return}velocitySetDeveloperToolsHidden(false);return}const authorized=new Set(data.authorized_roles||[]);if(!role){velocityShowDeviceGate(data.device?.member_name||'Membre associé',data.device?.team_name?`${data.device.team_name} — aucune session active pour vous.`:'Aucune session active.','En attente d’affectation…');return}if(!authorized.has(role)){velocityShowDeviceGate('Accès refusé','Le rôle demandé n’est pas autorisé pour ce membre.','Contactez le Team Manager.');return}if(role==='team_manager'){showMode('analyzer');return}document.body.classList.add('race-role-access',`race-role-${role}`);if(role==='spotter')showMode('spotter');else if(role==='pilot'){showMode('endurance');setTimeout(()=>openEnduranceFocus(),150)}}
+function velocityResetRoleUI(){document.body.classList.remove('race-role-access','race-role-spotter','race-role-pilot','velocity-device-waiting-mode','velocity-device-pending-mode');document.getElementById('velocityDeviceWaiting').hidden=true}
+function velocityDeviceAccessKey(data){const roles=[...(data?.authorized_roles||[])].map(String).sort().join(',');return [data?.paired?'1':'0',String(data?.role||''),String(data?.session_id||data?.session?.id||''),String(data?.device?.id||''),roles,String(data?.session?.pilot_focus_apex_row??''),String(data?.session?.pilot_focus_driver||'')].join('|')}
+function velocityApplyDeviceRole(data){const signature=velocityDeviceAccessKey(data);if(signature===velocityDeviceAccessSignature)return;velocityApplyPilotFocusTarget(data?.session);velocityDeviceAccessSignature=signature;const role=String(data?.role||'');velocityDeviceRole=role;window.velocityDeviceRole=role;velocityResetRoleUI();if(data?.paired)velocitySetDeveloperToolsHidden(true);if(!data?.paired){if(velocityDeviceHasStoredIdentity()){velocitySetDeveloperToolsHidden(true);velocityShowDeviceGate('Appareil non reconnu','Cet appareil était associé à Velocity mais son accès n’est plus valide.','Demandez au Team Manager de réassocier cet appareil.');return}velocitySetDeveloperToolsHidden(false);return}const authorized=new Set(data.authorized_roles||[]);if(!role){velocityShowDeviceGate(data.device?.member_name||'Membre associé',data.device?.team_name?`${data.device.team_name} — aucune session active pour vous.`:'Aucune session active.','En attente d’affectation…');return}if(!authorized.has(role)){velocityShowDeviceGate('Accès refusé','Le rôle demandé n’est pas autorisé pour ce membre.','Contactez le Team Manager.');return}if(role==='team_manager'){showMode('analyzer');return}document.body.classList.add('race-role-access',`race-role-${role}`);if(role==='spotter')showMode('spotter');else if(role==='pilot'){showMode('endurance');setTimeout(()=>openEnduranceFocus(),150)}}
 async function velocityDeviceSessionCheck(){if(window.VELOCITY_INVITE_TOKEN)return;const id=velocityDeviceId();try{const r=await fetch('/api/device/session',{cache:'no-store',headers:id?{'X-Velocity-Device':id}:{}}),data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Vérification impossible');if(data.paired&&data.device?.id&&!id)try{localStorage.setItem(VELOCITY_DEVICE_KEY,data.device.id)}catch(_){}velocityApplyDeviceRole(data)}catch(_){if(velocityDeviceHasStoredIdentity()&&!velocityDeviceAccessSignature)velocityShowDeviceGate('Connexion indisponible','Velocity ne peut pas vérifier vos droits pour le moment.','Accès verrouillé jusqu’au retour du serveur.')}}
 function velocityDeviceBootstrap(){if(window.VELOCITY_INVITE_TOKEN)return;if(velocityDeviceHasStoredIdentity()){velocitySetDeveloperToolsHidden(true);velocityShowDeviceGate()}setTimeout(velocityDeviceSessionCheck,250);velocityDevicePoll=setInterval(velocityDeviceSessionCheck,3000)}
-async function velocityRaceAccessCheck(){const access=window.VELOCITY_RACE_ACCESS||{};if(!access.token)return;try{const r=await fetch(`/api/race-access/${encodeURIComponent(access.token)}`,{cache:'no-store'});if(!r.ok){velocityRaceAccessEnded();return}const data=await r.json();if(!data.ok)velocityRaceAccessEnded()}catch(_){}}
-function velocityRaceAccessEnded(){if(velocityRaceAccessPoll){clearInterval(velocityRaceAccessPoll);velocityRaceAccessPoll=null}const ended=document.getElementById('raceRoleEnded');if(ended)ended.hidden=false;try{document.getElementById('enduranceFocus')?.classList.remove('show')}catch(_){}}
+async function velocityRaceAccessCheck(){const access=window.VELOCITY_RACE_ACCESS||{};if(!access.token)return;try{const r=await fetch(`/api/race-access/${encodeURIComponent(access.token)}`,{cache:'no-store'});if(!r.ok){velocityRaceAccessEnded();return}const data=await r.json();if(!data.ok)velocityRaceAccessEnded();else velocityApplyPilotFocusTarget(data.session)}catch(_){}}
+function velocityRaceAccessEnded(){if(velocityRaceAccessPoll){clearInterval(velocityRaceAccessPoll);velocityRaceAccessPoll=null}clearVelocityFocusMemory();const ended=document.getElementById('raceRoleEnded');if(ended)ended.hidden=false;try{document.getElementById('enduranceFocus')?.classList.remove('show')}catch(_){}}
 function velocityRaceAccessBootstrap(){const access=window.VELOCITY_RACE_ACCESS||{},role=String(access.role||'');if(role==='expired'){velocitySetDeveloperToolsHidden(true);document.body.classList.add('race-role-access');velocityRaceAccessEnded();return}if(!['spotter','pilot'].includes(role))return;velocitySetDeveloperToolsHidden(true);document.body.classList.add('race-role-access',`race-role-${role}`);const launch=()=>{if(!state?.circuit_id){setTimeout(launch,250);return}if(role==='spotter')showMode('spotter');else{showMode('endurance');setTimeout(()=>openEnduranceFocus(),180)}};launch();velocityRaceAccessCheck();velocityRaceAccessPoll=setInterval(velocityRaceAccessCheck,3000)}
 document.addEventListener('DOMContentLoaded',()=>{velocityInviteBootstrap();velocityRaceAccessBootstrap();velocityDeviceBootstrap()});
 window.openRaceSessionManager=openRaceSessionManager;window.closeRaceSessionManager=closeRaceSessionManager;window.raceSessionTab=raceSessionTab;window.selectRaceTeam=selectRaceTeam;window.createRaceTeamPrompt=createRaceTeamPrompt;window.openRaceTeamCreateModal=openRaceTeamCreateModal;window.closeRaceTeamActionModal=closeRaceTeamActionModal;window.confirmRaceTeamAction=confirmRaceTeamAction;window.openRaceTeamDeleteModal=openRaceTeamDeleteModal;window.openRaceMemberDeleteModal=openRaceMemberDeleteModal;window.openRaceSessionEndModal=openRaceSessionEndModal;window.addRaceMember=addRaceMember;window.updateRaceMemberRoles=updateRaceMemberRoles;window.inviteRaceMember=inviteRaceMember;window.deleteRaceTeam=deleteRaceTeam;window.deleteRaceMember=deleteRaceMember;window.copyRaceInviteLink=copyRaceInviteLink;window.shareRaceInviteLink=shareRaceInviteLink;window.toggleRaceInviteQr=toggleRaceInviteQr;window.closeRaceInviteShare=closeRaceInviteShare;window.createRaceSession=createRaceSession;window.saveRaceAssignments=saveRaceAssignments;window.endRaceSession=endRaceSession;window.claimVelocityInvite=claimVelocityInvite;

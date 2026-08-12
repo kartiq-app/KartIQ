@@ -6,6 +6,7 @@ async function openQualificationFocus(){
  if(!overlay)return;
  overlay.classList.add('show');
  document.body.classList.add('qualification-focus-active');
+ rememberVelocityFocus('qualification');
  setFocusLandscapeLock(true);
  renderQualificationFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
@@ -15,6 +16,7 @@ async function openQualificationFocus(){
 async function closeQualificationFocus(){
  document.getElementById('qualificationFocus')?.classList.remove('show');
  document.body.classList.remove('qualification-focus-active');
+ clearVelocityFocusMemory('qualification');
  setFocusLandscapeLock(false);
  try{if(qualificationFocusWakeLock){await qualificationFocusWakeLock.release();qualificationFocusWakeLock=null}}catch(e){}
  unlockFocusOrientationForAndroid();
