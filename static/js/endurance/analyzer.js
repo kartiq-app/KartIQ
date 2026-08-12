@@ -630,17 +630,47 @@ function analyzerMotionDiagnosticUpdate(){
    const dur=Number.isFinite(Number(r.entry?.durationMs))?Math.round(Number(r.entry.durationMs))+'ms':'—';
    const age=Number.isFinite(Number(r.entry?.startedAt))?Math.max(0,Math.round(nowDate-Number(r.entry.startedAt)))+'ms':'—';
    const label=String(r.driver?.driver||r.driver?.apex||'—').slice(0,22);
-   return `${label} · ${src} · ${phase} · ${seg} · ${age}/${dur}`;
+   const rid=Number(r.driver?.apex_row);return `r${Number.isFinite(rid)?rid:'—'} · ${label} · ${src} · ${phase} · ${seg} · ${age}/${dur}`;
   };
   const lines=[
-   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG TRACKING V188</div>`,
+   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG IDENTITÉ V189</div>`,
    `<div>APEX ${counts.apex||0} · FALLBACK ${counts.fallback||0} · TRACK ${counts.track||0} · NONE ${counts.none||0}</div>`
   ];
   if(followed)lines.push(`<div style="margin-top:4px">Suivie: ${fmt(followed)}</div>`);
-  // V7.2.188 — montre les dernières impulsions MAP Apex réellement reçues.
+  // V7.2.189 — montre les dernières impulsions MAP Apex réellement reçues.
   const traceTargets=[];
   if(followed)traceTargets.push(followed);
   suspicious.slice(0,3).forEach(r=>{if(!traceTargets.includes(r))traceTargets.push(r)});
+  // V7.2.189 — contrôle d'identité entre les lignes de classement et les lignes MAP rXXXXX.
+  const registryRows=window.velocityApexMap?.rows instanceof Map?window.velocityApexMap.rows:new Map();
+  const driverByRow=new Map();
+  drivers.forEach(d=>{
+   const row=Number(d?.apex_row);
+   if(Number.isFinite(row)&&row>0)driverByRow.set(row,d);
+  });
+  const mapOnly=[];
+  registryRows.forEach((entry,row)=>{
+   if(!driverByRow.has(Number(row)))mapOnly.push({row:Number(row),entry});
+  });
+  const driverOnly=[];
+  drivers.forEach(d=>{
+   const row=Number(d?.apex_row);
+   if(Number.isFinite(row)&&row>0&&!registryRows.has(row))driverOnly.push(d);
+  });
+  lines.push(`<div style="margin-top:5px;color:#c6a0ff">IDENTITÉ rXXXXX:</div>`);
+  lines.push(`<div>Drivers ${driverByRow.size} · MAP ${registryRows.size} · sans MAP ${driverOnly.length} · MAP orphelines ${mapOnly.length}</div>`);
+  if(driverOnly.length){
+   lines.push(`<div style="color:#ffcc66">Drivers sans ligne MAP:</div>`);
+   driverOnly.slice(0,6).forEach(d=>lines.push(`<div>r${Number(d.apex_row)} · ${String(d.driver||'—').slice(0,18)} · kart ${String(d.apex||'—')}</div>`));
+  }
+  if(mapOnly.length){
+   lines.push(`<div style="color:#ff7f7f">Lignes MAP sans driver courant:</div>`);
+   mapOnly.slice(0,6).forEach(x=>{
+    const hist=Array.isArray(x.entry?.rawHistory)?x.entry.rawHistory:[];
+    const last=hist.length?hist[hist.length-1]:null;
+    lines.push(`<div>r${x.row} · ${x.entry?.segment||'—'} · ${last?.code||x.entry?.code||'—'} · âge ${Number.isFinite(Number(x.entry?.startedAt))?Math.max(0,Math.round(nowDate-Number(x.entry.startedAt)))+'ms':'—'}</div>`);
+   });
+  }
   if(traceTargets.length){
    lines.push('<div style="margin-top:5px;color:#8ecbff">TRAMES MAP BRUTES:</div>');
    traceTargets.forEach(r=>{
