@@ -82,6 +82,7 @@ STATE = {
     "driver_message": None,
     "spotter": {"configured": False, "updated_at_ms": None, "queue_mode": 1, "setup_karts": ["X", "Y", "Z"], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server"},
     "analyzer_rules": None,
+    "analyzer_strategy": None,
 }
 
 
@@ -94,6 +95,7 @@ WEATHER_LOCK = threading.Lock()
 DRIVER_MESSAGE_LOCK = threading.Lock()
 SPOTTER_LOCK = threading.Lock()
 ANALYZER_RULES_LOCK = threading.Lock()
+ANALYZER_STRATEGY_LOCK = threading.Lock()
 RACE_SESSION_LOCK = threading.Lock()
 RACE_SESSION = None
 TEAM_DATA_LOCK = threading.Lock()
@@ -642,6 +644,8 @@ def payload():
         data["spotter"] = deepcopy(STATE.get("spotter") or {})
     with ANALYZER_RULES_LOCK:
         data["analyzer_rules"] = deepcopy(STATE.get("analyzer_rules"))
+    with ANALYZER_STRATEGY_LOCK:
+        data["analyzer_strategy"] = deepcopy(STATE.get("analyzer_strategy"))
     return data
 
 
@@ -1105,6 +1109,28 @@ def get_analyzer_rules():
         return jsonify(ok=True, analyzer_rules=deepcopy(STATE.get("analyzer_rules")))
 
 
+@app.post("/api/analyzer-strategy")
+def update_analyzer_strategy():
+    body = request.get_json(force=True, silent=True) or {}
+    snapshot = body.get("strategy")
+    if not isinstance(snapshot, dict):
+        return jsonify(ok=False, error="Stratégie Analyzer invalide"), 400
+    allowed = {"followed_driver", "score", "confidence", "track", "delta", "impact", "capital", "targetLong", "pitCloseRemaining", "recommendation", "windowLabel", "kind", "kartWindow"}
+    clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
+    clean["updated_at_ms"] = int(time.time() * 1000)
+    clean["circuit_id"] = str(STATE.get("circuit_id") or "")
+    clean["app_release"] = APP_VERSION
+    with ANALYZER_STRATEGY_LOCK:
+        STATE["analyzer_strategy"] = clean
+    return jsonify(ok=True, analyzer_strategy=deepcopy(clean))
+
+
+@app.get("/api/analyzer-strategy")
+def get_analyzer_strategy():
+    with ANALYZER_STRATEGY_LOCK:
+        return jsonify(ok=True, analyzer_strategy=deepcopy(STATE.get("analyzer_strategy")))
+
+
 @app.post("/api/spotter-state")
 def update_spotter_state():
     body = request.get_json(force=True, silent=True) or {}
@@ -1145,6 +1171,8 @@ def reset_race_state_for_new_circuit(circuit_id):
     # Un changement de piste ne doit jamais réutiliser les files du circuit précédent.
     with SPOTTER_LOCK:
         STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X", "Y", "Z"], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
+    with ANALYZER_STRATEGY_LOCK:
+        STATE["analyzer_strategy"] = None
     stop_live_connection()
     APEX_TABLE.reset()
     PROTOCOL_ENGINE.reset()

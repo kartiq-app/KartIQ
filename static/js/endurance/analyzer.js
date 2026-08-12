@@ -2579,6 +2579,43 @@ function toggleAnalyzerStrategyWindowDetails(event){
  el.classList.toggle('show',open);el.hidden=!open;
 }
 window.toggleAnalyzerStrategyWindowDetails=toggleAnalyzerStrategyWindowDetails;
+let analyzerSharedStrategyUpdatedAt=0;
+let analyzerStrategyPublishAt=0;
+let analyzerStrategyPublishSignature='';
+function analyzerStrategyCleanKartWindow(windowData){
+ if(!windowData)return null;
+ const cleanCandidate=c=>({kart:String(c?.kart||''),score:Number(c?.score),confidence:Number(c?.confidence),seconds:Number.isFinite(Number(c?.seconds))?Number(c.seconds):null});
+ return {
+  label:String(windowData.label||'—'),summary:String(windowData.summary||''),targetScore:Number(windowData.targetScore),currentScore:Number(windowData.currentScore),currentConfidence:Number(windowData.currentConfidence),windowStart:Number(windowData.windowStart)||0,windowEnd:Number(windowData.windowEnd)||0,
+  available:(windowData.available||[]).slice(0,6).map(cleanCandidate),incoming:(windowData.incoming||[]).slice(0,10).map(cleanCandidate)
+ };
+}
+function analyzerStrategySnapshot(data,followed){
+ return {followed_driver:String(followed?.driver||''),score:data.score,confidence:data.confidence,track:data.track,delta:data.delta,impact:data.impact,capital:{remaining:data.capital?.remaining,initial:data.capital?.initial,percent:data.capital?.percent},targetLong:data.targetLong,pitCloseRemaining:data.pitCloseRemaining,recommendation:data.recommendation,windowLabel:data.windowLabel,kind:data.kind,kartWindow:analyzerStrategyCleanKartWindow(data.kartWindow)};
+}
+async function analyzerPublishStrategySnapshot(data,followed){
+ if(!analyzerRulesDesktopLeader()||!followed||window.velocityEnduranceTest?.active)return;
+ const now=Date.now();if(now-analyzerStrategyPublishAt<900)return;
+ const snapshot=analyzerStrategySnapshot(data,followed);
+ const signature=JSON.stringify(snapshot);
+ if(signature===analyzerStrategyPublishSignature&&now-analyzerStrategyPublishAt<4500)return;
+ analyzerStrategyPublishAt=now;analyzerStrategyPublishSignature=signature;
+ try{
+  const response=await fetch('/api/analyzer-strategy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({strategy:snapshot})});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const payload=await response.json();const shared=payload?.analyzer_strategy;if(shared){analyzerSharedStrategyUpdatedAt=Number(shared.updated_at_ms)||now;state={...(state||{}),analyzer_strategy:shared}}
+ }catch(error){console.warn('[Velocity Analyzer] Synchronisation Stratégie Relais impossible',error)}
+}
+function analyzerSharedStrategyFor(followed){
+ if(analyzerRulesDesktopLeader())return null;
+ const shared=state?.analyzer_strategy;if(!shared)return null;
+ const circuit=String(state?.circuit_id||analyzerSessionCircuit()||'');
+ if(shared.circuit_id&&circuit&&String(shared.circuit_id)!==circuit)return null;
+ const followedName=String(followed?.driver||'').trim();if(!followedName||String(shared.followed_driver||'').trim()!==followedName)return null;
+ const updated=Number(shared.updated_at_ms)||0;if(!updated||Date.now()-updated>8000)return null;
+ analyzerSharedStrategyUpdatedAt=Math.max(analyzerSharedStrategyUpdatedAt,updated);
+ return {score:Number.isFinite(Number(shared.score))?Number(shared.score):null,confidence:Number.isFinite(Number(shared.confidence))?Number(shared.confidence):null,track:Number(shared.track)||0,delta:Number.isFinite(Number(shared.delta))?Number(shared.delta):null,impact:Number.isFinite(Number(shared.impact))?Number(shared.impact):null,capital:{remaining:Number.isFinite(Number(shared.capital?.remaining))?Number(shared.capital.remaining):null,initial:Number.isFinite(Number(shared.capital?.initial))?Number(shared.capital.initial):null,percent:Number.isFinite(Number(shared.capital?.percent))?Number(shared.capital.percent):null},targetLong:Number(shared.targetLong)||0,pitCloseRemaining:Number.isFinite(Number(shared.pitCloseRemaining))?Number(shared.pitCloseRemaining):null,recommendation:String(shared.recommendation||'—'),windowLabel:String(shared.windowLabel||'—'),kind:String(shared.kind||'neutral'),kartWindow:shared.kartWindow||null};
+}
 function analyzerRelayStrategy(followed,stopsInfo=null){
  const stops=stopsInfo||analyzerStopsInfo(followed);
  const metrics=followed?analyzerVelocityUnifiedMetrics(followed):null;
@@ -2630,7 +2667,10 @@ function analyzerRelayStrategy(followed,stopsInfo=null){
  return {score:Number.isFinite(score)?Math.round(score):null,confidence:Number.isFinite(confidence)?Math.round(confidence):null,track,delta,impact,capital,targetLong,pitCloseRemaining,recommendation,windowLabel,kind,kartWindow};
 }
 function analyzerRenderRelayStrategy(followed,stopsInfo=null){
- const data=analyzerRelayStrategy(followed,stopsInfo);
+ const localData=analyzerRelayStrategy(followed,stopsInfo);
+ const sharedData=analyzerSharedStrategyFor(followed);
+ const data=sharedData||localData;
+ if(analyzerRulesDesktopLeader()&&followed)analyzerPublishStrategySnapshot(localData,followed);
  const score=document.getElementById('analyzerStrategyScore'),confidence=document.getElementById('analyzerStrategyConfidence'),track=document.getElementById('analyzerStrategyTrack'),delta=document.getElementById('analyzerStrategyDelta'),impact=document.getElementById('analyzerStrategyImpact');
  if(score){score.textContent=Number.isFinite(data.score)?String(data.score):'—';score.className=Number.isFinite(data.score)?analyzerScoreClass(data.score):''}
  if(confidence)confidence.textContent=Number.isFinite(data.confidence)?`${data.confidence} %`:'—';

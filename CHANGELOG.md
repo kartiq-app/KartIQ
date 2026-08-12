@@ -1,3 +1,11 @@
+# V7.2.171 — SYNC STRATÉGIE RELAIS DESKTOP / MOBILE
+
+- Desktop devient source de vérité pour la carte Stratégie Relais.
+- Synchronisation serveur du score, confiance, temps en piste, delta/tour, impact/relais, capital stratégique, recommandation et fenêtre conseillée.
+- Smartphone consomme le snapshot Desktop quand il est récent et correspond au même circuit / à la même équipe suivie.
+- Repli automatique sur le calcul local si le snapshot partagé est absent ou périmé.
+- Aucun changement de logique métier du moteur de stratégie.
+
 # V7.2.170 — FOCUS IPHONE PAYSAGE VIRTUEL
 
 - iPhone uniquement : les modes Focus Qualification, Sprint et Endurance restent techniquement en portrait et leur interface est pivotée de 90° en CSS.
