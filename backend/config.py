@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.168"
-APP_RELEASE_NAME = "POLISH ANALYZER DESKTOP"
+APP_VERSION = "7.2.170"
+APP_RELEASE_NAME = "FOCUS IPHONE PAYSAGE VIRTUEL"
 
 
 def _circuit_sort_key(circuit):

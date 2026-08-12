@@ -937,3 +937,62 @@ body[data-app-mode="endurance"] #endurance .position-cell{
  .driver-message-body{padding:14px 10px 20px}
  .driver-message-arrows{font-size:20px}
 }
+
+
+/* Velocity V7.2.170 — iPhone Focus en paysage virtuel, OS maintenu en portrait.
+   Android n'est pas concerné : son verrouillage paysage natif reste inchangé. */
+html.iphone-focus-virtual-landscape,
+body.iphone-focus-virtual-landscape{
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+body.iphone-focus-virtual-landscape #qualificationFocus,
+body.iphone-focus-virtual-landscape #sprintFocus,
+body.iphone-focus-virtual-landscape #enduranceFocus{
+  position:fixed!important;
+  inset:auto!important;
+  top:50%!important;
+  left:50%!important;
+  width:100dvh!important;
+  height:100dvw!important;
+  max-width:none!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  padding:0!important;
+  transform:translate(-50%,-50%) rotate(90deg)!important;
+  transform-origin:50% 50%!important;
+}
+/* Le titre est légèrement repoussé vers la droite dans le paysage visible.
+   Le padding droit garantit aussi une séparation nette avec le filet coloré. */
+body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header,
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header{
+  box-sizing:border-box!important;
+  padding-left:clamp(28px,8vw,42px)!important;
+  padding-right:14px!important;
+  column-gap:14px!important;
+}
+body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header>span,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header>span,
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>span{
+  display:block!important;
+  white-space:nowrap!important;
+  padding-right:8px!important;
+  line-height:1!important;
+}
+body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header>i,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header>i,
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
+  min-width:24px!important;
+  margin-left:2px!important;
+}
+/* En portrait verrouillé, vw correspond à la hauteur du paysage virtuel :
+   les règles mobile portrait existantes donnent donc la bonne échelle après rotation. */
+@supports not (height:100dvw){
+  body.iphone-focus-virtual-landscape #qualificationFocus,
+  body.iphone-focus-virtual-landscape #sprintFocus,
+  body.iphone-focus-virtual-landscape #enduranceFocus{
+    width:100vh!important;
+    height:100vw!important;
+  }
+}

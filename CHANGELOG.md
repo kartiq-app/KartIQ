@@ -1,3 +1,20 @@
+# V7.2.170 — FOCUS IPHONE PAYSAGE VIRTUEL
+
+- iPhone uniquement : les modes Focus Qualification, Sprint et Endurance restent techniquement en portrait et leur interface est pivotée de 90° en CSS.
+- Le pilote peut verrouiller l’iPhone en portrait puis tourner physiquement le téléphone : aucun basculement iOS n’est nécessaire.
+- Android conserve strictement son verrouillage paysage natif existant.
+- Les titres Qualifications, Sprint et Endurance sont décalés pour laisser la zone iPhone libre et gardent un espace de sécurité avec le filet coloré.
+- La persistance Focus de la V7.2.169 est conservée.
+
+# V7.2.169 — FOCUS PERSISTANT
+
+- Les modes Focus Qualification, Sprint et Endurance restent actifs tant que le pilote ne les ferme pas explicitement.
+- Suppression de la fermeture involontaire du Focus Endurance lors d'un rafraîchissement des droits/appareils.
+- Mémorisation temporaire du Focus actif dans la session du navigateur et restauration automatique après un retour au premier plan ou un rafraîchissement UI.
+- Watchdog léger : si un rerender ou une transition interne masque un Focus actif, Velocity le rouvre automatiquement.
+- La fin réelle d'une session de course continue à fermer le Focus et efface sa mémorisation.
+- Aucun changement apporté aux données, deltas ou au rendu métier des modes Focus.
+
 # V7.2.168 — FIRST KART 'INN + LISIBILITÉ CONFORMITÉ
 
 - Ajout du circuit belge First Kart 'Inn (Apex Timing 8113), Machelen.

@@ -1,25 +1,25 @@
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('sprint-focus-active');setFocusLandscapeLock(true);renderSprintFocus();
+ overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);renderSprintFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)sprintFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeSprintFocus(){
- document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');setFocusLandscapeLock(false);
+ document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');clearVelocityFocusMemory('sprint');setFocusLandscapeLock(false);
  try{if(sprintFocusWakeLock){await sprintFocusWakeLock.release();sprintFocusWakeLock=null}}catch(e){}
  unlockFocusOrientationForAndroid();
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 async function openEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('endurance-focus-active');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
+ overlay.classList.add('show');document.body.classList.add('endurance-focus-active');rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeEnduranceFocus(){
- document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');setFocusLandscapeLock(false);
+ document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');clearVelocityFocusMemory('endurance');setFocusLandscapeLock(false);
  setEndurancePitOverlay(null);
  try{if(enduranceFocusWakeLock){await enduranceFocusWakeLock.release();enduranceFocusWakeLock=null}}catch(e){}
  unlockFocusOrientationForAndroid();
