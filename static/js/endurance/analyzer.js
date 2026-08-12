@@ -31,7 +31,7 @@ function analyzerUpdateRaceRemaining(){
 /* Velocity V6.10.5 — titres alignés, MAP inactive visible et réglages météo */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
-const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
+const ANALYZER_DEFAULT_RULES={raceHours:null,requiredStops:null,minStintMinutes:null,maxStintMinutes:null,minPitSeconds:null,pitCloseMinutes:null,safetyMarginMinutes:null,driversCount:null,driverMinimumMinutes:null};
 
 const ANALYZER_SESSIONS_INDEX_KEY='kartiq-analyzer-sessions-index-v1';
 const ANALYZER_ACTIVE_SESSION_KEY='kartiq-analyzer-active-session-v1';
@@ -838,6 +838,7 @@ function analyzerFormatDuration(seconds,{signed=false,compact=false}={}){
  return signed?(negative?'-':'+')+value:value;
 }
 function analyzerNumeric(value,fallback=0){const n=Number(String(value??'').replace(',','.'));return Number.isFinite(n)?n:fallback}
+function analyzerNullableNumeric(value){if(value===null||value===undefined||String(value).trim()==='')return null;const n=Number(String(value).replace(',','.'));return Number.isFinite(n)?n:null}
 function analyzerTeamKey(driver){
  const base=String(driver?.apex_row??driver?.driver??driver?.pos??'unknown');
  const test=window.velocityEnduranceTest;
@@ -1202,7 +1203,7 @@ function analyzerRelayWindowValues(team,from,to){
  return values;
 }
 
-/* Velocity V7.2.159 — Score Relais adaptatif aux changements de conditions.
+/* Velocity V7.2.161 — Score Relais adaptatif aux changements de conditions.
    Principe : sur piste stable, la logique historique reste inchangée. Dès que le plateau
    change fortement de rythme au cours d'une même fenêtre (pluie, séchant, neutralisation
    progressive), chaque tour est replacé par rapport à une référence temporelle locale de
@@ -2382,6 +2383,131 @@ function analyzerStopsInfo(followed){
  const cadence=remaining>0&&Number.isFinite(usable)?usable/remaining:null;
  return {done,remaining,cadence};
 }
+
+/* V7.2.161 — moteur STRATÉGIE RELAIS : règles + live + Score Relais. */
+function analyzerStrategySignedSeconds(value,digits=2){
+ if(!Number.isFinite(value))return '—';
+ const sign=value>0?'+':value<0?'−':'';
+ return `${sign}${Math.abs(value).toFixed(digits).replace('.',',')} s`;
+}
+function analyzerStrategyClockMinutes(seconds){
+ if(!Number.isFinite(seconds))return '—';
+ if(seconds<=0)return 'FERMÉ';
+ const total=Math.max(0,Math.floor(seconds/60)),hours=Math.floor(total/60),minutes=total%60;
+ return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
+}
+function analyzerStrategyRuleNumber(key){
+ const raw=analyzerRules?.[key];
+ if(raw===null||raw===undefined||raw==='')return null;
+ const value=Number(raw);
+ return Number.isFinite(value)?value:null;
+}
+function analyzerStrategyRulesConfig(){
+ const raceHours=analyzerStrategyRuleNumber('raceHours');
+ const requiredStops=analyzerStrategyRuleNumber('requiredStops');
+ const minStintMinutes=analyzerStrategyRuleNumber('minStintMinutes');
+ const maxStintMinutes=analyzerStrategyRuleNumber('maxStintMinutes');
+ const minPitSeconds=analyzerStrategyRuleNumber('minPitSeconds');
+ const pitCloseMinutes=analyzerStrategyRuleNumber('pitCloseMinutes');
+ const safetyMarginMinutes=analyzerStrategyRuleNumber('safetyMarginMinutes');
+ const ready=[raceHours,requiredStops,minStintMinutes,maxStintMinutes,minPitSeconds,pitCloseMinutes,safetyMarginMinutes].every(Number.isFinite)
+  &&raceHours>0&&requiredStops>=0&&minStintMinutes>=0&&maxStintMinutes>0&&maxStintMinutes>=minStintMinutes&&minPitSeconds>=0&&pitCloseMinutes>=0&&safetyMarginMinutes>=0;
+ return {ready,raceHours,requiredStops,minStintMinutes,maxStintMinutes,minPitSeconds,pitCloseMinutes,safetyMarginMinutes};
+}
+function analyzerStrategyCapitalFromState({raceRemaining,track,stopsRemaining,rules}){
+ if(!rules?.ready||!Number.isFinite(raceRemaining))return {remaining:null,totalSlack:null,closureSlack:null};
+ const maxStint=rules.maxStintMinutes*60,pitSeconds=rules.minPitSeconds,closeLead=rules.pitCloseMinutes*60;
+ const s=Math.max(0,Number(stopsRemaining)||0),t=Math.max(0,Number(track)||0),remaining=Math.max(0,raceRemaining);
+ const rollingRequired=Math.max(0,remaining-s*pitSeconds);
+ const totalCapacity=Math.max(0,maxStint-t)+s*maxStint;
+ const totalSlack=Math.max(0,totalCapacity-rollingRequired);
+ if(s===0)return {remaining:totalSlack,totalSlack,closureSlack:totalSlack};
+ const untilClose=Math.max(0,remaining-closeLead);
+ const rollingRequiredBeforeClose=Math.max(0,untilClose-s*pitSeconds);
+ const finalPreCloseCapacity=Math.max(0,maxStint-closeLead);
+ const preCloseCapacity=Math.max(0,maxStint-t)+Math.max(0,s-1)*maxStint+finalPreCloseCapacity;
+ const closureSlack=Math.max(0,preCloseCapacity-rollingRequiredBeforeClose);
+ return {remaining:Math.max(0,Math.min(totalSlack,closureSlack)),totalSlack,closureSlack};
+}
+function analyzerStrategyCapital(followed,stopsInfo=null){
+ const rules=analyzerStrategyRulesConfig();
+ const stops=stopsInfo||analyzerStopsInfo(followed),raceRemaining=analyzerRemainingSeconds();
+ const track=followed?.status==='pit'?0:(analyzerParseDuration(followed?.track_timer)||0);
+ if(!rules.ready)return {initial:null,remaining:null,percent:null,track,configured:false};
+ const raceSeconds=rules.raceHours*3600;
+ const initialCalc=analyzerStrategyCapitalFromState({raceRemaining:raceSeconds,track:0,stopsRemaining:rules.requiredStops,rules});
+ const initial=initialCalc.remaining;
+ if(!Number.isFinite(raceRemaining))return {initial,remaining:null,percent:null,track,configured:true};
+ const currentCalc=analyzerStrategyCapitalFromState({raceRemaining,track,stopsRemaining:stops.remaining,rules});
+ const remaining=currentCalc.remaining;
+ const percent=Number.isFinite(initial)&&initial>0&&Number.isFinite(remaining)?Math.max(0,Math.min(100,remaining/initial*100)):(initial===0?100:null);
+ return {initial,remaining,percent,track,configured:true,totalSlack:currentCalc.totalSlack,closureSlack:currentCalc.closureSlack};
+}
+function analyzerStrategyDeltaPerLap(followed,metrics){
+ const cell=analyzerRelayScoreLatestCell(followed);
+ if(Number.isFinite(cell?.conditionProfile?.average))return Number(cell.conditionProfile.average);
+ if(Number.isFinite(cell?.relay?.average)&&Number.isFinite(cell?.gridNow))return Number(cell.relay.average)-Number(cell.gridNow);
+ return null;
+}
+function analyzerRelayStrategy(followed,stopsInfo=null){
+ const stops=stopsInfo||analyzerStopsInfo(followed);
+ const metrics=followed?analyzerVelocityUnifiedMetrics(followed):null;
+ const score=Number(metrics?.score),confidence=Number(metrics?.confidence);
+ const capital=analyzerStrategyCapital(followed,stops);
+ const rules=analyzerStrategyRulesConfig();
+ const track=capital.track||0,minStint=rules.ready?rules.minStintMinutes*60:0,maxStint=rules.ready?rules.maxStintMinutes*60:0;
+ const targetLong=rules.ready?Math.max(minStint,Math.min(maxStint,maxStint-rules.safetyMarginMinutes*60)):0;
+ const delta=analyzerStrategyDeltaPerLap(followed,metrics);
+ const lapTime=Number(metrics?.average);
+ const remainingToLong=Math.max(0,targetLong-track);
+ const projectedLaps=Number.isFinite(lapTime)&&lapTime>20?remainingToLong/lapTime:null;
+ const impact=Number.isFinite(delta)&&Number.isFinite(projectedLaps)?delta*projectedLaps:null;
+ const raceRemaining=analyzerRemainingSeconds(),pitCloseRemaining=rules.ready&&Number.isFinite(raceRemaining)?raceRemaining-rules.pitCloseMinutes*60:null;
+ const pitSeconds=rules.ready?rules.minPitSeconds:0;
+ const firstWait=Math.max(0,minStint-track);
+ const minTimeToCompleteStops=stops.remaining>0?firstWait+stops.remaining*pitSeconds+Math.max(0,stops.remaining-1)*minStint:0;
+ const closePressure=stops.remaining>0&&Number.isFinite(pitCloseRemaining)&&minTimeToCompleteStops>=pitCloseRemaining;
+ const closed=Number.isFinite(pitCloseRemaining)&&pitCloseRemaining<=0;
+ let recommendation='CONSERVER LE RELAIS',windowLabel='—',kind='neutral';
+ if(!followed){recommendation='SÉLECTIONNER UNE ÉQUIPE';kind='neutral'}
+ else if(closed){recommendation='STANDS FERMÉS';kind='danger'}
+ else if(closePressure){recommendation='ARRÊT PRIORITAIRE';windowLabel='DÈS QUE POSSIBLE';kind='danger'}
+ else if(!rules.ready){recommendation='CONFIGURER LE RÈGLEMENT';windowLabel='—';kind='wait'}
+ else if(track<minStint){recommendation='ATTENDRE LE MINIMUM';windowLabel=analyzerFormatDuration(minStint,{compact:true});kind='wait'}
+ else if(track>=maxStint-rules.safetyMarginMinutes*60){recommendation='RENTRER';windowLabel='MAINTENANT';kind='danger'}
+ else if(!Number.isFinite(score)||Number(metrics?.laps)<3){recommendation='APPRENTISSAGE';windowLabel='—';kind='wait'}
+ else if(confidence<65){recommendation='SURVEILLER';windowLabel='—';kind='wait'}
+ else if(score>=75||(Number.isFinite(delta)&&delta<=-.15)){recommendation='PROLONGER LE RELAIS';windowLabel=`${Math.max(rules.minStintMinutes,Math.floor(targetLong/60)-1)}–${Math.floor(targetLong/60)+1} min`;kind='good'}
+ else if(score<45&&Number.isFinite(delta)&&delta>.12&&Number.isFinite(impact)&&impact>=5&&stops.remaining>0){
+   let earliest=Math.max(Math.ceil(track/60)+3,Math.ceil(minStint/60));
+   const capitalMinutes=Number.isFinite(capital.remaining)?capital.remaining/60:0;
+   earliest=Math.max(earliest,Math.ceil(maxStint/60-capitalMinutes));
+   let latest=Math.min(Math.floor(targetLong/60),earliest+6);
+   if(Number.isFinite(pitCloseRemaining))latest=Math.min(latest,Math.max(earliest,Math.floor(pitCloseRemaining/60)));
+   if(earliest<Math.floor(targetLong/60)&&capitalMinutes>0){recommendation='RACCOURCIR LE RELAIS';windowLabel=`${earliest}–${latest} min`;kind='danger'}
+   else{recommendation='CONSERVER LE RELAIS';windowLabel='CAPITAL FAIBLE';kind='wait'}
+ }else if(score<60&&Number.isFinite(delta)&&delta>0){recommendation='SURVEILLER';windowLabel='—';kind='wait'}
+ return {score:Number.isFinite(score)?Math.round(score):null,confidence:Number.isFinite(confidence)?Math.round(confidence):null,track,delta,impact,capital,targetLong,pitCloseRemaining,recommendation,windowLabel,kind};
+}
+function analyzerRenderRelayStrategy(followed,stopsInfo=null){
+ const data=analyzerRelayStrategy(followed,stopsInfo);
+ const score=document.getElementById('analyzerStrategyScore'),confidence=document.getElementById('analyzerStrategyConfidence'),track=document.getElementById('analyzerStrategyTrack'),delta=document.getElementById('analyzerStrategyDelta'),impact=document.getElementById('analyzerStrategyImpact');
+ if(score){score.textContent=Number.isFinite(data.score)?String(data.score):'—';score.className=Number.isFinite(data.score)?analyzerScoreClass(data.score):''}
+ if(confidence)confidence.textContent=Number.isFinite(data.confidence)?`${data.confidence} %`:'—';
+ if(track){const rules=analyzerStrategyRulesConfig();track.textContent=rules.ready?`${analyzerFormatDuration(data.track,{compact:true})} / ${analyzerFormatDuration(rules.maxStintMinutes*60,{compact:true})}`:'—'};
+ if(delta){delta.textContent=analyzerStrategySignedSeconds(data.delta,2);delta.className=Number.isFinite(data.delta)?(data.delta>0?'strategy-loss':data.delta<0?'strategy-gain':''):''}
+ if(impact){impact.textContent=analyzerStrategySignedSeconds(data.impact,0);impact.className=Number.isFinite(data.impact)?(data.impact>0?'strategy-loss':data.impact<0?'strategy-gain':''):''}
+ const capValue=document.getElementById('analyzerStrategyCapitalValue'),capPercent=document.getElementById('analyzerStrategyCapitalPercent'),capBar=document.getElementById('analyzerStrategyCapitalBar');
+ if(capValue){const rem=Number.isFinite(data.capital.remaining)?Math.round(data.capital.remaining/60):null,ini=Number.isFinite(data.capital.initial)?Math.round(data.capital.initial/60):null;capValue.textContent=rem!==null&&ini!==null?`${rem} min / ${ini} min`:'—'}
+ if(capPercent)capPercent.textContent=Number.isFinite(data.capital.percent)?`${Math.round(data.capital.percent)} %`:'—';
+ if(capBar)capBar.style.width=Number.isFinite(data.capital.percent)?`${data.capital.percent}%`:'0%';
+ const recommendation=document.getElementById('analyzerStrategyRecommendation'),windowEl=document.getElementById('analyzerStrategyWindow'),block=document.getElementById('analyzerRelayStrategy');
+ if(recommendation)recommendation.textContent=data.recommendation;if(windowEl)windowEl.textContent=data.windowLabel;
+ if(block){block.classList.remove('good','wait','danger','neutral');block.classList.add(data.kind)}
+ const closeRule=document.getElementById('analyzerPitCloseRule'),closeCountdown=document.getElementById('analyzerPitCloseCountdown');
+ if(closeRule){const rules=analyzerStrategyRulesConfig();closeRule.textContent=rules.ready?`T - ${analyzerFormatDuration(rules.pitCloseMinutes*60,{compact:true})}`:'—'};
+ if(closeCountdown)closeCountdown.textContent=analyzerStrategyClockMinutes(data.pitCloseRemaining);
+}
 function analyzerQueueCandidates(){
  const spotter=analyzerSpotterState();
  if(spotter?.configured&&Array.isArray(spotter.queue)){
@@ -2888,11 +3014,13 @@ function renderAnalyzer(){
  analyzerRenderFollowedPerformance(followed);
  analyzerRenderFollowedDeltas(followed);
  analyzerRenderTrafficAhead(followed);
- document.getElementById('analyzerRuleRelay').textContent=`${analyzerFormatDuration(analyzerRules.minStintMinutes*60)} → ${analyzerFormatDuration(analyzerRules.maxStintMinutes*60)}`;
- document.getElementById('analyzerRulePit').textContent=analyzerFormatDuration(analyzerRules.minPitSeconds);
- document.getElementById('analyzerStopsRemaining').textContent=String(stops.remaining);
- document.getElementById('analyzerStopCadence').textContent=Number.isFinite(analyzerRules.driverMinimumMinutes)?analyzerFormatDuration(analyzerRules.driverMinimumMinutes*60,{compact:true}):'—';
+ {const r=analyzerStrategyRulesConfig();document.getElementById('analyzerRuleRelay').textContent=r.ready?`${analyzerFormatDuration(r.minStintMinutes*60,{compact:true})} → ${analyzerFormatDuration(r.maxStintMinutes*60,{compact:true})}`:'—'};
+ {const r=analyzerStrategyRulesConfig();document.getElementById('analyzerRulePit').textContent=r.ready?analyzerFormatDuration(r.minPitSeconds,{compact:true}):'—'};
+ const ruleStops=document.getElementById('analyzerRuleStops');if(ruleStops){const r=analyzerStrategyRulesConfig();ruleStops.textContent=r.ready?`${stops.done} / ${r.requiredStops}`:'—'};
+ document.getElementById('analyzerStopsRemaining').textContent=`${stops.remaining} restant${stops.remaining>1?'s':''}`;
+ document.getElementById('analyzerStopCadence').textContent=Number(analyzerRules.driverMinimumMinutes)>0?analyzerFormatDuration(analyzerRules.driverMinimumMinutes*60,{compact:true}):'—';
  renderAnalyzerRulesPilots(followed);
+ analyzerRenderRelayStrategy(followed,stops);
  const max=analyzerRules.maxStintMinutes*60,min=analyzerRules.minStintMinutes*60;
  const rulesStatus=document.getElementById('analyzerRulesStatus');rulesStatus.className='rules-status';
  if(!followed)rulesStatus.textContent='Équipe non sélectionnée';
@@ -3100,8 +3228,13 @@ function renderAnalyzerRulesPilots(driver){
  const host=document.getElementById('analyzerRulesPilots');if(!host)return;
  const pilots=driver?analyzerOfficialPilotTotals(driver):[];
  if(driver&&!pilots.length)analyzerEnsureOfficialPilotTotals(driver).then(()=>{const followed=(state.drivers||[]).find(d=>analyzerFollowed(d));if(followed&&Number(followed.apex_row)===Number(driver.apex_row))renderAnalyzerRulesPilots(followed)}).catch(()=>{});
- host.hidden=!pilots.length;
- host.innerHTML=pilots.map(p=>{const parts=String(p.name).trim().split(/\s+/),first=parts.shift()||'',last=parts.join(' ');return `<div class="rules-pilot-card"><span class="rules-pilot-name">${analyzerEscape(first)}${last?`<br>${analyzerEscape(last)}`:''}</span><strong>${analyzerEscape(analyzerPilotHoursLabel(p.seconds))}</strong></div>`}).join('');
+ const minimum=Number(analyzerRules.driverMinimumMinutes)>0?Number(analyzerRules.driverMinimumMinutes)*60:null;
+ host.hidden=false;
+ if(!pilots.length){host.innerHTML='<div class="analyzer-pilots-empty">En attente des données Apex…</div>';return}
+ host.innerHTML=pilots.map(p=>{
+  const seconds=Math.max(0,Number(p.seconds)||0),time=analyzerPilotHoursLabel(seconds),minLabel=Number.isFinite(minimum)?analyzerPilotHoursLabel(minimum):null,ok=Number.isFinite(minimum)&&seconds>=minimum;
+  return `<div class="rules-pilot-card${ok?' complete':''}"><span class="rules-pilot-name">${analyzerEscape(String(p.name||'Pilote').trim())}</span><strong>${analyzerEscape(time)}${minLabel?` <small>/ ${analyzerEscape(minLabel)}</small>`:''}</strong></div>`;
+ }).join('');
 }
 function setAnalyzerSort(value){analyzerSort=value||'position';renderAnalyzer()}
 function openAnalyzerRules(){
@@ -3112,10 +3245,9 @@ function openAnalyzerRules(){
 function closeAnalyzerRules(){document.getElementById('analyzerRulesModal')?.classList.remove('show')}
 function saveAnalyzerRules(event){
  event?.preventDefault();
- analyzerRules={raceHours:analyzerNumeric(document.getElementById('ruleRaceHours')?.value,24),requiredStops:analyzerNumeric(document.getElementById('ruleRequiredStops')?.value,28),minStintMinutes:analyzerNumeric(document.getElementById('ruleMinStint')?.value,10),maxStintMinutes:analyzerNumeric(document.getElementById('ruleMaxStint')?.value,60),minPitSeconds:analyzerNumeric(document.getElementById('ruleMinPit')?.value,150),pitCloseMinutes:analyzerNumeric(document.getElementById('rulePitClose')?.value,30),safetyMarginMinutes:analyzerNumeric(document.getElementById('ruleSafetyMargin')?.value,2),driversCount:analyzerNumeric(document.getElementById('ruleDriversCount')?.value,6),driverMinimumMinutes:analyzerNumeric(document.getElementById('ruleDriverMinimum')?.value,210)};
+ analyzerRules={raceHours:analyzerNullableNumeric(document.getElementById('ruleRaceHours')?.value),requiredStops:analyzerNullableNumeric(document.getElementById('ruleRequiredStops')?.value),minStintMinutes:analyzerNullableNumeric(document.getElementById('ruleMinStint')?.value),maxStintMinutes:analyzerNullableNumeric(document.getElementById('ruleMaxStint')?.value),minPitSeconds:analyzerNullableNumeric(document.getElementById('ruleMinPit')?.value),pitCloseMinutes:analyzerNullableNumeric(document.getElementById('rulePitClose')?.value),safetyMarginMinutes:analyzerNullableNumeric(document.getElementById('ruleSafetyMargin')?.value),driversCount:analyzerNullableNumeric(document.getElementById('ruleDriversCount')?.value),driverMinimumMinutes:analyzerNullableNumeric(document.getElementById('ruleDriverMinimum')?.value)};
  analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-update');closeAnalyzerRules();renderAnalyzer();
 }
-function resetAnalyzerRules(){analyzerRules={...ANALYZER_DEFAULT_RULES};analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-reset');openAnalyzerRules();renderAnalyzer()}
 function renderApexTeamPilots(){
  const host=document.getElementById('apexHistoryPilotsList'),status=document.getElementById('apexHistoryPilotsStatus');if(!host)return;
  const driver=(state.drivers||[]).find(d=>Number(d.apex_row)===Number(apexHistorySelectedRowId));

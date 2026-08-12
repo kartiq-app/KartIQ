@@ -1,4 +1,24 @@
-# V7.2.159 — SCORE RELAIS ADAPTATIF AUX CONDITIONS
+# V7.2.161 — STRATÉGIE RELAIS 100 % PARAMÉTRIQUE
+- Suppression du bouton « Valeurs Fun & Race » et du préremplissage associé.
+- Les nouvelles configurations réglementaires sont vierges : chaque valeur est saisie manuellement.
+- Le moteur Stratégie Relais ne contient plus de valeurs Fun & Race de secours pour la durée, les arrêts, les relais, le temps de stand ou la fermeture.
+- Durée de course, arrêts obligatoires, relais min/max, stand minimum, fermeture des stands et marge de sécurité sont lus exclusivement depuis Conformité réglementaire.
+- Le Capital stratégique initial et restant est recalculé avec les paramètres de la course active.
+- La fermeture des stands est intégrée directement au calcul du Capital stratégique.
+- Modifier la durée de course (par exemple 10 h → 12 h) ou une autre règle recalcule automatiquement Capital, fenêtre et recommandation.
+- Si le règlement n’est pas complètement configuré, Stratégie Relais affiche « CONFIGURER LE RÈGLEMENT » au lieu d’inventer des valeurs.
+
+# V7.2.160 — STRATÉGIE RELAIS / CONFORMITÉ / TEMPS PILOTES
+- Première zone Analyzer Desktop conservée : la carte Équipe suivie garde sa place et son gabarit.
+- Conformité réglementaire compactée et complétée par la fermeture des stands (règle T-xx:xx + compte à rebours HH:MM).
+- Nouvelle section STRATÉGIE RELAIS dans la carte Conformité : Score, Confiance, Temps en piste, Delta/tour, Impact/relais, Capital stratégique, Recommandation et Fenêtre conseillée.
+- Capital stratégique calculé avec le temps restant, les arrêts obligatoires restants, le temps minimum de stand et la limite maximale de relais.
+- Le moteur tient compte de la fermeture des stands pour la recommandation de fin de course.
+- Carte Météo compactée sans supprimer les icônes, la température actuelle, l'heure locale ni le nom du circuit.
+- Nouvelle carte TEMPS PILOTES entre Météo et Messagerie ; si aucun minimum pilote n'est configuré, seul le temps roulé est affiché.
+- Notifications Pénalités/Informations déplacées sur le bouton COMPTE RENDU : elles le masquent temporairement et ouvrent la carte Pénalités au clic ; COMPTE RENDU réapparaît ensuite et reste cliquable.
+
+# V7.2.160 — SCORE RELAIS ADAPTATIF AUX CONDITIONS
 - Score Relais conserve la logique historique lorsque le rythme du plateau reste stable.
 - Détection d'une évolution réelle de piste à l'intérieur d'un relais via une référence temporelle locale de la grille.
 - En pluie / séchant / transition, chaque tour est normalisé par rapport au plateau au même moment avant d'alimenter PACE, potentiel et régularité.
