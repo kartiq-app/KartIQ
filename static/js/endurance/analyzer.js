@@ -596,6 +596,57 @@ function analyzerDriverPhase(driver){
  const motion=analyzerLiveProgressPhase(driver,Date.now(),performance.now());
  return Number.isFinite(motion.phase)?motion.phase:0;
 }
+function analyzerMotionDiagnosticEnsure(){
+ let box=document.getElementById('analyzerMotionDiagnostic');
+ if(box)return box;
+ box=document.createElement('div');
+ box.id='analyzerMotionDiagnostic';
+ box.style.cssText='position:fixed;right:10px;bottom:10px;z-index:99999;background:rgba(0,0,0,.88);border:1px solid #ff7a00;border-radius:8px;padding:8px 10px;color:#fff;font:600 11px/1.35 system-ui,-apple-system,sans-serif;max-width:360px;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,.35)';
+ document.body.appendChild(box);
+ return box;
+}
+function analyzerMotionDiagnosticUpdate(){
+ try{
+  if(document.body?.dataset?.appMode!=='analyzer'){
+   document.getElementById('analyzerMotionDiagnostic')?.remove();
+   return;
+  }
+  const box=analyzerMotionDiagnosticEnsure();
+  const drivers=(state?.drivers||[]).filter(d=>d&&d.driver&&!(typeof velocityKartIsInPit==='function'?velocityKartIsInPit(d):d.status==='pit'));
+  const nowDate=Date.now(),nowPerf=performance.now();
+  const rows=drivers.map(driver=>{
+   const motion=analyzerLiveProgressPhase(driver,nowDate,nowPerf);
+   const entry=analyzerApexMapEntry(driver);
+   return {driver,motion,entry};
+  });
+  const counts={apex:0,fallback:0,track:0,none:0};
+  rows.forEach(r=>{const src=r.motion?.source||'none';counts[src]=(counts[src]||0)+1});
+  const followed=rows.find(r=>r.driver?.driver===state?.followed_driver)||null;
+  const suspicious=rows.filter(r=>(r.motion?.source||'none')!=='apex').slice(0,6);
+  const fmt=r=>{
+   const src=(r.motion?.source||'none').toUpperCase();
+   const phase=Number.isFinite(r.motion?.phase)?Math.round(r.motion.phase*100)+'%':'—';
+   const seg=r.entry?.segment||'—';
+   const dur=Number.isFinite(Number(r.entry?.durationMs))?Math.round(Number(r.entry.durationMs))+'ms':'—';
+   const age=Number.isFinite(Number(r.entry?.startedAt))?Math.max(0,Math.round(nowDate-Number(r.entry.startedAt)))+'ms':'—';
+   const label=String(r.driver?.driver||r.driver?.apex||'—').slice(0,22);
+   return `${label} · ${src} · ${phase} · ${seg} · ${age}/${dur}`;
+  };
+  const lines=[
+   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG TRACKING V187</div>`,
+   `<div>APEX ${counts.apex||0} · FALLBACK ${counts.fallback||0} · TRACK ${counts.track||0} · NONE ${counts.none||0}</div>`
+  ];
+  if(followed)lines.push(`<div style="margin-top:4px">Suivie: ${fmt(followed)}</div>`);
+  if(suspicious.length){
+   lines.push('<div style="margin-top:4px;color:#ffd166">Hors APEX:</div>');
+   suspicious.forEach(r=>lines.push(`<div>${fmt(r)}</div>`));
+  }else lines.push('<div style="margin-top:4px;color:#7CFC8A">Tous les karts actifs utilisent APEX</div>');
+  box.innerHTML=lines.join('');
+ }catch(_){ }
+}
+if(!window.__velocityMotionDiagTimer){
+ window.__velocityMotionDiagTimer=setInterval(analyzerMotionDiagnosticUpdate,1000);
+}
 const analyzerMapPaceFilters=new Set(['fastest','excellent','good','medium','average','slow']);
 let analyzerMapHighlight='none';
 const analyzerMapGeometry={cx:135,cy:146,viewWidth:270,viewHeight:292};
