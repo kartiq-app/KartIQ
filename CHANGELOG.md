@@ -1,4 +1,11 @@
-# Velocity V7.2.184
+# V7.2.185 — Test CSS Focus pré-V7.2.170
+
+- Base fonctionnelle : V7.2.184.
+- CSS `50-endurance-latest.css` remis exactement à la version V7.2.166 pour isoler le crash Chrome Desktop.
+- Aucune modification du loader, du serveur ou des fonctions métier.
+- Test diagnostic : les surcharges CSS du paysage virtuel iPhone introduites à partir de V7.2.170 sont volontairement absentes.
+
+# Velocity V7.2.185
 
 - Rebase de récupération sur le socle de chargement stable V7.2.169.
 - Réintégration des fonctions validées jusqu’à V7.2.179 : paysage virtuel iPhone Focus, synchronisation Stratégie Relais, pilotage Focus Endurance par le Team Manager, prise en charge Apex dyn1=countdown et mise en page finale Focus Endurance.
