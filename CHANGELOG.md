@@ -1,3 +1,10 @@
+# V7.2.168 — FIRST KART 'INN + LISIBILITÉ CONFORMITÉ
+
+- Ajout du circuit belge First Kart 'Inn (Apex Timing 8113), Machelen.
+- Les valeurs Relais, Temps/pilote et Temps en piste exploitent maintenant toute la largeur de leur case sans être artificiellement plus petites que les autres valeurs.
+- Le panneau de détail ouvert depuis Fenêtre conseillée gagne 50 % de taille de texte sur Desktop.
+- Aucune modification de la ligne Trafic.
+
 # V7.2.167 — POLISH ANALYZER DESKTOP
 
 - ÉQUIPE SUIVIE : centrage emoji + libellé + badge dans la notification orange, sans modification de la ligne TRAFIC / dead zone / graduations.

@@ -2597,3 +2597,37 @@ html.velocity-member-shared-mode .testbar{display:none!important}
   }
 }
 
+
+
+/* V7.2.168 — ajout First Kart 'Inn + lisibilité conformité/fenêtre conseillée.
+   Aucun style Trafic modifié. */
+@media(min-width:1051px){
+  /* Les trois valeurs longues partent du même corps que les autres cases et ne réduisent
+     leur taille que si la largeur disponible l'impose réellement. */
+  #analyzerRuleRelay,
+  #analyzerStopCadence,
+  #analyzerStrategyTrack{
+    max-width:100%!important;
+    width:100%!important;
+    white-space:nowrap!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    font-size:clamp(10.5px,14cqi,17px)!important;
+    line-height:1.05!important;
+    letter-spacing:-.025em!important;
+  }
+  #analyzerStopCadence{font-size:clamp(10.5px,15cqi,17px)!important}
+  #analyzerStrategyTrack{font-size:clamp(13.2px,15cqi,22px)!important}
+
+  /* Détail ouvert de Fenêtre conseillée : +50 % sur tout le contenu du panneau. */
+  .relay-strategy-window-details{padding:10px 12px!important}
+  .strategy-window-details-head{font-size:12px!important;gap:12px!important;margin-bottom:8px!important}
+  .strategy-window-details-head small{font-size:10.5px!important}
+  .strategy-window-row{
+    grid-template-columns:108px 1fr 112px 72px!important;
+    gap:12px!important;
+    padding:6px 8px!important;
+    font-size:12.75px!important;
+  }
+  .strategy-window-empty{padding:8px 3px!important;font-size:12px!important;line-height:1.35!important}
+}
