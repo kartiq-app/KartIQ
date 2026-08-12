@@ -1,3 +1,12 @@
+# V7.2.167 — POLISH ANALYZER DESKTOP
+
+- ÉQUIPE SUIVIE : centrage emoji + libellé + badge dans la notification orange, sans modification de la ligne TRAFIC / dead zone / graduations.
+- CONFORMITÉ : valeurs RELAIS et TEMPS/PILOTE adaptatives à la largeur de leur case.
+- STRATÉGIE : TEMPS EN PISTE adaptatif, CAPITAL STRATÉGIQUE valeur + pourcentage sur une même ligne et même taille.
+- RECOMMANDATION / FENÊTRE CONSEILLÉE : typographies renforcées ; résultat/détail de fenêtre agrandi.
+- MÉTÉO : « Ciel | Vent | Pluie » regroupés sous la température, taille homogène ; nom du circuit +50 %.
+- ENTÊTES : alignement vertical et blanc tournant harmonisés entre ÉQUIPE SUIVIE / COMPTE RENDU, CONFORMITÉ / RÈGLEMENT et MÉTÉO.
+
 # V7.2.166 — SYNCHRO AUTOMATIQUE RÈGLEMENT ANALYZER
 
 - Le règlement actif du desktop est désormais publié automatiquement dès l’ouverture d’Analyzer.
