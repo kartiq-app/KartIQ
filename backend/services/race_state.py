@@ -100,7 +100,6 @@ class RaceStateService:
             "time_elapsed_ms": None,
             "time_elapsed_updated_at_ms": None,
             "apex_session_type": "unknown",
-            "apex_dynamic_timing_mode": "unknown",
             "apex_laps_remaining": "—",
             "current_lap": 0,
             "total_laps": 0,
@@ -603,8 +602,6 @@ class RaceStateService:
         self.state["time_elapsed"] = self._format_remaining(elapsed_ms)
         self.state["time_elapsed_updated_at_ms"] = now_ms if elapsed_ms is not None else None
         self.state["apex_session_type"] = session.get("apex_session_type") or "unknown"
-        dynamic_timing_mode = str(session.get("dynamic_timing_mode") or "unknown").lower()
-        self.state["apex_dynamic_timing_mode"] = dynamic_timing_mode
 
         # Apex ne fournit pas toujours un objectif de tours. Lorsque ce total est
         # disponible, on affiche les tours restants ; sinon on affiche le nombre de
@@ -619,11 +616,6 @@ class RaceStateService:
             session_total_laps = int(session_total_laps)
         except (TypeError, ValueError):
             session_total_laps = 0
-        # Une déclaration Apex `dyn1|countdown|` est une source explicite :
-        # elle interdit de réutiliser une ancienne cible de tours de la session précédente.
-        if dynamic_timing_mode == "countdown":
-            session_total_laps = 0
-            self.state["total_laps"] = 0
         if session_total_laps > 0:
             self.state["total_laps"] = session_total_laps
             # Pour une course au nombre de tours, dyn1|text|Giro X/Y est plus
