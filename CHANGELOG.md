@@ -1,3 +1,9 @@
+# Velocity V7.2.177 — Rééquilibrage Focus Endurance iPhone
+
+- Dernier tour : taille réduite de 20 % par rapport à la V7.2.176.
+- Zone Delta : retour à la proportion 60/40 précédente.
+- Conservation du mécanisme de chargement CSS versionné de la V7.2.176.
+
 # Velocity V7.2.176 — Focus Endurance + stabilité déploiement Chrome
 
 - Focus Endurance iPhone : dernier tour réellement agrandi (~30 %) avec case basse élargie/haussée et marge de sécurité.

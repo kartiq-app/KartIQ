@@ -1,4 +1,4 @@
-const CACHE = 'velocity-v7-2-176';
+const CACHE = 'velocity-v7-2-177';
 
 self.addEventListener('install', event => {
   // Pas de préchargement massif pendant un déploiement.

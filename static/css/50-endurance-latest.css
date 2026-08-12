@@ -1127,3 +1127,13 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
   white-space:nowrap!important;
   overflow:hidden!important;
 }
+
+/* Velocity V7.2.177 — Focus Endurance iPhone : rééquilibrage Delta / Dernier tour.
+   On conserve le mécanisme V7.2.176 qui agrandit réellement le chrono, mais on
+   réduit sa taille de 20 % et on rend à la zone Delta sa proportion précédente. */
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:60% 40%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
+  font-size:clamp(59px,21.6dvw,123px)!important;
+}
