@@ -1,3 +1,9 @@
+# Velocity V7.2.183 — TEST APRÈS MISE À JOUR CHROME
+
+- Aucun changement fonctionnel par rapport à la V7.2.182.
+- Incrément de version uniquement pour déclencher un nouveau déploiement Render et tester Chrome Desktop après sa mise à jour.
+- Conservation du loader legacy et de toutes les fonctions de la V7.2.182.
+
 # Velocity V7.2.182 — TEST LOADER LEGACY / STABILITÉ CHROME
 
 - Retour au chargement CSS historique : un seul `kartiq.css` puis `@import` des modules dans l’ordre stable.
