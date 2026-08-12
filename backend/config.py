@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.162"
+APP_VERSION = "7.2.163"
 APP_RELEASE_NAME = "STRATEGIE RELAIS CAPITAL UI"
 
 
