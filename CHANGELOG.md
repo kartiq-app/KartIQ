@@ -1,3 +1,10 @@
+# Velocity V7.2.181
+
+- Test A/B stabilité Chrome Desktop : neutralisation complète sur Desktop de la persistance/restauration/watchdog des modes Focus.
+- Aucun traitement d'orientation Focus n'est exécuté sur Desktop.
+- iPhone conserve le paysage virtuel et Android conserve son verrouillage paysage existant.
+- Aucun changement visuel ou fonctionnel du Focus Endurance iPhone validé en V7.2.180.
+
 # Velocity V7.2.178 — Réalignement Focus Endurance iPhone
 
 - Focus Endurance iPhone : la case **Temps en piste** retrouve exactement la même largeur que la case **Position**.
