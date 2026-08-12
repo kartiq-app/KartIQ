@@ -1,9 +1,9 @@
-# Velocity V7.2.181
+# Velocity V7.2.182 — TEST LOADER LEGACY / STABILITÉ CHROME
 
-- Test A/B stabilité Chrome Desktop : neutralisation complète sur Desktop de la persistance/restauration/watchdog des modes Focus.
-- Aucun traitement d'orientation Focus n'est exécuté sur Desktop.
-- iPhone conserve le paysage virtuel et Android conserve son verrouillage paysage existant.
-- Aucun changement visuel ou fonctionnel du Focus Endurance iPhone validé en V7.2.180.
+- Retour au chargement CSS historique : un seul `kartiq.css` puis `@import` des modules dans l’ordre stable.
+- Retour au cycle Service Worker historique pour ce test A/B (purge unique au changement de version, préchargement des assets, `skipWaiting` / `clients.claim`).
+- Suppression des protections de déploiement ajoutées en V7.2.180/181 : polling et initialisation redeviennent simples comme sur les anciennes versions stables.
+- Toutes les fonctions métier et le Focus Endurance validé de la V7.2.179 sont conservés.
 
 # Velocity V7.2.178 — Réalignement Focus Endurance iPhone
 

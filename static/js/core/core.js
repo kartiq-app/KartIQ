@@ -2,9 +2,6 @@
 const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
 const isIPhoneDevice=/iPhone|iPod/i.test(navigator.userAgent||'');
 function setFocusLandscapeLock(active){
-  // V7.2.181 A/B : aucun traitement d'orientation Focus sur Desktop.
-  // iPhone et Android gardent leur comportement mobile existant.
-  if(!isIPhoneDevice&&!isAndroidDevice)return;
   // iPhone : l'OS reste volontairement en portrait. Le Focus est simplement
   // dessiné à 90° dans le viewport portrait ; le pilote tourne physiquement
   // le téléphone sans provoquer de changement d'orientation iOS.
@@ -338,11 +335,11 @@ function updateRemainingDisplay(){
 window.addEventListener('orientationchange',()=>setTimeout(updateRemainingDisplay,80));
 window.addEventListener('resize',()=>updateRemainingDisplay());
 async function load(){
- if(window.velocityEnduranceTest?.active)return true;
+ if(window.velocityEnduranceTest?.active)return;
  // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle
  // requête tant que la précédente n'est pas terminée, afin d'éviter une
  // file d'attente et un retard progressif de l'affichage.
- if(stateLoadInFlight)return true;
+ if(stateLoadInFlight)return;
  stateLoadInFlight=true;
  try{
   const response=await fetch('/api/state',{cache:'no-store'});
@@ -356,10 +353,8 @@ async function load(){
   render();
   maybeAutoFollowBrice();
   ensureApexBrowserConnection();
-  return true;
  }catch(error){
   console.warn('[Velocity] Rafraîchissement de l’état impossible :',error);
-  return false;
  }finally{
   stateLoadInFlight=false;
  }
@@ -532,19 +527,15 @@ function connectApexBrowser(force=false){
   if(!isCurrentConnection())return;
   apexBrowserSocket=null;apexBrowserConnecting=false;
   sendApexStatus('closed','LIVE DÉCONNECTÉ',`Code ${e.code}`);
-  if(!window.velocityPageLeaving)setTimeout(()=>{if(!window.velocityPageLeaving&&connectionToken===apexBrowserConnectionToken&&state?.circuit_id===circuit.id)connectApexBrowser(false)},5000);
+  setTimeout(()=>{if(connectionToken===apexBrowserConnectionToken&&state?.circuit_id===circuit.id)connectApexBrowser(false)},5000);
  });
 }
 function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer','current-spotter');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
 const VELOCITY_FOCUS_SESSION_KEY='velocity_active_focus_v1';
-// V7.2.181 — test A/B stabilité Desktop : toute la persistance/restauration Focus
-// est neutralisée sur Desktop. iPhone/Android conservent exactement le comportement
-// Focus mobile de la V7.2.180 (paysage virtuel iPhone inclus).
-const VELOCITY_FOCUS_PERSISTENCE_ENABLED=isIPhoneDevice||isAndroidDevice;
 let velocityFocusRestoreInFlight=false;
-function rememberVelocityFocus(mode){if(!VELOCITY_FOCUS_PERSISTENCE_ENABLED)return;try{sessionStorage.setItem(VELOCITY_FOCUS_SESSION_KEY,String(mode||''))}catch(_){};setTimeout(()=>velocityFocusWatchdogStart(),0)}
-function clearVelocityFocusMemory(mode=''){if(!VELOCITY_FOCUS_PERSISTENCE_ENABLED){velocityFocusWatchdogStop();return}try{const active=sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'';if(!mode||active===mode)sessionStorage.removeItem(VELOCITY_FOCUS_SESSION_KEY)}catch(_){};if(!velocityStoredFocus())velocityFocusWatchdogStop()}
-function velocityStoredFocus(){if(!VELOCITY_FOCUS_PERSISTENCE_ENABLED)return '';try{return String(sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'')}catch(_){return ''}}
+function rememberVelocityFocus(mode){try{sessionStorage.setItem(VELOCITY_FOCUS_SESSION_KEY,String(mode||''))}catch(_){};setTimeout(()=>velocityFocusWatchdogStart(),0)}
+function clearVelocityFocusMemory(mode=''){try{const active=sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'';if(!mode||active===mode)sessionStorage.removeItem(VELOCITY_FOCUS_SESSION_KEY)}catch(_){};if(!velocityStoredFocus())velocityFocusWatchdogStop()}
+function velocityStoredFocus(){try{return String(sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'')}catch(_){return ''}}
 async function velocityRestoreFocusIfNeeded(){
  if(velocityFocusRestoreInFlight)return;
  const focus=velocityStoredFocus();if(!focus)return;

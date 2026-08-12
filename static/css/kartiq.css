@@ -1,3 +1,12 @@
-/* Velocity V7.2.181 — Legacy CSS entry point.
-   Les modules sont désormais chargés directement et versionnés dans index.html
-   afin d'éviter les @import conservés en cache entre deux déploiements. */
+/* Velocity V7.2.182 — Loader CSS legacy (test stabilité Chrome).
+   Ordre historique des imports conservé. */
+@import url("./00-foundations.css");
+@import url("./10-components-live.css");
+@import url("./20-mobile-focus.css");
+@import url("./30-modes-portrait.css");
+@import url("./40-landscape-overrides.css");
+@import url("./50-endurance-latest.css");
+
+@import url("./60-analyzer.css");
+@import url("./61-analyzer-mobile-portrait.css");
+@import url("./70-spotter.css");
