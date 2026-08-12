@@ -335,11 +335,11 @@ function updateRemainingDisplay(){
 window.addEventListener('orientationchange',()=>setTimeout(updateRemainingDisplay,80));
 window.addEventListener('resize',()=>updateRemainingDisplay());
 async function load(){
- if(window.velocityEnduranceTest?.active)return;
+ if(window.velocityEnduranceTest?.active)return true;
  // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle
  // requête tant que la précédente n'est pas terminée, afin d'éviter une
  // file d'attente et un retard progressif de l'affichage.
- if(stateLoadInFlight)return;
+ if(stateLoadInFlight)return true;
  stateLoadInFlight=true;
  try{
   const response=await fetch('/api/state',{cache:'no-store'});
@@ -353,8 +353,10 @@ async function load(){
   render();
   maybeAutoFollowBrice();
   ensureApexBrowserConnection();
+  return true;
  }catch(error){
   console.warn('[Velocity] Rafraîchissement de l’état impossible :',error);
+  return false;
  }finally{
   stateLoadInFlight=false;
  }
@@ -527,7 +529,7 @@ function connectApexBrowser(force=false){
   if(!isCurrentConnection())return;
   apexBrowserSocket=null;apexBrowserConnecting=false;
   sendApexStatus('closed','LIVE DÉCONNECTÉ',`Code ${e.code}`);
-  setTimeout(()=>{if(connectionToken===apexBrowserConnectionToken&&state?.circuit_id===circuit.id)connectApexBrowser(false)},5000);
+  if(!window.velocityPageLeaving)setTimeout(()=>{if(!window.velocityPageLeaving&&connectionToken===apexBrowserConnectionToken&&state?.circuit_id===circuit.id)connectApexBrowser(false)},5000);
  });
 }
 function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer','current-spotter');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}

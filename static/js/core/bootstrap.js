@@ -33,9 +33,35 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>{
   setTimeout(async()=>{try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()))}catch(err){console.warn('Retrait service worker desktop',err)}},8000);
   return;
  }
- (async()=>{try{await navigator.serviceWorker.register('/static/sw.js?v=7.2.179',{updateViaCache:'none'});const reg=await navigator.serviceWorker.getRegistration('/static/sw.js');reg?.update().catch(()=>{})}catch(err){console.warn('Service worker',err)}})();
+ (async()=>{try{await navigator.serviceWorker.register('/static/sw.js?v=7.2.180',{updateViaCache:'none'});const reg=await navigator.serviceWorker.getRegistration('/static/sw.js');reg?.update().catch(()=>{})}catch(err){console.warn('Service worker',err)}})();
 })}
 
 setModeClass(currentMode);
 loadKartQueues();
-setInterval(()=>clock.textContent=new Date().toLocaleTimeString('fr-FR'),1000);setInterval(updateRemainingDisplay,100);setInterval(load,250);load();
+setInterval(()=>clock.textContent=new Date().toLocaleTimeString('fr-FR'),1000);
+// V7.2.180 — Desktop deploy-safe polling.
+// Un seul cycle /api/state est planifié à la fois. En cas de redéploiement ou
+// d'indisponibilité momentanée du serveur, on ralentit progressivement au lieu
+// de marteler la nouvelle instance Render pendant sa bascule.
+let velocityStatePollTimer=null;
+let velocityStatePollDelay=250;
+window.velocityPageLeaving=false;
+async function velocityStatePoll(){
+ if(window.velocityPageLeaving)return;
+ const ok=await load();
+ velocityStatePollDelay=ok===false?Math.min(Math.max(velocityStatePollDelay*2,500),5000):250;
+ clearTimeout(velocityStatePollTimer);
+ velocityStatePollTimer=setTimeout(velocityStatePoll,document.hidden?1000:velocityStatePollDelay);
+}
+function velocityStopLiveForPageExit(){
+ window.velocityPageLeaving=true;
+ clearTimeout(velocityStatePollTimer);
+ try{closeApexBrowserSocket()}catch(_){}
+}
+window.addEventListener('pagehide',velocityStopLiveForPageExit,{once:true});
+window.addEventListener('beforeunload',velocityStopLiveForPageExit,{once:true});
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden&&!window.velocityPageLeaving){clearTimeout(velocityStatePollTimer);velocityStatePollTimer=setTimeout(velocityStatePoll,50)}
+});
+setInterval(updateRemainingDisplay,250);
+velocityStatePoll();
