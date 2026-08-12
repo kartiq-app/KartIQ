@@ -533,8 +533,8 @@ function connectApexBrowser(force=false){
 function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer','current-spotter');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
 const VELOCITY_FOCUS_SESSION_KEY='velocity_active_focus_v1';
 let velocityFocusRestoreInFlight=false;
-function rememberVelocityFocus(mode){try{sessionStorage.setItem(VELOCITY_FOCUS_SESSION_KEY,String(mode||''))}catch(_){}}
-function clearVelocityFocusMemory(mode=''){try{const active=sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'';if(!mode||active===mode)sessionStorage.removeItem(VELOCITY_FOCUS_SESSION_KEY)}catch(_){}}
+function rememberVelocityFocus(mode){try{sessionStorage.setItem(VELOCITY_FOCUS_SESSION_KEY,String(mode||''))}catch(_){};setTimeout(()=>velocityFocusWatchdogStart(),0)}
+function clearVelocityFocusMemory(mode=''){try{const active=sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'';if(!mode||active===mode)sessionStorage.removeItem(VELOCITY_FOCUS_SESSION_KEY)}catch(_){};if(!velocityStoredFocus())velocityFocusWatchdogStop()}
 function velocityStoredFocus(){try{return String(sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'')}catch(_){return ''}}
 async function velocityRestoreFocusIfNeeded(){
  if(velocityFocusRestoreInFlight)return;
@@ -547,13 +547,19 @@ async function velocityRestoreFocusIfNeeded(){
  velocityFocusRestoreInFlight=true;
  try{if(currentMode!==mode)showMode(mode);const fn=window[opener];if(typeof fn==='function')await fn()}catch(e){console.warn('[Velocity] Restauration Focus',e)}finally{velocityFocusRestoreInFlight=false}
 }
-function velocityFocusWatchdogStart(){
- if(window.__velocityFocusWatchdog)return;
- window.__velocityFocusWatchdog=setInterval(()=>velocityRestoreFocusIfNeeded(),1500);
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>velocityRestoreFocusIfNeeded(),80)});
- window.addEventListener('pageshow',()=>setTimeout(()=>velocityRestoreFocusIfNeeded(),80));
+function velocityFocusWatchdogStop(){
+ if(window.__velocityFocusWatchdog){clearInterval(window.__velocityFocusWatchdog);window.__velocityFocusWatchdog=null}
 }
-velocityFocusWatchdogStart();
+function velocityFocusWatchdogTick(){
+ if(!velocityStoredFocus()){velocityFocusWatchdogStop();return}
+ velocityRestoreFocusIfNeeded();
+}
+function velocityFocusWatchdogStart(){
+ if(!velocityStoredFocus()||window.__velocityFocusWatchdog)return;
+ window.__velocityFocusWatchdog=setInterval(velocityFocusWatchdogTick,1500);
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&velocityStoredFocus())setTimeout(()=>{velocityFocusWatchdogStart();velocityRestoreFocusIfNeeded()},80)});
+window.addEventListener('pageshow',()=>{if(velocityStoredFocus())setTimeout(()=>{velocityFocusWatchdogStart();velocityRestoreFocusIfNeeded()},80)});
 function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}
 function showMode(mode){
  if(mode!=='home'&&!state?.circuit_id){

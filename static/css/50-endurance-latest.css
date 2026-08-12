@@ -1072,3 +1072,4 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-n
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
   font-size:clamp(18px,4.77dvw,34.5px)!important;
 }
+\n\n/* Velocity V7.2.174 — Focus Endurance smartphone : dernier tour +30 % réellement visible.\n   On donne davantage de hauteur à la rangée basse et on conserve un blanc tournant. */\n@media (max-width: 900px), (pointer: coarse){\n  #enduranceFocus .endurance-focus-main{grid-template-rows:64% 36%!important}\n  #enduranceFocus .endurance-focus-last-lap-cell{\n    padding:clamp(5px,1vw,12px)!important;\n  }\n  #enduranceFocus .endurance-focus-last-lap{\n    line-height:.82!important;\n  }\n}\nbody.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{grid-template-rows:64% 36%!important}\nbody.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{padding:clamp(4px,.8dvw,10px)!important}\n

@@ -1,3 +1,10 @@
+# Velocity V7.2.174 — Focus Endurance + watchdog déploiement
+
+- Focus Endurance smartphone : dernier tour de la case sous Delta réellement agrandi d’environ 30 %, avec auto-fit et marge intérieure.
+- La rangée basse du Focus Endurance reçoit davantage de hauteur sur smartphone/iPhone paysage virtuel.
+- Watchdog Focus : ne tourne plus en permanence ; il ne démarre que lorsqu’un Focus est mémorisé et s’arrête à sa fermeture.
+- Réduction des traitements globaux susceptibles d’interférer avec un redéploiement Render.
+
 # Velocity V7.2.173 — Countdown Apex + Focus Endurance smartphone
 
 - `dyn1|countdown|` devient une source explicite de session chronométrée, même lorsque la valeur arrive ensuite dans `dyn1|<valeur>`.
