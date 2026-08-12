@@ -1,3 +1,11 @@
+# Velocity V7.2.173 — Countdown Apex + Focus Endurance smartphone
+
+- `dyn1|countdown|` devient une source explicite de session chronométrée, même lorsque la valeur arrive ensuite dans `dyn1|<valeur>`.
+- Un countdown Apex neutralise toute ancienne cible de tours mémorisée : Analyzer affiche le temps restant et non les tours.
+- Focus Endurance smartphone : dernier tour agrandi jusqu’à +50 % avec auto-fit et marge permanente.
+- Carte Delta : contenu recentré verticalement, espacement renforcé entre noms et valeurs.
+- Noms équipe/pilote autour des deltas agrandis de 15 %.
+
 # Velocity V7.2.172 — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.

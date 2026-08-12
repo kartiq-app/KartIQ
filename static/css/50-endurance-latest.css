@@ -1037,3 +1037,38 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .spr
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
   font-size:clamp(15px,4.15dvw,30px)!important;
 }
+
+
+/* Velocity V7.2.173 — Focus Endurance smartphone : dernier tour +50 %,
+   deltas parfaitement centrés et noms voisins plus lisibles / détachés. */
+@media (max-width: 900px), (pointer: coarse){
+  #enduranceFocus .endurance-focus-deltas{
+    display:grid!important;
+    grid-template-rows:auto auto 1px auto auto!important;
+    align-content:center!important;
+    align-items:center!important;
+    justify-items:center!important;
+    padding-top:clamp(8px,1.5vw,24px)!important;
+    padding-bottom:clamp(8px,1.5vw,24px)!important;
+    row-gap:clamp(8px,1.3vh,18px)!important;
+  }
+  #enduranceFocus .endurance-focus-neighbour-name{
+    font-size:clamp(19px,3.29vh,38px)!important;
+    margin:0!important;
+    padding:0 .55em!important;
+    line-height:1.08!important;
+    align-self:center!important;
+  }
+  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+    margin:0!important;
+    align-self:center!important;
+    line-height:.88!important;
+  }
+  #enduranceFocus .sprint-focus-divider{margin:0!important}
+  #enduranceFocus .endurance-focus-last-lap-cell{
+    padding:clamp(6px,1.4vw,16px)!important;
+  }
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
+  font-size:clamp(18px,4.77dvw,34.5px)!important;
+}
