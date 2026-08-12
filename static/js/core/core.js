@@ -456,6 +456,18 @@ function ingestApexMapEvents(frame,circuitId){
   }
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
   previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
+  // V7.2.188 — trace diagnostic brute des impulsions MAP Apex.
+  // Aucun impact sur le moteur : on mémorise seulement les 8 dernières
+  // impulsions réellement reçues pour chaque apex_row.
+  if(!Array.isArray(previous.rawHistory))previous.rawHistory=[];
+  previous.rawHistory.push({
+   at:now,
+   code,
+   value:Number.isFinite(value)?value:null,
+   extra:Number.isFinite(extra)?extra:null,
+   fields:fields.slice(0,4)
+  });
+  if(previous.rawHistory.length>8)previous.rawHistory.splice(0,previous.rawHistory.length-8);
   registry.rows.set(row,previous);registry.lastEventAt=now;registry.noLive=false;
  }
 }

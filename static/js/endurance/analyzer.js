@@ -633,10 +633,28 @@ function analyzerMotionDiagnosticUpdate(){
    return `${label} · ${src} · ${phase} · ${seg} · ${age}/${dur}`;
   };
   const lines=[
-   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG TRACKING V187</div>`,
+   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG TRACKING V188</div>`,
    `<div>APEX ${counts.apex||0} · FALLBACK ${counts.fallback||0} · TRACK ${counts.track||0} · NONE ${counts.none||0}</div>`
   ];
   if(followed)lines.push(`<div style="margin-top:4px">Suivie: ${fmt(followed)}</div>`);
+  // V7.2.188 — montre les dernières impulsions MAP Apex réellement reçues.
+  const traceTargets=[];
+  if(followed)traceTargets.push(followed);
+  suspicious.slice(0,3).forEach(r=>{if(!traceTargets.includes(r))traceTargets.push(r)});
+  if(traceTargets.length){
+   lines.push('<div style="margin-top:5px;color:#8ecbff">TRAMES MAP BRUTES:</div>');
+   traceTargets.forEach(r=>{
+    const hist=Array.isArray(r.entry?.rawHistory)?r.entry.rawHistory:[];
+    const last=hist.slice(-4).map(ev=>{
+     const age=Math.max(0,Math.round(nowDate-Number(ev.at||0)));
+     const v=Number.isFinite(Number(ev.value))?Math.round(Number(ev.value)):'—';
+     const x=Number.isFinite(Number(ev.extra))?Math.round(Number(ev.extra)):'—';
+     return `${ev.code} ${v}/${x} @-${age}ms`;
+    }).join(' | ');
+    const label=String(r.driver?.driver||r.driver?.apex||'—').slice(0,18);
+    lines.push(`<div>${label}: ${last||'aucune impulsion mémorisée'}</div>`);
+   });
+  }
   if(suspicious.length){
    lines.push('<div style="margin-top:4px;color:#ffd166">Hors APEX:</div>');
    suspicious.forEach(r=>lines.push(`<div>${fmt(r)}</div>`));

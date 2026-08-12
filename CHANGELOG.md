@@ -1,4 +1,12 @@
-# V7.2.187 — Diagnostic source Filets / Trafic / Radar
+# V7.2.188 — Trace trames Apex Filets / Trafic / Radar
+
+- Base : V7.2.187.
+- Aucun changement du moteur de déplacement.
+- Le diagnostic mémorise les 8 dernières impulsions MAP Apex reçues par `apex_row`.
+- Affichage des dernières trames `*`, `*i1`, `*i2`, `*in`, `*out` pour l’équipe suivie et jusqu’à 3 karts hors source APEX.
+- Objectif : déterminer si un kart passe en TRACK parce qu’Apex n’envoie réellement plus l’impulsion suivante, ou parce que Velocity la perd/interprète mal.
+
+# V7.2.188 — Diagnostic source Filets / Trafic / Radar
 
 - Aucun changement du moteur de déplacement.
 - Ajout d’un panneau diagnostic temporaire dans Analyzer.
@@ -6,7 +14,7 @@
 - Affiche pour l’équipe suivie la phase, le segment Apex, l’âge de l’événement et sa durée.
 - Objectif : vérifier si les filets mal positionnés utilisent encore la source APEX ou basculent sur un fallback.
 
-# V7.2.187 — Restauration Focus iPhone + test Safari
+# V7.2.188 — Restauration Focus iPhone + test Safari
 
 - Base : V7.2.185.
 - Restauration du paysage virtuel iPhone validé en V7.2.179 pour Qualification, Sprint et Endurance.
@@ -14,17 +22,17 @@
 - Android conserve son comportement dédié.
 - Aucun changement destiné au crash Chrome : cette version sert aussi au test comparatif sur Safari Desktop.
 
-# V7.2.187 — Test CSS Focus pré-V7.2.170
+# V7.2.188 — Test CSS Focus pré-V7.2.170
 
 - Base fonctionnelle : V7.2.184.
 - CSS `50-endurance-latest.css` remis exactement à la version V7.2.166 pour isoler le crash Chrome Desktop.
 - Aucune modification du loader, du serveur ou des fonctions métier.
 - Test diagnostic : les surcharges CSS du paysage virtuel iPhone introduites à partir de V7.2.170 sont volontairement absentes.
 
-# Velocity V7.2.187
+# Velocity V7.2.188
 
 - Rebase de récupération sur le socle de chargement stable V7.2.169.
-- Réintégration des fonctions validées jusqu’à V7.2.187 : paysage virtuel iPhone Focus, synchronisation Stratégie Relais, pilotage Focus Endurance par le Team Manager, prise en charge Apex dyn1=countdown et mise en page finale Focus Endurance.
+- Réintégration des fonctions validées jusqu’à V7.2.188 : paysage virtuel iPhone Focus, synchronisation Stratégie Relais, pilotage Focus Endurance par le Team Manager, prise en charge Apex dyn1=countdown et mise en page finale Focus Endurance.
 - Conservation stricte du loader/bootstrap, du Service Worker, de kartiq.css et des pages d’entrée de la V7.2.169 pour retrouver un chargement Desktop fiable.
 
 # V7.2.169 — FOCUS PERSISTANT
