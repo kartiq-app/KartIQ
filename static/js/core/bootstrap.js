@@ -25,7 +25,16 @@ async function toggleVelocityFullscreen(){
 }
 document.addEventListener('fullscreenchange',()=>syncFullscreenControls(!!document.fullscreenElement));document.addEventListener('webkitfullscreenchange',()=>syncFullscreenControls(!!document.webkitFullscreenElement));
 document.getElementById('installHelp')?.addEventListener('click',e=>{if(e.target.id==='installHelp')closeInstallHelp()});
-if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const key='velocity-sw-v7-2-183';if(localStorage.getItem(key)!=='1'){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()));if('caches' in window){const names=await caches.keys();await Promise.all(names.map(name=>caches.delete(name)))}localStorage.setItem(key,'1')}await navigator.serviceWorker.register('/static/sw.js?v=7.2.183',{updateViaCache:'none'});navigator.serviceWorker.getRegistration('/static/sw.js').then(reg=>reg&&reg.update()).catch(()=>{})}catch(err){console.warn('Service worker',err)}})}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{
+ const standalone=isStandaloneVelocity();
+ if(!standalone){
+  // Desktop : Velocity est une application live. Pas de Service Worker ni de purge
+  // de caches pendant un déploiement, afin d'éviter les transitions de renderer.
+  setTimeout(async()=>{try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()))}catch(err){console.warn('Retrait service worker desktop',err)}},8000);
+  return;
+ }
+ (async()=>{try{await navigator.serviceWorker.register('/static/sw.js?v=7.2.179',{updateViaCache:'none'});const reg=await navigator.serviceWorker.getRegistration('/static/sw.js');reg?.update().catch(()=>{})}catch(err){console.warn('Service worker',err)}})();
+})}
 
 setModeClass(currentMode);
 loadKartQueues();

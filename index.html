@@ -10,7 +10,15 @@
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png">
 <title>Velocity V{{ app_version }} — Architecture 5 modes</title>
-<link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/00-foundations.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/10-components-live.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/20-mobile-focus.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/30-modes-portrait.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/40-landscape-overrides.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/50-endurance-latest.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/60-analyzer.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/61-analyzer-mobile-portrait.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/70-spotter.css?v={{ app_version }}">
 <script>window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};window.VELOCITY_INVITE_TOKEN={{ velocity_invite_token|tojson }};</script>
 </head>
 <body>
