@@ -1,10 +1,21 @@
-# Velocity V7.2.173 — Countdown Apex + Focus Endurance smartphone
+# V7.2.198 — REBASE STABLE V172
 
-- `dyn1|countdown|` devient une source explicite de session chronométrée, même lorsque la valeur arrive ensuite dans `dyn1|<valeur>`.
-- Un countdown Apex neutralise toute ancienne cible de tours mémorisée : Analyzer affiche le temps restant et non les tours.
-- Focus Endurance smartphone : dernier tour agrandi jusqu’à +50 % avec auto-fit et marge permanente.
-- Carte Delta : contenu recentré verticalement, espacement renforcé entre noms et valeurs.
-- Noms équipe/pilote autour des deltas agrandis de 15 %.
+- Base stricte : V7.2.172, validée en Mode Test Endurance 40 équipes ×60.
+- Le moteur de timing / DYN1 de V172 est conservé : aucune logique générique V173+ réinjectée.
+- Spotter récent réintégré depuis V196 :
+  - un bouton « Ajouter un kart » par file ;
+  - un kart initial par file ;
+  - cartes rouges déplaçables ;
+  - envoi Maintenance à tout moment ;
+  - remplacement d’un kart rouge avec transfert de l’équipe et continuité du temps d’arrêt ;
+  - ordre des karts par File 1, File 2, File 3 ;
+  - synchronisation `setup_queue_files`.
+- Zone Maintenance de STANDS dans Analyzer rendue drop-zone.
+- Focus Endurance smartphone : dernier temps au tour agrandi avec auto-fit anti-débordement.
+- Classement Live : affiche l’intitulé Apex de session (`title2`, puis `title1`) au-dessus du chrono, sans modifier la taille du label.
+- Carte Équipe suivie : Emoji + Informations +10 %.
+- Aucun import global de `core.js`, `protocol_engine.py`, loader ou Service Worker depuis V196.
+- Objectif : conserver la stabilité V172 et réinjecter uniquement les fonctions indispensables.
 
 # Velocity V7.2.172 — Focus Endurance mobile + pilotage Team Manager
 

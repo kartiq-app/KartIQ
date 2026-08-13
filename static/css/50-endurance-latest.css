@@ -998,7 +998,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 }
 
 
-/* Velocity V7.2.172 — Focus Endurance smartphone : lisibilité maximale.
+/* Velocity V7.2.198 — Focus Endurance smartphone : lisibilité maximale.
    Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
 @media (max-width: 900px), (pointer: coarse){
   #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
@@ -1039,36 +1039,37 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-n
 }
 
 
-/* Velocity V7.2.173 — Focus Endurance smartphone : dernier tour +50 %,
-   deltas parfaitement centrés et noms voisins plus lisibles / détachés. */
+/* V7.2.198 REBASE — Focus Endurance smartphone : dernier tour agrandi uniquement.
+   Base moteur V172 conservée ; l'auto-fit JS reste le garde-fou anti-débordement. */
 @media (max-width: 900px), (pointer: coarse){
-  #enduranceFocus .endurance-focus-deltas{
-    display:grid!important;
-    grid-template-rows:auto auto 1px auto auto!important;
-    align-content:center!important;
-    align-items:center!important;
-    justify-items:center!important;
-    padding-top:clamp(8px,1.5vw,24px)!important;
-    padding-bottom:clamp(8px,1.5vw,24px)!important;
-    row-gap:clamp(8px,1.3vh,18px)!important;
-  }
-  #enduranceFocus .endurance-focus-neighbour-name{
-    font-size:clamp(19px,3.29vh,38px)!important;
-    margin:0!important;
-    padding:0 .55em!important;
-    line-height:1.08!important;
-    align-self:center!important;
-  }
-  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
-    margin:0!important;
-    align-self:center!important;
-    line-height:.88!important;
-  }
-  #enduranceFocus .sprint-focus-divider{margin:0!important}
+  #enduranceFocus .endurance-focus-main{grid-template-rows:60% 40%!important}
   #enduranceFocus .endurance-focus-last-lap-cell{
-    padding:clamp(6px,1.4vw,16px)!important;
+    box-sizing:border-box!important;
+    padding:clamp(5px,1vw,12px)!important;
+    overflow:hidden!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    line-height:.86!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
   }
 }
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
-  font-size:clamp(18px,4.77dvw,34.5px)!important;
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
+  grid-template-rows:60% 40%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{
+  padding:clamp(4px,.8dvw,10px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
+  font-size:clamp(59px,21.6dvw,123px)!important;
+  line-height:.82!important;
+  letter-spacing:-.025em!important;
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
 }
