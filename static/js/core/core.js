@@ -36,6 +36,7 @@ let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFli
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
 let elapsedCountMs=null,elapsedCountPerfAt=0,elapsedCountDirectSyncAt=0;
 let apexDyn1TimingMode='unknown';
+const APEX_DYNAMIC_MAX_DURATION_MS=7*24*60*60*1000;
 const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
 
 // Journal local du décodeur Apex. Les trames sont conservées uniquement dans
@@ -143,7 +144,10 @@ function apexDynamicTimeToMilliseconds(raw){
  const value=String(raw??'').trim().split('_',1)[0];
  const parsed=Number(value);
  if(!Number.isFinite(parsed))return null;
- return Math.max(0,Math.round(value.includes('.')?parsed*1000:parsed));
+ const ms=Math.max(0,Math.round(value.includes('.')?parsed*1000:parsed));
+ // V7.2.197B — garde-fou minimal : une durée Apex ne peut pas être un timestamp Unix.
+ if(ms>APEX_DYNAMIC_MAX_DURATION_MS)return null;
+ return ms;
 }
 function ingestApexDyn1Mode(frame){
  const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|(countdown_text|countdown|count|text)\|/gi)];
@@ -456,7 +460,7 @@ function ingestApexMapEvents(frame,circuitId){
   }
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
   previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
-  // V7.2.196 — trace diagnostic brute des impulsions MAP Apex.
+  // V7.2.197B — trace diagnostic brute des impulsions MAP Apex.
   // Aucun impact sur le moteur : on mémorise seulement les 8 dernières
   // impulsions réellement reçues pour chaque apex_row.
   if(!Array.isArray(previous.rawHistory))previous.rawHistory=[];
