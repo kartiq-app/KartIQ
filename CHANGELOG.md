@@ -1,3 +1,15 @@
+# V7.2.196 — Spotter : Maintenance Desktop ciblée + ordre des files
+
+- Base : V7.2.195 validée sur smartphone.
+- Aucun changement du moteur tactile, du long-press ou du pointer capture smartphone.
+- Desktop uniquement : Maintenance est détectée par rectangle, selon le même principe de coordonnées utilisé pour les colonnes de files.
+- Confirmation de la cible Maintenance au relâchement de la souris sur Desktop.
+- Feedback visuel Desktop lorsque Maintenance devient la cible.
+- Sélecteur de remplacement d'un kart rouge trié explicitement : File 1 -> File 2 -> File 3.
+- À l'intérieur de chaque file, conservation de l'ordre FIFO courant.
+- Conservation du transfert d'équipe et du `pitInAt` sur le kart remplaçant.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais / Filets / Trafic / Radar.
+
 # V7.2.195 — Spotter : files autonomes + maintenance dynamique
 
 - Base : V7.2.194 SAFE.

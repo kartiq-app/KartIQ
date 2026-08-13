@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.195';
+const SPOTTER_APP_RELEASE='7.2.196';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -801,12 +801,32 @@ function spotterOnDragMove(event){
  spotterMoveGhost(event.clientX,event.clientY);
  spotterClearDropHighlights();
 
- const element=document.elementFromPoint(event.clientX,event.clientY);
- const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
- if(maintenance){
-  maintenance.classList.add('spotter-drop-target');
-  spotterDrag.target={type:'maintenance'};
-  return;
+ const isDesktop=window.matchMedia('(min-width:900px)').matches;
+
+ // Smartphone: STRICTEMENT le comportement V7.2.196 validé.
+ if(!isDesktop){
+  const element=document.elementFromPoint(event.clientX,event.clientY);
+  const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
+  if(maintenance){
+   maintenance.classList.add('spotter-drop-target');
+   spotterDrag.target={type:'maintenance'};
+   return;
+  }
+ }else{
+  // Desktop uniquement : Maintenance devient une cible sœur des files.
+  // Même principe que spotterFindTargetColumn : rectangle réel + coordonnées pointeur.
+  const maintenance=[...document.querySelectorAll('[data-spotter-drop-zone="maintenance"]')]
+   .filter(zone=>zone.offsetParent!==null)
+   .find(zone=>{
+    const rect=zone.getBoundingClientRect();
+    return event.clientX>=rect.left&&event.clientX<=rect.right&&
+           event.clientY>=rect.top&&event.clientY<=rect.bottom;
+   });
+  if(maintenance){
+   maintenance.classList.add('spotter-drop-target');
+   spotterDrag.target={type:'maintenance'};
+   return;
+  }
  }
 
  const column=spotterFindTargetColumn(event.clientX,event.clientY);
@@ -839,10 +859,24 @@ function spotterRestoreOriginalCard(){
  if(originalNext&&originalNext.parentNode===originalParent)originalParent.insertBefore(card,originalNext);
  else originalParent.appendChild(card);
 }
-function spotterEndDrag(){
+function spotterEndDrag(event){
  document.removeEventListener('pointermove',spotterOnDragMove);
  document.removeEventListener('touchmove',spotterPreventTouchScroll);
  spotterCancelPendingDrag();
+
+ // Desktop uniquement : confirmation finale avec le même rectangle de cible.
+ if(spotterDrag.active&&window.matchMedia('(min-width:900px)').matches&&event&&
+    Number.isFinite(event.clientX)&&Number.isFinite(event.clientY)){
+  const maintenance=[...document.querySelectorAll('[data-spotter-drop-zone="maintenance"]')]
+   .filter(zone=>zone.offsetParent!==null)
+   .find(zone=>{
+    const rect=zone.getBoundingClientRect();
+    return event.clientX>=rect.left&&event.clientX<=rect.right&&
+           event.clientY>=rect.top&&event.clientY<=rect.bottom;
+   });
+  if(maintenance)spotterDrag.target={type:'maintenance'};
+ }
+
  const target=spotterDrag.active?spotterDrag.target:null;
  if(spotterDrag.active){
   if(target?.type==='maintenance')spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);
@@ -931,7 +965,15 @@ function spotterReplacementOverlay(){
  const request=spotterState.replacementRequest;if(!request)return '';
  const reserved=spotterState.queue.find(entry=>entry.cardId===request.cardId&&entry.status==='reserved');
  if(!reserved){spotterState.replacementRequest=null;return ''}
- const candidates=spotterState.queue.filter(entry=>entry.cardId!==reserved.cardId&&entry.status==='available');
+ const queueOrder=new Map(spotterState.queue.map((entry,index)=>[entry.cardId,index]));
+ const candidates=spotterState.queue
+  .filter(entry=>entry.cardId!==reserved.cardId&&entry.status==='available')
+  .slice()
+  .sort((a,b)=>{
+   const fileDiff=(Number(a.queueFile)||1)-(Number(b.queueFile)||1);
+   if(fileDiff)return fileDiff;
+   return (queueOrder.get(a.cardId)??0)-(queueOrder.get(b.cardId)??0);
+  });
  const cards=candidates.map(item=>`<button type="button" class="spotter-replacement-card" onclick="spotterConfirmReservedReplacement('${spotterEscapeJs(reserved.cardId)}','${spotterEscapeJs(item.cardId)}')"><strong>${spotterEscape(spotterOriginLabel(item))}</strong><span>${spotterEscape(item.kv)} · File ${Number(item.queueFile)||1}</span><small>Score ${item.score??'—'} · Conf. ${item.confidence==null?'—':`${item.confidence}%`}</small></button>`).join('');
  return `<div class="spotter-replacement-overlay" role="dialog" aria-modal="true"><div class="spotter-replacement-panel"><div class="spotter-replacement-title">CHANGEMENT DE KART</div><p>Cliquez sur le nouveau kart de <strong>${spotterEscape(spotterDisplayName(reserved.reservedTeam))}</strong>.</p><p class="spotter-replacement-note">Le temps d’arrêt aux stands continue sur le nouveau kart.</p><div class="spotter-replacement-grid">${cards||'<div class="spotter-empty">Aucun kart disponible.</div>'}</div><button type="button" class="spotter-secondary" onclick="spotterCancelReplacement()">ANNULER</button></div></div>`;
 }
