@@ -456,7 +456,7 @@ function ingestApexMapEvents(frame,circuitId){
   }
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
   previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
-  // V7.2.194 — trace diagnostic brute des impulsions MAP Apex.
+  // V7.2.195 — trace diagnostic brute des impulsions MAP Apex.
   // Aucun impact sur le moteur : on mémorise seulement les 8 dernières
   // impulsions réellement reçues pour chaque apex_row.
   if(!Array.isArray(previous.rawHistory))previous.rawHistory=[];

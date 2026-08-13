@@ -1,3 +1,18 @@
+# V7.2.195 — Spotter : files autonomes + maintenance dynamique
+
+- Base : V7.2.194 SAFE.
+- Préparer le Quick Change : un kart initial et un bouton `+ AJOUTER UN KART` propres à chaque file.
+- Suppression de la répartition automatique des nouveaux karts entre les files pendant la préparation.
+- Minimum d’un kart par file.
+- Toutes les cartes de file sont déplaçables, y compris les cartes rouges attribuées.
+- Une carte rouge peut être réordonnée ou changée de file.
+- Déposer une carte rouge en Maintenance ouvre un sélecteur : `Cliquez sur le nouveau kart de <équipe>`.
+- Le nouveau kart reprend l’équipe et le `pitInAt` d’origine : le chrono d’arrêt continue sans repartir à zéro.
+- L’ancien kart rouge est envoyé en Maintenance après sélection du remplaçant.
+- Un kart disponible peut être envoyé en Maintenance à tout moment.
+- Synchronisation de `setup_queue_files` entre appareils.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais ni du moteur Filets / Trafic / Radar.
+
 # V7.2.194 SAFE — Session Apex sans reset du flux live
 
 - Reconstruction directe depuis la V7.2.192 validée.

@@ -506,7 +506,7 @@ function analyzerApexStablePhase(driver,at=Date.now()){
  return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
 function analyzerLiveProgressPhase(driver,nowDate=Date.now(),nowPerf=performance.now()){
- // V7.2.194 — retour strict au moteur historique V7.2.152.
+ // V7.2.195 — retour strict au moteur historique V7.2.152.
  // Filets + Trafic + Radar utilisent la même chaîne de priorité :
  // APEX -> FALLBACK -> TRACK.
  const apexPhase=analyzerApexStablePhase(driver,nowDate);
@@ -640,11 +640,11 @@ function analyzerMotionDiagnosticUpdate(){
    `<div>APEX ${counts.apex||0} · FALLBACK ${counts.fallback||0} · TRACK ${counts.track||0} · NONE ${counts.none||0}</div>`
   ];
   if(followed)lines.push(`<div style="margin-top:4px">Suivie: ${fmt(followed)}</div>`);
-  // V7.2.194 — montre les dernières impulsions MAP Apex réellement reçues.
+  // V7.2.195 — montre les dernières impulsions MAP Apex réellement reçues.
   const traceTargets=[];
   if(followed)traceTargets.push(followed);
   suspicious.slice(0,3).forEach(r=>{if(!traceTargets.includes(r))traceTargets.push(r)});
-  // V7.2.194 — contrôle d'identité entre les lignes de classement et les lignes MAP rXXXXX.
+  // V7.2.195 — contrôle d'identité entre les lignes de classement et les lignes MAP rXXXXX.
   const registryRows=window.velocityApexMap?.rows instanceof Map?window.velocityApexMap.rows:new Map();
   const driverByRow=new Map();
   drivers.forEach(d=>{
@@ -695,7 +695,7 @@ function analyzerMotionDiagnosticUpdate(){
   box.innerHTML=lines.join('');
  }catch(_){ }
 }
-// V7.2.194 SAFE — diagnostic visible désactivé.
+// V7.2.195 SAFE — diagnostic visible désactivé.
 document.getElementById('analyzerMotionDiagnostic')?.remove();
 const analyzerMapPaceFilters=new Set(['fastest','excellent','good','medium','average','slow']);
 let analyzerMapHighlight='none';

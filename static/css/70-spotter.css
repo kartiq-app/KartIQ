@@ -1810,3 +1810,33 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
   border-color:#ff981f!important;
   box-shadow:0 0 0 1px rgba(255,152,31,.16),0 9px 22px rgba(0,0,0,.38),0 0 12px rgba(255,152,31,.08)!important;
 }
+
+
+/* V7.2.195 — Préparation Quick Change : un bouton Ajouter par file */
+.spotter-setup-files{display:grid;grid-template-columns:1fr;gap:12px;margin:8px 0 14px}
+.spotter-setup-files.setup-files-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.spotter-setup-files.setup-files-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.spotter-setup-file{min-width:0;border:1px solid #303642;border-radius:12px;padding:10px;background:#0b0e14}
+.spotter-setup-file-title{font-family:'F1 Regular',Arial,sans-serif;font-size:13px;letter-spacing:.1em;text-align:center;margin:0 0 10px;color:#f2f4f8}
+.spotter-setup-file .spotter-setup-row{grid-template-columns:52px minmax(0,1fr) 38px}
+.spotter-setup-file .spotter-add-file-row{margin:4px 0 0}
+.spotter-setup-file .spotter-remove:disabled{opacity:.22;cursor:not-allowed}
+@media(max-width:899px){
+ .spotter-setup-files.setup-files-2,.spotter-setup-files.setup-files-3{grid-template-columns:1fr}
+}
+
+/* V7.2.195 — Remplacement d'un kart rouge envoyé en maintenance */
+.spotter-replacement-overlay{position:fixed;inset:0;z-index:120000;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:18px}
+.spotter-replacement-panel{width:min(760px,100%);max-height:90vh;overflow:auto;background:#0d1016;border:1px solid #363d4a;border-radius:16px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.65)}
+.spotter-replacement-title{font-family:'F1 Regular',Arial,sans-serif;font-size:18px;letter-spacing:.08em;color:#fff;margin-bottom:10px}
+.spotter-replacement-panel p{font-size:16px;line-height:1.35;color:#e6e9ef;margin:6px 0}
+.spotter-replacement-panel p strong{color:#ff5a67}
+.spotter-replacement-note{color:#9ea6b4!important;font-size:13px!important;margin-bottom:14px!important}
+.spotter-replacement-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.spotter-replacement-card{border:1px solid #315b47;background:#10291e;color:#fff;border-radius:12px;min-height:92px;padding:11px;text-align:left;display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.spotter-replacement-card strong{font-size:15px}
+.spotter-replacement-card span{font-family:'F1 Regular',Arial,sans-serif;font-size:12px;color:#7fe0a7}
+.spotter-replacement-card small{font-size:11px;color:#bac4be}
+.spotter-replacement-card:hover{outline:2px solid #2fd18b;outline-offset:1px}
+@media(max-width:899px){.spotter-replacement-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.spotter-replacement-panel{padding:14px}}
+@media(max-width:520px){.spotter-replacement-grid{grid-template-columns:1fr}}
