@@ -1,16 +1,3 @@
-# V7.2.197 — DYN1 SAFE / stabilité changement de circuit
-
-- Base : V7.2.196.
-- Correction ciblée de la logique DYN1 apparue en V7.2.173.
-- Rejet navigateur et serveur de toute durée DYN1 supérieure à 7 jours.
-- Empêche qu'un timestamp Unix soit interprété comme un compte à rebours ou un temps écoulé.
-- Réinitialisation de `apexDyn1TimingMode`, countdown, count et ancres temporelles lors d'un changement de circuit.
-- Nettoyage local des anciens `time_remaining_*`, `time_elapsed_*` et `apex_dynamic_timing_mode` au switch.
-- Le diagnostic décodeur exporte désormais le nombre de valeurs DYN1 rejetées et le mode DYN1 courant.
-- Aucun retrait de fonctionnalité.
-- Aucun changement Filets / Météo / Focus / Velocity Lab / Spotter / Analyzer.
-- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais.
-
 # V7.2.196 — Spotter + Analyzer : Maintenance drag & drop
 
 - Base : V7.2.195 validée sur smartphone.

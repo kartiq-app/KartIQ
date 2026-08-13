@@ -290,13 +290,8 @@ async function changeCircuit(){
   top8PitOverlay?.classList.remove('show');
   remainingCountdownMs=null;
   remainingCountdownPerfAt=0;
-  remainingCountdownUsesHours=false;
   remainingCountdownDirectSyncAt=0;
-  elapsedCountMs=null;
-  elapsedCountPerfAt=0;
-  elapsedCountDirectSyncAt=0;
-  apexDyn1TimingMode='unknown';
-  state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',time_remaining_ms:null,time_remaining_updated_at_ms:null,time_remaining_end_at_ms:null,time_elapsed_ms:null,time_elapsed_updated_at_ms:null,apex_dynamic_timing_mode:'unknown',apex_laps_remaining:'—',total_laps:0,current_lap:0,session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
+  state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
   render();
   await load();
   try{if(typeof analyzerAfterCircuitChange==='function')analyzerAfterCircuitChange()}catch(error){console.warn('[Velocity] Réinitialisation Analyzer ignorée après changement de circuit',error)}
