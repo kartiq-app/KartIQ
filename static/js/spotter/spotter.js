@@ -801,32 +801,12 @@ function spotterOnDragMove(event){
  spotterMoveGhost(event.clientX,event.clientY);
  spotterClearDropHighlights();
 
- const isDesktop=window.matchMedia('(min-width:900px)').matches;
-
- // Smartphone: STRICTEMENT le comportement V7.2.196 validé.
- if(!isDesktop){
-  const element=document.elementFromPoint(event.clientX,event.clientY);
-  const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
-  if(maintenance){
-   maintenance.classList.add('spotter-drop-target');
-   spotterDrag.target={type:'maintenance'};
-   return;
-  }
- }else{
-  // Desktop uniquement : Maintenance devient une cible sœur des files.
-  // Même principe que spotterFindTargetColumn : rectangle réel + coordonnées pointeur.
-  const maintenance=[...document.querySelectorAll('[data-spotter-drop-zone="maintenance"]')]
-   .filter(zone=>zone.offsetParent!==null)
-   .find(zone=>{
-    const rect=zone.getBoundingClientRect();
-    return event.clientX>=rect.left&&event.clientX<=rect.right&&
-           event.clientY>=rect.top&&event.clientY<=rect.bottom;
-   });
-  if(maintenance){
-   maintenance.classList.add('spotter-drop-target');
-   spotterDrag.target={type:'maintenance'};
-   return;
-  }
+ const element=document.elementFromPoint(event.clientX,event.clientY);
+ const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
+ if(maintenance){
+  maintenance.classList.add('spotter-drop-target');
+  spotterDrag.target={type:'maintenance'};
+  return;
  }
 
  const column=spotterFindTargetColumn(event.clientX,event.clientY);
@@ -859,24 +839,10 @@ function spotterRestoreOriginalCard(){
  if(originalNext&&originalNext.parentNode===originalParent)originalParent.insertBefore(card,originalNext);
  else originalParent.appendChild(card);
 }
-function spotterEndDrag(event){
+function spotterEndDrag(){
  document.removeEventListener('pointermove',spotterOnDragMove);
  document.removeEventListener('touchmove',spotterPreventTouchScroll);
  spotterCancelPendingDrag();
-
- // Desktop uniquement : confirmation finale avec le même rectangle de cible.
- if(spotterDrag.active&&window.matchMedia('(min-width:900px)').matches&&event&&
-    Number.isFinite(event.clientX)&&Number.isFinite(event.clientY)){
-  const maintenance=[...document.querySelectorAll('[data-spotter-drop-zone="maintenance"]')]
-   .filter(zone=>zone.offsetParent!==null)
-   .find(zone=>{
-    const rect=zone.getBoundingClientRect();
-    return event.clientX>=rect.left&&event.clientX<=rect.right&&
-           event.clientY>=rect.top&&event.clientY<=rect.bottom;
-   });
-  if(maintenance)spotterDrag.target={type:'maintenance'};
- }
-
  const target=spotterDrag.active?spotterDrag.target:null;
  if(spotterDrag.active){
   if(target?.type==='maintenance')spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);

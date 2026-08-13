@@ -1,12 +1,12 @@
-# V7.2.196 — Spotter : Maintenance Desktop ciblée + ordre des files
+# V7.2.196 — Spotter + Analyzer : Maintenance drag & drop
 
 - Base : V7.2.195 validée sur smartphone.
-- Aucun changement du moteur tactile, du long-press ou du pointer capture smartphone.
-- Desktop uniquement : Maintenance est détectée par rectangle, selon le même principe de coordonnées utilisé pour les colonnes de files.
-- Confirmation de la cible Maintenance au relâchement de la souris sur Desktop.
-- Feedback visuel Desktop lorsque Maintenance devient la cible.
-- Sélecteur de remplacement d'un kart rouge trié explicitement : File 1 -> File 2 -> File 3.
-- À l'intérieur de chaque file, conservation de l'ordre FIFO courant.
+- Aucun changement du moteur de drag & drop de la V7.2.195.
+- Spotter : comportement Maintenance conservé tel quel.
+- Analyzer > STANDS : la carte Maintenance est désormais déclarée comme vraie cible `data-spotter-drop-zone="maintenance"`.
+- Le même moteur Spotter peut donc déposer une carte vers Maintenance depuis Analyzer, sur smartphone et Desktop.
+- Sélecteur de remplacement d'un kart rouge trié File 1 -> File 2 -> File 3.
+- Ordre FIFO conservé à l'intérieur de chaque file.
 - Conservation du transfert d'équipe et du `pitInAt` sur le kart remplaçant.
 - Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais / Filets / Trafic / Radar.
 
