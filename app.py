@@ -1411,26 +1411,6 @@ def reconnect_live():
     return jsonify(ok=True, circuit=circuit)
 
 
-
-def extract_apex_session_title(frame):
-    """Extrait l’intitulé de session Apex sans modifier le moteur de timing V172."""
-    if not isinstance(frame, str):
-        return ""
-    patterns = (
-        r"(?:^|[\r\n\s])title2\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
-        r"(?:^|[\r\n\s])title1\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
-        r"(?:^|[\r\n\s])title\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
-        r"(?:^|[\r\n\s])session(?:_name|name|title)?\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
-    )
-    for pattern in patterns:
-        matches = re.findall(pattern, frame, re.IGNORECASE)
-        if matches:
-            value = re.sub(r"\s+", " ", str(matches[-1] or "")).strip()
-            if value:
-                return value
-    return ""
-
-
 @app.post("/api/apex/frame")
 def apex_frame():
     payload_data = request.get_json(force=True, silent=True) or {}
@@ -1444,9 +1424,6 @@ def apex_frame():
         return jsonify(ok=True, ignored=True, error="Trame d'un ancien circuit ignorée")
 
     write_traffic("IN", frame)
-    incoming_session_title = extract_apex_session_title(frame)
-    if incoming_session_title:
-        STATE["apex_session_title"] = incoming_session_title
     grid = parse_grid_frame(frame)
     initial_updates = grid.updates if grid else []
     if grid:

@@ -2633,7 +2633,7 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 }
 
 
-/* Velocity V7.2.198 — contrôle indépendant du Focus Endurance pilote. */
+/* Velocity V7.2.172SS — contrôle indépendant du Focus Endurance pilote. */
 .race-pilot-focus-target{
   grid-column:1/-1;display:grid;grid-template-columns:minmax(180px,.42fr) minmax(260px,1fr);
   gap:14px;align-items:center;padding:14px 16px;margin-top:8px;border:1px solid #303743;
@@ -2644,14 +2644,3 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .race-pilot-focus-target select{width:100%;min-height:42px;background:#05080c;color:#f5f7fa;border:1px solid #3a4350;border-radius:6px;padding:8px 10px;font-family:var(--font-driver);font-weight:750}
 .race-pilot-focus-target small{color:#9da6b5;font-size:12px;line-height:1.3}
 @media(max-width:720px){.race-pilot-focus-target{grid-template-columns:1fr}}
-
-
-/* V7.2.198 — Équipe suivie : Emoji + Informations +10 %. */
-.analyzer-followed-action .analyzer-event-notice{font-size:12.1px}
-.analyzer-followed-action .analyzer-event-notice-icon{font-size:16.5px}
-.analyzer-followed-action .analyzer-event-notice-badge{font-size:12.1px;min-width:22px;height:22px}
-@media(max-width:700px){
- .analyzer-followed-action .analyzer-event-notice{font-size:9.9px}
- .analyzer-followed-action .analyzer-event-notice-icon{font-size:14.3px}
- .analyzer-followed-action .analyzer-event-notice-badge{font-size:11px;min-width:20px;height:20px}
-}

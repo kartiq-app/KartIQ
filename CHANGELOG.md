@@ -1,23 +1,4 @@
-# V7.2.198 — REBASE STABLE V172
-
-- Base stricte : V7.2.172, validée en Mode Test Endurance 40 équipes ×60.
-- Le moteur de timing / DYN1 de V172 est conservé : aucune logique générique V173+ réinjectée.
-- Spotter récent réintégré depuis V196 :
-  - un bouton « Ajouter un kart » par file ;
-  - un kart initial par file ;
-  - cartes rouges déplaçables ;
-  - envoi Maintenance à tout moment ;
-  - remplacement d’un kart rouge avec transfert de l’équipe et continuité du temps d’arrêt ;
-  - ordre des karts par File 1, File 2, File 3 ;
-  - synchronisation `setup_queue_files`.
-- Zone Maintenance de STANDS dans Analyzer rendue drop-zone.
-- Focus Endurance smartphone : dernier temps au tour agrandi avec auto-fit anti-débordement.
-- Classement Live : affiche l’intitulé Apex de session (`title2`, puis `title1`) au-dessus du chrono, sans modifier la taille du label.
-- Carte Équipe suivie : Emoji + Informations +10 %.
-- Aucun import global de `core.js`, `protocol_engine.py`, loader ou Service Worker depuis V196.
-- Objectif : conserver la stabilité V172 et réinjecter uniquement les fonctions indispensables.
-
-# Velocity V7.2.172 — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.172SS — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.
