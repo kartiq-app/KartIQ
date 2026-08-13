@@ -20,15 +20,12 @@ class _ApexCommentsParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if tag == "p":
-            self.current = {"time": "", "kart": "", "text_parts": [], "is_penalty": False, "flag": ""}
+            self.current = {"time": "", "kart": "", "text_parts": [], "is_penalty": False}
         elif self.current is not None and tag == "b":
             self._capture_time = True
         elif self.current is not None and tag == "span":
             classes = str(attrs.get("class", "")).split()
-            flag = str(attrs.get("data-flag") or "").strip()
-            if flag:
-                self.current["flag"] = flag
-            if flag == "penalty":
+            if attrs.get("data-flag") == "penalty":
                 self.current["is_penalty"] = True
             if "com_no" in classes:
                 self._capture_kart = True
@@ -68,9 +65,7 @@ class RaceStateService:
         self.last_lap_marker = {}
         self.followed_crossing_marker = {}
         self.penalty_first_seen = {}
-        self.penalty_history = {}
         self.comment_penalty_history = {}
-        self.comment_event_history = {}
 
     def clear_session_history(self):
         self.lap_history.clear()
@@ -79,9 +74,7 @@ class RaceStateService:
         self.last_lap_marker.clear()
         self.followed_crossing_marker.clear()
         self.penalty_first_seen.clear()
-        self.penalty_history.clear()
         self.comment_penalty_history.clear()
-        self.comment_event_history.clear()
 
     def reset_state(self, circuit_id):
         self.clear_session_history()
@@ -96,10 +89,6 @@ class RaceStateService:
             "time_remaining_ms": None,
             "time_remaining_updated_at_ms": None,
             "time_remaining_end_at_ms": None,
-            "time_elapsed": "—",
-            "time_elapsed_ms": None,
-            "time_elapsed_updated_at_ms": None,
-            "apex_session_type": "unknown",
             "apex_laps_remaining": "—",
             "current_lap": 0,
             "total_laps": 0,
@@ -107,9 +96,7 @@ class RaceStateService:
             "fastest_last_lap": {"driver": "—", "lap": "—"},
             "drivers": [],
             "penalties": [],
-            "penalty_history": [],
             "comment_penalties": [],
-            "comment_events": [],
             "quick_change": [],
             "qualif_crossing": None,
             "generic_alert": None,
@@ -149,8 +136,8 @@ class RaceStateService:
     def race_gap_seconds(self, value):
         raw = str(value or "").strip().replace(",", ".")
         if not raw or raw in {"—", "--"}:
-            return None
-        if self.race_lap_interval(raw) is not None:
+            return 0.0
+        if "lap" in raw.lower() or "tour" in raw.lower():
             return None
         raw = raw.lstrip("+").rstrip(" s")
         try:
@@ -168,21 +155,17 @@ class RaceStateService:
     def direct_race_gap(self, behind, ahead):
         if not behind or not ahead:
             return None
-        # Apex expose directement l'écart au concurrent précédent dans data-type="int".
-        # Cette donnée native est prioritaire ; gap leader ne sert que de fallback.
-        interval = self.race_gap_seconds(behind.get("interval"))
-        if interval is not None:
-            return max(0.0, interval)
         behind_gap = self.race_gap_seconds(behind.get("gap"))
         ahead_gap = 0.0 if ahead.get("pos") == 1 else self.race_gap_seconds(ahead.get("gap"))
         if behind_gap is not None and ahead_gap is not None and behind_gap >= ahead_gap:
             return behind_gap - ahead_gap
-        return None
+        interval = self.race_gap_seconds(behind.get("interval"))
+        return interval
 
     @staticmethod
     def race_lap_interval(value):
         raw = str(value or "").strip()
-        match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:laps?|tours?|rondes?|vueltas?|runden?|runde|giri|giro|voltas?|okr(?:ą|a)żenia|okrążenie)", raw, re.I)
+        match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:lap|laps|tour|tours)", raw, re.I)
         if not match:
             return None
         try:
@@ -260,96 +243,6 @@ class RaceStateService:
         values.sort(key=lambda item: (item.get("time", ""), item.get("at", "")), reverse=True)
         return values
 
-
-    def _comment_events(self, snapshot, drivers):
-        """Journal Analyzer : com|| est la vérité, msg|msgt sert au temps réel.
-
-        Les entrées com|| sont structurées avec heure, data-flag, kart éventuel et
-        texte. Une notification msg|msgt peut être affichée immédiatement si le
-        même texte n'est pas encore présent dans com|| ; dès que com|| arrive,
-        elle est automatiquement dédupliquée. Les autres modes restent inchangés.
-        """
-        comments = snapshot.get("comments") or {}
-        raw = str(comments.get("raw") or "").strip()
-        authoritative_texts = set()
-        drivers_by_kart = {
-            str(d.get("apex") or "").strip(): str(d.get("driver") or "").strip()
-            for d in drivers
-            if str(d.get("apex") or "").strip() not in {"", "—"}
-        }
-        flag_kinds = {
-            "penalty": "penalty",
-            "warning": "warning",
-            "msg": "information",
-            "msg_warning": "important_information",
-            "green": "race_event",
-        }
-
-        if raw:
-            parser = _ApexCommentsParser()
-            try:
-                parser.feed(raw)
-                parser.close()
-            except Exception:
-                parser.entries = []
-
-            for entry in parser.entries:
-                shown_time = str(entry.get("time") or "").strip()[:5] or datetime.now().strftime("%H:%M")
-                kart = str(entry.get("kart") or "").strip()
-                text = str(entry.get("text") or "").strip()
-                flag = str(entry.get("flag") or "").strip() or "msg"
-                if not text:
-                    continue
-                authoritative_texts.add(re.sub(r"\s+", " ", text).strip().casefold())
-                driver = drivers_by_kart.get(kart, "") if kart else ""
-                key = f"{shown_time}|{flag}|{kart}|{text}"
-                self.comment_event_history.setdefault(key, {
-                    "id": key,
-                    "driver": driver,
-                    "kart": kart,
-                    "comment": text,
-                    "penalty": text if flag == "penalty" else "",
-                    "time": shown_time,
-                    "flag": flag,
-                    "kind": flag_kinds.get(flag, "information"),
-                    "source": "com",
-                    "at": datetime.now().isoformat(timespec="seconds"),
-                })
-
-        values = list(self.comment_event_history.values())
-
-        # msg|msgt n'est qu'un canal instantané. On ne le persiste pas dans
-        # comment_event_history : ainsi com|| le remplace naturellement sans
-        # créer de doublon dans l'historique.
-        now_ms = int(time.time() * 1000)
-        for message in comments.get("instant") or []:
-            text = str(message.get("text") or "").strip()
-            received_at_ms = int(message.get("received_at_ms") or 0)
-            normalized = re.sub(r"\s+", " ", text).strip().casefold()
-            if not text or normalized in authoritative_texts:
-                continue
-            # Une notification instantanée n'a de valeur que quelques secondes ;
-            # si com|| n'arrive jamais, on évite de polluer durablement le journal.
-            if received_at_ms and now_ms - received_at_ms > 30_000:
-                continue
-            dt = datetime.fromtimestamp(received_at_ms / 1000) if received_at_ms else datetime.now()
-            shown_time = dt.strftime("%H:%M")
-            values.append({
-                "id": f"msgt|{received_at_ms}|{text}",
-                "driver": "",
-                "kart": "",
-                "comment": text,
-                "penalty": "",
-                "time": shown_time,
-                "flag": "msg",
-                "kind": "information",
-                "source": "msgt",
-                "at": dt.isoformat(timespec="seconds"),
-            })
-
-        values.sort(key=lambda item: (item.get("time", ""), item.get("at", "")), reverse=True)
-        return values
-
     def sync_state_from_race(self, snapshot, interpreted_events=None):
         """Injecte le modèle unifié Apex dans l'interface moderne Velocity."""
         previous_drivers = {d.get("driver"): d for d in self.state.get("drivers", [])}
@@ -357,20 +250,14 @@ class RaceStateService:
         live_drivers = []
         for row in rows:
             name = (row.get("name") or "").strip()
-            pilot = (row.get("pilot") or "").strip()
             position = row.get("position")
-            if not name and not pilot and position is None:
+            if not name and position is None:
                 continue
-            driver_name = name or pilot or f"Ligne Apex {row.get('row', '?')}"
-            previous = previous_drivers.get(driver_name) or {}
-            # V7.2.153 — certaines configurations Apex envoient des mises à jour
-            # partielles : le nom est présent mais une ou plusieurs cellules métier
-            # n'arrivent que dans une trame suivante. On conserve alors la dernière
-            # valeur valide de la session au lieu de vider le Classement Live.
-            best = row.get("best_lap") or previous.get("best") or "—"
-            last = row.get("last_lap") or previous.get("last") or "—"
+            best = row.get("best_lap") or "—"
+            last = row.get("last_lap") or "—"
+            driver_name = name or f"Ligne Apex {row.get('row', '?')}"
             history_key = str(row.get("row") if row.get("row") is not None else driver_name)
-            lap_number = row.get("laps") if row.get("laps") is not None else previous.get("laps", 0)
+            lap_number = row.get("laps") if row.get("laps") is not None else 0
             lap_seconds = self.time_to_seconds(last)
             marker = (lap_number, last)
             # Une valeur de dernier tour n'est ajoutée qu'une fois, au passage d'un nouveau tour.
@@ -405,25 +292,22 @@ class RaceStateService:
             pace5_seconds = sum(recent_five) / len(recent_five) if recent_five else None
             pace5 = self.format_lap_seconds(pace5_seconds) if pace5_seconds is not None else "—"
             live_drivers.append({
-                "pos": position if position is not None else previous.get("pos", 999),
+                "pos": position if position is not None else 999,
                 "driver": driver_name,
-                "pilot": pilot or None,
-                "apex": row.get("kart") if row.get("kart") is not None else previous.get("apex", "—"),
+                "apex": row.get("kart") if row.get("kart") is not None else "—",
                 "laps": lap_number,
-                "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else previous.get("pit_stops", "—"),
-                "penalty": row.get("penalty") if row.get("penalty") is not None else previous.get("penalty", ""),
+                "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else "—",
+                "penalty": row.get("penalty") or "",
                 "last": last,
                 "best": best,
-                "gap": row.get("gap") if row.get("gap") not in (None, "") else previous.get("gap", "—"),
-                "interval": row.get("interval") if row.get("interval") not in (None, "") else previous.get("interval", "—"),
+                "gap": row.get("gap") or "—",
+                "interval": row.get("interval") or "—",
                 "pace5": pace5,
                 "pace5_laps": len(recent_five),
-                "status": row.get("status") if row.get("status") not in (None, "unknown") else previous.get("status", "unknown"),
-                "status_source": row.get("status_source") or previous.get("status_source"),
-                "pit_timer": row.get("pit_timer") or previous.get("pit_timer") or None,
-                "track_timer": row.get("track_timer") or previous.get("track_timer") or None,
+                "status": row.get("status", "unknown"),
+                "pit_timer": row.get("pit_timer") or None,
+                "track_timer": row.get("track_timer") or None,
                 "apex_row": row.get("row"),
-                "apex_updated_at": row.get("updated_at"),
                 "last_improved_personal_best": bool(
                     self.last_lap_performance.get(history_key, {}).get("marker") == marker
                     and self.last_lap_performance.get(history_key, {}).get("improved_personal_best")
@@ -449,29 +333,20 @@ class RaceStateService:
                         penalty_key,
                         datetime.now().isoformat(timespec="seconds"),
                     )
-                    penalty_item = {
+                    apex_penalties.append({
                         "driver": display_name,
-                        "kart": str(driver.get("apex") or "").strip(),
                         "penalty": raw_penalty,
                         "at": first_seen,
                         "time": first_seen[11:16],
-                    }
-                    apex_penalties.append(penalty_item)
-                    history_key = f"{first_seen}|{display_name}|{raw_penalty}"
-                    self.penalty_history.setdefault(history_key, dict(penalty_item, id=history_key))
+                    })
             # Une pénalité disparue de la colonne Apex est retirée de l'état courant.
             for penalty_key in list(self.penalty_first_seen):
                 if penalty_key not in active_penalty_keys:
                     self.penalty_first_seen.pop(penalty_key, None)
             apex_penalties.sort(key=lambda item: item.get("at", ""), reverse=True)
             self.state["penalties"] = apex_penalties
-            penalty_history = list(self.penalty_history.values())
-            penalty_history.sort(key=lambda item: item.get("at", ""), reverse=True)
-            self.state["penalty_history"] = penalty_history
             # Le Focus Sprint utilise exclusivement la zone Commentaires Apex.
             self.state["comment_penalties"] = self._comment_penalties(snapshot, live_drivers)
-            # Analyzer reçoit le journal Apex complet, sans modifier les blocs pénalités des autres modes.
-            self.state["comment_events"] = self._comment_events(snapshot, live_drivers)
             # Mode AUTO : tant qu'aucun pilote n'a été sélectionné, la ligne 1 suit le P1.
             # Mode LOCK : après un clic, on conserve impérativement le même pilote,
             # même si une trame Apex intermédiaire ne contient pas sa ligne.
@@ -590,18 +465,6 @@ class RaceStateService:
         self.state["time_remaining_ms"] = current_remaining_ms
         self.state["time_remaining_updated_at_ms"] = now_ms if current_remaining_ms is not None else None
         self.state["time_remaining_end_at_ms"] = end_at_ms
-
-        # dyn1|count est un chrono montant : on l'expose séparément pour
-        # qualifier l'activité live sans fabriquer un faux temps restant.
-        elapsed_ms = session.get("elapsed_ms") if session.get("elapsed_fresh") and has_active_grid else None
-        try:
-            elapsed_ms = int(elapsed_ms) if elapsed_ms is not None else None
-        except (TypeError, ValueError):
-            elapsed_ms = None
-        self.state["time_elapsed_ms"] = elapsed_ms
-        self.state["time_elapsed"] = self._format_remaining(elapsed_ms)
-        self.state["time_elapsed_updated_at_ms"] = now_ms if elapsed_ms is not None else None
-        self.state["apex_session_type"] = session.get("apex_session_type") or "unknown"
 
         # Apex ne fournit pas toujours un objectif de tours. Lorsque ce total est
         # disponible, on affiche les tours restants ; sinon on affiche le nombre de

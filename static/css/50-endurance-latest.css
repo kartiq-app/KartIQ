@@ -901,139 +901,15 @@ body[data-app-mode="endurance"] #endurance .position-cell{
 }
 
 
-/* Velocity V7.2.44 — Messagerie pilote : espacement du bandeau */
+/* Velocity V7.2.36 — Messagerie pilote plein écran commune aux trois modes Focus */
 .driver-message-overlay{
- position:fixed;inset:0;z-index:10050;background:#000;color:#fff;display:none;
- grid-template-rows:auto 1fr;will-change:transform,opacity;
+ position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;
+ padding:clamp(24px,6vw,96px);box-sizing:border-box;background:#000;color:#fff;
+ text-align:center;overflow:hidden;
 }
-.driver-message-overlay.show{display:grid;animation:driverMessageEnter .22s cubic-bezier(.2,.8,.2,1) both}
-.driver-message-overlay.leaving{display:grid;animation:driverMessageExit .32s cubic-bezier(.55,.05,.75,.35) both}
-@keyframes driverMessageEnter{from{transform:translateX(-100%);opacity:.94}to{transform:translateX(0);opacity:1}}
-@keyframes driverMessageExit{from{transform:translateX(0);opacity:1}to{transform:translateX(105%);opacity:.78}}
-.driver-message-header{
- height:54px;min-height:54px;padding:8px 16px 6px;display:grid;grid-template-columns:auto minmax(0,1fr);
- align-items:center;gap:18px;color:#fff;font-size:13px;font-weight:900;
- text-transform:uppercase;letter-spacing:.08em;font-family:inherit;overflow:hidden;
-}
-.driver-message-header>span{white-space:nowrap}
-.driver-message-arrows{
- min-width:0;width:calc(100% + 40px);overflow:hidden;white-space:nowrap;color:#e3222b;
- font-size:24px;line-height:1;font-weight:900;letter-spacing:.08em;padding-left:4px;box-sizing:border-box;transform:translateX(-24px);
- animation:driverMessageArrows 1.1s linear infinite;
-}
-@keyframes driverMessageArrows{from{transform:translateX(-24px)}to{transform:translateX(0)}}
-.driver-message-body{
- min-height:0;padding:clamp(18px,3vw,44px);display:flex;align-items:center;justify-content:center;
- overflow:hidden;
-}
+.driver-message-overlay.show{display:flex}
 .driver-message-text{
- width:100%;height:100%;max-width:100%;max-height:100%;display:flex;flex-direction:column;
- align-items:center;justify-content:center;gap:.06em;text-align:center;text-transform:uppercase;
- font-family:"F1 Torque","Arial Black",sans-serif;font-weight:700;line-height:.92;letter-spacing:.015em;
- overflow:hidden;
+ width:100%;max-width:1400px;font-weight:950;font-size:clamp(42px,9vw,150px);
+ line-height:1.02;letter-spacing:.01em;overflow-wrap:anywhere;text-transform:none;
 }
-.driver-message-line{display:block;white-space:nowrap;max-width:100%}
-@media(max-width:700px){
- .driver-message-body{padding:14px 10px 20px}
- .driver-message-arrows{font-size:20px}
-}
-
-
-/* Velocity V7.2.170 — iPhone Focus en paysage virtuel, OS maintenu en portrait.
-   Android n'est pas concerné : son verrouillage paysage natif reste inchangé. */
-html.iphone-focus-virtual-landscape,
-body.iphone-focus-virtual-landscape{
-  overflow:hidden!important;
-  overscroll-behavior:none!important;
-}
-body.iphone-focus-virtual-landscape #qualificationFocus,
-body.iphone-focus-virtual-landscape #sprintFocus,
-body.iphone-focus-virtual-landscape #enduranceFocus{
-  position:fixed!important;
-  inset:auto!important;
-  top:50%!important;
-  left:50%!important;
-  width:100dvh!important;
-  height:100dvw!important;
-  max-width:none!important;
-  max-height:none!important;
-  box-sizing:border-box!important;
-  padding:0!important;
-  transform:translate(-50%,-50%) rotate(90deg)!important;
-  transform-origin:50% 50%!important;
-}
-/* Le titre est légèrement repoussé vers la droite dans le paysage visible.
-   Le padding droit garantit aussi une séparation nette avec le filet coloré. */
-body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header,
-body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header,
-body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header{
-  box-sizing:border-box!important;
-  padding-left:clamp(28px,8vw,42px)!important;
-  padding-right:14px!important;
-  column-gap:14px!important;
-}
-body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header>span,
-body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header>span,
-body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>span{
-  display:block!important;
-  white-space:nowrap!important;
-  padding-right:8px!important;
-  line-height:1!important;
-}
-body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header>i,
-body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header>i,
-body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
-  min-width:24px!important;
-  margin-left:2px!important;
-}
-/* En portrait verrouillé, vw correspond à la hauteur du paysage virtuel :
-   les règles mobile portrait existantes donnent donc la bonne échelle après rotation. */
-@supports not (height:100dvw){
-  body.iphone-focus-virtual-landscape #qualificationFocus,
-  body.iphone-focus-virtual-landscape #sprintFocus,
-  body.iphone-focus-virtual-landscape #enduranceFocus{
-    width:100vh!important;
-    height:100vw!important;
-  }
-}
-
-
-/* Velocity V7.2.172 — Focus Endurance smartphone : lisibilité maximale.
-   Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
-@media (max-width: 900px), (pointer: coarse){
-  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
-    font-size:clamp(78px,19.5vh,221px)!important;
-  }
-  #enduranceFocus .endurance-focus-driver .sprint-focus-name{
-    font-size:110%!important;
-    max-width:100%!important;
-  }
-  #enduranceFocus .endurance-focus-neighbour-name{
-    font-size:clamp(16.5px,2.86vh,33px)!important;
-  }
-  #enduranceFocus .endurance-focus-last-lap-cell{
-    box-sizing:border-box!important;
-    padding:clamp(10px,2.2vw,22px)!important;
-    overflow:hidden!important;
-  }
-  #enduranceFocus .endurance-focus-last-lap{
-    max-width:100%!important;
-    max-height:100%!important;
-    margin:0!important;
-    padding:0!important;
-    white-space:nowrap!important;
-    overflow:hidden!important;
-  }
-}
-
-/* Le mode iPhone paysage virtuel a un viewport OS portrait : on force ici
-   les proportions adaptées au paysage visible sans toucher à Android. */
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
-  font-size:clamp(82px,20dvw,220px)!important;
-}
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
-  font-size:clamp(18px,5.1dvw,38px)!important;
-}
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
-  font-size:clamp(15px,4.15dvw,30px)!important;
-}
+@media(max-width:700px){.driver-message-overlay{padding:24px}.driver-message-text{font-size:clamp(34px,12vw,82px)}}

@@ -1,28 +1,28 @@
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);renderSprintFocus();
+ overlay.classList.add('show');document.body.classList.add('sprint-focus-active');renderSprintFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
- await lockFocusOrientationForAndroid();
+ try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
  try{if('wakeLock' in navigator)sprintFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeSprintFocus(){
- document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');clearVelocityFocusMemory('sprint');setFocusLandscapeLock(false);
+ document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');
  try{if(sprintFocusWakeLock){await sprintFocusWakeLock.release();sprintFocusWakeLock=null}}catch(e){}
- unlockFocusOrientationForAndroid();
+ try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 async function openEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('endurance-focus-active');rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
+ overlay.classList.add('show');document.body.classList.add('endurance-focus-active');endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
- await lockFocusOrientationForAndroid();
+ try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
  try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeEnduranceFocus(){
- document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');clearVelocityFocusMemory('endurance');setFocusLandscapeLock(false);
+ document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');
  setEndurancePitOverlay(null);
  try{if(enduranceFocusWakeLock){await enduranceFocusWakeLock.release();enduranceFocusWakeLock=null}}catch(e){}
- unlockFocusOrientationForAndroid();
+ try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 
@@ -30,11 +30,11 @@ function sprintDriverAhead(driver){if(!driver?.pos||Number(driver.pos)<=1)return
 function sprintDriverBehind(driver){if(!driver?.pos)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(driver.pos)+1)||null}
 function sprintGapAhead(driver){
  const ahead=sprintDriverAhead(driver);if(!ahead)return '--';
- return formatRaceInterval(driver,ahead,'+');
+ return formatRaceInterval(driver,ahead,'-');
 }
 function sprintGapBehind(driver){
  const behind=sprintDriverBehind(driver);if(!behind)return '--';
- return formatRaceInterval(behind,driver,'-');
+ return formatRaceInterval(behind,driver,'+');
 }
 function penaltyTime(p){if(p?.time)return p.time;const at=String(p?.at||'');return at.length>=16?at.slice(11,16):'--:--'}
 function escapePenaltyHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
@@ -77,8 +77,7 @@ function sprintFocusRankMarkup(rank){
 }
 
 function sprintLastLapRanking(driver){
- const followedLaps=Number(driver?.laps);if(!Number.isFinite(followedLaps))return null;
- const valid=(state.drivers||[]).filter(d=>Number(d?.laps)===followedLaps).map(d=>({...d,_lastSec:lapSeconds(d.last)})).filter(d=>Number.isFinite(d._lastSec)).sort((a,b)=>a._lastSec-b._lastSec);
+ const valid=(state.drivers||[]).map(d=>({...d,_lastSec:lapSeconds(d.last)})).filter(d=>Number.isFinite(d._lastSec)).sort((a,b)=>a._lastSec-b._lastSec);
  const target=valid.find(d=>d.driver===driver?.driver);if(!target)return null;
  const rank=1+valid.filter(d=>d._lastSec<target._lastSec-0.0005).length;
  return {rank,label:`${frenchOrdinal(rank).number}${frenchOrdinal(rank).suffix} temps`,driver:target.driver,lap:target.last};
@@ -327,58 +326,6 @@ function renderEndurancePenaltyAlert(list,f){
 }
 
 
-function splitDriverMessageLines(value){
- const words=String(value||'').trim().toUpperCase().split(/\s+/).filter(Boolean);
- if(words.length<=1)return words.length?words:['—'];
- const lineCount=words.length>=7||words.join(' ').length>34?3:2;
- const lines=[];
- let start=0;
- for(let lineIndex=0;lineIndex<lineCount;lineIndex++){
-  const remainingLines=lineCount-lineIndex;
-  const remainingWords=words.length-start;
-  if(remainingLines===1){lines.push(words.slice(start).join(' '));break}
-  let bestEnd=start+1;
-  let bestScore=Infinity;
-  const totalRemainingLength=words.slice(start).join(' ').length;
-  const target=totalRemainingLength/remainingLines;
-  const maxEnd=words.length-(remainingLines-1);
-  for(let end=start+1;end<=maxEnd;end++){
-   const candidate=words.slice(start,end).join(' ');
-   const score=Math.abs(candidate.length-target);
-   if(score<bestScore){bestScore=score;bestEnd=end}
-  }
-  lines.push(words.slice(start,bestEnd).join(' '));
-  start=bestEnd;
- }
- return lines.filter(Boolean);
-}
-
-
-function fitDriverMessageText(text,lineCount){
- if(!text)return;
- const host=text.parentElement;
- if(!host)return;
- const maxWidth=Math.max(1,host.clientWidth-4);
- const maxHeight=Math.max(1,host.clientHeight-4);
- let size=Math.min(
-  lineCount>=3?Math.min(maxHeight/3.05,maxWidth/7):
-  lineCount===2?Math.min(maxHeight/2.05,maxWidth/5.2):
-  Math.min(maxHeight*.82,maxWidth/3.2),
-  220
- );
- size=Math.max(18,Math.floor(size));
- text.style.fontSize=size+'px';
- for(let i=0;i<80;i++){
-  const tooWide=[...text.children].some(line=>line.scrollWidth>maxWidth);
-  const tooTall=text.scrollHeight>maxHeight;
-  if(!tooWide&&!tooTall)break;
-  size-=2;
-  if(size<=18){size=18;break}
-  text.style.fontSize=size+'px';
- }
- text.style.fontSize=size+'px';
-}
-
 function renderDriverMessageOverlay(){
  const host=document.getElementById('driverMessageOverlay');
  const text=document.getElementById('driverMessageText');
@@ -392,68 +339,17 @@ function renderDriverMessageOverlay(){
   document.getElementById('qualificationFocus')?.classList.contains('show')||
   document.getElementById('enduranceFocus')?.classList.contains('show')
  );
- const exitDuration=320;
  const active=Boolean(focusActive&&message?.message&&Number.isFinite(delivered)&&elapsed>=0&&elapsed<duration);
- const leaving=Boolean(focusActive&&message?.message&&Number.isFinite(delivered)&&elapsed>=duration&&elapsed<duration+exitDuration);
  host.classList.toggle('show',active);
- host.classList.toggle('leaving',leaving);
- host.setAttribute('aria-hidden',(active||leaving)?'false':'true');
- if(active||leaving){
-  const value=String(message.message||'').trim();
-  const lines=splitDriverMessageLines(value);
-  text.replaceChildren(...lines.map(line=>{
-   const span=document.createElement('span');
-   span.className='driver-message-line';
-   span.textContent=line;
-   return span;
-  }));
-  text.classList.toggle('message-three-lines',lines.length>=3);
-  text.classList.toggle('message-two-lines',lines.length===2);
-  text.classList.toggle('message-one-line',lines.length===1);
-  fitDriverMessageText(text,lines.length);
- }else{
-  text.textContent='—';
-  text.style.removeProperty('font-size');
-  text.classList.remove('message-one-line','message-two-lines','message-three-lines');
- }
+ host.setAttribute('aria-hidden',active?'false':'true');
+ if(active)text.textContent=message.message;
+ else text.textContent='—';
 }
 
 
-function enduranceFocusSelectedDriver(){
- const remote=window.velocityPilotFocusTarget||null;
- const isPilot=document.body.classList.contains('race-role-pilot')||String(window.velocityDeviceRole||'')==='pilot'||String(window.VELOCITY_RACE_ACCESS?.role||'')==='pilot';
- if(isPilot&&remote){
-  const row=Number(remote.apex_row);
-  if(Number.isFinite(row)){
-   const byRow=(state.drivers||[]).find(d=>Number(d?.apex_row)===row);
-   if(byRow)return byRow;
-  }
-  const name=String(remote.driver||'').trim();
-  if(name){
-   const normalized=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-   const byName=(state.drivers||[]).find(d=>String(d?.driver||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()===normalized);
-   if(byName)return byName;
-  }
- }
- return state.followed||{};
-}
-function fitEnduranceLastLap(){
- const el=document.getElementById('enduranceFocusLastLap');if(!el)return;
- const cell=el.closest('.endurance-focus-last-lap-cell');if(!cell)return;
- // Taille maximale avec un blanc tournant permanent, sans jamais sortir de la case.
- const style=getComputedStyle(cell),padX=(parseFloat(style.paddingLeft)||0)+(parseFloat(style.paddingRight)||0),padY=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);
- const maxW=Math.max(1,cell.clientWidth-padX-8),maxH=Math.max(1,cell.clientHeight-padY-8);
- let lo=28,hi=Math.max(28,Math.min(260,maxH*1.12)),best=lo;
- el.style.fontSize=hi+'px';
- for(let i=0;i<10;i++){
-  const mid=(lo+hi)/2;el.style.fontSize=mid+'px';
-  if(el.scrollWidth<=maxW&&el.scrollHeight<=maxH){best=mid;lo=mid}else hi=mid;
- }
- el.style.fontSize=Math.floor(best)+'px';
-}
 function renderEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay?.classList.contains('show'))return;
- const f=enduranceFocusSelectedDriver();
+ const f=state.followed||{};
  renderEndurancePitState(f);
  const endurancePenaltyList=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));
  renderEndurancePenaltyAlert(endurancePenaltyList,f);
@@ -483,7 +379,6 @@ function renderEnduranceFocus(){
   lastLapEl.textContent=f.last||'—';
   lastLapEl.classList.remove('endurance-last-orange','endurance-last-green','endurance-last-purple');
   lastLapEl.classList.add(enduranceLastLapColorClass(f));
-  requestAnimationFrame(fitEnduranceLastLap);
  }
 }
 
