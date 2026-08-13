@@ -1,3 +1,15 @@
+# V7.2.199 — Spotter : Maintenance Desktop sur le même moteur de drop que les files
+
+- Base : V7.2.198.
+- Correctif Desktop uniquement ; comportement smartphone/tactile conservé.
+- Maintenance est désormais résolue dans le même passage de ciblage que les colonnes de files.
+- Sur Desktop, suppression du pointer capture souris pour conserver le hit-test naturel sous le curseur.
+- Smartphone conserve le pointer capture et le long-press existants.
+- Le relâchement Desktop recalcule la cible via le même résolveur Files/Maintenance.
+- Cartes vertes : drop direct en Maintenance.
+- Cartes rouges : conservation du workflow de sélection du kart remplaçant et du chrono d'arrêt.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais / Filets / Trafic / Radar.
+
 # V7.2.198 — Spotter : cible Maintenance Desktop renforcée
 
 - Base : V7.2.197.

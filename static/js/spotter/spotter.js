@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.198';
+const SPOTTER_APP_RELEASE='7.2.199';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -749,9 +749,11 @@ function spotterStartDrag(event,cardId,from){
   pointerType:String(event.pointerType||'mouse')
  });
  card.classList.add('spotter-pressing');
- try{card.setPointerCapture(event.pointerId)}catch(_){}
+ if(String(event.pointerType||'mouse')!=='mouse'){
+  try{card.setPointerCapture(event.pointerId)}catch(_){}
+ }
 
- // V7.2.198 — Desktop : drag immédiat à la souris / trackpad.
+ // V7.2.199 — Desktop : drag immédiat à la souris / trackpad.
  // Smartphone / tactile : on conserve le long-press de 450 ms pour éviter
  // les déplacements accidentels pendant le scroll.
  if(String(event.pointerType||'mouse')==='mouse'){
@@ -837,6 +839,28 @@ function spotterFindMaintenanceTarget(x,y){
  }
  return best;
 }
+function spotterDesktopDropTarget(x,y){
+ if(window.matchMedia('(max-width:899px)').matches)return null;
+ const candidates=[];
+
+ for(const zone of spotterVisibleMaintenanceZones()){
+  const rect=spotterMaintenanceUnionRect(zone);
+  if(x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom){
+   candidates.push({type:'maintenance',element:zone,area:Math.max(1,(rect.right-rect.left)*(rect.bottom-rect.top)),distance:Math.hypot(x-(rect.left+rect.right)/2,y-(rect.top+rect.bottom)/2)});
+  }
+ }
+
+ for(const column of [...document.querySelectorAll('[data-spotter-file]')].filter(node=>node.offsetParent!==null)){
+  const rect=column.getBoundingClientRect();
+  if(x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom){
+   candidates.push({type:'queue',element:column,file:String(column.dataset.spotterFile||'1'),area:Math.max(1,rect.width*rect.height),distance:Math.hypot(x-(rect.left+rect.right)/2,y-(rect.top+rect.bottom)/2)});
+  }
+ }
+
+ if(!candidates.length)return null;
+ candidates.sort((a,b)=>(a.area-b.area)||(a.distance-b.distance));
+ return candidates[0];
+}
 function spotterFindTargetColumn(x,y){
  const columns=[...document.querySelectorAll('[data-spotter-file]')];
  if(!columns.length)return null;
@@ -870,15 +894,24 @@ function spotterOnDragMove(event){
  spotterMoveGhost(event.clientX,event.clientY);
  spotterClearDropHighlights();
 
- // V7.2.198 — détection géométrique de Maintenance.
- // `elementFromPoint()` pouvait échouer pendant le pointer capture / long-press,
- // surtout sur iPhone et selon le DOM Desktop. On teste directement le rectangle
- // visible de la zone Maintenance, avec priorité sur les files.
- const maintenance=spotterFindMaintenanceTarget(event.clientX,event.clientY);
- if(maintenance){
-  maintenance.classList.add('spotter-drop-target');
-  spotterDrag.target={type:'maintenance'};
-  return;
+ // V7.2.199 — Desktop : Maintenance et Files passent par le même moteur
+ // de résolution de cible. Smartphone conserve la logique V7.2.199 inchangée.
+ if(!window.matchMedia('(max-width:899px)').matches){
+  const desktopTarget=spotterDesktopDropTarget(event.clientX,event.clientY);
+  if(desktopTarget){
+   desktopTarget.element.classList.add('spotter-drop-target');
+   if(desktopTarget.type==='maintenance'){
+    spotterDrag.target={type:'maintenance'};
+    return;
+   }
+  }
+ }else{
+  const maintenance=spotterFindMaintenanceTarget(event.clientX,event.clientY);
+  if(maintenance){
+   maintenance.classList.add('spotter-drop-target');
+   spotterDrag.target={type:'maintenance'};
+   return;
+  }
  }
 
  const column=spotterFindTargetColumn(event.clientX,event.clientY);
@@ -916,8 +949,13 @@ function spotterEndDrag(event){
  document.removeEventListener('touchmove',spotterPreventTouchScroll);
  spotterCancelPendingDrag();
  if(spotterDrag.active&&event&&Number.isFinite(event.clientX)&&Number.isFinite(event.clientY)){
-  const maintenance=spotterFindMaintenanceTarget(event.clientX,event.clientY);
-  if(maintenance)spotterDrag.target={type:'maintenance'};
+  if(!window.matchMedia('(max-width:899px)').matches){
+   const desktopTarget=spotterDesktopDropTarget(event.clientX,event.clientY);
+   if(desktopTarget?.type==='maintenance')spotterDrag.target={type:'maintenance'};
+  }else{
+   const maintenance=spotterFindMaintenanceTarget(event.clientX,event.clientY);
+   if(maintenance)spotterDrag.target={type:'maintenance'};
+  }
  }
  const target=spotterDrag.active?spotterDrag.target:null;
  if(spotterDrag.active){
