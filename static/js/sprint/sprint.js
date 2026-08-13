@@ -443,7 +443,9 @@ function fitEnduranceLastLap(){
  // Taille maximale avec un blanc tournant permanent, sans jamais sortir de la case.
  const style=getComputedStyle(cell),padX=(parseFloat(style.paddingLeft)||0)+(parseFloat(style.paddingRight)||0),padY=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);
  const maxW=Math.max(1,cell.clientWidth-padX-8),maxH=Math.max(1,cell.clientHeight-padY-8);
- let lo=28,hi=Math.max(28,Math.min(260,maxH*1.12)),best=lo;
+ // V7.2.173 : viser +50 % par rapport à l'ancien rendu, tout en gardant
+ // l'auto-fit comme garde-fou absolu sur la largeur et la hauteur disponibles.
+ let lo=36,hi=Math.max(36,Math.min(360,maxH*1.68)),best=lo;
  el.style.fontSize=hi+'px';
  for(let i=0;i<10;i++){
   const mid=(lo+hi)/2;el.style.fontSize=mid+'px';
