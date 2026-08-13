@@ -1448,7 +1448,7 @@ def apex_grid_active_rows(grid):
 
 def filter_live_drivers_to_active_grid():
     """
-    V7.2.199 SAFE — filtre d'affichage uniquement.
+    V7.2.195 SAFE — filtre d'affichage uniquement.
     On ne reset jamais APEX_TABLE / PROTOCOL_ENGINE / EVENT_STORE / météo.
     Les anciennes lignes restent éventuellement dans le moteur interne mais
     ne sont plus exposées comme pilotes actifs après réception d'un nouveau GRID.
@@ -1491,7 +1491,7 @@ def apex_frame():
 
     write_traffic("IN", frame)
 
-    # V7.2.199 SAFE — mémorise l'intitulé sans reset global.
+    # V7.2.195 SAFE — mémorise l'intitulé sans reset global.
     incoming_session_title = extract_apex_session_title(frame)
     if incoming_session_title:
         STATE["apex_session_title"] = incoming_session_title
