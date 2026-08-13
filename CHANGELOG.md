@@ -1,3 +1,1035 @@
+# V7.2.196 — Spotter + Analyzer : Maintenance drag & drop
+
+- Base : V7.2.195 validée sur smartphone.
+- Aucun changement du moteur de drag & drop de la V7.2.195.
+- Spotter : comportement Maintenance conservé tel quel.
+- Analyzer > STANDS : la carte Maintenance est désormais déclarée comme vraie cible `data-spotter-drop-zone="maintenance"`.
+- Le même moteur Spotter peut donc déposer une carte vers Maintenance depuis Analyzer, sur smartphone et Desktop.
+- Sélecteur de remplacement d'un kart rouge trié File 1 -> File 2 -> File 3.
+- Ordre FIFO conservé à l'intérieur de chaque file.
+- Conservation du transfert d'équipe et du `pitInAt` sur le kart remplaçant.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais / Filets / Trafic / Radar.
+
+# V7.2.195 — Spotter : files autonomes + maintenance dynamique
+
+- Base : V7.2.194 SAFE.
+- Préparer le Quick Change : un kart initial et un bouton `+ AJOUTER UN KART` propres à chaque file.
+- Suppression de la répartition automatique des nouveaux karts entre les files pendant la préparation.
+- Minimum d’un kart par file.
+- Toutes les cartes de file sont déplaçables, y compris les cartes rouges attribuées.
+- Une carte rouge peut être réordonnée ou changée de file.
+- Déposer une carte rouge en Maintenance ouvre un sélecteur : `Cliquez sur le nouveau kart de <équipe>`.
+- Le nouveau kart reprend l’équipe et le `pitInAt` d’origine : le chrono d’arrêt continue sans repartir à zéro.
+- L’ancien kart rouge est envoyé en Maintenance après sélection du remplaçant.
+- Un kart disponible peut être envoyé en Maintenance à tout moment.
+- Synchronisation de `setup_queue_files` entre appareils.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais ni du moteur Filets / Trafic / Radar.
+
+# V7.2.194 SAFE — Session Apex sans reset du flux live
+
+- Reconstruction directe depuis la V7.2.192 validée.
+- Aucun reset de `APEX_TABLE`, `PROTOCOL_ENGINE`, `EVENT_STORE`, historique course ou météo.
+- Intitulé de session : priorité `title2`, puis `title1`, `title`, `session`.
+- Affichage de l'intitulé dans le libellé existant au-dessus du temps restant, sans changement de taille.
+- Nouveau GRID Apex mémorisé comme liste de lignes actives `rXXXXX`.
+- Les pilotes absents du dernier GRID complet sont filtrés de `STATE["drivers"]` après chaque synchronisation, sans toucher au moteur live.
+- Filets / Trafic / Radar restent strictement sur le moteur V7.2.192 / historique V7.2.152.
+- Diagnostic visible désactivé sans suppression de fonctions Analyzer.
+- Équipe suivie : emoji + Informations augmentés de 10 %.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais.
+
+# V7.2.194 — Retour moteur historique Filets / Trafic / Radar
+
+- Base : V7.2.191.
+- Suppression complète des expérimentations `APEX-HOLD` et `APEX-GAP`.
+- `analyzerLiveProgressPhase()` restauré sur la logique historique V7.2.152 : `APEX -> FALLBACK -> TRACK`.
+- Aucun offset, aucun recalage sur le flash, aucune nouvelle estimation ajoutée.
+- Filets, Trafic et Radar utilisent toujours exactement la même phase commune.
+- Conservation de la correction CSS V7.2.191 permettant à l'équipe suivie de clignoter au passage de ligne.
+- Panneau diagnostic conservé une dernière fois pour comparer visuellement le comportement historique.
+
+# V7.2.194 — Trous Apex + flash équipe suivie
+
+- Base : V7.2.190.
+- Suppression du `APEX-HOLD` fixe qui pouvait bloquer un filet.
+- Lorsqu'une ligne MAP Apex existe mais que son impulsion est périmée, Velocity renvoie désormais `APEX-GAP` avec phase absente : le filet/repère attend la prochaine impulsion Apex au lieu d'être figé ou reconstruit via `track_timer`.
+- Les anciens fallbacks `TRACK/FALLBACK` ne restent disponibles que pour un pilote sans ligne MAP Apex exploitable.
+- Filets, Trafic et Radar restent sur la même phase commune.
+- Correction CSS : la ligne de l'équipe suivie peut désormais afficher les flashes violet/vert/orange malgré les `!important` du style `.followed`.
+- Le panneau diagnostic reste actif et affiche `APEX / GAP / FALLBACK / TRACK / NONE`.
+
+# V7.2.194 — APEX HOLD Filets / Trafic / Radar
+
+- Base : V7.2.189.
+- Aucun changement du calcul de déplacement Apex pendant un segment.
+- Lorsqu'une impulsion MAP Apex atteint sa fin puis dépasse la tolérance historique de 5 s, Velocity conserve désormais l'extrémité du dernier segment Apex au lieu de basculer sur `track_timer`.
+- La position reste ainsi dans la chaîne Apex jusqu'à la prochaine impulsion MAP reçue.
+- Filets, Trafic et Radar continuent d'utiliser exactement la même phase commune.
+- Le panneau diagnostic reste actif et distingue désormais `APEX`, `HOLD`, `FALLBACK`, `TRACK` et `NONE`.
+- Le HOLD n'est utilisé que tant que le tracking MAP Apex global est encore vivant.
+
+# V7.2.194 — Diagnostic identité rXXXXX
+
+- Base : V7.2.188.
+- Aucun changement du moteur Filets / Trafic / Radar.
+- Le panneau diagnostic compare les `apex_row` des pilotes courants aux lignes MAP `rXXXXX` réellement reçues.
+- Affiche les pilotes sans ligne MAP et les lignes MAP orphelines.
+- Objectif : détecter une désynchronisation d'identité lorsque le classement change.
+
+# V7.2.194 — Trace trames Apex Filets / Trafic / Radar
+
+- Base : V7.2.187.
+- Aucun changement du moteur de déplacement.
+- Le diagnostic mémorise les 8 dernières impulsions MAP Apex reçues par `apex_row`.
+- Affichage des dernières trames `*`, `*i1`, `*i2`, `*in`, `*out` pour l’équipe suivie et jusqu’à 3 karts hors source APEX.
+- Objectif : déterminer si un kart passe en TRACK parce qu’Apex n’envoie réellement plus l’impulsion suivante, ou parce que Velocity la perd/interprète mal.
+
+# V7.2.194 — Diagnostic source Filets / Trafic / Radar
+
+- Aucun changement du moteur de déplacement.
+- Ajout d’un panneau diagnostic temporaire dans Analyzer.
+- Affiche pour chaque kart actif la source réellement utilisée par `analyzerLiveProgressPhase()` : APEX, FALLBACK, TRACK ou NONE.
+- Affiche pour l’équipe suivie la phase, le segment Apex, l’âge de l’événement et sa durée.
+- Objectif : vérifier si les filets mal positionnés utilisent encore la source APEX ou basculent sur un fallback.
+
+# V7.2.194 — Restauration Focus iPhone + test Safari
+
+- Base : V7.2.185.
+- Restauration du paysage virtuel iPhone validé en V7.2.179 pour Qualification, Sprint et Endurance.
+- Restauration du layout final Focus Endurance validé : hauteurs Position/Delta et Temps en piste/Dernier tour, séparation propre des deltas.
+- Android conserve son comportement dédié.
+- Aucun changement destiné au crash Chrome : cette version sert aussi au test comparatif sur Safari Desktop.
+
+# V7.2.194 — Test CSS Focus pré-V7.2.170
+
+- Base fonctionnelle : V7.2.184.
+- CSS `50-endurance-latest.css` remis exactement à la version V7.2.166 pour isoler le crash Chrome Desktop.
+- Aucune modification du loader, du serveur ou des fonctions métier.
+- Test diagnostic : les surcharges CSS du paysage virtuel iPhone introduites à partir de V7.2.170 sont volontairement absentes.
+
+# Velocity V7.2.194
+
+- Rebase de récupération sur le socle de chargement stable V7.2.169.
+- Réintégration des fonctions validées jusqu’à V7.2.194 : paysage virtuel iPhone Focus, synchronisation Stratégie Relais, pilotage Focus Endurance par le Team Manager, prise en charge Apex dyn1=countdown et mise en page finale Focus Endurance.
+- Conservation stricte du loader/bootstrap, du Service Worker, de kartiq.css et des pages d’entrée de la V7.2.169 pour retrouver un chargement Desktop fiable.
+
+# V7.2.169 — FOCUS PERSISTANT
+
+- Les modes Focus Qualification, Sprint et Endurance restent actifs tant que le pilote ne les ferme pas explicitement.
+- Suppression de la fermeture involontaire du Focus Endurance lors d'un rafraîchissement des droits/appareils.
+- Mémorisation temporaire du Focus actif dans la session du navigateur et restauration automatique après un retour au premier plan ou un rafraîchissement UI.
+- Watchdog léger : si un rerender ou une transition interne masque un Focus actif, Velocity le rouvre automatiquement.
+- La fin réelle d'une session de course continue à fermer le Focus et efface sa mémorisation.
+- Aucun changement apporté aux données, deltas ou au rendu métier des modes Focus.
+
+# V7.2.168 — FIRST KART 'INN + LISIBILITÉ CONFORMITÉ
+
+- Ajout du circuit belge First Kart 'Inn (Apex Timing 8113), Machelen.
+- Les valeurs Relais, Temps/pilote et Temps en piste exploitent maintenant toute la largeur de leur case sans être artificiellement plus petites que les autres valeurs.
+- Le panneau de détail ouvert depuis Fenêtre conseillée gagne 50 % de taille de texte sur Desktop.
+- Aucune modification de la ligne Trafic.
+
+# V7.2.167 — POLISH ANALYZER DESKTOP
+
+- ÉQUIPE SUIVIE : centrage emoji + libellé + badge dans la notification orange, sans modification de la ligne TRAFIC / dead zone / graduations.
+- CONFORMITÉ : valeurs RELAIS et TEMPS/PILOTE adaptatives à la largeur de leur case.
+- STRATÉGIE : TEMPS EN PISTE adaptatif, CAPITAL STRATÉGIQUE valeur + pourcentage sur une même ligne et même taille.
+- RECOMMANDATION / FENÊTRE CONSEILLÉE : typographies renforcées ; résultat/détail de fenêtre agrandi.
+- MÉTÉO : « Ciel | Vent | Pluie » regroupés sous la température, taille homogène ; nom du circuit +50 %.
+- ENTÊTES : alignement vertical et blanc tournant harmonisés entre ÉQUIPE SUIVIE / COMPTE RENDU, CONFORMITÉ / RÈGLEMENT et MÉTÉO.
+
+# V7.2.166 — SYNCHRO AUTOMATIQUE RÈGLEMENT ANALYZER
+
+- Le règlement actif du desktop est désormais publié automatiquement dès l’ouverture d’Analyzer.
+- Il n’est plus nécessaire d’ouvrir « Règlement » puis de cliquer sur ENREGISTRER pour synchroniser le smartphone.
+- Pendant l’initialisation, un ancien snapshot serveur ne peut plus écraser les valeurs restaurées sur le desktop.
+- Le smartphone reste consommateur du règlement partagé et ne republie pas automatiquement son ancien état local.
+
+# V7.2.165 — SOURCE DE VÉRITÉ RÈGLEMENT ANALYZER
+- Correction de l’ordre de restauration : la session locale smartphone est chargée avant le règlement partagé serveur.
+- Le règlement partagé devient prioritaire sur les anciens snapshots locaux de chaque appareil.
+- Une règle reçue du serveur met à jour le snapshot local actif pour empêcher toute réinjection ultérieure d’une ancienne valeur (ex. Temps pilote 3h30 au lieu de 5h00).
+- Conformité réglementaire, Stratégie relais et Capital stratégique utilisent désormais la même configuration sur desktop et smartphone.
+
+# V7.2.164 — SYNCHRONISATION ANALYZER SMARTPHONE
+- Conformité réglementaire synchronisée côté serveur entre desktop et smartphone.
+- Les paramètres de règlement ne dépendent plus uniquement du localStorage de chaque appareil.
+- Stratégie Relais et Capital stratégique utilisent ainsi le même règlement partagé sur tous les appareils du circuit actif.
+- Une modification du règlement est publiée au serveur puis récupérée via le flux d’état Analyzer.
+
+# V7.2.163 — FENÊTRE CONSEILLÉE / RETOURS DE KARTS
+
+- Stratégie Relais : la Fenêtre conseillée exploite désormais les karts disponibles et les fins de relais Velocity.
+- Détection des karts réellement plus intéressants que le kart actuel (score + confiance).
+- Recommandation enrichie : rentrer maintenant si un meilleur kart est disponible, ou prolonger jusqu’à une fenêtre favorable si un meilleur kart arrive bientôt.
+- Clic sur Fenêtre conseillée : détail des karts cibles avec délai, numéro de kart, score et confiance.
+- Aucun nouveau module : réutilisation des données Velocity / FIN RELAIS et Spotter.
+
+# V7.2.162 — CAPITAL STRATÉGIQUE / LISIBILITÉ STRATÉGIE RELAIS
+- Capital stratégique affiché sous la forme d’une seule valeur restante (ex. `398 min`) au lieu de `1710 min / 398 min`.
+- Avant le départ, le capital est disponible immédiatement depuis le règlement et ne peut jamais dépasser son capital initial.
+- Pendant la course, chaque relais validé plus court que le maximum réglementaire consomme la différence correspondante dans le capital.
+- Titre STRATÉGIE RELAIS aligné sur la taille de CONFORMITÉ RÈGLEMENTAIRE.
+- Libellés et valeurs Score / Confiance / Temps en piste / Delta/tour / Impact/relais agrandis ×2.
+- Titre CAPITAL STRATÉGIQUE aligné sur STRATÉGIE RELAIS et barre de capital doublée en hauteur.
+- Carte Météo : Vent + valeur et Pluie + valeur sur une seule ligne, textes agrandis ×2.
+- Colonne Relais de Conformité élargie afin de conserver l’amplitude complète sur une seule ligne.
+
+# V7.2.161 — STRATÉGIE RELAIS 100 % PARAMÉTRIQUE
+- Suppression du bouton « Valeurs Fun & Race » et du préremplissage associé.
+- Les nouvelles configurations réglementaires sont vierges : chaque valeur est saisie manuellement.
+- Le moteur Stratégie Relais ne contient plus de valeurs Fun & Race de secours pour la durée, les arrêts, les relais, le temps de stand ou la fermeture.
+- Durée de course, arrêts obligatoires, relais min/max, stand minimum, fermeture des stands et marge de sécurité sont lus exclusivement depuis Conformité réglementaire.
+- Le Capital stratégique initial et restant est recalculé avec les paramètres de la course active.
+- La fermeture des stands est intégrée directement au calcul du Capital stratégique.
+- Modifier la durée de course (par exemple 10 h → 12 h) ou une autre règle recalcule automatiquement Capital, fenêtre et recommandation.
+- Si le règlement n’est pas complètement configuré, Stratégie Relais affiche « CONFIGURER LE RÈGLEMENT » au lieu d’inventer des valeurs.
+
+# V7.2.160 — STRATÉGIE RELAIS / CONFORMITÉ / TEMPS PILOTES
+- Première zone Analyzer Desktop conservée : la carte Équipe suivie garde sa place et son gabarit.
+- Conformité réglementaire compactée et complétée par la fermeture des stands (règle T-xx:xx + compte à rebours HH:MM).
+- Nouvelle section STRATÉGIE RELAIS dans la carte Conformité : Score, Confiance, Temps en piste, Delta/tour, Impact/relais, Capital stratégique, Recommandation et Fenêtre conseillée.
+- Capital stratégique calculé avec le temps restant, les arrêts obligatoires restants, le temps minimum de stand et la limite maximale de relais.
+- Le moteur tient compte de la fermeture des stands pour la recommandation de fin de course.
+- Carte Météo compactée sans supprimer les icônes, la température actuelle, l'heure locale ni le nom du circuit.
+- Nouvelle carte TEMPS PILOTES entre Météo et Messagerie ; si aucun minimum pilote n'est configuré, seul le temps roulé est affiché.
+- Notifications Pénalités/Informations déplacées sur le bouton COMPTE RENDU : elles le masquent temporairement et ouvrent la carte Pénalités au clic ; COMPTE RENDU réapparaît ensuite et reste cliquable.
+
+# V7.2.160 — SCORE RELAIS ADAPTATIF AUX CONDITIONS
+- Score Relais conserve la logique historique lorsque le rythme du plateau reste stable.
+- Détection d'une évolution réelle de piste à l'intérieur d'un relais via une référence temporelle locale de la grille.
+- En pluie / séchant / transition, chaque tour est normalisé par rapport au plateau au même moment avant d'alimenter PACE, potentiel et régularité.
+- Une forte dispersion entre pilotes sous la pluie n'est pas assimilée à un changement de conditions : le déclencheur repose sur le déplacement de la référence de grille, pas sur l'écart premier / dernier.
+- Correction pilote pluie appliquée uniquement lorsqu'un historique suffisant existe (au moins 12 tours répartis sur 2 relais) ; sinon Velocity conserve le score mais réduit la confiance d'attribution au kart lorsque la grille est très dispersée.
+- Les tours pluie ne sont plus supprimés par le filtre global médiane +5 s pour Score Relais ; les anomalies restent filtrées localement sur piste stable.
+- Un relais sec -> pluie peut désormais recevoir un seul Score Relais cohérent, construit à partir des performances relatives de ses différentes phases.
+- Aucun changement des modes Qualification / Sprint ni des autres modules Analyzer.
+
+# V7.2.158 — COMPATIBILITÉ APEX QUALIF / SPRINT / ENDURANCE
+
+- Support complet de `dyn1|count`, `countdown` et `countdown_text`, y compris valeurs décimales Apex exprimées en secondes.
+- Sprint : classement du dernier tour limité aux pilotes ayant terminé le même numéro de tour que le pilote suivi.
+- Conservation diagnostique du type de session Apex (`race`, `best_time`, `no_live`) sans changement automatique du mode Velocity.
+
+# V7.2.157 — ANALYZER PORTRAIT : FINITIONS UX
+- Carte Équipe suivie descendue sous le menu fixe et lignes légèrement resserrées.
+- Ligne TRAFIC allongée ; géométrie et espacement 0 / ±2 conservés via le moteur commun desktop.
+- HEAT MAP / SIMULER UN ARRÊT / plein écran regroupés sur une seule ligne.
+- PIT LANE repositionnée sous le radar et ensemble Radar + Pit Lane centré.
+- Conformité : colonne Relais élargie et blocs Stand minimum / Temps mini. par pilote décalés vers la droite.
+- Footer portrait simplifié : suppression des outils techniques demandés ; Velocity Lab et Session Course conservés.
+- Velocity Lab : croix de fermeture fixée en haut à droite sur smartphone.
+- Ajout d’identifiants stables aux cartes Analyzer pour fiabiliser les règles portrait et l’ordre mobile.
+- Aucun changement des calculs Analyzer ni du desktop.
+
+# V7.2.157 — ANALYZER PORTRAIT : MENU FIXE TYPE ENDURANCE
+- Le menu Analyzer portrait reprend le traitement visuel du bandeau Endurance.
+- Filet orange supérieur et filet orange inférieur.
+- Bandeau fixé sous la zone système iPhone via `env(safe-area-inset-top)`.
+- Le menu ne participe plus au scroll : il reste accessible en permanence.
+- La zone Analyzer réserve la hauteur exacte du bandeau fixe afin que la première carte ne passe pas dessous.
+- Les ancres des cartes tiennent compte du bandeau fixe.
+- Aucun changement desktop, aucun changement des calculs Analyzer.
+
+# V7.2.153 — HEAT MAP : SIMULATION D’ARRÊT TEMPORELLE
+- La simulation d’arrêt utilise désormais la **position virtuelle live** commune aux Filets / Trafic / Radar.
+- Au clic, la projection est figée : Velocity fait avancer virtuellement tous les concurrents pendant le temps nécessaire pour rejoindre les stands + le différentiel pit lane + la référence d’arrêt.
+- La référence d’arrêt devient robuste : médiane des **3 meilleurs arrêts propres** disponibles après filtrage des valeurs aberrantes ; fallback règlementaire si aucun historique n’est disponible.
+- Calcul de la **position de course projetée** après l’arrêt.
+- Calcul du trafic physique à la réintégration : kart immédiatement devant, kart immédiatement derrière, densité dans **±5 s** et **±10 s**.
+- Le Radar affiche un **repère fantôme SORTIE** pendant la projection.
+- Les concurrents affichés sur le Radar utilisent exactement leur position projetée au même horizon temporel ; la projection ne dérive plus après le clic.
+- La géométrie actuelle assimile l’entrée/sortie des stands à la ligne de chronométrage lorsque le circuit ne fournit pas de position de pit dédiée.
+- Aucun changement sur Score Sprint, Score Relais, Trafic live ou Filets 60 FPS.
+
+# V7.2.153 — FILETS LIVE 60 FPS
+- Remplacement des animations `left` recréées à chaque rendu par un moteur persistant `requestAnimationFrame`.
+- Mise à jour visuelle à chaque frame à partir de la phase live commune.
+- Déplacement via `transform: translate3d(...)` pour profiter de la composition GPU et limiter les recalculs de layout.
+- Les filets ne sont plus détruits/recréés à chaque rafraîchissement du Classement Live.
+- Recalage automatique sur chaque nouvelle phase Apex, sans modifier les calculs de position.
+- Trafic, Radar, Score Sprint et Score Relais inchangés.
+
+# V7.2.153 — COMPTEUR APEX ADAPTATIF
+- `dyn1|countdown|...` continue d’alimenter **TEMPS RESTANT**.
+- `dyn1|count|...` alimente désormais **TEMPS ÉCOULÉ**.
+- Le temps écoulé est interpolé localement entre deux trames Apex, exactement comme sur le Live Timing Campillos.
+- Recalage automatique à chaque nouvelle valeur `count`.
+- Le cartouche Analyzer bascule automatiquement entre **TEMPS RESTANT**, **TEMPS ÉCOULÉ** et **TOURS** selon le type de session détecté.
+- Les vues Qualification / Sprint / Endurance utilisent le même compteur adaptatif.
+- Radar, Trafic, filets, Score Sprint et Score Relais inchangés.
+
+# V7.2.153 — LIVE INTERNATIONAL + POSITION UNIFIÉE
+- `Vueltas / Vuelta`, `Giri / Giro`, `Runden / Runde`, `Voltas / Volta`, `Rondes / Ronde` et variantes polonaises sont reconnus comme nombre de tours même si `data-type` est vide.
+- `dyn1|count|...` est reconnu comme **temps écoulé**, jamais comme temps restant.
+- La course active n'est plus dépendante du seul `countdown` : fraîcheur de la grille sportive, chrono `count` frais ou tracking Apex frais peuvent activer le moteur live.
+- Filets stylisés disponibles sur les courses sans countdown.
+- **Radar / Heat Map, Trafic et Filets** utilisent le même moteur de position `analyzerLiveProgressPhase`.
+- Le Radar accepte le fallback Velocity si le tracking Apex détaillé est absent.
+- Le temps restant reste `—` quand Apex ne fournit aucune durée restante exploitable ; Velocity n'invente pas la durée.
+- Score Relais et Score Sprint inchangés.
+
+# V7.2.153 — TRAFIC COHÉRENT + FILETS VELOCITY
+- **TRAFIC** et **CLASSEMENT LIVE** utilisent désormais strictement la même position virtuelle linéaire du kart.
+- Suppression du repli automatique de phase à ±0,5 tour qui pouvait faire apparaître dans TRAFIC un kart « devant » alors que son filet était visuellement derrière.
+- Le sens devant/derrière de TRAFIC est maintenant directement cohérent avec la position horizontale des filets.
+- Filets redessinés façon **Velocity** : traînée progressive transparente → gris froid → blanc, extrémité nette et petit halo lumineux.
+- Longueur et mécanique de déplacement restent inchangées ; seul le rendu visuel est enrichi.
+- Aucun changement sur Score Relais ou Score Sprint.
+
+# V7.2.153 — ANALYZER : FILETS LIVE + MOTEUR COMMUN TRAFIC
+- Ajout de filets fins gris/blanc sous chaque ligne du **CLASSEMENT LIVE** Analyzer.
+- Les filets ont une longueur fixe d’environ **13 %** de la largeur du classement ; c’est leur **position horizontale** qui évolue, comme le principe observé sur Apex Timing.
+- Le leader possède lui aussi son filet afin de conserver une référence visuelle complète.
+- L’extrémité du filet représente la progression virtuelle du kart entre deux passages de chronométrage.
+- Animation linéaire continue jusqu’au passage suivant ; la position est recalée à chaque mise à jour live.
+- Les filets et **TRAFIC** utilisent désormais le même moteur de phase virtuelle (`analyzerLiveProgressPhase`) : position Apex en priorité, puis fallback Velocity si le tracking détaillé n’est pas disponible.
+- Aucun filet n’est affiché hors course, au stand ou dans le **Classement virtuel**.
+- Aucun changement sur **Score Relais** ni sur **Score Sprint**.
+
+# V7.2.153 — SCORE SPRINT : TRANSITIONS ENTRE GROUPES
+- Modification **uniquement du Score Sprint**. Le Score Relais reste strictement inchangé.
+- Détection des changements de niveau/groupe : `Espoir ↔ Elite`, `Groupe 2 ↔ Groupe 1`, `Groupe B ↔ Groupe A` et variantes équivalentes dans les noms de session.
+- Lorsqu’un pilote change de groupe, son Δ personnel n’est plus corrigé par la simple différence de médiane entre son ancien groupe et son nouveau groupe.
+- Velocity cherche le **groupe d’arrivée à la manche précédente** et mesure l’évolution médiane des pilotes restés dans ce groupe entre les deux manches.
+- Exemple : `Course 2 Espoir → Course 3 Elite` est comparé à l’évolution `Course 2 Elite → Course 3 Elite` des pilotes Elite stables.
+- La nouvelle référence exige au moins **5 pilotes stables** dans le groupe d’arrivée ; sinon Velocity conserve automatiquement l’ancienne référence Sprint.
+- La normalisation médiane + MAD, le signal en σ et les poids adaptatifs Transition/Rythme restent inchangés.
+
+# V7.2.153 — SCORE SPRINT : ORDRE CHRONOLOGIQUE DES SESSIONS
+- Les imports CSV/ZIP ne conservent plus l’ordre arbitraire des fichiers dans l’archive.
+- Tri automatique avant calcul : **QUALIF A → QUALIF B → COURSE 1 A → COURSE 1 B → COURSE 2 A → COURSE 2 B → …**.
+- Reconnaissance des libellés Apex `QUALIF / QUALIFICATION / CHRONO` et `COURSE / RACE / MANCHE / HEAT / SPRINT`.
+- Les numéros de manche sont utilisés pour ordonner Course 1, Course 2, Course 3, etc.
+- Lorsqu’un groupe A/B est explicitement présent dans le nom Apex, A est placé avant B.
+- Le même ordre est utilisé par le calcul Score Sprint, le PDF, **ÉVOLUTION PAR PILOTE** et **DÉTAIL DES TRANSITIONS**.
+- L’ordre normalisé est conservé lors des imports cumulatifs suivants.
+
+# V7.2.153 — VELOCITY LAB : IMPORT CSV / MULTI-CSV / ZIP
+- Nouveau bouton **IMPORTER CSV / ZIP** dans Score Sprint.
+- Accepte un CSV, plusieurs CSV sélectionnés en une fois ou un ZIP contenant plusieurs CSV.
+- Les imports sont **cumulatifs** pendant la session Velocity Lab.
+- Déduplication par `Session + Pilote + Tour` : une ligne déjà identique est ignorée, une ligne différente pour la même clé remplace l’ancienne, une nouvelle ligne est ajoutée.
+- Les sessions nouvelles sont ajoutées à la suite des sessions déjà importées.
+- Après import, Velocity reconstruit automatiquement les sessions, pilotes, karts et tours puis utilise exactement le moteur Score Sprint V2 existant.
+- Les sessions importées apparaissent avec la source **CSV** et sont toutes sélectionnées par défaut.
+- Compteur d’import : lignes lues, nouvelles, mises à jour, identiques et ignorées.
+- Bouton **EFFACER L’IMPORT** pour repartir d’une base vide.
+- Les données importées peuvent ensuite être réexportées avec **TÉLÉCHARGER TOUS LES TOURS** et utilisées pour le PDF complet.
+
+# V7.2.153 — PDF SCORE SPRINT : RAPPORT COMPLET DE L’ÉVÉNEMENT
+- Le PDF n’est plus centré uniquement sur la dernière course.
+- Un tableau de résultats est généré pour **chaque session sélectionnée** : `QUALIF A`, `QUALIF B`, `COURSE 1 A`, `COURSE 1 B`, etc.
+- Après chaque manche de course, ajout d’un **CLASSEMENT COURSE 1**, **CLASSEMENT COURSE 2**, etc., consolidant les groupes A+B.
+- Le classement consolidé ne recalcule pas les scores ensemble : chaque pilote conserve le score calculé dans son propre plateau A ou B.
+- Les tableaux **ÉVOLUTION PAR PILOTE** sont conservés.
+- La matrice **STABILITÉ PAR KART** reste présente lorsque le suivi des numéros est activé.
+- Le **DÉTAIL DES TRANSITIONS** est conservé et utilise les libellés explicites des sessions (QUALIF A/B, COURSE 1 A/B...).
+
+# V7.2.153 — STATS APEX : RETRY + EXPORT DIAGNOSTIC
+- Les réponses Apex vides ne sont plus considérées immédiatement comme définitives.
+- Jusqu’à 3 tentatives sur la première fenêtre de tours, puis nouvelles tentatives sur les fenêtres suivantes.
+- Score Sprint charge les pilotes historiques séquentiellement afin de limiter les réponses Apex manquantes lors des rafales de requêtes.
+- « Télécharger tous les tours » utilise la même récupération robuste.
+- Le CSV contient désormais une colonne **STATUS**.
+- Tout pilote présent dans la grille est exporté même si Apex ne renvoie aucun tour : `AUCUN TOUR RETOURNÉ`.
+- Le résumé indique le nombre de pilotes/session sans retour Apex.
+
+# V7.2.153 — VELOCITY LAB : TÉLÉCHARGER TOUS LES TOURS
+- Nouveau bouton **TÉLÉCHARGER TOUS LES TOURS** dans Score Sprint.
+- L’export utilise toutes les sessions cochées dans Velocity Lab ; la session LIVE est ajoutée uniquement si l’option correspondante est cochée.
+- Export CSV compatible Excel, une ligne par tour et par pilote.
+- Colonnes : Session ID, Session, Type, Pilote, Kart, Apex Row, Tour, Temps brut ms + formaté, S1/S2/S3 bruts ms + formatés.
+- Les données sont les **données Apex brutes** : aucun nettoyage, aucun retrait de tour de lancement, aucun filtre Velocity.
+- L’export est indépendant du calcul Score Sprint et permet d’auditer précisément les données reçues par Velocity.
+
+# V7.2.153 — SCORE SPRINT : RÉCUPÉRATION STATS HISTORIQUES
+- Correction effective du double retrait du tour de lancement dans Score Sprint.
+- Anthony Silik : 1:29.111 écarté, puis 1:00.227 / 1:00.014 / 1:00.200 conservés = 3 tours exploitables.
+- Suppression robuste des fausses lignes d’en-tête Apex `Pilote / Kart`.
+- Les matrices écran et PDF n’affichent plus jamais littéralement `null`.
+- Un vrai manque de données est affiché `— / Données insuffisantes`.
+
+# V7.2.153 — SCORE SPRINT : FIX TOURS EXPLOITABLES
+- Correction du double retrait du tour de lancement dans Score Sprint.
+- Si le tour de lancement a déjà été écarté par le filtre d’outlier, Velocity ne supprime plus le tour propre suivant.
+- Cas de contrôle Anthony Silik : 1:29.111 écarté, puis 1:00.227 / 1:00.014 / 1:00.200 conservés = 3 tours exploitables, donc score calculable.
+- Filtrage de la fausse ligne historique Apex `Pilote / Kart`.
+- Aucun score insuffisant ne doit désormais apparaître littéralement sous forme `null` : affichage `— / Données insuffisantes`.
+
+# V7.2.153 — SCORE SPRINT : 42 PILOTES A+B
+- Le tableau **SCORE SPRINT EXPÉRIMENTAL** réunit désormais tous les pilotes des deux groupes de la dernière étape (ex. 21 Groupe A + 21 Groupe B = 42 pilotes).
+- Les scores restent calculés séparément dans chaque groupe : le plateau A n’est pas mélangé au plateau B.
+- La matrice **ÉVOLUTION PAR PILOTE** affiche explicitement `QUALIF A / QUALIF B`, puis `COURSE 1 A / COURSE 1 B`, etc.
+- Les pilotes présents dans la grille mais avec trop peu de tours exploitables restent visibles avec `—` et la mention **Données insuffisantes**.
+- Une session LIVE encore vide n’est plus considérée comme la dernière étape de résultats.
+- L’export PDF reprend tous les pilotes de l’étape principale sur plusieurs pages si nécessaire.
+
+# V7.2.138 — SCORE SPRINT : GROUPES A/B + EXPORT PDF
+- Velocity Lab reconnaît désormais **Groupe A / Groupe B** comme deux sous-sessions d’une même étape.
+- `Qualif A + Qualif B` produit une seule étape **QUALIF** regroupant tous les pilotes.
+- Même logique pour `Course 1 A/B`, `Course 2 A/B`, etc.
+- Chaque groupe conserve son **propre plateau statistique** pour le calcul du score : A n’est pas comparé artificiellement à B.
+- La référence du pilote n’est mise à jour qu’après traitement complet de l’étape ; Qualif B n’est donc jamais considérée comme la session suivante de Qualif A.
+- Le classement principal de l’étape réunit les résultats des deux groupes.
+- Export PDF Score Sprint sécurisé et compatible avec les étapes multi-groupes.
+
+# V7.2.138 — CLASSEMENT LIVE + SCORE SPRINT
+- Classement Live : renforcement du décodeur Apex par libellé pour **Position, Kart, Tours, Dernier tour, Meilleur tour, Écart et Intervalle** lorsque le circuit utilise des `data-type` personnalisés.
+- Classement Live : conservation de la dernière valeur valide d’une cellule pendant les mises à jour Apex partielles, au lieu d’afficher uniquement les noms.
+- Courses au nombre de tours : aucune dépendance à un compte à rebours temps pour alimenter les colonnes du classement.
+- Velocity Lab / Score Sprint : l’option **Suivre les numéros de kart** est désormais affichée dans un bloc dédié, toujours visible dès l’ouverture de Score Sprint.
+- Décochée, les numéros restent affichés mais sont explicitement **non pris en compte** ; cochée, ils servent au suivi et à la matrice Karts.
+
+# V7.2.138 — SCORE SPRINT : KARTS AFFICHÉS EN MODE RELAIS
+- En **MODE RELAIS** (option « Suivre les numéros de kart » décochée), les numéros de kart restent visibles à titre informatif.
+- Une mention explicite indique que les numéros de kart **ne sont pas pris en compte dans le calcul**.
+- La matrice Pilotes conserve le numéro de kart sous le score, avec la mention « non pris en compte ».
+- La matrice **Stabilité par kart** reste réservée au MODE SUIVI KARTS.
+- L’export PDF conserve également les numéros de kart en MODE RELAIS et précise qu’ils ne participent pas à l’analyse.
+
+# V7.2.138 — SCORE SPRINT : MODE RELAIS / SUIVI KARTS
+
+- Ajout dans Velocity Lab / Score Sprint de l’option **Suivre les numéros de kart**, décochée par défaut.
+- Option décochée : **MODE RELAIS**. Les numéros de kart sont ignorés dans la lecture des résultats ; l’analyse suit uniquement chaque pilote de session en session avec l’Algo V2 relatif au plateau.
+- Option cochée : **MODE SUIVI KARTS**. Le numéro de kart est affiché sous le score pilote et la matrice **Stabilité par kart** est activée.
+- Le tableau de classement et le détail des transitions masquent les colonnes Kart en mode Relais.
+- L’export PDF indique explicitement le mode utilisé et supprime toutes les références aux numéros de kart en mode Relais.
+- En mode Relais, la matrice Pilotes affiche sous le score le Δ corrigé et le signal σ à la place du numéro de kart.
+- Home, pied de page PDF et User-Agent mis à jour en **Velocity V7.2.138**.
+
+# V7.2.134 — ALGO V2 PLATEAU RELATIF
+
+- Analyzer passe au moteur **Velocity V2** validé sur les jeux de données historiques Sprint et Endurance.
+- Suppression des seuils absolus en secondes pour la composante Transition.
+- Le Δ reste calculé comme `Δ pilote - Δ plateau`, puis sa force est normalisée par la dispersion robuste du plateau (médiane + MAD, exprimée en σ).
+- Pondération adaptative : Transition varie progressivement de **25 à 45 %** selon la force statistique du signal ; Rythme varie de **45 à 25 %**.
+- Sans transition exploitable, les autres facteurs sont renormalisés automatiquement.
+- En Endurance, SCORE RELAIS compare chaque relais à une **fenêtre de tours comparable**, afin de tenir compte des changements de kart asynchrones entre équipes.
+- La confiance affichée distingue mieux l’attribution au kart : même pilote avant/après = confiance renforcée ; changement de pilote ou pilote inconnu = confiance réduite.
+- Velocity Lab / Score Sprint utilise désormais la même logique V2 relative au plateau.
+- Home et User-Agent mis à jour en **Velocity V7.2.134**.
+
+# V7.2.133 — VELOCITY LAB MATRICES + EXPORT PDF
+
+- Ajout des matrices **ÉVOLUTION PAR PILOTE** : score par Qualif/Course avec numéro de kart sous le score.
+- Ajout des matrices **STABILITÉ PAR KART** : score par Qualif/Course avec nom du pilote sous le score.
+- Ajout du bouton **EXPORTER EN PDF** dans Score Sprint.
+- Le PDF contient : classement de la dernière session, matrice Pilotes, matrice Karts et détail complet des transitions/Δ corrigés.
+- Aucun changement du classement Velocity officiel ni du Score Relais.
+
+# V7.2.133 — Velocity Lab : Score Sprint expérimental
+
+- Ajout d’un mode **SCORE SPRINT** exclusivement dans Velocity Lab ; aucun changement du classement Velocity ni de SCORE RELAIS dans Analyzer.
+- Détection des anciennes sessions Apex de type Qualification / Course avec sélection manuelle et réorganisation avant calcul.
+- Prise en charge de deux groupes de qualification / course et ajout optionnel de la session LIVE comme dernière étape.
+- Reconstruction de l’historique individuel de chaque pilote : dernière session pertinente → session suivante, quel que soit son groupe.
+- Calcul expérimental du Δ corrigé : variation du temps moyen pilote moins variation médiane du plateau.
+- Pondération adaptative : TRANSITION progresse de 25 à 45 % selon |Δ corrigé|, tandis que PACE diminue de 45 à 25 %.
+- La règle est symétrique : amélioration forte = kart valorisé ; dégradation forte = kart sanctionné.
+- Sans référence antérieure exploitable, Transition est absente et Pace / Potential / Consistency / Sample sont renormalisés.
+- Le tableau Score Sprint affiche Score, temps moyen, Δ corrigé, poids Pace/Transition, session et kart précédents, plus le détail complet des transitions.
+
+## V7.2.131 — Delta : gain de position vert
+
+- Le Delta DEVANT passe en vert lorsque l'équipe suivie franchit la ligne en ayant gagné au moins une position.
+- La règle est symétrique à la V7.2.130 : gain de place = vert, perte de place = orange.
+- Le fait de course est prioritaire sur la réinitialisation normale provoquée par un changement de P-1.
+- Le Delta DERRIÈRE reste totalement indépendant.
+- Si la position ne change pas, la tendance normale basée sur l'intervalle Apex reste inchangée.
+
+## V7.2.130 — Delta : perte de position orange
+
+- Le Delta DEVANT passe en orange lorsque l'équipe suivie franchit la ligne en ayant perdu au moins une position.
+- Cette règle de fait de course est prioritaire sur la réinitialisation normale provoquée par le changement de P-1.
+- Le Delta DERRIÈRE reste totalement indépendant et conserve ses règles Velocity.
+- Après ce passage, le Delta DEVANT reprend la tendance normale avec le nouveau concurrent devant.
+
+# Velocity V7.2.129 — Delta devant / derrière indépendants
+
+- Sépare complètement l’historique de tendance du Delta devant et du Delta derrière.
+- Delta devant : échantillonné quand l’équipe suivie franchit la ligne, puisque la donnée native vient de `followed.interval`.
+- Delta derrière : échantillonné quand le poursuivant P+1 franchit la ligne, puisque la donnée native vient de `behind.interval`.
+- Règle Velocity devant : écart qui diminue = vert ; écart qui augmente = orange.
+- Règle Velocity derrière : avance qui augmente = vert ; avance qui diminue = orange.
+- Même comportement pour les écarts en secondes et en tours, avec remise à zéro indépendante si P-1 ou P+1 change.
+- La logique commune reste utilisée par Équipe suivie, Focus Sprint et Focus Endurance.
+
+# Velocity V7.2.128 — Delta Apex natif : écarts en tours
+
+- Delta commun : prise en charge des intervalles Apex exprimés en tours, y compris les libellés localisés (`Ronde(s)`, `Vuelta(s)`, `Runde(n)`, `Giro/Giri`, `Volta(s)`).
+- Empêche qu’un écart tel que `3 Rondes` soit interprété comme `3 secondes`.
+- Équipe suivie, Focus Sprint et Focus Endurance utilisent la même logique temps/tours.
+- La tendance vert/orange n’est comparée que si l’unité reste identique entre deux mesures ; un passage secondes ↔ tours repart neutre.
+
+# Velocity V7.2.127 — Delta Apex natif
+
+- Focus Sprint, Focus Endurance et Équipe suivie utilisent désormais une source Delta commune.
+- `interval` (`data-type="int"`) Apex devient la source prioritaire pour l'écart au concurrent immédiatement devant.
+- L'écart derrière utilise l'`interval` Apex du concurrent P+1, donc son retard direct sur l'équipe suivie.
+- `gap` au leader n'est utilisé qu'en fallback si `interval` est indisponible.
+- Suppression de la priorité donnée au recalcul par nombre de tours dans la carte Équipe suivie.
+- Les couleurs vert/orange utilisent exactement les mêmes valeurs que les écarts affichés.
+- L'historique Delta est réinitialisé séparément lorsque P-1 ou P+1 change, pour éviter de comparer deux adversaires différents.
+- Le backend applique la même priorité Apex native pour rester cohérent avec l'interface.
+
+# Velocity V7.2.126 — Notifications Analyzer Apex
+
+- Analyzer : nouvelle notification orange en haut à droite, à l’opposé de **ENDURANCE**, pour les nouveaux événements Apex.
+- Clic sur la notification : défilement direct vers **PÉNALITÉS ET INFORMATIONS** et remise à zéro des non-lus.
+- Libellé dynamique : **Pénalité [équipe]**, **Informations**, **Pénalité & Informations** ou **Pénalités** selon les événements non lus.
+- Badge numérique uniquement à partir de 2 événements non lus.
+- Le premier `com||` reçu sert de base : l’historique antérieur à la connexion ne génère aucune fausse notification.
+- Déduplication de la notification instantanée `msg|msgt` lorsque le même événement arrive ensuite dans `com||`.
+- Aucun changement sur les blocs pénalités des autres modes.
+
+# Velocity V7.2.125 — Événements Apex natifs
+
+- Analyzer : `com||` devient la source de vérité structurée de **PÉNALITÉS ET INFORMATIONS**.
+- Parsing natif de l'heure, `data-flag`, numéro de kart éventuel et texte complet.
+- Typage Apex conservé : `penalty`, `warning`, `msg`, `msg_warning`, `green`.
+- Les informations générales sans kart sont conservées.
+- Association kart → équipe lorsqu'elle est disponible au moment de l'ingestion.
+- `msg|msgt|...` sert de notification immédiate temporaire et est dédupliqué automatiquement dès que la même information apparaît dans `com||`.
+- Aucun changement sur les blocs pénalités Qualification, Sprint ou Focus.
+
+# V7.2.124 — Schéma Apex + sessions natives
+
+- Le schéma fourni par le `grid` Apex via `data-type` devient explicitement la source de vérité dès qu’il est disponible ; aucun mapping relatif `cX` ne peut ensuite le remplacer.
+- Le diagnostic protocolaire expose désormais `schema_source` et le `column_schema` réellement détecté pour faciliter les vérifications piste par piste.
+- Ajout de `/api/apex/sessions` : Velocity interroge directement la commande Apex `S#`, structure les sessions et les classe (qualification, endurance, course, essais, autre).
+- Score Relais privilégie les sessions Apex classées `qualification` pour retrouver le contexte R1, avec fallback sur l’ancien parsing brut si l’endpoint structuré n’est pas disponible.
+- Reconnaissance étendue des noms de qualification : Qualif / Qualification / Qualifying / Tijdrijden / Chrono(s) / Time Trial / Time Attack.
+- Le cache du Service Worker passe à V7.2.124 pour forcer le chargement des nouveaux fichiers.
+
+# V7.2.123 — Données STATS Apex natives
+
+- Alignement du parseur `.P` Velocity sur le JavaScript officiel Apex (`tzfji`) : durées, temps piste, temps stands et `driver_total_time` sont interprétés directement en millisecondes Apex, sans conversion heuristique.
+- Lecture enrichie de `.INF` : numéro de kart courant, liste des pilotes et drapeau `current` (`is_current`) sont conservés dans le cache Analyzer.
+- SCORE RELAIS rattache désormais chaque relais au pilote fourni par Apex dans `.P`; le relais en cours utilise le pilote `current` de `.INF`.
+- Velocity / Velocity Lab utilisent le pilote courant officiel Apex pour la continuité 👤/👥 et privilégient le numéro de kart `.INF` lorsqu'il est disponible.
+- Le moteur actuel reste en fallback lorsque `.P` ou `.INF` ne sont pas fournis par une installation Apex.
+
+# V7.2.122 — Score Relais : largeur réellement fixe
+
+- Les colonnes R1 à Rn utilisent désormais un `colgroup` commun et une largeur structurelle fixe de 56 px.
+- La largeur totale du tableau des relais est calculée explicitement à partir du nombre de relais, ce qui empêche le navigateur de redistribuer l’espace entre les colonnes.
+- Les valeurs à 1, 2 ou 3 chiffres, y compris 100, restent centrées dans des colonnes strictement identiques.
+- Aucun changement du calcul des scores, des couleurs, des colonnes fixes ou du scroll horizontal.
+
+# V7.2.121 — Score Relais : colonnes uniformes
+
+- Toutes les colonnes R1 → Rn ont désormais strictement la même largeur.
+- Largeur dimensionnée pour afficher confortablement une valeur à trois chiffres comme 100.
+- Les scores à un ou deux chiffres restent centrés dans la même largeur.
+- Aucun changement des calculs, couleurs, colonnes fixes ou navigation horizontale.
+
+# V7.2.120 — Score Relais : R1 réellement accessible
+
+- Séparation physique des colonnes fixes TOP / POS / KART / ÉQUIPE et de la zone horizontale R1 → Rn.
+- R1 et R2 ne peuvent plus être masqués sous les colonnes fixes lorsque le scroll est déjà à zéro.
+- Navigation horizontale libre de R1 au dernier relais, avec conservation de la position pendant les rafraîchissements.
+- Aucun changement des calculs de Score Relais.
+
+# V7.2.119 — Navigation complète Score Relais
+
+- La vue SCORE RELAIS s’ouvre désormais systématiquement sur R1.
+- Le défilement horizontal est indépendant de la vue VELOCITY et peut revenir complètement à gauche jusqu’à R1.
+- La position de scroll est conservée pendant les rafraîchissements de SCORE RELAIS, sans être écrasée par les rerenders STATS.
+- Les colonnes TOP | POS | KART | ÉQUIPE / PILOTE restent figées pendant la navigation horizontale.
+- Amélioration du swipe horizontal sur mobile et trackpad.
+
+# V7.2.118 — TRAFIC + Heat Map unifiés sur le tracking Apex
+
+- Heat Map et TRAFIC utilisent désormais la même phase Apex par concurrent.
+- Expiration des positions 5 s après la fin du segment, comme Apex.
+- Les segments pit `in/out` ne sont plus projetés artificiellement sur le radar principal.
+- Identité concurrent stable `rXXXXX` conservée.
+
+# V7.2.117 — TRAFIC aligné sur le tracking Apex
+
+- Analyzer — ligne **TRAFIC** : l’identité temporelle utilise désormais l’identifiant concurrent Apex stable `rXXXXX` (`apex_row`) et non le numéro de kart.
+- Lorsque les impulsions Apex `*`, `*i1`, `*i2`, `*in`, `*out` sont disponibles, TRAFIC utilise exclusivement le moteur de position déjà alimenté par ces événements (`track/s1/s2/s3/in/out`) ; aucun mélange avec l’ancienne interpolation n’est effectué.
+- La progression est calculée à partir de l’horodatage et de la durée de la portion Apex, sur le même principe que le Live Tracking Apex.
+- Un état dépassé de plus de 5 s est ignoré, comme sur Apex, afin d’empêcher un ancien concurrent de réapparaître sous forme de « kart fantôme ».
+- L’ancienne interpolation par passages de tours est conservée uniquement en fallback pour les circuits qui ne fournissent pas de tracking exploitable.
+- Aucun changement de design de la ligne TRAFIC ni des autres modules Analyzer.
+
+# V7.2.116
+
+- Analyzer — carte **PÉNALITÉS ET INFORMATIONS** : numéro de kart, nom d’équipe et texte du message agrandis de 25 %.
+- La taille de l’heure reste inchangée.
+- Aucun changement sur les pénalités des autres modes.
+
+# V7.2.115
+
+- Analyzer uniquement : la carte PÉNALITÉS devient **PÉNALITÉS ET INFORMATIONS**.
+- La carte reprend désormais l’intégralité du journal Apex `comments` : pénalités, avertissements et messages d’information.
+- Les messages sans kart/équipe (ex. Start kartwissel) sont conservés tels quels, sans association artificielle.
+- Les blocs pénalités Sprint, Qualif, Focus et autres modes restent inchangés.
+
+# V7.2.114
+
+- Analyzer : le Classement Live tient désormais intégralement dans la largeur de sa carte sur desktop, sans défilement horizontal.
+- Conformité réglementaire : « Cadence requise » devient « Temps mini. par pilote » et reprend directement le paramètre règlementaire « Temps minimum par pilote (minutes) ».
+- Pénalités : suppression de la colonne/en-tête PÉNALITÉS ; chaque ligne affiche désormais « ÉQUIPE : TEXTE DE LA PÉNALITÉ » après HEURE et KART.
+
+# V7.2.113
+- Météo horaire : textes et icônes réduits de 25 %, typographie affinée.
+- Pénalités : hauteur des lignes réduite de 25 %.
+- Classement LIVE : largeur et colonnes figées pour supprimer les variations lors de l’alternance Équipe/Pilote ; la carte Pénalités conserve les mêmes axes.
+
+# V7.2.112 — Météo x3 & alignement Pénalités
+
+- Dalles horaires Météo : textes et icônes agrandis x3.
+- PÉNALITÉS : HEURE alignée sur POS du Classement LIVE.
+- PÉNALITÉS : KART aligné sur la colonne KART du Classement LIVE, avec la même taille de numéro.
+- PÉNALITÉS : conservation d’un espace invisible équivalent à la colonne IN pour garantir l’alignement.
+- Texte des pénalités en blanc.
+
+# V7.2.111 — Pénalités en colonnes & rééquilibrage Météo/Messagerie
+
+- Carte PÉNALITÉS transformée en tableau à 4 colonnes : Heure | Kart | Équipe | Pénalités.
+- Entêtes alignés sur la typographie du Classement Live ; numéro de kart seul ; équipe et pénalité alignées à gauche.
+- Messagerie Pilote réduite de 40 % en hauteur sur desktop.
+- Météo agrandie de l’espace libéré ; les dalles horaires occupent toute la hauteur disponible sous Vent / Pluie.
+- La hauteur cumulée Météo + Messagerie reste identique à Équipe suivie / Conformité réglementaire.
+
+# V7.2.110 — Layout Analyzer équilibré & Pénalités Apex
+
+- **Conformité réglementaire** prend désormais toute la hauteur de la carte **Équipe suivie** afin d'agrandir les cartes pilotes.
+- **Météo** est compactée et **Messagerie Pilote** est placée juste dessous ; les deux cartes cumulées ont la même hauteur qu'Équipe suivie / Conformité.
+- Nouvelle carte **PÉNALITÉS** sous **Classement Live**, alimentée par le flux Apex.
+- Historique complet des pénalités : fusion de la zone Commentaires Apex et de l'historique de la colonne Péna., tri du plus récent au plus ancien, heure et kart conservés lorsqu'ils sont fournis.
+- La carte Pénalités est scrollable pour conserver toutes les sanctions sans agrandir excessivement la page.
+
+# V7.2.109 — Temps pilotes officiels Apex
+
+- Conformité réglementaire : temps pilotes alimentés par `driver_total_time` Apex, sans reconstruction locale des relais.
+- Compte Rendu : nouvelle section TEMPS DE ROULAGE TOTAL basée sur les totaux Apex officiels.
+- Association pilote/relais améliorée grâce à `driver_id` + bloc `INF` Apex.
+- Cartes pilotes compactées : suppression de la silhouette, nom/prénom agrandis et temps total en gras.
+- Les relais trop courts restent visibles dans le Compte Rendu mais n'affectent pas les totaux pilotes officiels.
+
+# V7.2.107 — Velocity Lab unifié avec le moteur STATS / Score Relais
+
+- Velocity Lab utilise désormais les mêmes relais reconstruits depuis STATS que SCORE RELAIS.
+- Delta brut, Delta plateau et Delta corrigé sont strictement identiques entre SCORE RELAIS, le classement VELOCITY et Velocity Lab.
+- La composante TRANSITION de Velocity Lab utilise le même Delta corrigé que SCORE RELAIS.
+- Les cinq composantes du score affiché dans Velocity Lab reprennent le score du dernier relais reconstruit depuis STATS quand il est disponible.
+- Le classement VELOCITY utilise également ce même score de relais reconstruit, avec fallback sur l'ancien moteur uniquement tant que les STATS ne sont pas encore chargées.
+- Chargement des SCORE RELAIS lancé en arrière-plan depuis Analyzer pour éviter une divergence tant que l'utilisateur n'a pas ouvert manuellement la vue SCORE RELAIS.
+
+# V7.2.105 — Delta Score Relais unifié & rendu Analyzer stabilisé
+
+- La colonne Δ du classement Velocity utilise désormais exactement le Δ corrigé du dernier relais calculé par SCORE RELAIS lorsque les STATS sont disponibles.
+- Le tri Delta utilise la même source de vérité.
+- La reconstruction périodique SCORE RELAIS ne relance plus le rendu global Analyzer.
+- Heat Map et Velocity ne sont plus démontés/réaffichés pendant le rafraîchissement des relais.
+- SCORE RELAIS se rafraîchit de manière isolée et la vue Velocity met à jour uniquement ses cellules Delta.
+
+## V7.2.103
+
+- Delta voisinage harmonisé dans Analyzer, Focus Sprint et Focus Endurance.
+- Équipe devant : écart affiché avec signe positif.
+- Équipe derrière : écart affiché avec signe négatif.
+- Couleurs calculées uniquement sur l’évolution de la magnitude de l’écart entre deux tours du pilote suivi.
+- Devant : écart qui se réduit = vert ; qui augmente = orange.
+- Derrière : écart qui augmente = vert ; qui se réduit = orange.
+- Tolérance de comparaison ramenée à 0,001 s pour éviter de masquer les évolutions utiles.
+
+## V7.2.102
+- Spotter/STANDS : cartes en attente = fond sombre + filet orange uniquement.
+- Spotter/STANDS : premier kart disponible = fond vert renforcé.
+- Analyzer Trafic : détection de course active durcie pour supprimer les cercles adverses fantômes hors session.
+
+# Velocity V7.2.102 — Correction multi-files Spotter
+
+- La validation d’un kart entrant détermine désormais la file choisie avant de sélectionner le kart à attribuer.
+- Velocity prend uniquement le premier kart `available` de la file sélectionnée (File 1, 2 ou 3).
+- Le kart rendu par l’équipe entrante est ajouté au fond de cette même file via son `queueFile`.
+- Les autres files restent totalement inchangées lors de la validation.
+- Message explicite si la file choisie ne contient aucun kart disponible.
+- La logique Maintenance existante reste inchangée.
+
+# Velocity V7.2.99 — Reset Trafic hors course
+
+- La ligne Trafic utilise désormais la même détection d’activité que la Heat Map avant d’afficher les adversaires.
+- En l’absence de course active, les cercles adverses, phases mémorisées et positions interpolées sont purgés immédiatement.
+- Un ancien classement Apex ou un état conservé d’une session précédente ne peut plus afficher de cercle fantôme au chargement d’Analyzer.
+- Le kart de l’équipe suivie reste seul au centre de la ligne tant qu’aucune course n’est active.
+
+# Velocity V7.2.97 — Identité unique des cartes Spotter
+
+- Correction de la validation d’un kart entrant quand son libellé KV est identique à celui d’une autre carte déjà présente dans une autre file.
+- La validation, le déplacement et la maintenance ciblent désormais une instance de carte via `cardId`, et non le seul libellé `KVxx`.
+- Un kart entrant validé en File 1 ne peut plus supprimer par erreur une carte de File 2 portant le même libellé KV.
+- Migration automatique des anciennes cartes/assignations sans `cardId`.
+
+# Velocity V7.2.97 — Synchronisation STANDS / Spotter
+
+- STANDS Analyzer consomme désormais le même état partagé que le mode Spotter, issu de `/api/spotter-state`.
+- Ajout d'un cache navigateur `velocitySharedSpotterState` alimenté à la fois par les modifications locales et par le polling serveur Spotter.
+- Mise à jour immédiate des cartes STANDS lorsqu'un autre appareil modifie les files, les entrants ou la maintenance.
+- `state.spotter` du flux général reste uniquement un fallback de sécurité.
+- Aucun changement des règles Quick Change, du moteur Velocity ou des droits Team.
+
+# Velocity V7.2.95 — Team Management harmonisé
+
+- Tous les boutons du module Team Management reprennent désormais la DA sombre des boutons Analyzer.
+- Les actions **SUPPRIMER** utilisent une variante danger sombre à bordure rouge, sans rectangle blanc.
+- **CRÉER UNE TEAM** ouvre une modale Velocity dédiée au lieu du `prompt()` du navigateur.
+- Suppression d’une Team, suppression d’un membre et fin de Session Course utilisent des confirmations Velocity, sans `confirm()` natif.
+- La zone QR Code reste entièrement masquée tant que l’utilisateur ne clique pas sur **QR CODE**.
+- Le logo VELOCITY des deux écrans d’onboarding est resserré : V rouge et ELOCITY blanc forment un seul mot, comme sur la Home.
+
+## V7.2.95 — Onboarding Team et partage invitation
+- Fenêtre « Associer un appareil » simplifiée : Partager / Copier le lien / QR Code, sans URL affichée.
+- QR Code chargé de façon contrôlée avec message de secours en cas d’indisponibilité.
+- Écran membre : logo Velocity de la Home, icône d’accueil, texte « Vous rejoignez … en tant que : ».
+- Écran installation : titre « Installer Velocity » agrandi de 20 %.
+
+# Velocity V7.2.95 — Onboarding appareil premium
+
+- Refonte complète de la page d'association d'un appareil membre.
+- Parcours en deux écrans : association du téléphone, puis installation de Velocity.
+- Le bouton **ASSOCIER CET APPAREIL** est désormais l'action principale du premier écran.
+- Après association, transition automatique vers les instructions d'installation.
+- Texte validé : « Appuyez sur le bouton ⬆️ Partager situé à côté de la barre d'adresse. »
+- Étapes dédiées « Ajouter à l'écran d'accueil » puis ouverture via l'icône Velocity.
+- Si l'appareil a déjà réclamé cette invitation, l'écran d'installation est affiché directement.
+- Aucun changement sur les droits Team, les rôles actifs ou le moteur de Session Course.
+
+# Velocity V7.2.91 — Fin de session : révocation Team Manager
+
+- Un rôle **Team Manager autorisé** dans la fiche d’un membre ne donne plus aucun accès permanent à Velocity.
+- Seul un rôle **Team Manager actif** dans une Session Course ouvre l’application complète.
+- À la fin de la session, tous les membres invités — Pilote, Spotter ou Team Manager — reviennent à l’écran « En attente d’affectation… ».
+- Le propriétaire / navigateur TM non associé à un membre invité conserve son accès normal à Velocity.
+- Aucun changement sur les rôles autorisés permanents : ils restent disponibles pour une future affectation.
+
+# Velocity V7.2.91 — Stabilité affichage Spotter
+
+- Le polling des droits Team continue toutes les 3 secondes mais ne relance plus le rendu lorsque l’état d’accès est inchangé.
+- Spotter n’est plus démonté/réaffiché à chaque réponse de `/api/device/session`.
+- Une coupure serveur transitoire ne remplace plus un écran Spotter/Pilote déjà autorisé par l’écran de verrouillage.
+- Le reroutage n’a lieu que si le rôle, la session, l’appareil ou les autorisations changent réellement.
+- Suppression des fichiers `__pycache__`/`.pyc` parasites de l’archive GitHub.
+
+# Velocity V7.2.89 — Verrouillage strict des rôles Team
+
+- Un appareil associé à un membre Team est désormais verrouillé par défaut pendant la vérification serveur.
+- Un membre sans rôle Team Manager n’accède jamais à Home, Analyzer, Qualification, Sprint, Endurance ou Velocity Lab hors affectation.
+- Sans session active : écran « En attente d’affectation ».
+- Rôle Spotter actif : seul Spotter est affiché.
+- Rôle Pilote actif : seul le Focus Pilote est affiché.
+- Rôle Team Manager actif/autorisé : accès complet conservé.
+- En cas d’échec réseau lors de la vérification des droits, l’accès reste fermé au lieu de retomber sur l’application complète.
+- Un rôle renvoyé par la session est vérifié une seconde fois contre les rôles autorisés du membre.
+
+# Velocity V7.2.89 — Team Management fiabilisé
+
+- Correction de la page noire des invitations `/invite/...` : l’écran d’enrôlement est désormais hors de la page Analyzer et reste visible quand les écrans normaux sont masqués.
+- Ajout de la suppression d’une Team et d’un membre, avec confirmation et nettoyage des appareils/invitations associés.
+- Session Course : plusieurs membres peuvent être cochés pour un même rôle (Pilote, Spotter, Team Manager).
+- « Associer un appareil » ouvre désormais une fenêtre Velocity avec Copier le lien / Partager / QR Code, sans lancer automatiquement Mail.
+- Ajout d’un QR Code d’invitation servi directement par Velocity.
+
+# Velocity V7.2.86 — Session de course multi-appareils (prototype)
+
+- Nouveau gestionnaire SESSION COURSE dans le footer Analyzer.
+- Création d’une session à partir du circuit actif et de l’équipe suivie.
+- Circuit verrouillé côté serveur pendant la session.
+- Liens temporaires distincts Spotter et Pilote, avec boutons Copier, Partager et QR Code généré localement.
+- Accès Spotter ouvrant uniquement le mode Spotter ; accès Pilote ouvrant le Focus Endurance.
+- Le TM peut terminer la session, ce qui invalide immédiatement les deux accès temporaires.
+
+# Velocity V7.2.85 — Alignements finaux Analyzer
+
+- Suppression de la mention « Colonnes Apex Timing enrichies par Velocity ».
+- Alignement vertical des en-têtes et des lignes Classement LIVE / Velocity.
+- Harmonisation de la taille des titres de colonnes Velocity avec le Classement LIVE.
+- Déplacement de COMPTE RENDU dans l’en-tête de la carte ÉQUIPE SUIVIE, à droite.
+- Déplacement de RÈGLEMENT dans l’en-tête de la carte CONFORMITÉ RÈGLEMENTAIRE, à droite.
+
+- ÉQUIPE SUIVIE : « Position/Chrono » devient « Position du chrono ».
+- HEAT MAP : bouton OK après simulation pour effacer le résultat et revenir à l’état normal.
+- MÉTÉO : titre harmonisé avec les autres cartes.
+- CONFORMITÉ RÉGLEMENTAIRE : bouton RÈGLEMENT ramené au gabarit des boutons de classement.
+- Classement Analyzer : « CLASSEMENT GÉNÉRAL » devient « CLASSEMENT LIVE ».
+- STANDS : flèche du bouton retour réduite et recentrée.
+- Barre Analyzer : « DÉBRIEF » devient « COMPTE RENDU » avec un style de bouton classique.
+
+# Velocity V7.2.83 — Trafic : dead zone ajustée au kart
+
+- Dead zone de la ligne Trafic calée sur la largeur réelle du visuel du kart avec seulement 1 px de marge.
+- À 0,00 s, le bord du cercle adverse est placé juste derrière/devant le pare-chocs sans chevauchement.
+- Suppression du double trait vertical aux extrémités : seul le terminateur de l’axe reste visible.
+- Les graduations continuent d’utiliser la projection symétrique -10 s / +10 s autour de la dead zone.
+
+7.2.83 — TRAFIC : RESET AU CHANGEMENT DE CIRCUIT
+- Purge complète de l'état Trafic au changement de piste : phases/interpolations, cercles persistants et DOM.
+- Nouveau circuit = ligne Trafic vierge avant réception des nouvelles données Apex.
+- Aucun changement du calcul des écarts ni de la dead zone V7.2.81.
+
+# Velocity V7.2.81 — Dead zone centrale de la ligne TRAFIC
+
+- Le kart suivi occupe désormais une zone centrale infranchissable par les cercles adverses.
+- À 0,00 s derrière, le cercle touche le bord gauche du kart ; à 0,00 s devant, il touche le bord droit.
+- Les écarts de -10 s à 0 s et de 0 s à +10 s sont reprojetés séparément de part et d'autre de la dead zone.
+- La largeur de la dead zone s'adapte automatiquement à la largeur réelle du visuel du kart et à celle des cercles.
+- Les graduations 2 / 4 / 6 / 8 / 10 suivent la même nouvelle projection.
+- Le calcul physique des écarts et les infobulles restent inchangés.
+
+# Velocity V7.2.80 — Annulation Quick Change & bouton Analyzer
+
+- Ajout d’un bouton **ANNULER** dès le choix du nombre de files et dans l’écran d’initialisation des karts.
+- Annuler restaure la configuration précédente sans sauvegarde ni synchronisation d’un brouillon.
+- Depuis Analyzer / STANDS, **PRÉPARER LA ZONE QUICK CHANGE** ouvre désormais le même workflow Spotter et revient dans Analyzer après validation ou annulation.
+- L’icône Quick Change / paramètres de Spotter utilise le même comportement.
+
+# Velocity V7.2.79 — STANDS / Spotter unifiés
+
+- Une seule détection IN commune à Heat Map et Spotter : statut Apex, colonne `sta/si` et impulsion MAP `*in`.
+- La colonne Apex `sta` est désormais interprétée : `si` = IN, `sf` = damier/terminé.
+- Les non-partants marqués `si` sont filtrés de la Pit Lane tant qu’ils n’ont aucune donnée sportive.
+- Configuration Quick Change réellement partagée entre Analyzer et Spotter sur tous les appareils.
+- Si le TM configure les files depuis Analyzer, Spotter s’ouvre directement sur ces files, y compris au premier accès smartphone.
+- Si Spotter configure ou modifie les files, STANDS Analyzer reprend automatiquement le même état.
+- Le nombre de files et les karts de configuration sont inclus dans le snapshot partagé.
+- Sélectionner le même circuit depuis un second appareil ne réinitialise plus le Quick Change déjà préparé.
+- Un vrai changement de circuit réinitialise l’état STANDS/Spotter pour éviter toute contamination entre pistes.
+
+# Velocity V7.2.78 — Spotter : filtrage des sessions terminées
+
+## V7.2.78 — IN Apex vs entrée opérationnelle Spotter
+
+- Heat Map inchangée : tous les karts signalés `IN` par Apex restent visibles dans la Pit Lane, y compris sur une session terminée.
+- Spotter distingue désormais un état `IN` historique d'une entrée aux stands à traiter.
+- Au démarrage de Spotter, les karts déjà `IN` ne sont injectés dans **Karts entrants** que si la session est encore active.
+- Pendant une session active, toute transition piste → `IN` continue d'alimenter automatiquement **Karts entrants**.
+- Une session terminée avec toute la grille laissée `IN` par Apex ne remplit plus artificiellement le workflow Quick Change.
+- Détection d'activité compatible avec courses au temps et au nombre de tours, avec repli sur la présence de karts réellement en piste.
+
+## V7.2.77 — Raccordement live Spotter / Apex
+
+- Correction du flux live Spotter : le module lisait `window.state`, alors que l’état de course est déclaré en `let state` et n’est pas une propriété de `window`.
+- Spotter lit désormais directement la même source de vérité que Heat Map via `spotterLiveState()`.
+- Ajout d’un pont `window.velocityState` défensif pour les modules qui nécessitent l’état live.
+- Lors de la validation de la configuration Spotter, les karts déjà présents dans la Pit Lane Apex sont injectés immédiatement dans **Karts entrants**.
+- La détection `status = pit` + impulsion MAP `*in` reste commune à Heat Map et Spotter.
+
+
+- Spotter utilise désormais la même détection de pit que la Heat Map : statut `pit` ou événement Apex brut `*in`.
+- Un kart détecté aux stands est automatiquement ajouté à **Karts entrants**, dans l'ordre d'arrivée.
+- Les karts déjà aux stands lors de l'ouverture/amorçage du Spotter sont également récupérés.
+- En mode Auto, l'entrée est détectée automatiquement mais **n'est plus validée automatiquement** dans une file : le Spotter humain choisit File 1/2/3 ou Maintenance.
+- Protection existante contre les doublons conservée.
+
+# Velocity V7.2.75 — Animations live des classements généraux
+
+- Qualification, Sprint, Endurance et Analyzer : animation de toute la ligne à chaque nouveau passage sur la ligne de chronométrage.
+- Violet : meilleur temps absolu de la session.
+- Vert : amélioration du meilleur temps personnel.
+- Orange : tour non amélioré.
+- Déplacement FLIP de la ligne vers le haut ou le bas lorsqu'une position est gagnée ou perdue.
+- Animation basée sur une identité stable de l'équipe/pilote afin de ne pas se déclencher sur un simple rafraîchissement Apex.
+- Aucun changement des calculs de classement, des chronos ou du moteur Velocity.
+
+# V7.2.75 — Débrief des anciennes sessions Apex
+
+- STATS > ANCIENNES SESSIONS : sélection d’une session historique Apex puis génération d’un Débrief complet.
+- Le moteur de Débrief existant est réutilisé avec tous les tours et pits de toutes les équipes de la session sélectionnée.
+- L’équipe choisie dans la session est analysée et comparée à l’intégralité du plateau historique.
+- Export PDF du Débrief historique avec le nom de la session.
+
+# V7.2.75 — Velocity complet, tri Delta et Mode Test suivi
+
+- Classement Velocity : toutes les équipes évaluables sont désormais disponibles ; 10 lignes restent visibles et le reste est accessible par scroll vertical.
+- Nouveau tri « Delta » : les meilleurs gains corrigés (valeurs les plus négatives) remontent en tête, sans modifier la colonne TOP qui reste le rang officiel par Score.
+- Velocity Lab : toutes les équipes évaluables sont disponibles, avec défilement vertical et sélection de 2 à 5 karts parmi l’ensemble du plateau.
+- Mode Test Endurance : l’équipe suivie peut être changée librement et reste sélectionnée pendant les rafraîchissements synthétiques ; aucun appel serveur réel n’est envoyé lors du suivi en Mode Test.
+- Infobulles Velocity : suppression du curseur d’aide « ? » ; les infobulles restent accessibles directement au survol avec le design unifié.
+
+# V7.2.71 — Fiabilisation du Δ Velocity
+
+- Isolation complète de l’apprentissage du Mode Test Endurance : un test ne peut plus réutiliser les relais mémorisés d’une session réelle ou d’un test précédent.
+- Clés d’apprentissage désormais scindées par circuit afin d’éviter les comparaisons de relais entre circuits différents partageant les mêmes identifiants Apex.
+- Le Δ n’utilise un relais précédent que s’il contient au moins 3 tours exploitables.
+- Convention conservée : Δ négatif = gain/plus rapide (vert), Δ positif = perte/plus lent (rouge), affichage au dixième.
+- Aucun changement des pondérations du Velocity Engine V1.0.
+
+## V7.2.70 — Δ course et continuité pilote Apex
+
+- Convention du Δ corrigée : négatif = plus rapide (vert), positif = plus lent (rouge).
+- Δ affiché au dixième de seconde (`-0,4`, `+0,5`).
+- Le calcul Transition conserve le même classement mais utilise désormais explicitement la convention temps : delta relais - delta plateau.
+- Détection d’une colonne PILOTE séparée lorsque la grille Apex la fournit.
+- Mémorisation du pilote et du kart par relais.
+- Colonne PIL. dans Velocity uniquement lorsqu’au moins un pilote Apex est disponible : 👤 pilote identique, 👥 changement pilote.
+- Infobulles instantanées sur les emojis.
+- Velocity Lab détaille pilotes/karts précédent et actuel, comparabilité et Δ brut / plateau / corrigé.
+
+## V7.2.69 — Velocity Lab : comparatif figé au clic
+
+- Le tableau détaillé n'est plus reconstruit par le rafraîchissement live toutes les ~800 ms.
+- La comparaison devient un snapshot figé au moment du clic sur **COMPARER**, afin de préserver totalement le scroll et la lecture.
+- Le classement Velocity situé au-dessus continue de se mettre à jour en live.
+- Toute nouvelle sélection puis nouveau clic sur **COMPARER** génère un snapshot actualisé.
+- Aucun changement du Velocity Engine V1.0 ni des pondérations officielles.
+
+## V7.2.69 — Velocity Lab : scroll comparatif stabilisé
+
+- Conservation de la position verticale et horizontale du tableau comparatif pendant les rafraîchissements live.
+- Le tableau ne revient plus en haut lorsqu’on descend dans les facteurs et valeurs brutes.
+- Aucun changement du Velocity Engine V1.0 ni des pondérations.
+
+## V7.2.69 — Velocity Lab : comparaison compacte et lisible
+
+- Colonnes du tableau comparatif fortement resserrées pour rapprocher les karts.
+- Largeur fixe compacte des colonnes et réduction des paddings horizontaux.
+- Taille des textes du comparatif fortement augmentée (environ ×3 selon les lignes).
+- Valeurs brutes agrandies et noms d'équipe autorisés à revenir à la ligne dans l'en-tête.
+- Aucun changement de l'algorithme Velocity Engine V1.0 ni des pondérations officielles.
+
+## V7.2.69 — Velocity Lab
+
+- Ajout de **Velocity Lab** dans le footer de l’Analyzer.
+- Page plein écran fermable à tout moment avec la croix en haut à droite.
+- Reprise du classement Velocity avec sélection de **2 à 5 karts**.
+- Comparaison détaillée du score officiel du relais en cours.
+- Décomposition des cinq facteurs : Rythme, Transition, Potentiel, Régularité et Échantillon.
+- Affichage des notes /100, pondérations, contributions en points et valeurs brutes.
+- Détail de la confiance et des populations de référence.
+- Velocity Lab est strictement en lecture seule : aucune pondération ni aucun score de course n’est modifié.
+- Version du moteur affichée : **Velocity Engine V1.0**.
+
+## V7.2.65 — Ligne Trafic complète autour du pilote suivi
+
+- Renommage de « TRAFIC DEVANT » en « TRAFIC ».
+- Visuel de kart de profil fourni, utilisé uniquement pour le pilote suivi au centre.
+- Karts situés de -10 s derrière à +10 s devant, sans filtre de tours ou de classement.
+- Cercles colorés avec numéro conservés pour tous les autres karts.
+- Graduations 2, 4, 6, 8 et 10 sous la ligne, de chaque côté.
+- Suppression du libellé « PILOTE » pour utiliser toute la largeur disponible.
+- Déplacement continu des mêmes cercles afin d’éviter les disparitions intempestives.
+
+## V7.2.63 — Nettoyage et sécurisation du stockage local Analyzer
+
+- Suppression automatique des anciennes sessions Analyzer lourdes.
+- Les sessions ne dupliquent plus l’historique complet des relais.
+- Apprentissage compacté et limité.
+- Écriture localStorage protégée contre les dépassements de quota.
+- La sélection d’un circuit ne peut plus être bloquée par une erreur de stockage.
+
+## V7.2.62 — Trafic devant continu et indépendant des tours
+
+- Conservation des cercles de trafic dans le DOM pour éviter les disparitions à chaque rafraîchissement.
+- Déplacement fluide et immédiat selon l'écart estimé.
+- Suppression des filtres de classement et de nombre de tours.
+- Estimation de la position physique entre deux passages de ligne.
+- Tolérance à 10,5 s pour éviter le clignotement à la limite des 10 secondes.
+
+## V7.2.60 — Correctif sélection des circuits
+- Verrouille le sélecteur pendant le changement de circuit.
+- Ignore les anciens états serveur encore en transit.
+- Empêche le retour automatique vers le circuit précédent.
+
+## V7.2.59 — Radar et trafic devant
+- Palette des cercles harmonisée entre Radar classique et plein écran.
+- Ajout de la ligne Trafic devant sur 10 secondes avec numéro de kart et couleur de rythme.
+
+## V7.2.59 — Verrouillage paysage Android uniquement
+
+- Suppression complète du fallback de rotation CSS sur iPhone/iPad.
+- Les modes Focus suivent de nouveau l’orientation native d’iOS.
+- Verrouillage paysage natif activé uniquement sur Android via Screen Orientation API.
+- Déverrouillage automatique à la fermeture des modes Focus Qualification, Sprint et Endurance.
+
+## V7.2.57 — Verrouillage paysage des modes Focus sur iPhone
+
+- Le layout paysage reste figé dans les modes Focus Qualification, Sprint et Endurance.
+- Ajout d'un verrouillage visuel de secours lorsque Safari refuse l'API d'orientation.
+- Les changements d'inclinaison du téléphone n'activent plus la mise en page portrait du Focus.
+- Le comportement responsive normal est restauré à la fermeture du mode Focus.
+
+## V7.2.57 — Mise à jour des circuits Apex Timing
+
+- Suppression de RKC - Karting Paris et La Briqueterie Les Étards (entrées génériques).
+- Ajout de RKC - Karting Paris 1200 m et 900 m.
+- Ajout de La Briqueterie Les Étards 720 m et 600 m.
+- Ajout de Goodwill Karting (Belgique), Solokart (France) et KartCenter Campillos (Espagne).
+- Mise à jour des ports WebSocket, URLs live, pays et coordonnées météo.
+
+## V7.2.57 — Mode Test Endurance : validation réseau
+
+- Coupures automatiques basées sur le temps simulé.
+- Fréquence et durée réglables.
+- Bouton pour forcer une coupure immédiatement.
+- État réseau et compteurs visibles en direct.
+- Rapport JSON enrichi : coupures, réussites, échecs et durées d’indisponibilité.
+
+## V7.2.57 — Mode Test Endurance dans Analyzer
+
+- Ajout du simulateur longue durée isolé, métriques en direct et export du rapport JSON.
+- Suspension du flux réel pendant le test et restauration automatique à l’arrêt.
+
+## V7.2.57 — Nouveau traitement graphique du titre Velocity dans Analyzer
+
+- Suppression du traitement spécial de l’ancien en-tête Velocity.
+- Titre VELOCITY aligné graphiquement sur HEAT MAP, STANDS et CLASSEMENT GÉNÉRAL.
+- Fonction de tri conservée à droite du titre.
+
+## V7.2.52 — Nouvelle session Spotter vierge à chaque version
+
+- Ignore le cache local Spotter d’une version précédente.
+- Ignore les états distants Spotter provenant d’une ancienne version.
+- Une nouvelle version démarre vide, puis se synchronise uniquement avec les appareils ouverts sur cette même version.
+
+
+## V7.2.51 — Synchronisation Spotter smartphone / desktop
+- Aligne la version de protocole Spotter sur la version réelle de l’application afin que les configurations créées sur smartphone soient acceptées par le serveur.
+- Le Spotter desktop et la carte STANDS de l’Analyzer récupèrent désormais le nouvel état partagé au lieu de conserver l’ancien état.
+- En cas de client obsolète, l’application recharge l’état serveur au lieu d’échouer silencieusement.
+- Le bouton Retour de STANDS adopte la même hauteur que les autres boutons de la ligne d’actions.
+## V7.2.49
+
+- Correction de l’affichage des trois files Spotter dans la carte FILES de l’Analyzer.
+- Le nombre de files utilise désormais `queue_mode`, avec détection de secours depuis `queueFile`.
+
+## V7.2.47
+- Correction du conflit de synchronisation Spotter entre appareils.
+- Suppression des envois automatiques d’états locaux obsolètes.
+- Conservation de la configuration lors des mises à jour.
+- Rejet serveur des clients Spotter d’une ancienne version.
+
+## V7.2.44
+- Ajout d’un espacement supplémentaire entre le titre MESSAGE et les triangles rouges pour éviter tout chevauchement.
+
+## V7.2.42
+- Bandeau MESSAGE avec flèches rouges ► animées sur toute la largeur.
+- Entrée du message depuis la gauche et sortie vers la droite après 15 secondes.
+
+## V7.2.40 — Messages pilote sur 2 ou 3 lignes équilibrées
+
+- Répartition automatique du message sur deux lignes pour les messages standards.
+- Passage automatique sur trois lignes pour les messages longs.
+- Conservation de la police F1 Torque et agrandissement maximal du texte.
+- Affichage centré et équilibré pour une lecture immédiate en piste.
+
+## V7.2.38 — Police F1 Torque pour la Messagerie Pilote
+
+- Le message délivré au pilote utilise désormais la police F1 Torque.
+- Le texte est automatiquement converti en capitales pour une lecture immédiate.
+- La taille s'adapte à la longueur du message afin de rester lisible en plein écran.
+- Le bandeau MESSAGE, la temporisation de 15 secondes et les règles urgent/non urgent sont conservés.
+
+## V7.2.37 — Habillage du message pilote
+
+- Ajout du bandeau « MESSAGE » inspiré du mode Focus Endurance.
+- Ajout d’un filet orange sur toute la largeur disponible.
+- Conservation de l’affichage plein écran, de la grande police et de la disparition après 15 secondes.
+
 ## V7.2.36 — Correctif Messagerie Pilote en mode Focus
 
 - Message affiché en plein écran sur fond noir avec une très grande police en Qualification, Sprint et Endurance.
