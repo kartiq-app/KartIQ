@@ -36,6 +36,8 @@ let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFli
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
 let elapsedCountMs=null,elapsedCountPerfAt=0,elapsedCountDirectSyncAt=0;
 let apexDyn1TimingMode='unknown';
+const APEX_DYNAMIC_MAX_DURATION_MS=7*24*60*60*1000;
+let apexRejectedDynamicTimes=0;
 const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
 
 // Journal local du décodeur Apex. Les trames sont conservées uniquement dans
@@ -111,7 +113,12 @@ function exportDecoderDiagnostics(){
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
   live:{connection:state?.connection||null,status:state?.live?.status||null,lastError:state?.live?.last_error||state?.live?.error||null,lastMessageAt:state?.live?.last_message_at||null,messages:state?.live?.messages||0,parsedUpdates:state?.live?.parsed_updates||0},
-  diagnostics:JSON.parse(JSON.stringify(apexDecoderDiagnostics))
+  diagnostics:{
+   ...JSON.parse(JSON.stringify(apexDecoderDiagnostics)),
+   rejectedDynamicTimes:apexRejectedDynamicTimes,
+   dyn1TimingMode:apexDyn1TimingMode,
+   dynamicMaxDurationMs:APEX_DYNAMIC_MAX_DURATION_MS
+  }
  };
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -131,7 +138,11 @@ if(isEmbeddedPreview){document.documentElement.classList.add('preview-embedded')
 async function api(url,body={}){await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await load()}
 function syncRemainingFromApex(milliseconds,{direct=false}={}){
  const ms=Number(milliseconds);
- if(!Number.isFinite(ms)||ms<0)return false;
+ if(!Number.isFinite(ms)||ms<0||ms>APEX_DYNAMIC_MAX_DURATION_MS){
+  apexRejectedDynamicTimes+=1;
+  console.warn('[Velocity] dyn1 countdown rejeté (durée aberrante)',milliseconds);
+  return false;
+ }
  remainingCountdownMs=Math.max(0,ms);
  remainingCountdownPerfAt=Date.now();
  remainingCountdownUsesHours=ms>=3600000;
@@ -143,7 +154,13 @@ function apexDynamicTimeToMilliseconds(raw){
  const value=String(raw??'').trim().split('_',1)[0];
  const parsed=Number(value);
  if(!Number.isFinite(parsed))return null;
- return Math.max(0,Math.round(value.includes('.')?parsed*1000:parsed));
+ const ms=Math.max(0,Math.round(value.includes('.')?parsed*1000:parsed));
+ if(ms>APEX_DYNAMIC_MAX_DURATION_MS){
+  apexRejectedDynamicTimes+=1;
+  console.warn('[Velocity] valeur dyn1 rejetée (hors plage durée)',{raw,ms});
+  return null;
+ }
+ return ms;
 }
 function ingestApexDyn1Mode(frame){
  const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|(countdown_text|countdown|count|text)\|/gi)];
@@ -174,7 +191,11 @@ function ingestApexCountdown(frame){
 }
 function syncElapsedFromApex(milliseconds,{direct=false}={}){
  const ms=Number(milliseconds);
- if(!Number.isFinite(ms)||ms<0)return false;
+ if(!Number.isFinite(ms)||ms<0||ms>APEX_DYNAMIC_MAX_DURATION_MS){
+  apexRejectedDynamicTimes+=1;
+  console.warn('[Velocity] dyn1 count rejeté (durée aberrante)',milliseconds);
+  return false;
+ }
  elapsedCountMs=Math.max(0,ms);
  elapsedCountPerfAt=Date.now();
  if(direct)elapsedCountDirectSyncAt=Date.now();
@@ -456,7 +477,7 @@ function ingestApexMapEvents(frame,circuitId){
   }
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
   previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
-  // V7.2.196 — trace diagnostic brute des impulsions MAP Apex.
+  // V7.2.197 — trace diagnostic brute des impulsions MAP Apex.
   // Aucun impact sur le moteur : on mémorise seulement les 8 dernières
   // impulsions réellement reçues pour chaque apex_row.
   if(!Array.isArray(previous.rawHistory))previous.rawHistory=[];
