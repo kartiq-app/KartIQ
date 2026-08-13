@@ -7,27 +7,25 @@ function analyzerFormatLocalClock(){
 function analyzerUpdateRaceRemaining(){
  const el=document.getElementById('analyzerRaceRemaining');if(!el)return;
  const label=document.getElementById('analyzerRaceRemainingLabel');
- const sessionTitle=String(state?.apex_session_title||'').trim();
- const setTimingLabel=fallback=>{if(label)label.textContent=sessionTitle||fallback};
  if(typeof raceUsesLapTarget==='function'&&raceUsesLapTarget()){
-  setTimingLabel('TOURS');
+  if(label)label.textContent='TOURS';
   el.textContent=formatRaceLapProgress();el.classList.remove('warning','critical');return;
  }
  const remaining=typeof liveRemainingMilliseconds==='function'?liveRemainingMilliseconds():null;
  if(Number.isFinite(remaining)){
-  setTimingLabel('TEMPS RESTANT');
+  if(label)label.textContent='TEMPS RESTANT';
   const total=Math.max(0,Math.floor(remaining/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;
   el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
   el.classList.toggle('warning',total<=3600&&total>600);el.classList.toggle('critical',total<=600);return;
  }
  const elapsed=typeof liveElapsedMilliseconds==='function'?liveElapsedMilliseconds():null;
  if(Number.isFinite(elapsed)){
-  setTimingLabel('TEMPS ÉCOULÉ');
+  if(label)label.textContent='TEMPS ÉCOULÉ';
   const total=Math.max(0,Math.floor(elapsed/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;
   el.textContent=h>0?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
   el.classList.remove('warning','critical');return;
  }
- setTimingLabel('TEMPS RESTANT');
+ if(label)label.textContent='TEMPS RESTANT';
  el.textContent=state?.time_remaining||'—';
 }
 /* Velocity V6.10.5 — titres alignés, MAP inactive visible et réglages météo */
@@ -506,9 +504,8 @@ function analyzerApexStablePhase(driver,at=Date.now()){
  return Number.isFinite(phase)?((phase%1)+1)%1:null;
 }
 function analyzerLiveProgressPhase(driver,nowDate=Date.now(),nowPerf=performance.now()){
- // V7.2.197B — retour strict au moteur historique V7.2.152.
- // Filets + Trafic + Radar utilisent la même chaîne de priorité :
- // APEX -> FALLBACK -> TRACK.
+ // Moteur commun V7.2.153 : les filets du Classement Live et TRAFIC
+ // s'appuient sur la même position virtuelle du kart entre deux passages.
  const apexPhase=analyzerApexStablePhase(driver,nowDate);
  if(Number.isFinite(apexPhase))return {phase:apexPhase,source:'apex'};
  const fallback=analyzerTrafficFallbackPhase(driver,nowPerf);
@@ -599,104 +596,6 @@ function analyzerDriverPhase(driver){
  const motion=analyzerLiveProgressPhase(driver,Date.now(),performance.now());
  return Number.isFinite(motion.phase)?motion.phase:0;
 }
-function analyzerMotionDiagnosticEnsure(){
- let box=document.getElementById('analyzerMotionDiagnostic');
- if(box)return box;
- box=document.createElement('div');
- box.id='analyzerMotionDiagnostic';
- box.style.cssText='position:fixed;right:10px;bottom:10px;z-index:99999;background:rgba(0,0,0,.88);border:1px solid #ff7a00;border-radius:8px;padding:8px 10px;color:#fff;font:600 11px/1.35 system-ui,-apple-system,sans-serif;max-width:360px;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,.35)';
- document.body.appendChild(box);
- return box;
-}
-function analyzerMotionDiagnosticUpdate(){
- try{
-  if(document.body?.dataset?.appMode!=='analyzer'){
-   document.getElementById('analyzerMotionDiagnostic')?.remove();
-   return;
-  }
-  const box=analyzerMotionDiagnosticEnsure();
-  const drivers=(state?.drivers||[]).filter(d=>d&&d.driver&&!(typeof velocityKartIsInPit==='function'?velocityKartIsInPit(d):d.status==='pit'));
-  const nowDate=Date.now(),nowPerf=performance.now();
-  const rows=drivers.map(driver=>{
-   const motion=analyzerLiveProgressPhase(driver,nowDate,nowPerf);
-   const entry=analyzerApexMapEntry(driver);
-   return {driver,motion,entry};
-  });
-  const counts={apex:0,fallback:0,track:0,none:0};
-  rows.forEach(r=>{const src=r.motion?.source||'none';counts[src]=(counts[src]||0)+1});
-  const followed=rows.find(r=>r.driver?.driver===state?.followed_driver)||null;
-  const suspicious=rows.filter(r=>(r.motion?.source||'none')!=='apex').slice(0,6);
-  const fmt=r=>{
-   const src=(r.motion?.source||'none').toUpperCase();
-   const phase=Number.isFinite(r.motion?.phase)?Math.round(r.motion.phase*100)+'%':'—';
-   const seg=r.entry?.segment||'—';
-   const dur=Number.isFinite(Number(r.entry?.durationMs))?Math.round(Number(r.entry.durationMs))+'ms':'—';
-   const age=Number.isFinite(Number(r.entry?.startedAt))?Math.max(0,Math.round(nowDate-Number(r.entry.startedAt)))+'ms':'—';
-   const label=String(r.driver?.driver||r.driver?.apex||'—').slice(0,22);
-   const rid=Number(r.driver?.apex_row);return `r${Number.isFinite(rid)?rid:'—'} · ${label} · ${src} · ${phase} · ${seg} · ${age}/${dur}`;
-  };
-  const lines=[
-   `<div style="color:#ff8a1f;font-weight:800;margin-bottom:3px">DIAG MOTEUR V152 V192</div>`,
-   `<div>APEX ${counts.apex||0} · FALLBACK ${counts.fallback||0} · TRACK ${counts.track||0} · NONE ${counts.none||0}</div>`
-  ];
-  if(followed)lines.push(`<div style="margin-top:4px">Suivie: ${fmt(followed)}</div>`);
-  // V7.2.197B — montre les dernières impulsions MAP Apex réellement reçues.
-  const traceTargets=[];
-  if(followed)traceTargets.push(followed);
-  suspicious.slice(0,3).forEach(r=>{if(!traceTargets.includes(r))traceTargets.push(r)});
-  // V7.2.197B — contrôle d'identité entre les lignes de classement et les lignes MAP rXXXXX.
-  const registryRows=window.velocityApexMap?.rows instanceof Map?window.velocityApexMap.rows:new Map();
-  const driverByRow=new Map();
-  drivers.forEach(d=>{
-   const row=Number(d?.apex_row);
-   if(Number.isFinite(row)&&row>0)driverByRow.set(row,d);
-  });
-  const mapOnly=[];
-  registryRows.forEach((entry,row)=>{
-   if(!driverByRow.has(Number(row)))mapOnly.push({row:Number(row),entry});
-  });
-  const driverOnly=[];
-  drivers.forEach(d=>{
-   const row=Number(d?.apex_row);
-   if(Number.isFinite(row)&&row>0&&!registryRows.has(row))driverOnly.push(d);
-  });
-  lines.push(`<div style="margin-top:5px;color:#c6a0ff">IDENTITÉ rXXXXX:</div>`);
-  lines.push(`<div>Drivers ${driverByRow.size} · MAP ${registryRows.size} · sans MAP ${driverOnly.length} · MAP orphelines ${mapOnly.length}</div>`);
-  if(driverOnly.length){
-   lines.push(`<div style="color:#ffcc66">Drivers sans ligne MAP:</div>`);
-   driverOnly.slice(0,6).forEach(d=>lines.push(`<div>r${Number(d.apex_row)} · ${String(d.driver||'—').slice(0,18)} · kart ${String(d.apex||'—')}</div>`));
-  }
-  if(mapOnly.length){
-   lines.push(`<div style="color:#ff7f7f">Lignes MAP sans driver courant:</div>`);
-   mapOnly.slice(0,6).forEach(x=>{
-    const hist=Array.isArray(x.entry?.rawHistory)?x.entry.rawHistory:[];
-    const last=hist.length?hist[hist.length-1]:null;
-    lines.push(`<div>r${x.row} · ${x.entry?.segment||'—'} · ${last?.code||x.entry?.code||'—'} · âge ${Number.isFinite(Number(x.entry?.startedAt))?Math.max(0,Math.round(nowDate-Number(x.entry.startedAt)))+'ms':'—'}</div>`);
-   });
-  }
-  if(traceTargets.length){
-   lines.push('<div style="margin-top:5px;color:#8ecbff">TRAMES MAP BRUTES:</div>');
-   traceTargets.forEach(r=>{
-    const hist=Array.isArray(r.entry?.rawHistory)?r.entry.rawHistory:[];
-    const last=hist.slice(-4).map(ev=>{
-     const age=Math.max(0,Math.round(nowDate-Number(ev.at||0)));
-     const v=Number.isFinite(Number(ev.value))?Math.round(Number(ev.value)):'—';
-     const x=Number.isFinite(Number(ev.extra))?Math.round(Number(ev.extra)):'—';
-     return `${ev.code} ${v}/${x} @-${age}ms`;
-    }).join(' | ');
-    const label=String(r.driver?.driver||r.driver?.apex||'—').slice(0,18);
-    lines.push(`<div>${label}: ${last||'aucune impulsion mémorisée'}</div>`);
-   });
-  }
-  if(suspicious.length){
-   lines.push('<div style="margin-top:4px;color:#ffd166">Hors APEX:</div>');
-   suspicious.forEach(r=>lines.push(`<div>${fmt(r)}</div>`));
-  }else lines.push('<div style="margin-top:4px;color:#7CFC8A">Tous les karts actifs utilisent APEX</div>');
-  box.innerHTML=lines.join('');
- }catch(_){ }
-}
-// V7.2.197B SAFE — diagnostic visible désactivé.
-document.getElementById('analyzerMotionDiagnostic')?.remove();
 const analyzerMapPaceFilters=new Set(['fastest','excellent','good','medium','average','slow']);
 let analyzerMapHighlight='none';
 const analyzerMapGeometry={cx:135,cy:146,viewWidth:270,viewHeight:292};

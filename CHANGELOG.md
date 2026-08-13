@@ -1,129 +1,27 @@
-# V7.2.197B — DYN1 garde-fou minimal
+# Velocity V7.2.172 — Focus Endurance mobile + pilotage Team Manager
 
-- Base stricte : V7.2.196.
-- Correction minimale uniquement sur la conversion DYN1.
-- Rejet côté navigateur des valeurs DYN1 supérieures à 7 jours.
-- Rejet côté serveur des valeurs DYN1 supérieures à 7 jours.
-- Empêche un timestamp Unix d'être interprété comme une durée.
-- Aucun reset ajouté lors du changement de circuit.
-- Aucun changement de `race-ui.js`.
-- Aucun changement du loader, Service Worker, diagnostic, météo, filets, Focus, Velocity Lab, Spotter ou Analyzer.
-- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais.
+- Focus Endurance smartphone : valeurs Delta +30 %.
+- Noms équipe/pilote +10 %.
+- Dernier temps agrandi dynamiquement au maximum de sa case avec marge de sécurité.
+- Le Focus Endurance Pilote possède désormais une équipe cible indépendante de « Équipe suivie » Analyzer.
+- Le Team Manager peut changer l'équipe affichée sur le téléphone du pilote pendant une session active.
+- La cible Focus Pilote est synchronisée vers les appareils autorisés sans modifier l'équipe suivie du Team Manager.
 
-# V7.2.196 — Spotter + Analyzer : Maintenance drag & drop
+# V7.2.171 — SYNC STRATÉGIE RELAIS DESKTOP / MOBILE
 
-- Base : V7.2.195 validée sur smartphone.
-- Aucun changement du moteur de drag & drop de la V7.2.195.
-- Spotter : comportement Maintenance conservé tel quel.
-- Analyzer > STANDS : la carte Maintenance est désormais déclarée comme vraie cible `data-spotter-drop-zone="maintenance"`.
-- Le même moteur Spotter peut donc déposer une carte vers Maintenance depuis Analyzer, sur smartphone et Desktop.
-- Sélecteur de remplacement d'un kart rouge trié File 1 -> File 2 -> File 3.
-- Ordre FIFO conservé à l'intérieur de chaque file.
-- Conservation du transfert d'équipe et du `pitInAt` sur le kart remplaçant.
-- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais / Filets / Trafic / Radar.
+- Desktop devient source de vérité pour la carte Stratégie Relais.
+- Synchronisation serveur du score, confiance, temps en piste, delta/tour, impact/relais, capital stratégique, recommandation et fenêtre conseillée.
+- Smartphone consomme le snapshot Desktop quand il est récent et correspond au même circuit / à la même équipe suivie.
+- Repli automatique sur le calcul local si le snapshot partagé est absent ou périmé.
+- Aucun changement de logique métier du moteur de stratégie.
 
-# V7.2.195 — Spotter : files autonomes + maintenance dynamique
+# V7.2.170 — FOCUS IPHONE PAYSAGE VIRTUEL
 
-- Base : V7.2.194 SAFE.
-- Préparer le Quick Change : un kart initial et un bouton `+ AJOUTER UN KART` propres à chaque file.
-- Suppression de la répartition automatique des nouveaux karts entre les files pendant la préparation.
-- Minimum d’un kart par file.
-- Toutes les cartes de file sont déplaçables, y compris les cartes rouges attribuées.
-- Une carte rouge peut être réordonnée ou changée de file.
-- Déposer une carte rouge en Maintenance ouvre un sélecteur : `Cliquez sur le nouveau kart de <équipe>`.
-- Le nouveau kart reprend l’équipe et le `pitInAt` d’origine : le chrono d’arrêt continue sans repartir à zéro.
-- L’ancien kart rouge est envoyé en Maintenance après sélection du remplaçant.
-- Un kart disponible peut être envoyé en Maintenance à tout moment.
-- Synchronisation de `setup_queue_files` entre appareils.
-- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais ni du moteur Filets / Trafic / Radar.
-
-# V7.2.194 SAFE — Session Apex sans reset du flux live
-
-- Reconstruction directe depuis la V7.2.192 validée.
-- Aucun reset de `APEX_TABLE`, `PROTOCOL_ENGINE`, `EVENT_STORE`, historique course ou météo.
-- Intitulé de session : priorité `title2`, puis `title1`, `title`, `session`.
-- Affichage de l'intitulé dans le libellé existant au-dessus du temps restant, sans changement de taille.
-- Nouveau GRID Apex mémorisé comme liste de lignes actives `rXXXXX`.
-- Les pilotes absents du dernier GRID complet sont filtrés de `STATE["drivers"]` après chaque synchronisation, sans toucher au moteur live.
-- Filets / Trafic / Radar restent strictement sur le moteur V7.2.192 / historique V7.2.152.
-- Diagnostic visible désactivé sans suppression de fonctions Analyzer.
-- Équipe suivie : emoji + Informations augmentés de 10 %.
-- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais.
-
-# V7.2.194 — Retour moteur historique Filets / Trafic / Radar
-
-- Base : V7.2.191.
-- Suppression complète des expérimentations `APEX-HOLD` et `APEX-GAP`.
-- `analyzerLiveProgressPhase()` restauré sur la logique historique V7.2.152 : `APEX -> FALLBACK -> TRACK`.
-- Aucun offset, aucun recalage sur le flash, aucune nouvelle estimation ajoutée.
-- Filets, Trafic et Radar utilisent toujours exactement la même phase commune.
-- Conservation de la correction CSS V7.2.191 permettant à l'équipe suivie de clignoter au passage de ligne.
-- Panneau diagnostic conservé une dernière fois pour comparer visuellement le comportement historique.
-
-# V7.2.194 — Trous Apex + flash équipe suivie
-
-- Base : V7.2.190.
-- Suppression du `APEX-HOLD` fixe qui pouvait bloquer un filet.
-- Lorsqu'une ligne MAP Apex existe mais que son impulsion est périmée, Velocity renvoie désormais `APEX-GAP` avec phase absente : le filet/repère attend la prochaine impulsion Apex au lieu d'être figé ou reconstruit via `track_timer`.
-- Les anciens fallbacks `TRACK/FALLBACK` ne restent disponibles que pour un pilote sans ligne MAP Apex exploitable.
-- Filets, Trafic et Radar restent sur la même phase commune.
-- Correction CSS : la ligne de l'équipe suivie peut désormais afficher les flashes violet/vert/orange malgré les `!important` du style `.followed`.
-- Le panneau diagnostic reste actif et affiche `APEX / GAP / FALLBACK / TRACK / NONE`.
-
-# V7.2.194 — APEX HOLD Filets / Trafic / Radar
-
-- Base : V7.2.189.
-- Aucun changement du calcul de déplacement Apex pendant un segment.
-- Lorsqu'une impulsion MAP Apex atteint sa fin puis dépasse la tolérance historique de 5 s, Velocity conserve désormais l'extrémité du dernier segment Apex au lieu de basculer sur `track_timer`.
-- La position reste ainsi dans la chaîne Apex jusqu'à la prochaine impulsion MAP reçue.
-- Filets, Trafic et Radar continuent d'utiliser exactement la même phase commune.
-- Le panneau diagnostic reste actif et distingue désormais `APEX`, `HOLD`, `FALLBACK`, `TRACK` et `NONE`.
-- Le HOLD n'est utilisé que tant que le tracking MAP Apex global est encore vivant.
-
-# V7.2.194 — Diagnostic identité rXXXXX
-
-- Base : V7.2.188.
-- Aucun changement du moteur Filets / Trafic / Radar.
-- Le panneau diagnostic compare les `apex_row` des pilotes courants aux lignes MAP `rXXXXX` réellement reçues.
-- Affiche les pilotes sans ligne MAP et les lignes MAP orphelines.
-- Objectif : détecter une désynchronisation d'identité lorsque le classement change.
-
-# V7.2.194 — Trace trames Apex Filets / Trafic / Radar
-
-- Base : V7.2.187.
-- Aucun changement du moteur de déplacement.
-- Le diagnostic mémorise les 8 dernières impulsions MAP Apex reçues par `apex_row`.
-- Affichage des dernières trames `*`, `*i1`, `*i2`, `*in`, `*out` pour l’équipe suivie et jusqu’à 3 karts hors source APEX.
-- Objectif : déterminer si un kart passe en TRACK parce qu’Apex n’envoie réellement plus l’impulsion suivante, ou parce que Velocity la perd/interprète mal.
-
-# V7.2.194 — Diagnostic source Filets / Trafic / Radar
-
-- Aucun changement du moteur de déplacement.
-- Ajout d’un panneau diagnostic temporaire dans Analyzer.
-- Affiche pour chaque kart actif la source réellement utilisée par `analyzerLiveProgressPhase()` : APEX, FALLBACK, TRACK ou NONE.
-- Affiche pour l’équipe suivie la phase, le segment Apex, l’âge de l’événement et sa durée.
-- Objectif : vérifier si les filets mal positionnés utilisent encore la source APEX ou basculent sur un fallback.
-
-# V7.2.194 — Restauration Focus iPhone + test Safari
-
-- Base : V7.2.185.
-- Restauration du paysage virtuel iPhone validé en V7.2.179 pour Qualification, Sprint et Endurance.
-- Restauration du layout final Focus Endurance validé : hauteurs Position/Delta et Temps en piste/Dernier tour, séparation propre des deltas.
-- Android conserve son comportement dédié.
-- Aucun changement destiné au crash Chrome : cette version sert aussi au test comparatif sur Safari Desktop.
-
-# V7.2.194 — Test CSS Focus pré-V7.2.170
-
-- Base fonctionnelle : V7.2.184.
-- CSS `50-endurance-latest.css` remis exactement à la version V7.2.166 pour isoler le crash Chrome Desktop.
-- Aucune modification du loader, du serveur ou des fonctions métier.
-- Test diagnostic : les surcharges CSS du paysage virtuel iPhone introduites à partir de V7.2.170 sont volontairement absentes.
-
-# Velocity V7.2.194
-
-- Rebase de récupération sur le socle de chargement stable V7.2.169.
-- Réintégration des fonctions validées jusqu’à V7.2.194 : paysage virtuel iPhone Focus, synchronisation Stratégie Relais, pilotage Focus Endurance par le Team Manager, prise en charge Apex dyn1=countdown et mise en page finale Focus Endurance.
-- Conservation stricte du loader/bootstrap, du Service Worker, de kartiq.css et des pages d’entrée de la V7.2.169 pour retrouver un chargement Desktop fiable.
+- iPhone uniquement : les modes Focus Qualification, Sprint et Endurance restent techniquement en portrait et leur interface est pivotée de 90° en CSS.
+- Le pilote peut verrouiller l’iPhone en portrait puis tourner physiquement le téléphone : aucun basculement iOS n’est nécessaire.
+- Android conserve strictement son verrouillage paysage natif existant.
+- Les titres Qualifications, Sprint et Endurance sont décalés pour laisser la zone iPhone libre et gardent un espace de sécurité avec le filet coloré.
+- La persistance Focus de la V7.2.169 est conservée.
 
 # V7.2.169 — FOCUS PERSISTANT
 
