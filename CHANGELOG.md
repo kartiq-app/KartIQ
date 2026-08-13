@@ -1,3 +1,15 @@
+# V7.2.197B — DYN1 garde-fou minimal
+
+- Base stricte : V7.2.196.
+- Correction minimale uniquement sur la conversion DYN1.
+- Rejet côté navigateur des valeurs DYN1 supérieures à 7 jours.
+- Rejet côté serveur des valeurs DYN1 supérieures à 7 jours.
+- Empêche un timestamp Unix d'être interprété comme une durée.
+- Aucun reset ajouté lors du changement de circuit.
+- Aucun changement de `race-ui.js`.
+- Aucun changement du loader, Service Worker, diagnostic, météo, filets, Focus, Velocity Lab, Spotter ou Analyzer.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais.
+
 # V7.2.196 — Spotter + Analyzer : Maintenance drag & drop
 
 - Base : V7.2.195 validée sur smartphone.
