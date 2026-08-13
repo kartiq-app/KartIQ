@@ -1,3 +1,14 @@
+# V7.2.197 — Spotter : Drag Desktop immédiat
+
+- Base : V7.2.196.
+- Correction du Drag & Drop Spotter sur Desktop.
+- Souris / trackpad : le drag démarre immédiatement au clic maintenu, comme un drag Desktop classique.
+- Smartphone / tactile : conservation du long-press de 450 ms pour éviter les déplacements accidentels pendant le scroll.
+- Le seuil de 10 px qui annulait le drag avant activation ne s'applique plus à la souris.
+- Le drop vers Maintenance conserve la détection géométrique de la V7.2.196.
+- Cartes vertes et rouges concernées.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais / Filets / Trafic / Radar.
+
 # V7.2.196 — Fix Drag & Drop vers Maintenance
 
 - Base : V7.2.195.

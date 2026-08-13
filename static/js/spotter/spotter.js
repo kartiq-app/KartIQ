@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.196';
+const SPOTTER_APP_RELEASE='7.2.197';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -745,11 +745,21 @@ function spotterStartDrag(event,cardId,from){
  Object.assign(spotterDrag,{
   kv:cardId,from,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,
   lastX:event.clientX,lastY:event.clientY,active:false,card,target:null,
-  ghost:null,placeholder:null,originalParent:null,originalNext:null
+  ghost:null,placeholder:null,originalParent:null,originalNext:null,
+  pointerType:String(event.pointerType||'mouse')
  });
  card.classList.add('spotter-pressing');
  try{card.setPointerCapture(event.pointerId)}catch(_){}
- spotterDrag.timer=setTimeout(spotterActivateDrag,450);
+
+ // V7.2.197 — Desktop : drag immédiat à la souris / trackpad.
+ // Smartphone / tactile : on conserve le long-press de 450 ms pour éviter
+ // les déplacements accidentels pendant le scroll.
+ if(String(event.pointerType||'mouse')==='mouse'){
+  spotterActivateDrag();
+ }else{
+  spotterDrag.timer=setTimeout(spotterActivateDrag,450);
+ }
+
  document.addEventListener('pointermove',spotterOnDragMove,{passive:false});
  document.addEventListener('pointerup',spotterEndDrag,{once:true});
  document.addEventListener('pointercancel',spotterEndDrag,{once:true});
@@ -811,7 +821,9 @@ function spotterOnDragMove(event){
  spotterDrag.lastX=event.clientX;spotterDrag.lastY=event.clientY;
  if(!spotterDrag.active){
   const distance=Math.hypot(event.clientX-spotterDrag.startX,event.clientY-spotterDrag.startY);
-  if(distance>10)spotterCancelPendingDrag();
+  // Le seuil d'annulation ne concerne que le tactile en attente du long-press.
+  // À la souris, le drag est déjà activé dès pointerdown.
+  if(distance>10&&spotterDrag.pointerType!=='mouse')spotterCancelPendingDrag();
   return;
  }
  event.preventDefault();
@@ -819,7 +831,7 @@ function spotterOnDragMove(event){
  spotterMoveGhost(event.clientX,event.clientY);
  spotterClearDropHighlights();
 
- // V7.2.196 — détection géométrique de Maintenance.
+ // V7.2.197 — détection géométrique de Maintenance.
  // `elementFromPoint()` pouvait échouer pendant le pointer capture / long-press,
  // surtout sur iPhone et selon le DOM Desktop. On teste directement le rectangle
  // visible de la zone Maintenance, avec priorité sur les files.
@@ -883,7 +895,7 @@ function spotterEndDrag(event){
  Object.assign(spotterDrag,{
   kv:null,from:null,pointerId:null,ghost:null,placeholder:null,timer:null,
   startX:0,startY:0,lastX:0,lastY:0,active:false,card:null,
-  originalParent:null,originalNext:null,target:null,lockedScrollY:0,scrollLocked:false
+  originalParent:null,originalNext:null,target:null,lockedScrollY:0,scrollLocked:false,pointerType:null
  });
 }
 function spotterMoveKartInQueue(cardId,from,beforeCardId=null,targetFile=null){
