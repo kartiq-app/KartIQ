@@ -1,3 +1,15 @@
+# V7.2.198 — Spotter : cible Maintenance Desktop renforcée
+
+- Base : V7.2.197.
+- Correction spécifique Desktop de la zone de dépôt Maintenance.
+- Hit-test via `elementsFromPoint()` pour détecter la vraie carte visible sous la souris malgré le pointer capture.
+- Calcul du rectangle visuel complet de Maintenance (section + body + contenu) en solution de secours.
+- Tolérance de drop Desktop élargie autour de la carte Maintenance.
+- Écoute des événements pointermove / pointerup en phase capture pour éviter qu'un élément Desktop intercepte le drag.
+- Feedback visuel Desktop : Maintenance passe en bordure pointillée pendant un drag et s'illumine en rouge quand elle devient la cible.
+- Smartphone conserve son comportement actuel.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais / Filets / Trafic / Radar.
+
 # V7.2.197 — Spotter : Drag Desktop immédiat
 
 - Base : V7.2.196.

@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.197';
+const SPOTTER_APP_RELEASE='7.2.198';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -751,7 +751,7 @@ function spotterStartDrag(event,cardId,from){
  card.classList.add('spotter-pressing');
  try{card.setPointerCapture(event.pointerId)}catch(_){}
 
- // V7.2.197 — Desktop : drag immédiat à la souris / trackpad.
+ // V7.2.198 — Desktop : drag immédiat à la souris / trackpad.
  // Smartphone / tactile : on conserve le long-press de 450 ms pour éviter
  // les déplacements accidentels pendant le scroll.
  if(String(event.pointerType||'mouse')==='mouse'){
@@ -760,9 +760,9 @@ function spotterStartDrag(event,cardId,from){
   spotterDrag.timer=setTimeout(spotterActivateDrag,450);
  }
 
- document.addEventListener('pointermove',spotterOnDragMove,{passive:false});
- document.addEventListener('pointerup',spotterEndDrag,{once:true});
- document.addEventListener('pointercancel',spotterEndDrag,{once:true});
+ document.addEventListener('pointermove',spotterOnDragMove,{passive:false,capture:true});
+ document.addEventListener('pointerup',spotterEndDrag,{once:true,capture:true});
+ document.addEventListener('pointercancel',spotterEndDrag,{once:true,capture:true});
 }
 function spotterFindInsertion(list,y){
  const cards=[...list.querySelectorAll('.spotter-queue-card[data-spotter-queue-kv]')]
@@ -780,16 +780,55 @@ function spotterPlacePlaceholder(list,before){
  if(before)list.insertBefore(placeholder,before);
  else list.appendChild(placeholder);
 }
+function spotterVisibleMaintenanceZones(){
+ return [...document.querySelectorAll('[data-spotter-drop-zone="maintenance"]')]
+  .filter(zone=>{
+   const style=getComputedStyle(zone);
+   const rect=zone.getBoundingClientRect();
+   return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;
+  });
+}
+function spotterMaintenanceHitByElements(x,y){
+ // Desktop Chrome : elementsFromPoint donne la vraie pile visuelle même
+ // lorsqu'une carte possède le pointer capture.
+ try{
+  const stack=document.elementsFromPoint(x,y);
+  for(const node of stack){
+   const zone=node?.closest?.('[data-spotter-drop-zone="maintenance"]');
+   if(zone&&spotterVisibleMaintenanceZones().includes(zone))return zone;
+  }
+ }catch(_){}
+ return null;
+}
+function spotterMaintenanceUnionRect(zone){
+ // Certaines règles Desktop font que la zone visuelle utile est surtout portée
+ // par .spotter-card-body / .spotter-empty / .spotter-maintenance-grid.
+ // On calcule donc l'union réelle de tous ces rectangles.
+ const nodes=[zone,...zone.querySelectorAll('.spotter-card-body,.spotter-section-title,.spotter-empty,.spotter-maintenance-grid')];
+ const rects=nodes.map(node=>node.getBoundingClientRect()).filter(rect=>rect.width>0&&rect.height>0);
+ if(!rects.length)return zone.getBoundingClientRect();
+ return {
+  left:Math.min(...rects.map(r=>r.left)),
+  right:Math.max(...rects.map(r=>r.right)),
+  top:Math.min(...rects.map(r=>r.top)),
+  bottom:Math.max(...rects.map(r=>r.bottom))
+ };
+}
 function spotterFindMaintenanceTarget(x,y){
- const zones=[...document.querySelectorAll('[data-spotter-drop-zone="maintenance"]')]
-  .filter(zone=>zone.offsetParent!==null);
+ const zones=spotterVisibleMaintenanceZones();
  if(!zones.length)return null;
+
+ // Méthode 1 : hit-test DOM réel, prioritaire sur Desktop.
+ const direct=spotterMaintenanceHitByElements(x,y);
+ if(direct)return direct;
+
+ // Méthode 2 : rectangle visuel complet de la carte Maintenance.
  const mobile=window.matchMedia('(max-width:899px)').matches;
- const toleranceX=mobile?24:14;
- const toleranceY=mobile?48:24;
+ const toleranceX=mobile?24:32;
+ const toleranceY=mobile?48:38;
  let best=null,bestDistance=Infinity;
  for(const zone of zones){
-  const rect=zone.getBoundingClientRect();
+  const rect=spotterMaintenanceUnionRect(zone);
   const inside=x>=rect.left-toleranceX&&x<=rect.right+toleranceX&&y>=rect.top-toleranceY&&y<=rect.bottom+toleranceY;
   if(!inside)continue;
   const cx=(rect.left+rect.right)/2,cy=(rect.top+rect.bottom)/2;
@@ -831,7 +870,7 @@ function spotterOnDragMove(event){
  spotterMoveGhost(event.clientX,event.clientY);
  spotterClearDropHighlights();
 
- // V7.2.197 — détection géométrique de Maintenance.
+ // V7.2.198 — détection géométrique de Maintenance.
  // `elementFromPoint()` pouvait échouer pendant le pointer capture / long-press,
  // surtout sur iPhone et selon le DOM Desktop. On teste directement le rectangle
  // visible de la zone Maintenance, avec priorité sur les files.
@@ -873,7 +912,7 @@ function spotterRestoreOriginalCard(){
  else originalParent.appendChild(card);
 }
 function spotterEndDrag(event){
- document.removeEventListener('pointermove',spotterOnDragMove);
+ document.removeEventListener('pointermove',spotterOnDragMove,true);
  document.removeEventListener('touchmove',spotterPreventTouchScroll);
  spotterCancelPendingDrag();
  if(spotterDrag.active&&event&&Number.isFinite(event.clientX)&&Number.isFinite(event.clientY)){
