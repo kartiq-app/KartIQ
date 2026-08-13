@@ -455,7 +455,7 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 @media(max-width:760px){.race-mode-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 
-/* V7.2.192 — l'équipe suivie doit pouvoir afficher le flash de passage.
+/* V7.2.194 — l'équipe suivie doit pouvoir afficher le flash de passage.
    Les règles .followed historiques utilisent !important et masquaient
    l'animation de fond/box-shadow. Ces overrides ne s'appliquent que
    pendant le flash puis la ligne revient automatiquement au style suivi. */

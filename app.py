@@ -1412,11 +1412,10 @@ def reconnect_live():
 
 
 def extract_apex_session_title(frame):
-    """Extrait l’intitulé live publié par Apex (ex. « Session 7 »)."""
+    """Extrait l’intitulé de session Apex sans réinitialiser le moteur live."""
     if not isinstance(frame, str):
         return ""
-    # V7.2.194 — Apex peut publier l'intitulé dans title2 alors que title1 est vide.
-    # Priorité explicite : title2 -> title1 -> title -> session.
+    # Priorité : title2 -> title1 -> title -> session.
     patterns = (
         r"(?:^|[\r\n\s])title2\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
         r"(?:^|[\r\n\s])title1\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
@@ -1430,6 +1429,52 @@ def extract_apex_session_title(frame):
             if value:
                 return value
     return ""
+
+
+def apex_grid_active_rows(grid):
+    """Retourne uniquement les rXXXXX réellement présents dans le GRID complet reçu."""
+    if not grid:
+        return set()
+    rows = set()
+    for update in grid.updates:
+        try:
+            row = int(update.row)
+        except (TypeError, ValueError):
+            continue
+        if row > 0:
+            rows.add(row)
+    return rows
+
+
+def filter_live_drivers_to_active_grid():
+    """
+    V7.2.194 SAFE — filtre d'affichage uniquement.
+    On ne reset jamais APEX_TABLE / PROTOCOL_ENGINE / EVENT_STORE / météo.
+    Les anciennes lignes restent éventuellement dans le moteur interne mais
+    ne sont plus exposées comme pilotes actifs après réception d'un nouveau GRID.
+    """
+    active_rows = STATE.get("apex_active_rows")
+    if not isinstance(active_rows, (list, tuple, set)) or not active_rows:
+        return
+    active = {int(row) for row in active_rows if str(row).isdigit()}
+    if not active:
+        return
+
+    drivers = list(STATE.get("drivers") or [])
+    filtered = [d for d in drivers if int(d.get("apex_row") or -1) in active]
+    STATE["drivers"] = filtered
+
+    # Nettoyage ciblé des références visuelles à un ancien pilote.
+    snap = STATE.get("followed_snapshot")
+    if isinstance(snap, dict) and int(snap.get("apex_row") or -1) not in active:
+        STATE["followed_snapshot"] = None
+
+    followed = STATE.get("followed_driver")
+    if followed and filtered and not any(d.get("driver") == followed for d in filtered):
+        STATE["followed_locked"] = False
+        STATE["followed_driver"] = filtered[0].get("driver")
+        STATE["followed_snapshot"] = deepcopy(filtered[0])
+
 
 
 @app.post("/api/apex/frame")
@@ -1446,29 +1491,16 @@ def apex_frame():
 
     write_traffic("IN", frame)
 
-    # V7.2.194 — l’intitulé Apex devient le marqueur explicite de changement de session.
-    # On ne purge que lorsqu’un NOUVEAU titre non vide est réellement reçu : une trame
-    # partielle sans titre ne peut donc jamais effacer la course en cours.
+    # V7.2.194 SAFE — mémorise l'intitulé sans reset global.
     incoming_session_title = extract_apex_session_title(frame)
-    previous_session_title = str(STATE.get("apex_session_title") or "").strip()
-    if incoming_session_title and previous_session_title and incoming_session_title != previous_session_title:
-        APEX_TABLE.reset()
-        PROTOCOL_ENGINE.reset()
-        EVENT_STORE.reset()
-        RACE_STATE.clear_session_history()
-        STATE["drivers"] = []
-        STATE["session_best"] = {"driver": "—", "lap": "—"}
-        STATE["fastest_last_lap"] = {"driver": "—", "lap": "—"}
-        STATE["time_remaining"] = "—"
-        STATE["time_remaining_ms"] = None
-        STATE["time_remaining_end_at_ms"] = None
-        STATE["time_elapsed"] = "—"
-        STATE["time_elapsed_ms"] = None
-        STATE["qualif_crossing"] = None
     if incoming_session_title:
         STATE["apex_session_title"] = incoming_session_title
 
     grid = parse_grid_frame(frame)
+    if grid:
+        active_rows = apex_grid_active_rows(grid)
+        if active_rows:
+            STATE["apex_active_rows"] = sorted(active_rows)
     initial_updates = grid.updates if grid else []
     if grid:
         PROTOCOL_ENGINE.interpreter.set_schema(grid.schema, grid.labels)
@@ -1487,6 +1519,7 @@ def apex_frame():
 
     snapshot = PROTOCOL_ENGINE.snapshot()
     sync_state_from_race(snapshot, interpreted_events)
+    filter_live_drivers_to_active_grid()
     now = datetime.now().isoformat(timespec="seconds")
     with LIVE_LOCK:
         STATE["live"]["messages"] += 1

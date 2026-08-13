@@ -100,6 +100,7 @@ class RaceStateService:
             "time_elapsed_ms": None,
             "time_elapsed_updated_at_ms": None,
             "apex_session_title": "",
+            "apex_active_rows": [],
             "apex_session_type": "unknown",
             "apex_dynamic_timing_mode": "unknown",
             "apex_laps_remaining": "—",
