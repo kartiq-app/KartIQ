@@ -1,3 +1,10 @@
+# V7.2.193 — Intitulé Apex + purge changement de session + notification +10 %
+
+- Analyzer : affiche l’intitulé Apex de la session au-dessus du compteur, exactement à la taille existante de « TEMPS RESTANT ».
+- Changement de session : un nouvel intitulé Apex non vide déclenche la purge ciblée des données live de la session précédente (drivers, grille, MAP/Filets/Radar/Trafic, chronos de session), sans toucher aux réglages stratégiques.
+- Sécurité : une trame sans intitulé ne déclenche aucune purge.
+- Carte ÉQUIPE SUIVIE : emoji, texte « Informations » et badge agrandis de 10 %.
+
 # V7.2.192 — Retour moteur historique Filets / Trafic / Radar
 
 - Base : V7.2.191.

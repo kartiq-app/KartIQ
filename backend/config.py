@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.192"
+APP_VERSION = "7.2.193"
 APP_RELEASE_NAME = "POLISH ANALYZER DESKTOP"
 
 

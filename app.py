@@ -1411,6 +1411,24 @@ def reconnect_live():
     return jsonify(ok=True, circuit=circuit)
 
 
+def extract_apex_session_title(frame):
+    """Extrait l’intitulé live publié par Apex (ex. « Session 7 »)."""
+    if not isinstance(frame, str):
+        return ""
+    # Selon les versions/configurations Apex, le titre est publié sous title, title1 ou session.
+    patterns = (
+        r"(?:^|[\r\n\s])title1?\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
+        r"(?:^|[\r\n\s])session(?:_name|name|title)?\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
+    )
+    for pattern in patterns:
+        matches = re.findall(pattern, frame, re.IGNORECASE)
+        if matches:
+            value = re.sub(r"\s+", " ", str(matches[-1] or "")).strip()
+            if value:
+                return value
+    return ""
+
+
 @app.post("/api/apex/frame")
 def apex_frame():
     payload_data = request.get_json(force=True, silent=True) or {}
@@ -1424,6 +1442,29 @@ def apex_frame():
         return jsonify(ok=True, ignored=True, error="Trame d'un ancien circuit ignorée")
 
     write_traffic("IN", frame)
+
+    # V7.2.193 — l’intitulé Apex devient le marqueur explicite de changement de session.
+    # On ne purge que lorsqu’un NOUVEAU titre non vide est réellement reçu : une trame
+    # partielle sans titre ne peut donc jamais effacer la course en cours.
+    incoming_session_title = extract_apex_session_title(frame)
+    previous_session_title = str(STATE.get("apex_session_title") or "").strip()
+    if incoming_session_title and previous_session_title and incoming_session_title != previous_session_title:
+        APEX_TABLE.reset()
+        PROTOCOL_ENGINE.reset()
+        EVENT_STORE.reset()
+        RACE_STATE.clear_session_history()
+        STATE["drivers"] = []
+        STATE["session_best"] = {"driver": "—", "lap": "—"}
+        STATE["fastest_last_lap"] = {"driver": "—", "lap": "—"}
+        STATE["time_remaining"] = "—"
+        STATE["time_remaining_ms"] = None
+        STATE["time_remaining_end_at_ms"] = None
+        STATE["time_elapsed"] = "—"
+        STATE["time_elapsed_ms"] = None
+        STATE["qualif_crossing"] = None
+    if incoming_session_title:
+        STATE["apex_session_title"] = incoming_session_title
+
     grid = parse_grid_frame(frame)
     initial_updates = grid.updates if grid else []
     if grid:
