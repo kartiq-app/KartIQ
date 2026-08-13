@@ -1,4 +1,24 @@
-# V7.2.193 — Intitulé Apex + purge changement de session + notification +10 %
+# V7.2.194 — Build propre sans diagnostic moteur
+
+- Même base fonctionnelle V7.2.194.
+- Suppression du panneau diagnostic Filets / Trafic / Radar de l'Analyzer.
+- Suppression de la mémorisation `rawHistory` ajoutée uniquement pour le diagnostic.
+- Conservation du moteur historique V7.2.152 pour Filets / Trafic / Radar.
+- Conservation de la correction du flash de l'équipe suivie.
+- Conservation de la purge automatique lors d'un changement de session Apex.
+- Intitulé de session : priorité `title2`, puis `title1`, `title`, `session`.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais.
+
+# V7.2.194 — Intitulé de session Apex title2/title1
+
+- Base : V7.2.193.
+- L'intitulé de session affiché au-dessus du temps restant utilise désormais `title2` en priorité, puis `title1` en fallback.
+- Exemple Apex : `title1||` + `title2||Session 8` affiche correctement `Session 8`.
+- La taille du texte reste strictement inchangée.
+- La logique de purge de changement de session utilise la même valeur normalisée `title2 || title1`.
+- Aucun changement du moteur Filets / Trafic / Radar ni des algorithmes Velocity / Score Sprint / Stratégie Relais.
+
+# V7.2.194 — Intitulé Apex + purge changement de session + notification +10 %
 
 - Analyzer : affiche l’intitulé Apex de la session au-dessus du compteur, exactement à la taille existante de « TEMPS RESTANT ».
 - Changement de session : un nouvel intitulé Apex non vide déclenche la purge ciblée des données live de la session précédente (drivers, grille, MAP/Filets/Radar/Trafic, chronos de session), sans toucher aux réglages stratégiques.

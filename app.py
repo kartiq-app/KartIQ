@@ -1415,9 +1415,12 @@ def extract_apex_session_title(frame):
     """Extrait l’intitulé live publié par Apex (ex. « Session 7 »)."""
     if not isinstance(frame, str):
         return ""
-    # Selon les versions/configurations Apex, le titre est publié sous title, title1 ou session.
+    # V7.2.194 — Apex peut publier l'intitulé dans title2 alors que title1 est vide.
+    # Priorité explicite : title2 -> title1 -> title -> session.
     patterns = (
-        r"(?:^|[\r\n\s])title1?\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
+        r"(?:^|[\r\n\s])title2\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
+        r"(?:^|[\r\n\s])title1\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
+        r"(?:^|[\r\n\s])title\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
         r"(?:^|[\r\n\s])session(?:_name|name|title)?\|(?:[^|\r\n]*\|)?([^|\r\n]+)",
     )
     for pattern in patterns:
@@ -1443,7 +1446,7 @@ def apex_frame():
 
     write_traffic("IN", frame)
 
-    # V7.2.193 — l’intitulé Apex devient le marqueur explicite de changement de session.
+    # V7.2.194 — l’intitulé Apex devient le marqueur explicite de changement de session.
     # On ne purge que lorsqu’un NOUVEAU titre non vide est réellement reçu : une trame
     # partielle sans titre ne peut donc jamais effacer la course en cours.
     incoming_session_title = extract_apex_session_title(frame)
