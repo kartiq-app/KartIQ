@@ -7,8 +7,6 @@ from typing import Any
 
 from apex_interpreter import ApexInterpreter
 
-APEX_DYNAMIC_MAX_DURATION_MS = 7 * 24 * 60 * 60 * 1000
-
 
 class ProtocolEngine:
     """Détecte le profil de flux Apex et alimente un modèle de course unifié."""
@@ -38,7 +36,6 @@ class ProtocolEngine:
         self.elapsed_ms: int | None = None
         self.elapsed_updated_at_ms: int | None = None
         self.apex_session_type: str = "unknown"
-        self.dynamic_timing_mode: str = "unknown"
         self.current_lap: int | None = None
         self.total_laps: int | None = None
         self.lap_progress_updated_at_ms: int | None = None
@@ -81,72 +78,30 @@ class ProtocolEngine:
                 self.remaining_updated_at_ms = None
                 self.remaining_end_at_ms = None
 
-        # Apex peut annoncer le type de dyn1 séparément de sa valeur, par exemple
-        # `dyn1|countdown|` puis pousser ensuite `dyn1|123456`. Cette déclaration
-        # doit primer sur une ancienne cible de tours mémorisée.
-        dyn1_mode_matches = re.findall(r"(?:^|[\r\n])dyn1\|(countdown_text|countdown|count|text)\|", frame, re.IGNORECASE)
-        if dyn1_mode_matches:
-            announced_mode = str(dyn1_mode_matches[-1]).lower()
-            if announced_mode in {"countdown", "countdown_text"}:
-                self.dynamic_timing_mode = "countdown"
-                self.current_lap = None
-                self.total_laps = None
-                self.lap_progress_updated_at_ms = None
-            elif announced_mode == "count":
-                self.dynamic_timing_mode = "count"
-            elif announced_mode == "text" and lap_progresses:
-                self.dynamic_timing_mode = "laps"
-
         # Apex accepte deux encodages pour count/countdown : un entier déjà exprimé
         # en millisecondes, ou une valeur décimale exprimée en secondes. countdown_text
         # peut en plus suffixer un libellé après un underscore. On reproduit ici la
         # conversion du JavaScript officiel Apex.
-        def _apex_dynamic_time_to_ms(raw: str) -> int | None:
+        def _apex_dynamic_time_to_ms(raw: str) -> int:
             value = str(raw or "").strip()
             numeric = value.split("_", 1)[0]
             parsed = float(numeric)
-            milliseconds = max(0, int(round(parsed * 1000 if "." in numeric else parsed)))
-            if milliseconds > APEX_DYNAMIC_MAX_DURATION_MS:
-                return None
-            return milliseconds
+            return max(0, int(round(parsed * 1000 if "." in numeric else parsed)))
 
         counts = re.findall(r"(?:^|[\r\n])dyn1\|count\|([0-9]+(?:\.[0-9]+)?)", frame)
         if counts:
-            parsed_elapsed = _apex_dynamic_time_to_ms(counts[-1])
-            if parsed_elapsed is not None:
-                self.elapsed_ms = parsed_elapsed
-                self.elapsed_updated_at_ms = received_at_ms
+            self.elapsed_ms = _apex_dynamic_time_to_ms(counts[-1])
+            self.elapsed_updated_at_ms = received_at_ms
 
         # Le temps restant peut arriver via countdown ou countdown_text.
         countdowns = re.findall(r"(?:^|[\r\n])dyn1\|(?:countdown|countdown_text)\|([0-9]+(?:\.[0-9]+)?(?:_[^\r\n|]*)?)", frame)
         if countdowns and not lap_progresses:
-            parsed_remaining = _apex_dynamic_time_to_ms(countdowns[-1])
-            if parsed_remaining is not None:
-                self.dynamic_timing_mode = "countdown"
-                self.remaining_ms = parsed_remaining
-                self.remaining_updated_at_ms = received_at_ms
-                self.remaining_end_at_ms = received_at_ms + self.remaining_ms
-                self.current_lap = None
-                self.total_laps = None
-                self.lap_progress_updated_at_ms = None
-
-        # Après `dyn1|countdown|`, Apex peut envoyer uniquement `dyn1|<valeur>`.
-        # On interprète alors cette valeur comme le temps restant, sans jamais la
-        # confondre avec le nombre de tours individuel de la grille.
-        generic_dyn1 = re.findall(r"(?:^|[\r\n])dyn1\|([0-9]+(?:\.[0-9]+)?(?:_[^\r\n|]*)?)(?:\||$)", frame)
-        if generic_dyn1 and not countdowns and not lap_progresses:
-            parsed_generic = _apex_dynamic_time_to_ms(generic_dyn1[-1])
-            if parsed_generic is not None:
-                if self.dynamic_timing_mode == "countdown":
-                    self.remaining_ms = parsed_generic
-                    self.remaining_updated_at_ms = received_at_ms
-                    self.remaining_end_at_ms = received_at_ms + self.remaining_ms
-                    self.current_lap = None
-                    self.total_laps = None
-                    self.lap_progress_updated_at_ms = None
-                elif self.dynamic_timing_mode == "count":
-                    self.elapsed_ms = parsed_generic
-                    self.elapsed_updated_at_ms = received_at_ms
+            self.remaining_ms = _apex_dynamic_time_to_ms(countdowns[-1])
+            self.remaining_updated_at_ms = received_at_ms
+            self.remaining_end_at_ms = received_at_ms + self.remaining_ms
+            self.current_lap = None
+            self.total_laps = None
+            self.lap_progress_updated_at_ms = None
 
         # Les courses au nombre de tours publient selon les configurations Apex
         # une cible explicite sous plusieurs noms dynamiques. On ne retient que
@@ -316,7 +271,6 @@ class ProtocolEngine:
             "total_laps": self.total_laps,
             "lap_progress_updated_at_ms": self.lap_progress_updated_at_ms,
             "apex_session_type": self.apex_session_type,
-            "dynamic_timing_mode": self.dynamic_timing_mode,
         }
         snap["comments"] = {
             "raw": self.comments_raw,

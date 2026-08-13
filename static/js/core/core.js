@@ -35,8 +35,6 @@ let stateLoadInFlight=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
 let elapsedCountMs=null,elapsedCountPerfAt=0,elapsedCountDirectSyncAt=0;
-let apexDyn1TimingMode='unknown';
-const APEX_DYNAMIC_MAX_DURATION_MS=7*24*60*60*1000;
 const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
 
 // Journal local du décodeur Apex. Les trames sont conservées uniquement dans
@@ -144,31 +142,7 @@ function apexDynamicTimeToMilliseconds(raw){
  const value=String(raw??'').trim().split('_',1)[0];
  const parsed=Number(value);
  if(!Number.isFinite(parsed))return null;
- const ms=Math.max(0,Math.round(value.includes('.')?parsed*1000:parsed));
- // V7.2.197B — garde-fou minimal : une durée Apex ne peut pas être un timestamp Unix.
- if(ms>APEX_DYNAMIC_MAX_DURATION_MS)return null;
- return ms;
-}
-function ingestApexDyn1Mode(frame){
- const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|(countdown_text|countdown|count|text)\|/gi)];
- if(!matches.length)return false;
- const mode=String(matches[matches.length-1][1]||'').toLowerCase();
- if(mode==='countdown'||mode==='countdown_text'){
-  apexDyn1TimingMode='countdown';
-  state={...(state||{}),apex_dynamic_timing_mode:'countdown',total_laps:0,current_lap:0,apex_laps_remaining:'—'};
-  return true;
- }
- if(mode==='count'){apexDyn1TimingMode='count';state={...(state||{}),apex_dynamic_timing_mode:'count'};return true}
- return false;
-}
-function ingestApexGenericDyn1(frame){
- const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|([0-9]+(?:\.[0-9]+)?(?:_[^\r\n|]*)?)(?:\||$)/g)];
- if(!matches.length)return false;
- const ms=apexDynamicTimeToMilliseconds(matches[matches.length-1][1]);
- if(ms===null)return false;
- if(apexDyn1TimingMode==='countdown')return syncRemainingFromApex(ms,{direct:true});
- if(apexDyn1TimingMode==='count')return syncElapsedFromApex(ms,{direct:true});
- return false;
+ return Math.max(0,Math.round(value.includes('.')?parsed*1000:parsed));
 }
 function ingestApexCountdown(frame){
  const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|(?:countdown|countdown_text)\|([0-9]+(?:\.[0-9]+)?(?:_[^\r\n|]*)?)/g)];
@@ -218,11 +192,6 @@ function ingestApexLapProgress(frame){
  return true;
 }
 function syncRemainingFromState(nextState){
- const serverTimingMode=String(nextState?.apex_dynamic_timing_mode||'').toLowerCase();
- if(serverTimingMode==='countdown'){
-  apexDyn1TimingMode='countdown';
-  if(Number(nextState?.total_laps)>0)nextState={...nextState,total_laps:0,current_lap:0,apex_laps_remaining:'—'};
- }else if(serverTimingMode==='count'){apexDyn1TimingMode='count'}
  const elapsedBase=Number(nextState?.time_elapsed_ms),elapsedAt=Number(nextState?.time_elapsed_updated_at_ms);
  if(Number.isFinite(elapsedBase)&&elapsedBase>=0){
   const directElapsedFresh=elapsedCountDirectSyncAt>0&&(Date.now()-elapsedCountDirectSyncAt)<45000;
@@ -301,11 +270,7 @@ function raceTotalLaps(){
  const total=Number(state?.total_laps);
  return Number.isFinite(total)&&total>0?Math.floor(total):0;
 }
-function raceUsesLapTarget(){
- const timingMode=String(state?.apex_dynamic_timing_mode||apexDyn1TimingMode||'').toLowerCase();
- if(timingMode==='countdown')return false;
- return raceTotalLaps()>0
-}
+function raceUsesLapTarget(){return raceTotalLaps()>0}
 function formatRaceLapProgress(){
  const total=raceTotalLaps();
  if(!total)return '';
@@ -460,18 +425,6 @@ function ingestApexMapEvents(frame,circuitId){
   }
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
   previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
-  // V7.2.197B — trace diagnostic brute des impulsions MAP Apex.
-  // Aucun impact sur le moteur : on mémorise seulement les 8 dernières
-  // impulsions réellement reçues pour chaque apex_row.
-  if(!Array.isArray(previous.rawHistory))previous.rawHistory=[];
-  previous.rawHistory.push({
-   at:now,
-   code,
-   value:Number.isFinite(value)?value:null,
-   extra:Number.isFinite(extra)?extra:null,
-   fields:fields.slice(0,4)
-  });
-  if(previous.rawHistory.length>8)previous.rawHistory.splice(0,previous.rawHistory.length-8);
   registry.rows.set(row,previous);registry.lastEventAt=now;registry.noLive=false;
  }
 }
@@ -510,11 +463,9 @@ function connectApexBrowser(force=false){
   const frame=typeof e.data==='string'?e.data:e.data instanceof Blob?await e.data.text():String(e.data);
   if(!isCurrentConnection())return;
   recordApexFrameReceived(frame,circuit.id);
-  ingestApexDyn1Mode(frame);
   const lapProgressFrame=ingestApexLapProgress(frame);
   if(!lapProgressFrame)ingestApexCountdown(frame);
   ingestApexElapsed(frame);
-  if(!lapProgressFrame)ingestApexGenericDyn1(frame);
   ingestApexSessionType(frame);
   ingestApexMapEvents(frame,circuit.id);
   try{
