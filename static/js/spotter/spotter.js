@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.195';
+const SPOTTER_APP_RELEASE='7.2.196';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -770,6 +770,24 @@ function spotterPlacePlaceholder(list,before){
  if(before)list.insertBefore(placeholder,before);
  else list.appendChild(placeholder);
 }
+function spotterFindMaintenanceTarget(x,y){
+ const zones=[...document.querySelectorAll('[data-spotter-drop-zone="maintenance"]')]
+  .filter(zone=>zone.offsetParent!==null);
+ if(!zones.length)return null;
+ const mobile=window.matchMedia('(max-width:899px)').matches;
+ const toleranceX=mobile?24:14;
+ const toleranceY=mobile?48:24;
+ let best=null,bestDistance=Infinity;
+ for(const zone of zones){
+  const rect=zone.getBoundingClientRect();
+  const inside=x>=rect.left-toleranceX&&x<=rect.right+toleranceX&&y>=rect.top-toleranceY&&y<=rect.bottom+toleranceY;
+  if(!inside)continue;
+  const cx=(rect.left+rect.right)/2,cy=(rect.top+rect.bottom)/2;
+  const distance=Math.hypot(x-cx,y-cy);
+  if(distance<bestDistance){best=zone;bestDistance=distance}
+ }
+ return best;
+}
 function spotterFindTargetColumn(x,y){
  const columns=[...document.querySelectorAll('[data-spotter-file]')];
  if(!columns.length)return null;
@@ -801,8 +819,11 @@ function spotterOnDragMove(event){
  spotterMoveGhost(event.clientX,event.clientY);
  spotterClearDropHighlights();
 
- const element=document.elementFromPoint(event.clientX,event.clientY);
- const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
+ // V7.2.196 — détection géométrique de Maintenance.
+ // `elementFromPoint()` pouvait échouer pendant le pointer capture / long-press,
+ // surtout sur iPhone et selon le DOM Desktop. On teste directement le rectangle
+ // visible de la zone Maintenance, avec priorité sur les files.
+ const maintenance=spotterFindMaintenanceTarget(event.clientX,event.clientY);
  if(maintenance){
   maintenance.classList.add('spotter-drop-target');
   spotterDrag.target={type:'maintenance'};
@@ -839,10 +860,14 @@ function spotterRestoreOriginalCard(){
  if(originalNext&&originalNext.parentNode===originalParent)originalParent.insertBefore(card,originalNext);
  else originalParent.appendChild(card);
 }
-function spotterEndDrag(){
+function spotterEndDrag(event){
  document.removeEventListener('pointermove',spotterOnDragMove);
  document.removeEventListener('touchmove',spotterPreventTouchScroll);
  spotterCancelPendingDrag();
+ if(spotterDrag.active&&event&&Number.isFinite(event.clientX)&&Number.isFinite(event.clientY)){
+  const maintenance=spotterFindMaintenanceTarget(event.clientX,event.clientY);
+  if(maintenance)spotterDrag.target={type:'maintenance'};
+ }
  const target=spotterDrag.active?spotterDrag.target:null;
  if(spotterDrag.active){
   if(target?.type==='maintenance')spotterMoveKartToMaintenance(spotterDrag.kv,spotterDrag.from);

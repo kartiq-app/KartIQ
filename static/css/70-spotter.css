@@ -1812,7 +1812,7 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 }
 
 
-/* V7.2.195 — Préparation Quick Change : un bouton Ajouter par file */
+/* V7.2.196 — Préparation Quick Change : un bouton Ajouter par file */
 .spotter-setup-files{display:grid;grid-template-columns:1fr;gap:12px;margin:8px 0 14px}
 .spotter-setup-files.setup-files-2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .spotter-setup-files.setup-files-3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -1825,7 +1825,7 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
  .spotter-setup-files.setup-files-2,.spotter-setup-files.setup-files-3{grid-template-columns:1fr}
 }
 
-/* V7.2.195 — Remplacement d'un kart rouge envoyé en maintenance */
+/* V7.2.196 — Remplacement d'un kart rouge envoyé en maintenance */
 .spotter-replacement-overlay{position:fixed;inset:0;z-index:120000;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:18px}
 .spotter-replacement-panel{width:min(760px,100%);max-height:90vh;overflow:auto;background:#0d1016;border:1px solid #363d4a;border-radius:16px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.65)}
 .spotter-replacement-title{font-family:'F1 Regular',Arial,sans-serif;font-size:18px;letter-spacing:.08em;color:#fff;margin-bottom:10px}
@@ -1840,3 +1840,8 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-replacement-card:hover{outline:2px solid #2fd18b;outline-offset:1px}
 @media(max-width:899px){.spotter-replacement-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.spotter-replacement-panel{padding:14px}}
 @media(max-width:520px){.spotter-replacement-grid{grid-template-columns:1fr}}
+
+
+/* V7.2.196 — feedback drag pour toutes les cartes déplaçables. */
+.spotter-queue-card.reserved.spotter-draggable{cursor:grab}
+body.spotter-drag-active .spotter-queue-card.reserved.spotter-draggable{cursor:grabbing!important}

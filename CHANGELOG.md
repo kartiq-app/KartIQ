@@ -1,3 +1,14 @@
+# V7.2.196 — Fix Drag & Drop vers Maintenance
+
+- Base : V7.2.195.
+- Correction du drop vers la zone Maintenance sur Desktop et smartphone.
+- La détection ne dépend plus uniquement de `elementFromPoint()` pendant le pointer capture.
+- Détection géométrique directe de la zone Maintenance avec priorité sur les files.
+- Vérification supplémentaire de la zone Maintenance au relâchement du doigt / de la souris.
+- Fonctionne pour les cartes vertes disponibles et les cartes rouges attribuées.
+- Pour une carte rouge, le workflow de sélection du kart remplaçant et le transfert du chrono d'arrêt restent inchangés.
+- Aucun changement des algorithmes Velocity / Score Sprint / Stratégie Relais / Filets / Trafic / Radar.
+
 # V7.2.195 — Spotter : files autonomes + maintenance dynamique
 
 - Base : V7.2.194 SAFE.
