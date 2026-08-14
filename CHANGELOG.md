@@ -1,3 +1,48 @@
+# V7.2.172N — Normal Mode / Spotter + Focus + Session
+
+- Base stricte : V7.2.172 d'origine.
+- Réintégration du Spotter récent de V196.
+- Maintenance STANDS dans Analyzer déclarée comme vraie zone de drop.
+- Focus Endurance mobile/portrait : dernier rendu récent réintégré.
+- Classement Live : le libellé « Temps restant » est remplacé par le nom de session Apex (`title2`, puis `title1`) quand il est disponible.
+- Taille du libellé Classement Live inchangée.
+- Aucun moteur DYN1 générique V173+ réinjecté.
+- Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
+
+# Velocity V7.2.172NN — Focus Endurance mobile + pilotage Team Manager
+
+- Focus Endurance smartphone : valeurs Delta +30 %.
+- Noms équipe/pilote +10 %.
+- Dernier temps agrandi dynamiquement au maximum de sa case avec marge de sécurité.
+- Le Focus Endurance Pilote possède désormais une équipe cible indépendante de « Équipe suivie » Analyzer.
+- Le Team Manager peut changer l'équipe affichée sur le téléphone du pilote pendant une session active.
+- La cible Focus Pilote est synchronisée vers les appareils autorisés sans modifier l'équipe suivie du Team Manager.
+
+# V7.2.171 — SYNC STRATÉGIE RELAIS DESKTOP / MOBILE
+
+- Desktop devient source de vérité pour la carte Stratégie Relais.
+- Synchronisation serveur du score, confiance, temps en piste, delta/tour, impact/relais, capital stratégique, recommandation et fenêtre conseillée.
+- Smartphone consomme le snapshot Desktop quand il est récent et correspond au même circuit / à la même équipe suivie.
+- Repli automatique sur le calcul local si le snapshot partagé est absent ou périmé.
+- Aucun changement de logique métier du moteur de stratégie.
+
+# V7.2.170 — FOCUS IPHONE PAYSAGE VIRTUEL
+
+- iPhone uniquement : les modes Focus Qualification, Sprint et Endurance restent techniquement en portrait et leur interface est pivotée de 90° en CSS.
+- Le pilote peut verrouiller l’iPhone en portrait puis tourner physiquement le téléphone : aucun basculement iOS n’est nécessaire.
+- Android conserve strictement son verrouillage paysage natif existant.
+- Les titres Qualifications, Sprint et Endurance sont décalés pour laisser la zone iPhone libre et gardent un espace de sécurité avec le filet coloré.
+- La persistance Focus de la V7.2.169 est conservée.
+
+# V7.2.169 — FOCUS PERSISTANT
+
+- Les modes Focus Qualification, Sprint et Endurance restent actifs tant que le pilote ne les ferme pas explicitement.
+- Suppression de la fermeture involontaire du Focus Endurance lors d'un rafraîchissement des droits/appareils.
+- Mémorisation temporaire du Focus actif dans la session du navigateur et restauration automatique après un retour au premier plan ou un rafraîchissement UI.
+- Watchdog léger : si un rerender ou une transition interne masque un Focus actif, Velocity le rouvre automatiquement.
+- La fin réelle d'une session de course continue à fermer le Focus et efface sa mémorisation.
+- Aucun changement apporté aux données, deltas ou au rendu métier des modes Focus.
+
 # V7.2.168 — FIRST KART 'INN + LISIBILITÉ CONFORMITÉ
 
 - Ajout du circuit belge First Kart 'Inn (Apex Timing 8113), Machelen.
