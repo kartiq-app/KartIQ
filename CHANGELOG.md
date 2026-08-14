@@ -1,3 +1,9 @@
+# V7.2.165 — SOURCE DE VÉRITÉ RÈGLEMENT ANALYZER
+- Correction de l’ordre de restauration : la session locale smartphone est chargée avant le règlement partagé serveur.
+- Le règlement partagé devient prioritaire sur les anciens snapshots locaux de chaque appareil.
+- Une règle reçue du serveur met à jour le snapshot local actif pour empêcher toute réinjection ultérieure d’une ancienne valeur (ex. Temps pilote 3h30 au lieu de 5h00).
+- Conformité réglementaire, Stratégie relais et Capital stratégique utilisent désormais la même configuration sur desktop et smartphone.
+
 # V7.2.164 — SYNCHRONISATION ANALYZER SMARTPHONE
 - Conformité réglementaire synchronisée côté serveur entre desktop et smartphone.
 - Les paramètres de règlement ne dépendent plus uniquement du localStorage de chaque appareil.

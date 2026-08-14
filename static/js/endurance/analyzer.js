@@ -868,6 +868,15 @@ function analyzerApplySharedRulesFromState(){
  analyzerSharedRulesUpdatedAt=updated;
  analyzerRules={...ANALYZER_DEFAULT_RULES,...shared.rules};
  analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));
+ // Le règlement serveur est la source de vérité. On met aussi à jour la session
+ // locale active afin qu'un ancien snapshot smartphone ne puisse plus le réinjecter.
+ if(analyzerActiveSessionId){
+  const session=analyzerSessionRead(analyzerActiveSessionId);
+  if(session&&String(session.circuitId||'')===currentCircuit){
+   session.rules={...analyzerRules};session.updatedAt=Date.now();session.saveReason='shared-rules-sync';
+   analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+session.id,JSON.stringify(session));analyzerSessionUpdateIndex(session);
+  }
+ }
  return true;
 }
 async function analyzerPublishRules(){
@@ -3086,11 +3095,14 @@ function analyzerScrollToCard(id){
 }
 
 function renderAnalyzer(){
- analyzerApplySharedRulesFromState();
  ensureAnalyzerWeather();
  if(!document.getElementById('analyzerTable'))return;
  if(typeof syncRankingLapAnimations==='function')syncRankingLapAnimations();
+ // Restaurer d'abord la session locale, puis appliquer le règlement partagé.
+ // En V7.2.164 l'ordre inverse permettait au snapshot smartphone (ex. 3h30)
+ // d'écraser juste après la valeur serveur/desktop (ex. 5h00).
  analyzerEnsureSession();
+ analyzerApplySharedRulesFromState();
  analyzerLearnFromState();
  analyzerScheduleRelayHydration();
  const all=analyzerRows();const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
