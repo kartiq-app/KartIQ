@@ -1,3 +1,12 @@
+# V7.2.156 — ANALYZER PORTRAIT : MENU FIXE TYPE ENDURANCE
+- Le menu Analyzer portrait reprend le traitement visuel du bandeau Endurance.
+- Filet orange supérieur et filet orange inférieur.
+- Bandeau fixé sous la zone système iPhone via `env(safe-area-inset-top)`.
+- Le menu ne participe plus au scroll : il reste accessible en permanence.
+- La zone Analyzer réserve la hauteur exacte du bandeau fixe afin que la première carte ne passe pas dessous.
+- Les ancres des cartes tiennent compte du bandeau fixe.
+- Aucun changement desktop, aucun changement des calculs Analyzer.
+
 # V7.2.153 — HEAT MAP : SIMULATION D’ARRÊT TEMPORELLE
 - La simulation d’arrêt utilise désormais la **position virtuelle live** commune aux Filets / Trafic / Radar.
 - Au clic, la projection est figée : Velocity fait avancer virtuellement tous les concurrents pendant le temps nécessaire pour rejoindre les stands + le différentiel pit lane + la référence d’arrêt.

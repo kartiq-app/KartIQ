@@ -8,19 +8,62 @@
  body[data-app-mode="analyzer"] .analyzer-shell{display:flex!important;flex-direction:column;gap:8px;padding:0 0 16px!important;overflow:visible!important}
  body[data-app-mode="analyzer"] .analyzer-toolbar{display:none!important}
 
- /* Navigation persistante : 3 dalles puis 2 dalles. */
- body[data-app-mode="analyzer"] .analyzer-mobile-nav{display:grid;grid-template-columns:20% 40% 40%;position:sticky;top:0;z-index:1200;background:#0b0d12;border-top:3px solid #ff8a00;border-bottom:1px solid #2a2e36;box-shadow:0 5px 16px rgba(0,0,0,.42);padding-top:env(safe-area-inset-top)}
- body[data-app-mode="analyzer"] .analyzer-mobile-nav button{min-width:0;border:0;border-right:1px solid #292d35;border-bottom:1px solid #292d35;background:#0d0f14;color:#fff;min-height:70px;padding:8px 6px;font-family:inherit;font-weight:900;letter-spacing:.03em}
+ /* Navigation Analyzer portrait : reprend le comportement du bandeau Endurance.
+    Le bandeau est FIXE sous la zone système iPhone et reste accessible pendant tout le scroll. */
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav{
+   display:grid;
+   grid-template-columns:20% 40% 40%;
+   position:fixed!important;
+   left:0;
+   right:0;
+   top:env(safe-area-inset-top,0px)!important;
+   width:100%;
+   z-index:5000;
+   background:#0b0d12;
+   border-top:3px solid #ff8a00!important;
+   border-bottom:3px solid #ff8a00!important;
+   border-radius:10px 10px 0 0;
+   box-shadow:none;
+   padding:0!important;
+   margin:0!important;
+   overflow:hidden;
+   box-sizing:border-box;
+ }
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav button{
+   min-width:0;
+   border:0;
+   border-right:1px solid #29292e;
+   border-bottom:1px solid #29292e;
+   background:#0d0f14;
+   color:#fff;
+   min-height:70px;
+   padding:8px 6px;
+   font-family:inherit;
+   font-weight:900;
+   letter-spacing:.03em;
+   border-radius:0!important;
+ }
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav button:nth-child(3),
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav button:nth-child(5){border-right:0}
  body[data-app-mode="analyzer"] .analyzer-mobile-nav-menu{font-size:27px}
- body[data-app-mode="analyzer"] .analyzer-mobile-nav-team,body[data-app-mode="analyzer"] .analyzer-mobile-nav-velocity,body[data-app-mode="analyzer"] .analyzer-mobile-nav-track{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-team,
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-velocity,
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-track{
+   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px
+ }
  body[data-app-mode="analyzer"] .analyzer-mobile-nav-team span{font-size:22px;font-family:'F1 Torque',Arial,sans-serif}
  body[data-app-mode="analyzer"] .analyzer-mobile-nav-team strong{max-width:100%;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- body[data-app-mode="analyzer"] .analyzer-mobile-nav-velocity span,body[data-app-mode="analyzer"] .analyzer-mobile-nav-track span{font-size:9px;color:#9299a5}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-velocity span,
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-track span{font-size:9px;color:#9299a5}
  body[data-app-mode="analyzer"] .analyzer-mobile-nav-velocity strong{font-size:24px;color:#35e892;font-family:'F1 Torque',Arial,sans-serif}
  body[data-app-mode="analyzer"] .analyzer-mobile-nav-ranking{grid-column:1/3;min-height:54px!important;color:#ff941d!important;font-size:11px}
  body[data-app-mode="analyzer"] .analyzer-mobile-nav-track{grid-column:3;min-height:54px!important}
  body[data-app-mode="analyzer"] .analyzer-mobile-nav-track strong{font-size:16px}
 
+ /* Le menu étant fixed, on réserve exactement sa hauteur avant la première carte. */
+ body[data-app-mode="analyzer"] .analyzer-shell{
+   padding-top:127px!important;
+ }
  /* Les wrappers desktop deviennent transparents au layout afin de respecter l'ordre mobile. */
  body[data-app-mode="analyzer"] .analyzer-hero,
  body[data-app-mode="analyzer"] .analyzer-desktop-dashboard,
@@ -48,7 +91,7 @@
  body[data-app-mode="analyzer"] #analyzerRulesCard,
  body[data-app-mode="analyzer"] #analyzerPenaltiesPanel,
  body[data-app-mode="analyzer"] #analyzerWeatherCard,
- body[data-app-mode="analyzer"] #analyzerDriverMessageCard{scroll-margin-top:132px;margin-left:0!important;margin-right:0!important;width:100%!important;box-sizing:border-box}
+ body[data-app-mode="analyzer"] #analyzerDriverMessageCard{scroll-margin-top:calc(127px + env(safe-area-inset-top,0px));margin-left:0!important;margin-right:0!important;width:100%!important;box-sizing:border-box}
 
  /* Classement Live : colonnes utiles uniquement. */
  body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-toolbar-left{display:flex;align-items:center;gap:6px;width:100%;flex-wrap:wrap}
@@ -92,4 +135,15 @@
 
  /* Footer = outils : conserve les fonctions existantes sans perturber les cartes. */
  body[data-app-mode="analyzer"] .analyzer-footer{width:100%;box-sizing:border-box}
+
+ /* V7.2.156 — la zone scrollable passe sous le bandeau fixe, le bandeau lui-même ne bouge jamais. */
+ body[data-app-mode="analyzer"] #analyzer.screen.active{
+   overflow-y:auto!important;
+   -webkit-overflow-scrolling:touch;
+   overscroll-behavior-y:contain;
+ }
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav{
+   transform:translateZ(0);
+   -webkit-transform:translateZ(0);
+ }
 }
