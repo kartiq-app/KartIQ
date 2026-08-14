@@ -326,21 +326,100 @@ function renderEndurancePenaltyAlert(list,f){
 }
 
 
-function renderEnduranceDriverMessage(){
- const host=document.getElementById('enduranceDriverMessageOverlay');
- const text=document.getElementById('enduranceDriverMessageText');
+function splitDriverMessageLines(value){
+ const words=String(value||'').trim().toUpperCase().split(/\s+/).filter(Boolean);
+ if(words.length<=1)return words.length?words:['—'];
+ const lineCount=words.length>=7||words.join(' ').length>34?3:2;
+ const lines=[];
+ let start=0;
+ for(let lineIndex=0;lineIndex<lineCount;lineIndex++){
+  const remainingLines=lineCount-lineIndex;
+  const remainingWords=words.length-start;
+  if(remainingLines===1){lines.push(words.slice(start).join(' '));break}
+  let bestEnd=start+1;
+  let bestScore=Infinity;
+  const totalRemainingLength=words.slice(start).join(' ').length;
+  const target=totalRemainingLength/remainingLines;
+  const maxEnd=words.length-(remainingLines-1);
+  for(let end=start+1;end<=maxEnd;end++){
+   const candidate=words.slice(start,end).join(' ');
+   const score=Math.abs(candidate.length-target);
+   if(score<bestScore){bestScore=score;bestEnd=end}
+  }
+  lines.push(words.slice(start,bestEnd).join(' '));
+  start=bestEnd;
+ }
+ return lines.filter(Boolean);
+}
+
+
+function fitDriverMessageText(text,lineCount){
+ if(!text)return;
+ const host=text.parentElement;
+ if(!host)return;
+ const maxWidth=Math.max(1,host.clientWidth-4);
+ const maxHeight=Math.max(1,host.clientHeight-4);
+ let size=Math.min(
+  lineCount>=3?Math.min(maxHeight/3.05,maxWidth/7):
+  lineCount===2?Math.min(maxHeight/2.05,maxWidth/5.2):
+  Math.min(maxHeight*.82,maxWidth/3.2),
+  220
+ );
+ size=Math.max(18,Math.floor(size));
+ text.style.fontSize=size+'px';
+ for(let i=0;i<80;i++){
+  const tooWide=[...text.children].some(line=>line.scrollWidth>maxWidth);
+  const tooTall=text.scrollHeight>maxHeight;
+  if(!tooWide&&!tooTall)break;
+  size-=2;
+  if(size<=18){size=18;break}
+  text.style.fontSize=size+'px';
+ }
+ text.style.fontSize=size+'px';
+}
+
+function renderDriverMessageOverlay(){
+ const host=document.getElementById('driverMessageOverlay');
+ const text=document.getElementById('driverMessageText');
  if(!host||!text)return;
  const message=state?.driver_message;
  const delivered=Number(message?.delivered_at_ms);
  const duration=Number(message?.duration_ms)||15000;
- const active=Boolean(message?.message&&Number.isFinite(delivered)&&Date.now()-delivered>=0&&Date.now()-delivered<duration);
+ const elapsed=Date.now()-delivered;
+ const focusActive=Boolean(
+  document.getElementById('sprintFocus')?.classList.contains('show')||
+  document.getElementById('qualificationFocus')?.classList.contains('show')||
+  document.getElementById('enduranceFocus')?.classList.contains('show')
+ );
+ const exitDuration=320;
+ const active=Boolean(focusActive&&message?.message&&Number.isFinite(delivered)&&elapsed>=0&&elapsed<duration);
+ const leaving=Boolean(focusActive&&message?.message&&Number.isFinite(delivered)&&elapsed>=duration&&elapsed<duration+exitDuration);
  host.classList.toggle('show',active);
- if(active)text.textContent=message.message;
+ host.classList.toggle('leaving',leaving);
+ host.setAttribute('aria-hidden',(active||leaving)?'false':'true');
+ if(active||leaving){
+  const value=String(message.message||'').trim();
+  const lines=splitDriverMessageLines(value);
+  text.replaceChildren(...lines.map(line=>{
+   const span=document.createElement('span');
+   span.className='driver-message-line';
+   span.textContent=line;
+   return span;
+  }));
+  text.classList.toggle('message-three-lines',lines.length>=3);
+  text.classList.toggle('message-two-lines',lines.length===2);
+  text.classList.toggle('message-one-line',lines.length===1);
+  fitDriverMessageText(text,lines.length);
+ }else{
+  text.textContent='—';
+  text.style.removeProperty('font-size');
+  text.classList.remove('message-one-line','message-two-lines','message-three-lines');
+ }
 }
+
 
 function renderEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay?.classList.contains('show'))return;
- renderEnduranceDriverMessage();
  const f=state.followed||{};
  renderEndurancePitState(f);
  const endurancePenaltyList=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));

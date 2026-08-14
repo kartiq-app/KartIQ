@@ -1,4 +1,4 @@
-/* KartIQ V6.3.0 — Analyzer stratégique Endurance */
+/* Velocity V6.3.0 — Analyzer stratégique Endurance */
 .analyzer-screen{overflow:auto;background:#05070b;color:#f7f8fb;padding:0 0 32px}
 .analyzer-shell{min-height:100%;padding:16px;display:flex;flex-direction:column;gap:14px}
 .analyzer-compat-hidden{display:none!important}
@@ -211,7 +211,7 @@
 .analyzer-market-row{grid-template-columns:38px minmax(180px,1fr) 65px 70px}
 
 
-/* KartIQ V6.6.0 — tableau stratégique KartIQ */
+/* Velocity V6.6.0 — tableau stratégique Velocity */
 .analyzer-forecast-panel{grid-column:1/3}
 .analyzer-wave-panel{grid-column:3}
 .analyzer-market-panel{grid-column:1/-1;padding:0;overflow:hidden}
@@ -238,7 +238,7 @@
 @media(max-width:1050px){.analyzer-forecast-panel{grid-column:1}.analyzer-wave-panel{grid-column:2}.analyzer-market-panel{grid-column:1/-1}}
 @media(max-width:700px){.analyzer-forecast-panel,.analyzer-wave-panel,.analyzer-market-panel{grid-column:auto}.analyzer-market-panel{grid-column:1}.analyzer-kartiq-wrap{max-height:300px}.analyzer-kartiq-table{min-width:930px;font-size:10px}.analyzer-kartiq-table th,.analyzer-kartiq-table td{padding:7px 6px}.analyzer-kartiq-table .kartiq-team{max-width:220px}}
 
-/* KartIQ V6.6.1 — dashboard desktop en deux colonnes */
+/* Velocity V6.6.1 — dashboard desktop en deux colonnes */
 .analyzer-desktop-dashboard{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(430px,1fr);gap:14px;align-items:start}
 .analyzer-desktop-dashboard>.analyzer-ranking-panel{min-width:0;height:100%}
 .analyzer-strategy-column{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -270,7 +270,7 @@
   .analyzer-strategy-column .analyzer-kartiq-wrap{max-height:320px}
 }
 
-/* KartIQ V6.6.2 — alignement et compacité du double classement desktop */
+/* Velocity V6.6.2 — alignement et compacité du double classement desktop */
 @media(min-width:1400px){
   .analyzer-desktop-dashboard{
     grid-template-columns:minmax(0,1.42fr) minmax(620px,1fr);
@@ -353,7 +353,7 @@
   .analyzer-strategy-column .analyzer-kartiq-table td:nth-child(11){width:58px;padding-left:3px;padding-right:3px}
 }
 
-/* KartIQ V6.6.4 — équipe suivie en vert dans les classements général et virtuel */
+/* Velocity V6.6.4 — équipe suivie en vert dans les classements général et virtuel */
 @media(min-width:1400px){
   /* En-têtes POS et TOP strictement de même hauteur. */
   .analyzer-ranking-table thead tr,
@@ -368,7 +368,7 @@
     vertical-align:middle;
   }
 
-  /* Les lignes KartIQ reprennent la hauteur du classement principal. */
+  /* Les lignes Velocity reprennent la hauteur du classement principal. */
   .analyzer-ranking-table tbody tr,
   .analyzer-kartiq-table tbody tr{
     height:38px;
@@ -386,7 +386,7 @@
   color:#38dc88!important;
 }
 
-/* KartIQ V6.6.5 — synchronisation stricte des hauteurs du double classement */
+/* Velocity V6.6.5 — synchronisation stricte des hauteurs du double classement */
 @media(min-width:1400px){
   /* Une seule géométrie pour les deux tableaux côte à côte. */
   .analyzer-ranking-table thead tr,
@@ -447,7 +447,7 @@
   }
 }
 
-/* KartIQ V6.6.6 — TOP 10 visible sans défilement vertical sur desktop */
+/* Velocity V6.6.6 — TOP 10 visible sans défilement vertical sur desktop */
 @media(min-width:1400px){
   .analyzer-strategy-column .analyzer-kartiq-wrap{
     max-height:none!important;
@@ -458,7 +458,7 @@
 }
 
 
-/* KartIQ V6.7.0 — colonne FIN RELAIS et tri stratégique */
+/* Velocity V6.7.0 — colonne FIN RELAIS et tri stratégique */
 .analyzer-kartiq-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .analyzer-kartiq-sort{display:flex;align-items:center;gap:7px;color:#aab2bf;font-size:10px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
 .analyzer-kartiq-sort select{height:28px;border:1px solid #323945;border-radius:6px;background:#0d1117;color:#fff;padding:0 24px 0 8px;font-size:11px;font-weight:800}
@@ -476,7 +476,7 @@
 }
 @media(max-width:700px){.analyzer-kartiq-sort{font-size:9px}.analyzer-kartiq-sort select{height:26px;font-size:10px}}
 
-/* KartIQ V6.7.1 — tableau complet sans scroll horizontal et barre de tri alignée */
+/* Velocity V6.7.1 — tableau complet sans scroll horizontal et barre de tri alignée */
 @media(min-width:1400px){
   /* Le titre et le tri occupent toute la hauteur du bandeau, comme la barre du classement principal. */
   .analyzer-strategy-column .analyzer-kartiq-title{
@@ -497,7 +497,7 @@
     flex:0 0 auto;
   }
 
-  /* Toutes les colonnes KartIQ tiennent dans la carte : aucun défilement horizontal. */
+  /* Toutes les colonnes Velocity tiennent dans la carte : aucun défilement horizontal. */
   .analyzer-strategy-column .analyzer-kartiq-wrap{
     width:100%!important;
     max-width:100%!important;
@@ -567,7 +567,7 @@
 }
 
 
-/* KartIQ V6.8.0 — simulateur d’arrêt et cercle de trafic */
+/* Velocity V6.8.0 — simulateur d’arrêt et cercle de trafic */
 .analyzer-pit-simulator-panel{padding:0;overflow:hidden}
 .analyzer-pit-simulator-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0}
 .analyzer-pit-simulator-title>span{font-size:15px}
@@ -598,7 +598,7 @@
 @media(max-width:1050px){.analyzer-pit-simulator-body{grid-template-columns:1fr}.pit-simulator-track{min-height:230px}}
 
 
-/* KartIQ V6.9.5 — prévisions météo horaires locales sur 6 créneaux */
+/* Velocity V6.9.5 — prévisions météo horaires locales sur 6 créneaux */
 .weather-card{position:relative;overflow:hidden}
 .weather-card.weather-alert{border-color:#f59e0b;box-shadow:inset 0 0 0 1px rgba(245,158,11,.18)}
 .weather-card.weather-wet{border-color:#3388d8;background:linear-gradient(145deg,#0b1420,#0b1017)}
@@ -1237,3 +1237,282 @@ body.analyzer-debrief-open{overflow:hidden}
 .analyzer-driver-message-urgent input{width:16px!important;height:16px!important}
 .analyzer-driver-message-status{min-height:8px!important}
 @media(max-width:700px){.analyzer-driver-message-input-wrap{min-height:38px!important}.analyzer-driver-message-input-wrap input{height:38px!important;min-height:38px!important;font-size:13px!important;line-height:38px!important}#analyzerDriverMessageSend{height:38px!important;min-height:38px!important;font-size:9px!important}.analyzer-driver-message-urgent{min-height:38px!important;font-size:9px!important}}
+
+
+/* Velocity V7.2.29 — vraies cartes Spotter dans Analyzer */
+.analyzer-spotter-cards{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  width:100%;
+  min-width:0;
+}
+.analyzer-spotter-cards>.analyzer-panel{
+  display:block;
+  width:100%;
+  min-width:0;
+  overflow:visible;
+}
+.analyzer-spotter-card-title{
+  align-items:center;
+}
+.analyzer-spotter-actions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:7px;
+  padding:9px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background:#090c12;
+}
+.analyzer-spotter-actions button{
+  min-height:36px;
+  padding:0 11px;
+  border:1px solid #323a47;
+  border-radius:8px;
+  background:#111720;
+  color:#fff;
+  font-family:Arial,sans-serif;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.035em;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.analyzer-spotter-actions button:hover:not(:disabled){border-color:#ff7a00}
+.analyzer-spotter-actions button:disabled{opacity:.3;cursor:default}
+.analyzer-spotter-actions .analyzer-spotter-undo{
+  min-width:48px;
+  padding:0 12px;
+  font-size:25px;
+  line-height:1;
+}
+.analyzer-spotter-actions #analyzerSpotterAutoButton.active{
+  border-color:#f59e0b;
+  background:#6f3500;
+}
+.analyzer-spotter-actions .analyzer-spotter-reset{
+  border-color:#71333a;
+  background:#241014;
+  color:#ffb7bd;
+}
+.analyzer-spotter-files,
+.analyzer-spotter-list{
+  display:block;
+  min-height:58px;
+  padding:10px;
+  background:#090c12;
+}
+.analyzer-spotter-files .spotter-queues-layout{
+  justify-content:center;
+  margin:0 auto;
+}
+.analyzer-spotter-list .spotter-incoming-grid,
+.analyzer-spotter-list .spotter-maintenance-grid{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.analyzer-spotter-list .spotter-incoming-card,
+.analyzer-spotter-list .spotter-maintenance-action-card{
+  width:100%;
+  max-width:none;
+}
+.analyzer-spotter-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:24px;
+  height:24px;
+  padding:0 7px;
+  border-radius:999px;
+  background:#242b36;
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+}
+.analyzer-spotter-fallback-kart,
+.analyzer-spotter-fallback-row{
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;
+  padding:9px;
+  background:#111720;
+  color:#fff;
+}
+.analyzer-spotter-fallback-kart{
+  min-height:82px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:5px;
+}
+.analyzer-spotter-fallback-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:56px;
+  margin-bottom:8px;
+}
+@media(max-width:1100px){
+  .analyzer-spotter-actions{justify-content:flex-start}
+  .analyzer-spotter-actions button{flex:1 1 auto}
+}
+
+/* Velocity V7.2.46 — l’Analyzer réutilise sans surcharge le rendu natif du Spotter. */
+#analyzerSpotterFiles.analyzer-spotter-files{padding:10px;overflow-x:auto}
+#analyzerSpotterFiles.spotter-desktop-queues .spotter-queues-layout{justify-content:flex-start}
+
+
+/* Velocity V7.2.49 — finition de la carte STANDS dans Analyzer */
+.analyzer-spotter-files-panel .analyzer-spotter-card-title{
+  justify-content:flex-start;
+}
+.analyzer-spotter-files-panel .analyzer-spotter-card-title #analyzerSpotterFilesTitle{
+  color:#ff7a00;
+}
+.analyzer-spotter-actions #analyzerSpotterAutoButton.resume{
+  min-width:118px;
+  padding-inline:12px;
+  border-color:#ff8a00;
+  background:linear-gradient(180deg,#ff941f,#dd6f00);
+  color:#08090c;
+  white-space:nowrap;
+  overflow:visible;
+  text-overflow:clip;
+}
+.analyzer-spotter-recalibration{
+  margin:0 0 10px;
+  padding:10px;
+  border:1px solid rgba(255,138,0,.55);
+  border-radius:10px;
+  background:rgba(255,138,0,.09);
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:5px 10px;
+}
+.analyzer-spotter-recalibration strong{
+  color:#ff9b25;
+  font-family:Arial,sans-serif;
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:.05em;
+}
+.analyzer-spotter-recalibration span{
+  grid-column:1;
+  color:#c7ccd5;
+  font-size:10px;
+  line-height:1.35;
+}
+.analyzer-spotter-recalibration button{
+  grid-column:2;
+  grid-row:1 / span 2;
+  min-height:38px;
+  padding:0 12px;
+  border:1px solid #ff8a00;
+  border-radius:8px;
+  background:linear-gradient(180deg,#ff941f,#dd6f00);
+  color:#08090c;
+  font-size:9px;
+  font-weight:1000;
+  white-space:nowrap;
+}
+@media(max-width:760px){
+ .analyzer-spotter-recalibration{grid-template-columns:1fr}
+ .analyzer-spotter-recalibration span,.analyzer-spotter-recalibration button{grid-column:1;grid-row:auto}
+ .analyzer-spotter-actions #analyzerSpotterAutoButton.resume{flex:0 0 auto;min-width:118px}
+}
+
+
+/* Velocity V7.2.50 — contrôle Retour identique au Spotter et drag stable */
+.analyzer-spotter-actions .analyzer-spotter-undo.spotter-undo-button{
+  width:52px!important;
+  min-width:52px!important;
+  min-height:36px!important;
+  height:36px!important;
+  padding:0!important;
+  border:1px solid #536071!important;
+  border-radius:11px!important;
+  background:#111720!important;
+  color:#fff!important;
+  font-size:30px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.025),0 6px 16px rgba(0,0,0,.28)!important;
+}
+body.spotter-drag-active #analyzerSpotterFiles{
+  pointer-events:auto;
+}
+
+/* Velocity V7.2.52 — synchronisation Spotter et hauteur Retour alignée */
+
+
+/* Velocity V7.2.53 — titre VELOCITY aligné sur les autres cartes Analyzer */
+.analyzer-velocity-title{
+  min-height:54px!important;
+  padding:0 14px!important;
+  margin:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  border-bottom:1px solid #323945!important;
+  background:#151a23!important;
+}
+.analyzer-velocity-title .analyzer-static-ranking-tab{
+  position:static!important;
+  isolation:auto!important;
+  overflow:visible!important;
+  width:max-content!important;
+  max-width:max-content!important;
+  min-height:0!important;
+  height:auto!important;
+  padding:8px 11px!important;
+  border:1px solid #ff7a00!important;
+  border-radius:7px!important;
+  background:#2b1b0c!important;
+  color:#ff9b32!important;
+  box-shadow:inset 0 -2px #ff7a00!important;
+  font-family:var(--font-torque,Arial,sans-serif)!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  letter-spacing:.03em!important;
+}
+.analyzer-velocity-title .analyzer-static-ranking-tab::before,
+.analyzer-velocity-title .analyzer-static-ranking-tab::after{content:none!important;display:none!important}
+@media(max-width:700px){
+  .analyzer-velocity-title{flex-direction:row!important;align-items:center!important}
+  .analyzer-velocity-title .analyzer-static-ranking-tab{font-size:9px!important;padding:7px 8px!important}
+}
+
+
+/* Velocity V7.2.54 — Mode Test Endurance */
+.analyzer-footer .analyzer-test-launch{margin-left:auto;border-color:#8d2027;color:#ffb0b5}
+.analyzer-test-card{width:min(920px,94vw)}
+.analyzer-test-configuration{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.analyzer-test-configuration>label{display:grid;gap:7px;font-size:12px;font-weight:900;letter-spacing:.06em;color:#aaa}
+.analyzer-test-configuration select{width:100%;min-height:42px;background:#111;color:#fff;border:1px solid #444;border-radius:5px;padding:0 10px}
+.analyzer-test-options{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:16px;padding:14px;border:1px solid #333;background:#111}
+.analyzer-test-options label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#ddd}
+.analyzer-test-start{grid-column:1/-1;min-height:46px}
+.analyzer-test-dashboard{margin:18px 0}
+.analyzer-test-status-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#101a13;border-left:4px solid #38c764}
+.analyzer-test-status-row strong{color:#55df7c}.analyzer-test-status-row.error{background:#201013;border-color:#e32b36}.analyzer-test-status-row.error strong{color:#ff626b}
+.analyzer-test-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.analyzer-test-metrics>div{display:grid;gap:5px;padding:12px;background:#111;border:1px solid #333}
+.analyzer-test-metrics span{font-size:10px;font-weight:900;letter-spacing:.07em;color:#888}.analyzer-test-metrics b{font-size:18px;color:#fff}
+.analyzer-test-log{height:190px;overflow:auto;background:#080808;border:1px solid #333;padding:10px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#bbb}
+.analyzer-test-log div{border-bottom:1px solid #181818;padding:3px 0}.analyzer-test-log time{color:#db2029;margin-right:10px}
+.analyzer-test-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}.analyzer-test-actions button{min-height:40px}.analyzer-test-actions .danger{border-color:#9b252b;color:#ff8e94}
+@media(max-width:700px){.analyzer-test-configuration{grid-template-columns:1fr}.analyzer-test-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.analyzer-test-options{display:grid}.analyzer-footer .analyzer-test-launch{margin-left:0}}
+
+/* Velocity V7.2.55 — Validation réseau du Mode Test */
+.analyzer-test-network-config{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:14px;border:1px solid #3a2b13;background:#151108}
+.analyzer-test-network-config label{display:grid;gap:7px;font-size:12px;font-weight:900;letter-spacing:.06em;color:#c6b58d}
+.analyzer-test-network-config select{width:100%;min-height:42px;background:#111;color:#fff;border:1px solid #555;border-radius:5px;padding:0 10px}
+.analyzer-test-status-row.warning{background:#201b0e;border-color:#e0a22e}
+.analyzer-test-status-row.warning strong{color:#ffc04c}
+.analyzer-test-actions .warning{border-color:#b67a19;color:#ffc14d}
+.analyzer-test-log .warning{color:#ffc14d}.analyzer-test-log .success{color:#64df86}.analyzer-test-log .error{color:#ff747d}
+@media(max-width:700px){.analyzer-test-network-config{grid-template-columns:1fr}.analyzer-test-actions{display:grid;grid-template-columns:1fr}.analyzer-test-actions button{width:100%}}

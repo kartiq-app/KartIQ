@@ -20,7 +20,7 @@ async function closeQualificationFocus(){
 }
 function qualificationPurpleBest(){
  // La cellule violette du tableau Qualification est la source de vérité visuelle :
- // elle correspond au meilleur temps absolu affiché par KartIQ/Apex pour la séance.
+ // elle correspond au meilleur temps absolu affiché par Velocity/Apex pour la séance.
  const tableId=qualificationFocusSourceMode==='endurance'?'enduranceQualifTable':'qualifTable';
  const purpleCell=document.querySelector('#'+tableId+' tr td.purple');
  if(purpleCell){

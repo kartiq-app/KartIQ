@@ -110,10 +110,10 @@ async function loadAnalyzerWeather(force=false){
   const timelineCandidates=[weather?.timeline,weather?.hourly,weather?.forecast,payload?.timeline,payload?.hourly,payload?.forecast];
   const timeline=timelineCandidates.find(value=>Array.isArray(value)&&value.length)||[];
   analyzerWeatherData={...(weather||{}),timeline};
-  console.info('[KartIQ météo]',{source:analyzerWeatherData.source,timeline:timeline.length,debug:analyzerWeatherData.hourly_debug});
+  console.info('[Velocity météo]',{source:analyzerWeatherData.source,timeline:timeline.length,debug:analyzerWeatherData.hourly_debug});
   analyzerWeatherLastFetch=Date.now();
  }
- catch(error){console.warn('[KartIQ météo]',error);if(analyzerWeatherCircuitId===circuitId)analyzerWeatherData=null;}
+ catch(error){console.warn('[Velocity météo]',error);if(analyzerWeatherCircuitId===circuitId)analyzerWeatherData=null;}
  finally{if(analyzerWeatherCircuitId===circuitId){analyzerWeatherLoading=false;renderAnalyzerWeather();}}
 }
 function ensureAnalyzerWeather(){
@@ -182,7 +182,7 @@ function analyzerSaveSession(reason='autosave'){
   const time=new Date(snapshot.updatedAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   analyzerUpdateSessionBadge(`SAUVEGARDÉ ${time}`,'saved');
   return true;
- }catch(error){console.warn('[KartIQ Analyzer] Sauvegarde impossible',error);analyzerUpdateSessionBadge('SAUVEGARDE IMPOSSIBLE','error');return false}
+ }catch(error){console.warn('[Velocity Analyzer] Sauvegarde impossible',error);analyzerUpdateSessionBadge('SAUVEGARDE IMPOSSIBLE','error');return false}
 }
 function analyzerApplySession(session,{notify=true}={}){
  if(!session)return false;
@@ -240,7 +240,7 @@ function newAnalyzerSession(){const name=window.prompt('Nom de la nouvelle sessi
 function resumeAnalyzerSession(id){const session=analyzerSessionRead(id);if(!session)return;if(session.circuitId!==analyzerSessionCircuit()){window.alert(`Cette session appartient au circuit « ${session.circuitName} ». Sélectionnez d’abord ce circuit sur la page d’accueil.`);return}if(analyzerActiveSessionId)analyzerSaveSession('before-resume');session.status='active';analyzerApplySession(session);analyzerSaveSession('resume');renderAnalyzerSessions();closeAnalyzerSessions()}
 function archiveAnalyzerSession(id){const session=analyzerSessionRead(id);if(!session)return;session.status=session.status==='archived'?'active':'archived';session.updatedAt=Date.now();localStorage.setItem(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session));analyzerSessionUpdateIndex(session);renderAnalyzerSessions()}
 function deleteAnalyzerSession(id){if(!window.confirm('Supprimer définitivement cette session Analyzer ?'))return;localStorage.removeItem(ANALYZER_SESSION_PREFIX+id);analyzerSessionWriteIndex(analyzerSessionReadIndex().filter(meta=>meta.id!==id));if(id===analyzerActiveSessionId){analyzerActiveSessionId=null;analyzerSessionCircuitId=null;localStorage.removeItem(ANALYZER_ACTIVE_SESSION_KEY);analyzerCreateSession({reset:true})}renderAnalyzerSessions()}
-function exportAnalyzerSession(){analyzerSaveSession('export');const session=analyzerSessionRead(analyzerActiveSessionId);if(!session)return;const blob=new Blob([JSON.stringify(session,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`KartIQ_Session_${analyzerSessionSafeId(session.name)}_${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportAnalyzerSession(){analyzerSaveSession('export');const session=analyzerSessionRead(analyzerActiveSessionId);if(!session)return;const blob=new Blob([JSON.stringify(session,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Velocity_Session_${analyzerSessionSafeId(session.name)}_${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function triggerAnalyzerSessionImport(){document.getElementById('analyzerSessionImport')?.click()}
 async function importAnalyzerSession(event){
  const file=event?.target?.files?.[0];if(!file)return;
@@ -419,7 +419,7 @@ async function simulateAnalyzerPitStop(){
    const nearest=Math.min(ahead?.gap??999,behind?.gap??999);result.className='pit-simulator-result '+(nearest<3?'dense':nearest>5?'good':'');result.innerHTML=`${front}<br>${rear}`;
   }
   analyzerRenderPitSimulator();
- }catch(error){if(status)status.textContent=`Simulation impossible : ${error.message}`;console.warn('[KartIQ] Simulation arrêt',error)}
+ }catch(error){if(status)status.textContent=`Simulation impossible : ${error.message}`;console.warn('[Velocity] Simulation arrêt',error)}
  finally{analyzerPitSimulationBusy=false;if(button){button.disabled=false;button.textContent='SIMULER UN ARRÊT'}}
 }
 if(!window.__kartiqPitTrackTimer){window.__kartiqPitTrackTimer=setInterval(analyzerRenderPitSimulator,100)}
@@ -740,6 +740,18 @@ function analyzerStopsInfo(followed){
  return {done,remaining,cadence};
 }
 function analyzerQueueCandidates(){
+ const spotter=analyzerSpotterState();
+ if(spotter?.configured&&Array.isArray(spotter.queue)){
+  return spotter.queue.map((item,index)=>{
+   const file=Math.max(1,Number(item.queueFile)||1);
+   const fileItems=spotter.queue.filter(entry=>(Math.max(1,Number(entry.queueFile)||1)===file));
+   const fileIndex=fileItems.findIndex(entry=>entry.kv===item.kv);
+   const driver=(state.drivers||[]).find(d=>String(d.apex)===String(item.apexKart));
+   const score=Number.isFinite(Number(item.score))?Number(item.score):(driver?analyzerKartScore(driver):null);
+   const confidence=Number.isFinite(Number(item.confidence))?Number(item.confidence):(driver?analyzerConfidence(driver):15);
+   return {queue:file-1,index:Math.max(0,fileIndex),kart:item.apexKart||item.kv,driver,score,confidence,item};
+  });
+ }
  const output=[];
  (kartQueueState?.queues||[]).forEach((queue,qi)=>queue.forEach((kart,index)=>{
   const driver=(state.drivers||[]).find(d=>String(d.apex)===String(kart));
@@ -901,7 +913,7 @@ function renderAnalyzer(){
  const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
  if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');
  const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');}
- if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(analyzerVirtualLoading?'Calcul des temps d’arrêts virtuels en cours…':'Même nombre d’arrêts pour toutes les équipes — moyenne des 3 meilleurs arrêts propres à chaque équipe'):'Colonnes Apex Timing enrichies par KartIQ';
+ if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(analyzerVirtualLoading?'Calcul des temps d’arrêts virtuels en cours…':'Même nombre d’arrêts pour toutes les équipes — moyenne des 3 meilleurs arrêts propres à chaque équipe'):'Colonnes Apex Timing enrichies par Velocity';
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver)||state.followed||(state.drivers||[])[0]||null;
  const ownForecast=followed?analyzerForecastFor(followed):{};const stops=analyzerStopsInfo(followed);
  document.getElementById('analyzerFollowedName').textContent=followed?.driver||'—';
@@ -925,7 +937,7 @@ function renderAnalyzer(){
  const opportunity=analyzerOpportunity(followed,all);const card=document.getElementById('analyzerOpportunityCard');card.classList.remove('good','wait','urgent');card.classList.add(opportunity.className);
  document.getElementById('analyzerOpportunityScore').textContent=opportunity.score;document.getElementById('analyzerAdvice').textContent=opportunity.advice;document.getElementById('analyzerAdviceDetail').textContent=opportunity.detail;
  const forecastRows=all.filter(x=>x.driver.status==='pit'||(Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=900)).sort((a,b)=>(a.forecast.seconds??999999)-(b.forecast.seconds??999999)).slice(0,10);
- document.getElementById('analyzerForecast').innerHTML=forecastRows.length?forecastRows.map(x=>`<div class="analyzer-forecast-row"><span class="analyzer-forecast-time">${x.driver.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</span><span><span class="analyzer-forecast-team">${analyzerEscape(x.driver.driver)}</span><span class="analyzer-forecast-meta">Kart virtuel ${analyzerEscape(x.history.virtualKart)}</span></span><span class="analyzer-score-pill ${analyzerScoreClass(x.score)}">${x.score}/100</span><span class="analyzer-confidence">${x.forecast.confidence}%</span></div>`).join(''):'<div class="analyzer-empty">Aucun arrêt attendu dans les 15 prochaines minutes.</div>';
+ const analyzerForecastEl=document.getElementById('analyzerForecast');if(analyzerForecastEl)analyzerForecastEl.innerHTML=forecastRows.length?forecastRows.map(x=>`<div class="analyzer-forecast-row"><span class="analyzer-forecast-time">${x.driver.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</span><span><span class="analyzer-forecast-team">${analyzerEscape(x.driver.driver)}</span><span class="analyzer-forecast-meta">Kart virtuel ${analyzerEscape(x.history.virtualKart)}</span></span><span class="analyzer-score-pill ${analyzerScoreClass(x.score)}">${x.score}/100</span><span class="analyzer-confidence">${x.forecast.confidence}%</span></div>`).join(''):'<div class="analyzer-empty">Aucun arrêt attendu dans les 15 prochaines minutes.</div>';
  const marketByScore=all.map(x=>({...x,relayMetrics:analyzerRelayMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).slice(0,10).map((x,index)=>({...x,kartiqTop:index+1,relayRemaining:analyzerKartRelayRemaining(x.driver)}));
  const market=analyzerKartSort==='relay-end'?marketByScore.slice().sort((a,b)=>{
   const av=Number.isFinite(a.relayRemaining)?a.relayRemaining:Number.POSITIVE_INFINITY;
@@ -936,7 +948,6 @@ function renderAnalyzer(){
  document.getElementById('analyzerKartMarket').innerHTML=market.length?`<table class="analyzer-kartiq-table"><thead><tr><th>TOP</th><th>POS</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>SCORE</th><th>ÉVOL.</th><th>T.MOYEN</th><th>Δ</th><th>R</th><th>FIN RELAIS</th><th>TOURS</th><th>ANALYSE</th></tr></thead><tbody>${market.map(x=>{const d=x.driver,m=x.relayMetrics,evolution=analyzerKartEvolution(d,m),kart=validKartNumber(d)||d.apex||'—',deltaClass=Number.isFinite(m.correctedGain)?(m.correctedGain>0?'positive':m.correctedGain<0?'negative':'neutral'):'neutral',remainingClass=analyzerKartRelayRemainingClass(x.relayRemaining),deadline=Number.isFinite(x.relayRemaining)?Date.now()+x.relayRemaining*1000:null;return `<tr onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="kartiq-top">${x.kartiqTop}</td><td class="kartiq-pos">${analyzerEscape(d.pos||'—')}</td><td class="kartiq-kart">${analyzerEscape(kart)}</td><td class="kartiq-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</td><td class="kartiq-score ${analyzerScoreClass(m.score)}">${m.score}</td><td class="kartiq-evolution ${evolution.className}" title="${analyzerEscape(evolution.title)}">${analyzerEscape(evolution.label)}</td><td class="kartiq-average">${Number.isFinite(m.average)?analyzerEscape(formatApexMilliseconds(m.average*1000)):'—'}</td><td class="kartiq-delta ${deltaClass}" title="Gain corrigé par l'évolution du plateau">${analyzerEscape(analyzerKartDeltaLabel(m.correctedGain))}</td><td>${m.relayIndex}</td><td class="kartiq-relay-end ${remainingClass}"${deadline?` data-kartiq-relay-end="${deadline}"`:''}>${analyzerEscape(analyzerKartRelayRemainingLabel(x.relayRemaining))}</td><td>${m.laps}</td><td class="kartiq-analysis">${m.confidence}%</td></tr>`}).join('')}</tbody></table>`:`<div class="analyzer-empty">${analyzerRelayHydrationLoading?'Reconstitution des relais en cours depuis STATS…':'Au moins 3 tours propres sont nécessaires pour évaluer un relais.'}</div>`;
  analyzerRefreshKartRelayCountdowns();
  const wave=all.filter(x=>Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=600&&x.driver.status!=='pit');
- document.getElementById('analyzerWaveCount').textContent=wave.length;document.getElementById('analyzerWaveStatus').textContent=wave.length>=6?'GROSSE VAGUE IMMINENTE':wave.length>=3?'VAGUE EN FORMATION':wave.length?'MOUVEMENTS ISOLÉS':'AUCUNE VAGUE DÉTECTÉE';document.getElementById('analyzerWaveMeter').style.width=`${Math.min(100,wave.length/Math.max(1,(state.drivers||[]).length)*250)}%`;
  document.getElementById('analyzerTable').innerHTML=sorted.map(x=>{
   const d=x.driver;const isFollowed=d.driver===state.followed_driver;const penalty=d.penalty||'—';const isVirtual=analyzerRankingMode==='virtual';
   const relayTimer=analyzerRelayTimer(d),stintAverage=analyzerCurrentStintAverage(d),virtual=x.virtual;
@@ -949,6 +960,7 @@ function renderAnalyzer(){
  analyzerRenderPitSimulator();
  renderAnalyzerQueueAdvice();
  analyzerRenderSpotterSync();
+ analyzerRenderSpotterCards();
 }
 
 // V7.2 — état partagé par le module Spotter. Velocity reste l'unique source
@@ -984,6 +996,62 @@ function analyzerRenderSpotterSync(){
  root.innerHTML=`<div class="analyzer-spotter-sync">${cards||'<div class="analyzer-empty">File Spotter vide.</div>'}${maintenance?`<div class="analyzer-spotter-maintenance-title">MAINTENANCE</div>${maintenance}`:''}</div>`;
  const advice=document.getElementById('analyzerQueueAdvice');if(advice){const first=(spotter.queue||[]).find(item=>item.status==='available');advice.textContent=first?`${first.lastTeam&&first.lastTeam!=='Initialisation'?first.lastTeam:'Kart '+(first.apexKart||'—')} · ${first.kv} · Score ${first.score??'—'}`:'Aucun kart disponible';}
 }
+
+
+function analyzerRenderSpotterCards(){
+ if((typeof spotterDrag!=='undefined'&&(spotterDrag.active||spotterDrag.timer))||document.body.classList.contains('spotter-drag-active'))return;
+ const spotter=analyzerSpotterState();
+ const filesHost=document.getElementById('analyzerSpotterFiles');
+ const incomingHost=document.getElementById('analyzerSpotterIncoming');
+ const maintenanceHost=document.getElementById('analyzerSpotterMaintenance');
+ const incomingCount=document.getElementById('analyzerSpotterIncomingCount');
+ const maintenanceCount=document.getElementById('analyzerSpotterMaintenanceCount');
+ const autoButton=document.getElementById('analyzerSpotterAutoButton');
+ if(!filesHost&&!incomingHost&&!maintenanceHost)return;
+ if(autoButton){
+  const isAuto=spotter?.mode==='auto'||Boolean(spotter?.free_started_at);
+  autoButton.classList.toggle('active',isAuto);
+  autoButton.classList.toggle('resume',isAuto);
+  autoButton.textContent=isAuto?'▶ REPRENDRE':'AUTO';
+ }
+ if(!spotter?.configured){
+  if(filesHost)filesHost.innerHTML='<div class="spotter-empty">Configuration Spotter en attente.</div>';
+  if(incomingHost)incomingHost.innerHTML='<div class="spotter-empty">Aucun kart entrant à valider.</div>';
+  if(maintenanceHost)maintenanceHost.innerHTML='<div class="spotter-empty">Aucun kart en maintenance.</div>';
+  if(incomingCount)incomingCount.textContent='0';
+  if(maintenanceCount)maintenanceCount.textContent='0';
+  return;
+ }
+ const inferredQueueCount=(Array.isArray(spotter.queue)?spotter.queue:[]).reduce((max,item)=>Math.max(max,Number(item?.queueFile)||1),1);
+ const count=Math.max(1,Math.min(3,Number(spotter.queue_mode)||inferredQueueCount||1));
+ const queue=Array.isArray(spotter.queue)?spotter.queue:[];
+ if(filesHost){
+  const recalibrationNotice=spotter?.recalibrating
+   ? `<div class="analyzer-spotter-recalibration"><strong>VALIDER LE RECALAGE</strong><span>Vérifiez l’ordre réel des karts dans les stands, puis validez le recalage.</span><button type="button" onclick="spotterConfirmRecalibration()">VALIDER LE RECALAGE</button></div>`
+   : '';
+  const columns=[];
+  for(let file=1;file<=count;file+=1){
+   const items=queue.filter(item=>(Number(item.queueFile)||1)===file);
+   const cards=items.length
+    ?items.map(item=>typeof spotterQueueCard==='function'?spotterQueueCard(item):'').join('')
+    :'<div class="spotter-empty spotter-file-empty">File vide</div>';
+   columns.push(`<div class="spotter-file-column" data-spotter-file="${file}"><div class="spotter-file-title">FILE ${file}</div><div class="spotter-file-list" data-spotter-drop-zone="queue">${cards}</div></div>`);
+  }
+  filesHost.innerHTML=`${recalibrationNotice}<div class="spotter-queues-layout queues-${count}">${columns.join('')}</div>`;
+ }
+ const incoming=Array.isArray(spotter.incoming)?spotter.incoming:[];
+ if(incomingCount)incomingCount.textContent=String(incoming.length);
+ if(incomingHost)incomingHost.innerHTML=incoming.length
+  ?`<div class="spotter-incoming-grid">${incoming.map(item=>typeof spotterIncomingCard==='function'?spotterIncomingCard(item):'').join('')}</div>`
+  :'<div class="spotter-empty">Aucun kart entrant à valider.</div>';
+ const maintenance=Array.isArray(spotter.maintenance)?spotter.maintenance:[];
+ if(maintenanceCount)maintenanceCount.textContent=String(maintenance.length);
+ if(maintenanceHost)maintenanceHost.innerHTML=maintenance.length
+  ?`<div class="spotter-maintenance-grid">${maintenance.map(item=>typeof spotterMaintenanceCard==='function'?spotterMaintenanceCard(item):'').join('')}</div>`
+  :'<div class="spotter-empty">Aucun kart en maintenance.</div>';
+}
+
+
 
 function renderAnalyzerQueueAdvice(){
  const el=document.getElementById('analyzerQueueAdvice');if(!el)return;
@@ -1556,3 +1624,24 @@ async function sendAnalyzerDriverMessage(){
 }
 document.addEventListener('DOMContentLoaded',updateAnalyzerDriverMessageCounter);
 
+
+
+/* Velocity V7.2.55 — Mode Test Endurance longue durée + validation réseau */
+window.velocityEnduranceTest={active:false,timer:null,backup:null,startedAt:0,simulatedMs:0,durationMs:0,speed:60,teams:40,laps:0,updates:0,stops:0,reconnectAttempts:0,reconnectSuccess:0,reconnectFailures:0,networkCuts:0,networkConnected:true,networkCutStartedAt:0,networkRestoreTimer:null,nextCutAtMs:Infinity,incidentFrequency:'30',incidentDurationSec:15,totalDowntimeMs:0,maxDowntimeMs:0,lastDowntimeMs:0,errors:[],log:[],drivers:[]};
+function analyzerTestFormatDuration(ms){const total=Math.max(0,Math.floor(ms/1000)),h=Math.floor(total/3600),m=Math.floor(total%3600/60),s=total%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+function analyzerTestLog(message,type='info'){const t=window.velocityEnduranceTest,entry={at:new Date().toISOString(),simulatedMs:t.simulatedMs,message:String(message),type};t.log.unshift(entry);if(t.log.length>500)t.log.length=500;const host=document.getElementById('analyzerTestLog');if(host)host.innerHTML=t.log.slice(0,120).map(x=>`<div class="${x.type}"><time>${new Date(x.at).toLocaleTimeString('fr-FR')}</time>${analyzerEscape(x.message)}</div>`).join('')}
+function openAnalyzerEnduranceTest(){document.getElementById('analyzerEnduranceTestModal')?.classList.add('show');analyzerTestRefreshDashboard()}
+function closeAnalyzerEnduranceTest(){document.getElementById('analyzerEnduranceTestModal')?.classList.remove('show')}
+function analyzerTestDriver(index){const lap=54+(index%11)*.17;return {pos:index+1,apex:index+1,apex_row:index+1,kart:String(10+index),driver:`ÉQUIPE TEST ${String(index+1).padStart(2,'0')}`,pilot:`PILOTE ${index+1}`,laps:0,last:formatApexMilliseconds(lap*1000),best:formatApexMilliseconds((lap-.25)*1000),gap:index?`+${(index*.42).toFixed(3)}`:'—',interval:index?`+${(.25+(index%5)*.08).toFixed(3)}`:'—',pit_stops:0,status:'track',penalty:'—',track_time:'00:00',on_track:'00:00',average_lap:lap,lap_times:[],current_stint_laps:[],stints:[],pit_history:[]}}
+function analyzerTestBuildState(){const t=window.velocityEnduranceTest;return {...(t.backup||{}),version:'7.2.55 TEST',connection:t.networkConnected?'TEST CONNECTÉ':'TEST COUPÉ',connected:t.networkConnected,circuit_id:'velocity-test-endurance',followed_driver:t.drivers[0]?.driver||'',drivers:t.drivers,time_remaining:analyzerTestFormatDuration(Math.max(0,t.durationMs-t.simulatedMs)),time_remaining_ms:Math.max(0,t.durationMs-t.simulatedMs),live:{status:t.networkConnected?'test':'reconnecting',messages:t.updates,parsed_updates:t.updates,last_message_at:new Date().toISOString()},spotter:{configured:false,queue:[],maintenance:[],incoming:[]}}}
+function analyzerTestNextCutDelayMs(){const t=window.velocityEnduranceTest;if(t.incidentFrequency==='random')return (20+Math.random()*70)*60000;return Math.max(1,Number(t.incidentFrequency)||30)*60000}
+function analyzerTestScheduleNextCut(){const t=window.velocityEnduranceTest;t.nextCutAtMs=t.simulatedMs+analyzerTestNextCutDelayMs();analyzerTestLog(`Prochaine coupure prévue vers ${analyzerTestFormatDuration(t.nextCutAtMs)} simulées.`)}
+function analyzerTestStartNetworkCut(source='automatique'){const t=window.velocityEnduranceTest;if(!t.active||!t.networkConnected)return false;t.networkConnected=false;t.networkCuts++;t.reconnectAttempts++;t.networkCutStartedAt=Date.now();analyzerTestLog(`Coupure réseau ${source} déclenchée (${t.incidentDurationSec} s).`,'warning');state=analyzerTestBuildState();render();analyzerTestRefreshDashboard();clearTimeout(t.networkRestoreTimer);t.networkRestoreTimer=setTimeout(()=>analyzerTestRestoreNetwork(),Math.max(1000,t.incidentDurationSec*1000));return true}
+function analyzerTestRestoreNetwork(){const t=window.velocityEnduranceTest;if(!t.active||t.networkConnected)return;const downtime=Date.now()-t.networkCutStartedAt;t.lastDowntimeMs=downtime;t.totalDowntimeMs+=downtime;t.maxDowntimeMs=Math.max(t.maxDowntimeMs,downtime);t.networkConnected=true;t.reconnectSuccess++;analyzerTestLog(`Reconnexion simulée réussie après ${(downtime/1000).toFixed(1)} s.`,'success');analyzerTestScheduleNextCut();state=analyzerTestBuildState();render();analyzerTestRefreshDashboard()}
+function forceAnalyzerTestNetworkCut(){const t=window.velocityEnduranceTest;if(!t.active){analyzerTestLog('Impossible : démarrez d’abord le test.','warning');return}if(!document.getElementById('analyzerTestIncidents')?.checked){analyzerTestLog('Activez « Coupures et reprises simulées » pour tester le réseau.','warning');return}if(!analyzerTestStartNetworkCut('forcée'))analyzerTestLog('Une coupure est déjà en cours.','warning')}
+function startAnalyzerEnduranceTest(){const t=window.velocityEnduranceTest;if(t.active)return;t.backup=JSON.parse(JSON.stringify(state||{}));t.speed=Math.max(1,Number(document.getElementById('analyzerTestSpeed')?.value)||60);t.teams=Math.max(10,Number(document.getElementById('analyzerTestTeams')?.value)||40);const hours=Number(document.getElementById('analyzerTestDuration')?.value);t.durationMs=hours>0?hours*3600000:0;t.startedAt=Date.now();t.simulatedMs=0;t.laps=0;t.updates=0;t.stops=0;t.reconnectAttempts=0;t.reconnectSuccess=0;t.reconnectFailures=0;t.networkCuts=0;t.networkConnected=true;t.networkCutStartedAt=0;t.totalDowntimeMs=0;t.maxDowntimeMs=0;t.lastDowntimeMs=0;t.incidentFrequency=String(document.getElementById('analyzerTestIncidentFrequency')?.value||'30');t.incidentDurationSec=Math.max(1,Number(document.getElementById('analyzerTestIncidentDuration')?.value)||15);t.errors=[];t.log=[];t.drivers=Array.from({length:t.teams},(_,i)=>analyzerTestDriver(i));t.active=true;document.getElementById('analyzerTestConfiguration').hidden=true;document.getElementById('analyzerTestDashboard').hidden=false;analyzerTestLog(`Test démarré : ${t.teams} équipes, vitesse ×${t.speed}, durée ${hours||'illimitée'} h.`);if(document.getElementById('analyzerTestIncidents')?.checked)analyzerTestScheduleNextCut();else t.nextCutAtMs=Infinity;state=analyzerTestBuildState();render();t.timer=setInterval(analyzerTestTick,1000);analyzerTestRefreshDashboard()}
+function analyzerTestTick(){const t=window.velocityEnduranceTest;if(!t.active)return;const step=1000*t.speed;t.simulatedMs+=step;t.updates+=1;const pits=Boolean(document.getElementById('analyzerTestPits')?.checked),penalties=Boolean(document.getElementById('analyzerTestPenalties')?.checked),incidents=Boolean(document.getElementById('analyzerTestIncidents')?.checked);if(incidents&&t.networkConnected&&t.simulatedMs>=t.nextCutAtMs)analyzerTestStartNetworkCut('automatique');if(t.networkConnected){t.drivers.forEach((d,i)=>{const lapSeconds=54+(i%11)*.17+Math.sin((t.simulatedMs/60000)+i)*.12;const previousLaps=d.laps||0,newLaps=Math.floor(t.simulatedMs/(lapSeconds*1000));if(newLaps>previousLaps){for(let n=previousLaps;n<newLaps;n++){const value=lapSeconds+(Math.random()-.5)*.35;d.lap_times.push(value);d.current_stint_laps.push(value);if(d.lap_times.length>2200)d.lap_times.splice(0,d.lap_times.length-2200);if(d.current_stint_laps.length>80)d.current_stint_laps.shift();t.laps++}d.laps=newLaps;d.last=formatApexMilliseconds(d.lap_times.at(-1)*1000);const best=Math.min(...d.lap_times);d.best=formatApexMilliseconds(best*1000);d.average_lap=d.current_stint_laps.reduce((a,b)=>a+b,0)/d.current_stint_laps.length}d.track_time=analyzerTestFormatDuration(t.simulatedMs);d.on_track=d.track_time;if(pits&&t.simulatedMs>0&&Math.floor(t.simulatedMs/1800000)>d.pit_stops+(i%3)){d.pit_stops++;d.status='pit';d.pit_history.push({lap:d.laps,duration:150+(i%20)});d.current_stint_laps=[];t.stops++;setTimeout(()=>{if(t.active)d.status='track'},Math.max(80,250/t.speed))}if(penalties&&t.updates%900===0&&i===t.updates/900%t.teams)d.penalty='5 s'});t.drivers.sort((a,b)=>(b.laps-a.laps)||((a.average_lap||999)-(b.average_lap||999))).forEach((d,i)=>{d.pos=i+1;d.gap=i?`+${((i*.37)+(t.simulatedMs/3600000)*(i*.02)).toFixed(3)}`:'—'})}state=analyzerTestBuildState();render();analyzerTestRefreshDashboard();if(t.durationMs&&t.simulatedMs>=t.durationMs){analyzerTestLog('Durée cible atteinte. Test terminé.');stopAnalyzerEnduranceTest(false)}}
+function analyzerTestRefreshDashboard(){const t=window.velocityEnduranceTest;const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value};set('analyzerTestElapsed',analyzerTestFormatDuration(t.simulatedMs));set('analyzerTestRealElapsed',t.startedAt?analyzerTestFormatDuration(Date.now()-t.startedAt):'00:00:00');set('analyzerTestLaps',t.laps.toLocaleString('fr-FR'));set('analyzerTestUpdates',t.updates.toLocaleString('fr-FR'));set('analyzerTestStops',t.stops.toLocaleString('fr-FR'));set('analyzerTestCuts',String(t.networkCuts));set('analyzerTestReconnects',`${t.reconnectSuccess}/${t.reconnectAttempts}`);set('analyzerTestNetworkState',t.networkConnected?'CONNECTÉ':'COUPURE EN COURS');set('analyzerTestErrors',String(t.errors.length));const mem=performance?.memory?.usedJSHeapSize;set('analyzerTestMemory',Number.isFinite(mem)?`${Math.round(mem/1048576)} Mo`:'Indisponible');const progress=t.durationMs?Math.min(100,t.simulatedMs/t.durationMs*100):0;set('analyzerTestProgress',t.durationMs?`${progress.toFixed(1)} %`:'ILLIMITÉ');const row=document.querySelector('.analyzer-test-status-row'),stateEl=document.getElementById('analyzerTestState');if(row){row.classList.toggle('error',t.errors.length>0);row.classList.toggle('warning',!t.networkConnected)}if(stateEl)stateEl.textContent=t.errors.length?'● ERREURS DÉTECTÉES':(!t.networkConnected?'● RECONNEXION EN COURS':'● STABLE')}
+function stopAnalyzerEnduranceTest(manual=true){const t=window.velocityEnduranceTest;if(!t.active)return;clearInterval(t.timer);clearTimeout(t.networkRestoreTimer);t.timer=null;t.networkRestoreTimer=null;if(!t.networkConnected){const downtime=Date.now()-t.networkCutStartedAt;t.lastDowntimeMs=downtime;t.totalDowntimeMs+=downtime;t.maxDowntimeMs=Math.max(t.maxDowntimeMs,downtime);t.reconnectFailures++;analyzerTestLog('Test arrêté pendant une coupure : reconnexion non validée.','error')}t.active=false;if(manual)analyzerTestLog('Test arrêté manuellement.');state=t.backup||{};t.backup=null;document.getElementById('analyzerTestConfiguration').hidden=false;document.getElementById('analyzerTestDashboard').hidden=false;render();load();analyzerTestRefreshDashboard()}
+function exportAnalyzerEnduranceTestReport(){const t=window.velocityEnduranceTest,payload={type:'velocity-endurance-stability-test',version:'7.2.55',exportedAt:new Date().toISOString(),active:t.active,configuration:{teams:t.teams,speed:t.speed,durationMs:t.durationMs,networkSimulation:Boolean(document.getElementById('analyzerTestIncidents')?.checked),incidentFrequency:t.incidentFrequency,incidentDurationSec:t.incidentDurationSec},results:{realElapsedMs:t.startedAt?Date.now()-t.startedAt:0,simulatedMs:t.simulatedMs,laps:t.laps,updates:t.updates,stops:t.stops,networkCuts:t.networkCuts,reconnectAttempts:t.reconnectAttempts,reconnectSuccess:t.reconnectSuccess,reconnectFailures:t.reconnectFailures,totalDowntimeMs:t.totalDowntimeMs,maxDowntimeMs:t.maxDowntimeMs,lastDowntimeMs:t.lastDowntimeMs,averageDowntimeMs:t.reconnectSuccess?t.totalDowntimeMs/t.reconnectSuccess:0,errors:t.errors},log:t.log};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Velocity_Test_Endurance_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+window.addEventListener('error',event=>{const t=window.velocityEnduranceTest;if(!t.active)return;t.errors.push({at:new Date().toISOString(),message:event.message,source:event.filename,line:event.lineno});analyzerTestLog(`Erreur JS : ${event.message}`,'error');analyzerTestRefreshDashboard()});window.addEventListener('unhandledrejection',event=>{const t=window.velocityEnduranceTest;if(!t.active)return;const message=String(event.reason?.message||event.reason||'Promesse rejetée');t.errors.push({at:new Date().toISOString(),message});analyzerTestLog(`Promesse rejetée : ${message}`,'error');analyzerTestRefreshDashboard()});document.addEventListener('DOMContentLoaded',()=>document.getElementById('analyzerEnduranceTestModal')?.addEventListener('click',event=>{if(event.target.id==='analyzerEnduranceTestModal')closeAnalyzerEnduranceTest()}));

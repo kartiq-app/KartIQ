@@ -72,7 +72,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.5'),
+  appVersion:String(state?.version||'7.2.55'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -211,6 +211,7 @@ function updateRemainingDisplay(){
  const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
+ if(typeof renderDriverMessageOverlay==='function')renderDriverMessageOverlay();
  renderQualificationFocus();
  renderSprintFocus();
  renderEnduranceFocus();
@@ -218,6 +219,7 @@ function updateRemainingDisplay(){
 window.addEventListener('orientationchange',()=>setTimeout(updateRemainingDisplay,80));
 window.addEventListener('resize',()=>updateRemainingDisplay());
 async function load(){
+ if(window.velocityEnduranceTest?.active)return;
  // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle
  // requête tant que la précédente n'est pas terminée, afin d'éviter une
  // file d'attente et un retard progressif de l'affichage.
@@ -225,7 +227,7 @@ async function load(){
  stateLoadInFlight=true;
  try{
   const response=await fetch('/api/state',{cache:'no-store'});
-  if(!response.ok)throw new Error(`État KartIQ indisponible (${response.status})`);
+  if(!response.ok)throw new Error(`État Velocity indisponible (${response.status})`);
   const nextState=await response.json();
   syncRemainingFromState(nextState);
   state=nextState;
@@ -234,7 +236,7 @@ async function load(){
   maybeAutoFollowBrice();
   ensureApexBrowserConnection();
  }catch(error){
-  console.warn('[KartIQ] Rafraîchissement de l’état impossible :',error);
+  console.warn('[Velocity] Rafraîchissement de l’état impossible :',error);
  }finally{
   stateLoadInFlight=false;
  }
@@ -400,7 +402,7 @@ function showMode(mode){
  // un clone de Qualification pour le dashboard, mais son bouton Focus ouvre
  // le Focus Sprint dédié à Endurance.
  const screen=document.getElementById(mode);
- screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode!=='home'&&mode!=='spotter')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode})
+ screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode==='spotter'&&typeof spotterEnterMode==='function')spotterEnterMode();if(mode!=='home'&&mode!=='spotter')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode})
 }
 
 let sprintFocusWakeLock=null;
