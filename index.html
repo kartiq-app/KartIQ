@@ -172,8 +172,9 @@
           </div>
           <div class="relay-strategy-decision">
             <div><span>Recommandation</span><b id="analyzerStrategyRecommendation">—</b></div>
-            <div><span>Fenêtre conseillée</span><b id="analyzerStrategyWindow">—</b></div>
+            <div class="relay-strategy-window-card" role="button" tabindex="0" onclick="toggleAnalyzerStrategyWindowDetails(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAnalyzerStrategyWindowDetails(event)}"><span>Fenêtre conseillée</span><b id="analyzerStrategyWindow">—</b><small id="analyzerStrategyWindowHint"></small></div>
           </div>
+          <div id="analyzerStrategyWindowDetails" class="relay-strategy-window-details" hidden></div>
         </div>
       </article>
       <div class="analyzer-weather-message-stack">

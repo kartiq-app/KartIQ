@@ -2384,7 +2384,7 @@ function analyzerStopsInfo(followed){
  return {done,remaining,cadence};
 }
 
-/* V7.2.162 — Capital stratégique lisible + ajustements UI Stratégie Relais. */
+/* V7.2.163 — Fenêtre conseillée enrichie par les retours de karts et détail au clic. */
 function analyzerStrategySignedSeconds(value,digits=2){
  if(!Number.isFinite(value))return '—';
  const sign=value>0?'+':value<0?'−':'';
@@ -2453,6 +2453,68 @@ function analyzerStrategyDeltaPerLap(followed,metrics){
  if(Number.isFinite(cell?.relay?.average)&&Number.isFinite(cell?.gridNow))return Number(cell.relay.average)-Number(cell.gridNow);
  return null;
 }
+function analyzerStrategyKartWindow(followed,currentMetrics){
+ const currentScore=Number(currentMetrics?.score);
+ const currentConfidence=Number(currentMetrics?.confidence);
+ const minGain=8;
+ const targetScore=Number.isFinite(currentScore)?Math.max(70,Math.min(92,currentScore+minGain)):75;
+ const candidateFromDriver=(driver,seconds,source)=>{
+  if(!driver||driver===followed||driver.driver===followed?.driver)return null;
+  const metrics=analyzerVelocityUnifiedMetrics(driver);
+  const score=Number(metrics?.score),confidence=Number(metrics?.confidence);
+  if(!Number.isFinite(score)||!Number.isFinite(confidence)||confidence<60||score<targetScore)return null;
+  const kart=validKartNumber(driver)||driver.apex||'—';
+  return {driver,kart,team:driver.driver||'—',score:Math.round(score),confidence:Math.round(confidence),seconds,source};
+ };
+ const available=[];
+ analyzerQueueCandidates().filter(q=>q.index===0).forEach(q=>{
+  const score=Number(q.score),confidence=Number(q.confidence);
+  if(Number.isFinite(score)&&Number.isFinite(confidence)&&confidence>=60&&score>=targetScore){
+   available.push({driver:q.driver||null,kart:q.kart||'—',team:q.driver?.driver||q.item?.team||'File stands',score:Math.round(score),confidence:Math.round(confidence),seconds:0,source:'available',queue:q.queue});
+  }
+ });
+ const incoming=[];
+ (state.drivers||[]).forEach(driver=>{
+  if(driver===followed||driver.driver===followed?.driver||driver.status==='pit')return;
+  const seconds=analyzerKartRelayRemaining(driver);
+  if(!Number.isFinite(seconds)||seconds<0||seconds>30*60)return;
+  const c=candidateFromDriver(driver,seconds,'incoming');if(c)incoming.push(c);
+ });
+ available.sort((a,b)=>b.score-a.score||b.confidence-a.confidence);
+ incoming.sort((a,b)=>a.seconds-b.seconds||b.score-a.score);
+ const all=[...available,...incoming];
+ let label='—',summary='Aucune opportunité supérieure identifiée',windowStart=null,windowEnd=null;
+ if(available.length){
+  label=available.length>1?'MAINTENANT → 3 MIN':'MAINTENANT';
+  summary=available.length>1?`${available.length} bons karts disponibles`:`Bon kart disponible : #${available[0].kart}`;
+  windowStart=0;windowEnd=180;
+ }else if(incoming.length){
+  const first=incoming[0];
+  const cluster=incoming.filter(c=>c.seconds<=first.seconds+4*60);
+  const a=Math.max(1,Math.floor(first.seconds/60));
+  const last=cluster[cluster.length-1];
+  const b=Math.max(a+2,Math.ceil(last.seconds/60)+1);
+  label=`DANS ${a}–${b} MIN`;
+  summary=cluster.length>1?`${cluster.length} bons karts attendus`:`Bon kart attendu ~${Math.max(1,Math.round(first.seconds/60))} min`;
+  windowStart=a*60;windowEnd=b*60;
+ }
+ return {label,summary,available,incoming,all,targetScore,currentScore,currentConfidence,windowStart,windowEnd};
+}
+function analyzerStrategyWindowDetailsHtml(insight){
+ if(!insight)return '<div class="strategy-window-empty">Aucune projection disponible.</div>';
+ const rows=[];
+ insight.available.slice(0,4).forEach(c=>rows.push(`<div class="strategy-window-row best"><b>MAINTENANT</b><span>Kart ${analyzerEscape(c.kart)}</span><span>Score ${c.score}</span><span>${c.confidence}%</span></div>`));
+ insight.incoming.slice(0,7).forEach(c=>rows.push(`<div class="strategy-window-row"><b>~ ${Math.max(1,Math.round(c.seconds/60))} min</b><span>Kart ${analyzerEscape(c.kart)}</span><span>Score ${c.score}</span><span>${c.confidence}%</span></div>`));
+ if(!rows.length)return `<div class="strategy-window-empty">Aucun kart avec un gain suffisant et une confiance ≥ 60 %. Seuil actuel : score ${Math.round(insight.targetScore)}.</div>`;
+ return `<div class="strategy-window-details-head"><span>RETOURS / DISPONIBILITÉS CIBLES</span><small>Seuil : score ≥ ${Math.round(insight.targetScore)} · confiance ≥ 60 %</small></div>${rows.join('')}`;
+}
+function toggleAnalyzerStrategyWindowDetails(event){
+ if(event)event.stopPropagation();
+ const el=document.getElementById('analyzerStrategyWindowDetails');if(!el)return;
+ const open=!el.classList.contains('show');
+ el.classList.toggle('show',open);el.hidden=!open;
+}
+window.toggleAnalyzerStrategyWindowDetails=toggleAnalyzerStrategyWindowDetails;
 function analyzerRelayStrategy(followed,stopsInfo=null){
  const stops=stopsInfo||analyzerStopsInfo(followed);
  const metrics=followed?analyzerVelocityUnifiedMetrics(followed):null;
@@ -2491,7 +2553,17 @@ function analyzerRelayStrategy(followed,stopsInfo=null){
    if(earliest<Math.floor(targetLong/60)&&capitalMinutes>0){recommendation='RACCOURCIR LE RELAIS';windowLabel=`${earliest}–${latest} min`;kind='danger'}
    else{recommendation='CONSERVER LE RELAIS';windowLabel='CAPITAL FAIBLE';kind='wait'}
  }else if(score<60&&Number.isFinite(delta)&&delta>0){recommendation='SURVEILLER';windowLabel='—';kind='wait'}
- return {score:Number.isFinite(score)?Math.round(score):null,confidence:Number.isFinite(confidence)?Math.round(confidence):null,track,delta,impact,capital,targetLong,pitCloseRemaining,recommendation,windowLabel,kind};
+ const kartWindow=analyzerStrategyKartWindow(followed,metrics);
+ const strategyCanUseKartWindow=!!followed&&rules.ready&&!closed&&!closePressure&&track>=minStint&&track<maxStint-rules.safetyMarginMinutes*60&&Number.isFinite(score)&&confidence>=60;
+ if(strategyCanUseKartWindow){
+  if(kartWindow.available.length&&score<75){recommendation='RENTRER';windowLabel=kartWindow.label;kind='good'}
+  else if(!kartWindow.available.length&&kartWindow.incoming.length&&(score<75||(Number.isFinite(delta)&&delta>0))){
+   const waitSeconds=kartWindow.windowStart;
+   const canWait=!Number.isFinite(waitSeconds)||track+waitSeconds<maxStint-rules.safetyMarginMinutes*60;
+   if(canWait){recommendation='PROLONGER LE RELAIS';windowLabel=kartWindow.label;kind='wait'}
+  }
+ }
+ return {score:Number.isFinite(score)?Math.round(score):null,confidence:Number.isFinite(confidence)?Math.round(confidence):null,track,delta,impact,capital,targetLong,pitCloseRemaining,recommendation,windowLabel,kind,kartWindow};
 }
 function analyzerRenderRelayStrategy(followed,stopsInfo=null){
  const data=analyzerRelayStrategy(followed,stopsInfo);
@@ -2507,6 +2579,9 @@ function analyzerRenderRelayStrategy(followed,stopsInfo=null){
  if(capBar)capBar.style.width=Number.isFinite(data.capital.percent)?`${data.capital.percent}%`:'0%';
  const recommendation=document.getElementById('analyzerStrategyRecommendation'),windowEl=document.getElementById('analyzerStrategyWindow'),block=document.getElementById('analyzerRelayStrategy');
  if(recommendation)recommendation.textContent=data.recommendation;if(windowEl)windowEl.textContent=data.windowLabel;
+ const windowHint=document.getElementById('analyzerStrategyWindowHint'),windowDetails=document.getElementById('analyzerStrategyWindowDetails');
+ if(windowHint)windowHint.textContent=data.kartWindow?.summary||'';
+ if(windowDetails)windowDetails.innerHTML=analyzerStrategyWindowDetailsHtml(data.kartWindow);
  if(block){block.classList.remove('good','wait','danger','neutral');block.classList.add(data.kind)}
  const closeRule=document.getElementById('analyzerPitCloseRule'),closeCountdown=document.getElementById('analyzerPitCloseCountdown');
  if(closeRule){const rules=analyzerStrategyRulesConfig();closeRule.textContent=rules.ready?`T - ${analyzerFormatDuration(rules.pitCloseMinutes*60,{compact:true})}`:'—'};

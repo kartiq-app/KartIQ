@@ -1,3 +1,11 @@
+# V7.2.163 — FENÊTRE CONSEILLÉE / RETOURS DE KARTS
+
+- Stratégie Relais : la Fenêtre conseillée exploite désormais les karts disponibles et les fins de relais Velocity.
+- Détection des karts réellement plus intéressants que le kart actuel (score + confiance).
+- Recommandation enrichie : rentrer maintenant si un meilleur kart est disponible, ou prolonger jusqu’à une fenêtre favorable si un meilleur kart arrive bientôt.
+- Clic sur Fenêtre conseillée : détail des karts cibles avec délai, numéro de kart, score et confiance.
+- Aucun nouveau module : réutilisation des données Velocity / FIN RELAIS et Spotter.
+
 # V7.2.162 — CAPITAL STRATÉGIQUE / LISIBILITÉ STRATÉGIE RELAIS
 - Capital stratégique affiché sous la forme d’une seule valeur restante (ex. `398 min`) au lieu de `1710 min / 398 min`.
 - Avant le départ, le capital est disponible immédiatement depuis le règlement et ne peut jamais dépasser son capital initial.
