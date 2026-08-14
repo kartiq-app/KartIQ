@@ -1,12 +1,12 @@
-"""Configuration applicative et catalogue des circuits Velocity."""
+"""Configuration applicative et catalogue des circuits KartIQ."""
 
 from pathlib import Path
 import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.172N"
-APP_RELEASE_NAME = "FOCUS ENDURANCE MOBILE + PILOTAGE TEAM MANAGER"
+APP_VERSION = "7.2.4"
+APP_RELEASE_NAME = "AUTO GRIS ET MESSAGERIE AGRANDIE"
 
 
 def _circuit_sort_key(circuit):

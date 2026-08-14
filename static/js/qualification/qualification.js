@@ -6,25 +6,21 @@ async function openQualificationFocus(){
  if(!overlay)return;
  overlay.classList.add('show');
  document.body.classList.add('qualification-focus-active');
- rememberVelocityFocus('qualification');
- setFocusLandscapeLock(true);
  renderQualificationFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
- await lockFocusOrientationForAndroid();
+ try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
  try{if('wakeLock' in navigator)qualificationFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeQualificationFocus(){
  document.getElementById('qualificationFocus')?.classList.remove('show');
  document.body.classList.remove('qualification-focus-active');
- clearVelocityFocusMemory('qualification');
- setFocusLandscapeLock(false);
  try{if(qualificationFocusWakeLock){await qualificationFocusWakeLock.release();qualificationFocusWakeLock=null}}catch(e){}
- unlockFocusOrientationForAndroid();
+ try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 function qualificationPurpleBest(){
  // La cellule violette du tableau Qualification est la source de vérité visuelle :
- // elle correspond au meilleur temps absolu affiché par Velocity/Apex pour la séance.
+ // elle correspond au meilleur temps absolu affiché par KartIQ/Apex pour la séance.
  const tableId=qualificationFocusSourceMode==='endurance'?'enduranceQualifTable':'qualifTable';
  const purpleCell=document.querySelector('#'+tableId+' tr td.purple');
  if(purpleCell){

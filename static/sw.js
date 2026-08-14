@@ -1,4 +1,4 @@
-const CACHE = 'velocity-v7-2-172';
+const CACHE = 'velocity-v7-2-5';
 
 const ASSETS = [
   '/',
@@ -26,7 +26,6 @@ const ASSETS = [
   '/static/icons/kartiq-192.png',
   '/static/icons/kartiq-512.png',
   '/static/assets/RT10_main.png',
-  '/static/assets/spotter/kart-front.png',
   '/static/assets/weather/clear-day.svg',
   '/static/assets/weather/clear-night.svg',
   '/static/assets/weather/partly-cloudy-day.svg',

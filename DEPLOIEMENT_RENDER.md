@@ -1,4 +1,4 @@
-# Déploiement Velocity sur Render
+# Déploiement KartIQ sur Render
 
 - Build Command : `pip install -r requirements.txt`
 - Start Command : `gunicorn app:app --workers 1 --threads 4 --timeout 120`

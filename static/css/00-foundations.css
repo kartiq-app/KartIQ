@@ -1,4 +1,4 @@
-/* Velocity V5.5.0 — Fondations, composants initiaux et historique V1–V2.7.
+/* KartIQ V5.5.0 — Fondations, composants initiaux et historique V1–V2.7.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
 :root{--bg:#050505;--panel:#0b0b0d;--panel2:#121216;--line:#2a2a2f;--text:#f7f7f8;--muted:#8f8f98;--yellow:#ffd230;--orange:#ff9f1c;--green:#31e981;--red:#ff334f;--purple:#b66cff;--blue:#58a6ff;--accent:#e10600;--font-time:"F1 Regular",Arial,sans-serif;--font-driver:"F1 Torque","Arial Narrow",Arial,sans-serif}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 30% 0,#192235 0,#07090e 48%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}button,select,input{font:inherit}
@@ -105,7 +105,7 @@ table{table-layout:fixed}th{background:#101014!important;color:#aaaab3!important
 }
 body.preview-embedded header{display:none!important}body.preview-embedded.current-qualification .qual-wrap,body.preview-embedded.current-sprint .sprint-wrap{height:100dvh;display:flex;flex-direction:column}body.preview-embedded.current-qualification .qual-table-wrap,body.preview-embedded.current-sprint .sprint-lower{flex:1;min-height:0}body.preview-embedded.current-sprint .sprint-table-wrap,body.preview-embedded.current-sprint .penalty-panel{height:100%;max-height:none!important}
 
-/* Velocity V2.1 — typographies officielles fournies par l'utilisateur */
+/* KartIQ V2.1 — typographies officielles fournies par l'utilisateur */
 @font-face{font-family:"F1 Regular";src:url("/static/fonts/f1-regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
 @font-face{font-family:"F1 Torque";src:url("/static/fonts/f1-torque.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
 
@@ -125,7 +125,7 @@ body.preview-embedded header{display:none!important}body.preview-embedded.curren
 @media(max-width:680px){.remaining-time{font-size:34px!important}.remaining-laps{font-size:51px!important}.qual-delta{font-size:46px!important}.status-values{padding:2px 4px!important;gap:0!important}}
 
 
-/* Velocity V2.2 — ajustements qualification, sprint et noms pilotes */
+/* KartIQ V2.2 — ajustements qualification, sprint et noms pilotes */
 .driver-first{font-family:var(--font-time)!important;font-weight:400!important}
 .driver-last{font-family:var(--font-driver)!important;font-weight:700!important}
 .driver-name{display:inline-flex;align-items:baseline;gap:.22em;min-width:0;white-space:nowrap}
@@ -160,7 +160,7 @@ body.preview-embedded{scroll-behavior:auto!important}
 body.preview-embedded.current-qualification,body.preview-embedded.current-qualification :is(#qualification,#endurance){overflow-x:hidden!important;scroll-snap-type:none!important}
 
 
-/* Velocity V2.3 — alignement classements, tailles et leader P1 */
+/* KartIQ V2.3 — alignement classements, tailles et leader P1 */
 /* Qualification + Sprint : position et pilote complètement à gauche, avec un espace lisible. */
 #qualifTable .pos,#sprintTable .pos{
   width:44px!important;
@@ -214,7 +214,7 @@ td.pos.leader-pos{display:table-cell!important;width:44px!important;min-width:44
 }
 
 
-/* Velocity V2.4 */
+/* KartIQ V2.4 */
 .gap-with{margin-top:8px;font-family:var(--font-time);font-size:15px;line-height:1.15;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
 .gap-with .gap-label,.gap-with .driver-first{font-family:var(--font-time)!important;font-weight:400!important}
 .gap-with .driver-last{font-family:var(--font-driver)!important;font-weight:700!important}
@@ -251,7 +251,7 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 }
 
 
-/* Velocity V2.4.1 — correctifs desktop et iPhone SE */
+/* KartIQ V2.4.1 — correctifs desktop et iPhone SE */
 /* Desktop/tablette : Qualification et Sprint utilisent une vraie mise en page large,
    jamais les dimensions de l’iPhone SE hors aperçu intégré. */
 @media (min-width:681px){
@@ -301,7 +301,7 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 }
 
 
-/* Velocity V2.4.2 — Qualification iPhone SE paysage */
+/* KartIQ V2.4.2 — Qualification iPhone SE paysage */
 /* Le bloc POS + PILOTE reprend strictement le calage du Sprint :
    position étroite à gauche, puis prénom/nom immédiatement à côté. */
 @media (max-width:680px) and (orientation:landscape){
@@ -333,7 +333,7 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 }
 
 
-/* Velocity V2.5 — correctif définitif Qualification iPhone SE paysage
+/* KartIQ V2.5 — correctif définitif Qualification iPhone SE paysage
    La règle table-layout doit viser la TABLE, et non le tbody #qualifTable.
    Les deux premières colonnes reprennent exactement les proportions du Sprint. */
 @media (max-width:680px) and (orientation:landscape){
@@ -374,7 +374,7 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 }
 
 
-/* Velocity V2.6 — iPhone SE portrait/paysage */
+/* KartIQ V2.6 — iPhone SE portrait/paysage */
 /* Qualification portrait : typographies compactes pour tenir sur 375 px. */
 @media (max-width:430px) and (orientation:portrait){
   body.preview-embedded.current-qualification .qual-strip{
@@ -430,7 +430,7 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 
 
 
-/* Velocity V2.7 — correctifs iPhone SE et accueil compact */
+/* KartIQ V2.7 — correctifs iPhone SE et accueil compact */
 /* Qualification paysage : le classement reste entièrement défilable au-delà de P10. */
 @media (max-width:680px) and (orientation:landscape){
   body.preview-embedded.current-qualification,

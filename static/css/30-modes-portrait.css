@@ -1,6 +1,6 @@
-/* Velocity V5.5.0 — Qualification/Sprint, navigation et mises en page portrait.
+/* KartIQ V5.5.0 — Qualification/Sprint, navigation et mises en page portrait.
    Ordre de cascade conservé depuis kartiq.css V5.1.2. */
-/* Velocity V4.6.0 — Portrait Qualification et Sprint */
+/* KartIQ V4.6.0 — Portrait Qualification et Sprint */
 .sprint-focus-overlay{position:fixed;inset:0;z-index:1100;display:none;background:#000;color:#fff;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .sprint-focus-overlay.show{display:flex;flex-direction:column}
 .sprint-focus-header{height:54px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:8px 16px 6px;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
@@ -21,7 +21,7 @@ body.sprint-focus-active{overflow:hidden}
 
 
 
-/* Velocity V4.5.9 — Bouton Home centré entre le bord gauche et la position */
+/* KartIQ V4.5.9 — Bouton Home centré entre le bord gauche et la position */
 /* Le bandeau principal reste disponible sur l'accueil et l'Endurance. */
 body:not(.preview-embedded).current-qualification > header,
 body:not(.preview-embedded).current-sprint > header{
@@ -117,7 +117,7 @@ body.current-sprint .gap-with{
 
 
 
-/* Velocity V4.6.0 — mise en page portrait Qualification et Sprint */
+/* KartIQ V4.6.0 — mise en page portrait Qualification et Sprint */
 @media (max-width:680px) and (orientation:portrait){
   /* Deux premières lignes communes */
   .current-qualification .qual-strip,
@@ -395,7 +395,7 @@ body.current-sprint .gap-with{
 
 
 
-/* Velocity V4.6.1 — menu portrait 20/30/50 + zone sûre iPhone */
+/* KartIQ V4.6.1 — menu portrait 20/30/50 + zone sûre iPhone */
 @media (max-width:680px) and (orientation:portrait){
   body.current-qualification .qual-wrap,
   body.current-sprint .sprint-wrap{
@@ -587,7 +587,7 @@ body.current-sprint .gap-with{
 }
 
 
-/* Velocity V4.6.2 — corrections portrait + icône Focus */
+/* KartIQ V4.6.2 — corrections portrait + icône Focus */
 .qual-focus-icon{
   width:22px;
   height:22px;
@@ -715,14 +715,14 @@ body.current-sprint .gap-with{
 }
 
 
-/* Velocity V4.6.6 — numéro de kart dans les classements Qualification et Sprint */
+/* KartIQ V4.6.6 — numéro de kart dans les classements Qualification et Sprint */
 .ranking-driver-cell{display:flex;align-items:center;min-width:0;gap:8px}
 .ranking-kart{flex:0 0 auto;min-width:2.2em;text-align:center;color:#aeb6c3;font-family:var(--font-time)!important;font-weight:800;font-variant-numeric:tabular-nums}
 .ranking-driver-cell .driver-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:680px){.ranking-driver-cell{gap:4px}.ranking-kart{min-width:1.9em;font-size:.9em}}
 
 
-/* Velocity V4.6.7 — portrait : position, kart et pilote restent sur une seule ligne */
+/* KartIQ V4.6.7 — portrait : position, kart et pilote restent sur une seule ligne */
 @media (max-width:680px), (orientation:portrait){
   body.current-qualification #qualifTable td.name,
   body.current-sprint #sprintTable td.name{
@@ -775,7 +775,7 @@ body.current-sprint .gap-with{
 }
 
 
-/* Velocity V4.6.8 — portrait : KART + PILOTE strictement sur une seule ligne */
+/* KartIQ V4.6.8 — portrait : KART + PILOTE strictement sur une seule ligne */
 @media (max-width:680px) and (orientation:portrait){
   body.current-qualification #qualifTable td.name,
   body.current-sprint #sprintTable td.name{
@@ -842,7 +842,7 @@ body.current-sprint .gap-with{
 }
 
 
-/* Velocity V4.6.9 — vraie colonne KART conditionnelle en Qualification et Sprint */
+/* KartIQ V4.6.9 — vraie colonne KART conditionnelle en Qualification et Sprint */
 :is(#qualification,#endurance) .optional-kart-head,
 #sprint .optional-kart-head{display:none}
 :is(#qualification,#endurance) table.has-kart-column .optional-kart-head,
@@ -904,9 +904,9 @@ body.current-sprint .gap-with{
 
 
 
-/* Velocity V4.7.1 — lisibilité paysage, navigation et pénalités Sprint portrait */
+/* KartIQ V4.7.1 — lisibilité paysage, navigation et pénalités Sprint portrait */
 
-/* Velocity V5.5.5 — le classement Sprint portrait reprend exactement les
+/* KartIQ V5.5.5 — le classement Sprint portrait reprend exactement les
    informations du classement Qualification portrait : POS, KART (si fourni),
    PILOTE, DERNIER, MEILLEUR et ÉCART. */
 @media (orientation:portrait), (max-width:680px){
