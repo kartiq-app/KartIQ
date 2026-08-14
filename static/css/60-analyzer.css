@@ -2633,7 +2633,7 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 }
 
 
-/* Velocity V7.2.1724N — contrôle indépendant du Focus Endurance pilote. */
+/* Velocity V7.2.1725N — contrôle indépendant du Focus Endurance pilote. */
 .race-pilot-focus-target{
   grid-column:1/-1;display:grid;grid-template-columns:minmax(180px,.42fr) minmax(260px,1fr);
   gap:14px;align-items:center;padding:14px 16px;margin-top:8px;border:1px solid #303743;

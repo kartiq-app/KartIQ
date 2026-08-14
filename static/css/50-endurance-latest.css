@@ -998,52 +998,27 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 }
 
 
-/* Focus Endurance smartphone — dimensions de référence.
-   Deltas réduits de 10 % et noms équipe/pilote augmentés de 10 % par rapport à V7.2.1724.
-   Les valeurs sont modifiées directement ici : aucune surcouche CSS supplémentaire. */
-@media (max-width: 900px), (pointer: coarse){
+/* V7.2.1725 — Focus Endurance smartphone : règles finales consolidées.
+   Une seule source de vérité pour le rendu mobile/iPhone.
+   - Zone basse (Temps en piste + Dernier temps) : 40 % -> 38 % (-5 %).
+   - Zone Delta : récupère l'espace, 60 % -> 62 %.
+   - Valeurs Delta : -10 % par rapport à V7.2.1725.
+   - Noms équipe/pilote : +10 % par rapport à V7.2.1725.
+   - Aucun changement desktop / autres Focus. */
+@media (max-width:900px), (pointer:coarse){
+  #enduranceFocus .endurance-focus-main{
+    grid-template-rows:62% 38%!important;
+  }
   #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
     font-size:clamp(70.2px,17.55vh,198.9px)!important;
   }
   #enduranceFocus .endurance-focus-driver .sprint-focus-name{
-    font-size:133.1%!important;
+    font-size:121%!important;
     max-width:100%!important;
   }
   #enduranceFocus .endurance-focus-neighbour-name{
-    font-size:clamp(19.965px,3.4606vh,39.93px)!important;
+    font-size:clamp(18.15px,3.146vh,36.3px)!important;
   }
-  #enduranceFocus .endurance-focus-last-lap-cell{
-    box-sizing:border-box!important;
-    padding:clamp(10px,2.2vw,22px)!important;
-    overflow:hidden!important;
-  }
-  #enduranceFocus .endurance-focus-last-lap{
-    max-width:100%!important;
-    max-height:100%!important;
-    margin:0!important;
-    padding:0!important;
-    white-space:nowrap!important;
-    overflow:hidden!important;
-  }
-}
-
-/* Le mode iPhone paysage virtuel a un viewport OS portrait : on force ici
-   les proportions adaptées au paysage visible sans toucher à Android. */
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
-  font-size:clamp(73.8px,18dvw,198px)!important;
-}
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
-  font-size:clamp(21.78px,6.171dvw,45.98px)!important;
-}
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
-  font-size:clamp(18.15px,5.0215dvw,36.3px)!important;
-}
-
-
-
-/* Focus Endurance mobile — rendu final V196 */
-@media (max-width:900px), (pointer:coarse){
-  #enduranceFocus .endurance-focus-main{grid-template-rows:60% 40%!important}
   #enduranceFocus .endurance-focus-last-lap-cell{
     box-sizing:border-box!important;
     padding:clamp(5px,1vw,12px)!important;
@@ -1053,13 +1028,26 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-n
     width:100%!important;
     max-width:100%!important;
     max-height:100%!important;
+    margin:0!important;
+    padding:0!important;
     line-height:.84!important;
     white-space:nowrap!important;
     overflow:hidden!important;
   }
 }
+
+/* iPhone : iOS reste en portrait, contenu Focus pivoté en paysage virtuel. */
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{
-  grid-template-rows:60% 40%!important;
+  grid-template-rows:62% 38%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+  font-size:clamp(73.8px,18dvw,198px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
+  font-size:clamp(19.8px,5.61dvw,41.8px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
+  font-size:clamp(16.5px,4.565dvw,33px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{
   padding:clamp(4px,.8dvw,10px)!important;
@@ -1075,3 +1063,4 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
   white-space:nowrap!important;
   overflow:hidden!important;
 }
+
