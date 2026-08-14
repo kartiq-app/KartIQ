@@ -1,4 +1,17 @@
-# Velocity V7.2.172 — Focus Endurance mobile + pilotage Team Manager
+# V7.2.172Q1 — Spotter étape 1 : files indépendantes
+
+- Base stricte V7.2.172.
+- Une seule évolution fonctionnelle : préparation du Quick Change par file.
+- Chaque file possède toujours au moins un kart.
+- Chaque file possède son propre bouton « Ajouter un kart ».
+- Suppression de la répartition automatique modulo au lancement.
+- Synchronisation du mapping `setup_queue_files`.
+- Aucun changement du drag & drop.
+- Aucun changement Maintenance.
+- Aucun changement des cartes rouges.
+- Aucun changement Analyzer / Focus / timing / Mode Test.
+
+# Velocity V7.2.172Q1Q1 — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.

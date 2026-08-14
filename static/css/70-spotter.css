@@ -1810,3 +1810,14 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
   border-color:#ff981f!important;
   box-shadow:0 0 0 1px rgba(255,152,31,.16),0 9px 22px rgba(0,0,0,.38),0 0 12px rgba(255,152,31,.08)!important;
 }
+
+/* V7.2.172Q1Q1Q1 — Étape 1 : préparation indépendante des files uniquement */
+.spotter-setup-files{display:grid;grid-template-columns:1fr;gap:12px;margin:8px 0 14px}
+.spotter-setup-files.setup-files-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.spotter-setup-files.setup-files-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.spotter-setup-file{min-width:0;border:1px solid #303642;border-radius:12px;padding:10px;background:#0b0e14}
+.spotter-setup-file-title{text-align:center;font-weight:700;margin:0 0 10px}
+.spotter-setup-file .spotter-remove:disabled{opacity:.2;pointer-events:none}
+@media(max-width:899px){
+ .spotter-setup-files.setup-files-2,.spotter-setup-files.setup-files-3{grid-template-columns:1fr}
+}
