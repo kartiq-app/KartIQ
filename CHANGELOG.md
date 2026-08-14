@@ -1,3 +1,10 @@
+# V7.2.166 — SYNCHRO AUTOMATIQUE RÈGLEMENT ANALYZER
+
+- Le règlement actif du desktop est désormais publié automatiquement dès l’ouverture d’Analyzer.
+- Il n’est plus nécessaire d’ouvrir « Règlement » puis de cliquer sur ENREGISTRER pour synchroniser le smartphone.
+- Pendant l’initialisation, un ancien snapshot serveur ne peut plus écraser les valeurs restaurées sur le desktop.
+- Le smartphone reste consommateur du règlement partagé et ne republie pas automatiquement son ancien état local.
+
 # V7.2.165 — SOURCE DE VÉRITÉ RÈGLEMENT ANALYZER
 - Correction de l’ordre de restauration : la session locale smartphone est chargée avant le règlement partagé serveur.
 - Le règlement partagé devient prioritaire sur les anciens snapshots locaux de chaque appareil.

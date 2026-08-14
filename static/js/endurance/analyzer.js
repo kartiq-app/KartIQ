@@ -860,6 +860,43 @@ function analyzerPilotContinuity(metrics){
  return same?{known:true,same:true,label:'👤',title:'Pilote identique'}:{known:true,same:false,label:'👥',title:'Changement pilote'};
 }
 let analyzerSharedRulesUpdatedAt=0;
+let analyzerRulesBootstrapCircuit='';
+let analyzerRulesBootstrapPending=false;
+function analyzerRulesDesktopLeader(){
+ // Le poste desktop est la source de vérité au démarrage d'Analyzer.
+ // Un smartphone/tablette ne republie jamais son snapshot local automatiquement.
+ const ua=String(navigator?.userAgent||'');
+ return !/(iPhone|iPad|iPod|Android|Mobile)/i.test(ua);
+}
+function analyzerRulesConfigured(){
+ const r=analyzerStrategyRulesConfig();
+ return Boolean(r?.ready);
+}
+async function analyzerBootstrapSharedRulesFromDesktop(){
+ const circuit=String(state?.circuit_id||analyzerSessionCircuit()||'');
+ if(!circuit||!analyzerRulesDesktopLeader()||!analyzerRulesConfigured())return false;
+ if(analyzerRulesBootstrapCircuit===circuit||analyzerRulesBootstrapPending)return false;
+ // Marquer avant l'appel réseau : pendant ce court délai, le vieux snapshot serveur
+ // ne doit surtout pas écraser le règlement local que le desktop vient de restaurer.
+ analyzerRulesBootstrapPending=true;
+ analyzerRulesBootstrapCircuit=circuit;
+ try{
+  const response=await fetch('/api/analyzer-rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules:analyzerRules})});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const data=await response.json();
+  const shared=data?.analyzer_rules;
+  if(shared){
+   analyzerSharedRulesUpdatedAt=Number(shared.updated_at_ms)||Date.now();
+   state={...(state||{}),analyzer_rules:shared};
+  }
+  return true;
+ }catch(error){
+  // Autoriser une nouvelle tentative au prochain rendu si le réseau était indisponible.
+  analyzerRulesBootstrapCircuit='';
+  console.warn('[Velocity Analyzer] Publication automatique du règlement desktop impossible',error);
+  return false;
+ }finally{analyzerRulesBootstrapPending=false}
+}
 function analyzerApplySharedRulesFromState(){
  const shared=state?.analyzer_rules;if(!shared||!shared.rules)return false;
  const currentCircuit=String(state?.circuit_id||analyzerSessionCircuit()||'');
@@ -3102,7 +3139,14 @@ function renderAnalyzer(){
  // En V7.2.164 l'ordre inverse permettait au snapshot smartphone (ex. 3h30)
  // d'écraser juste après la valeur serveur/desktop (ex. 5h00).
  analyzerEnsureSession();
- analyzerApplySharedRulesFromState();
+ // Au premier affichage Analyzer du desktop, publier immédiatement le règlement
+ // restauré localement. Cela supprime l'ancien process où il fallait ouvrir
+ // « Règlement » puis ENREGISTRER pour synchroniser le smartphone.
+ const rulesBootstrapNeeded=analyzerRulesDesktopLeader()&&analyzerRulesConfigured()&&analyzerRulesBootstrapCircuit!==String(state?.circuit_id||analyzerSessionCircuit()||'');
+ if(rulesBootstrapNeeded){analyzerBootstrapSharedRulesFromDesktop().then(()=>renderAnalyzer());}
+ // Tant que la publication desktop initiale est en cours, ignorer l'ancien
+ // snapshot partagé afin qu'il ne puisse pas réinjecter une valeur obsolète.
+ if(!rulesBootstrapNeeded&&!analyzerRulesBootstrapPending)analyzerApplySharedRulesFromState();
  analyzerLearnFromState();
  analyzerScheduleRelayHydration();
  const all=analyzerRows();const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
