@@ -17,12 +17,39 @@ function endurancePitBadge(driver){
  if(until&&until<=now)enduranceOutUntil.delete(key);
  return '';
 }
+const rankingLapAnimations=new Map();
+const RANKING_FLASH_DURATION_MS=1900;
+function rankingDriverKey(driver){return String(driver?.apex_row??driver?.driver??driver?.pos??'')}
+function syncRankingLapAnimations(){
+ const now=Date.now(),absoluteBest=absoluteSessionBestSeconds(),seen=new Set();
+ for(const d of state.drivers||[]){
+  const key=rankingDriverKey(d);if(!key)continue;seen.add(key);
+  const signature=`${String(d.laps??'')}|${String(d.last??'')}`;
+  const previous=rankingLapAnimations.get(key);
+  if(previous&&previous.signature!==signature&&Number.isFinite(parseLapTime(d.last))){
+   const lastSeconds=parseLapTime(d.last);
+   const kind=Number.isFinite(absoluteBest)&&Math.abs(lastSeconds-absoluteBest)<0.0005?'purple':(d.last_improved_personal_best?'green':'orange');
+   rankingLapAnimations.set(key,{signature,kind,startedAt:now});
+  }else if(!previous){rankingLapAnimations.set(key,{signature,kind:null,startedAt:0})}
+  else if(previous.signature!==signature){rankingLapAnimations.set(key,{...previous,signature})}
+ }
+ for(const key of [...rankingLapAnimations.keys()])if(!seen.has(key))rankingLapAnimations.delete(key);
+}
+function rankingFlashMeta(driver){
+ const entry=rankingLapAnimations.get(rankingDriverKey(driver));if(!entry?.kind)return {className:'',style:''};
+ const elapsed=Date.now()-entry.startedAt;if(elapsed<0||elapsed>=RANKING_FLASH_DURATION_MS)return {className:'',style:''};
+ return {className:` ranking-lap-flash ranking-lap-flash-${entry.kind}`,style:`--ranking-flash-offset:-${Math.round(elapsed)}ms`};
+}
+function rankingCaptureRows(el){
+ return new Map([...el.querySelectorAll('tr[data-driver]')].map(tr=>[tr.dataset.driver,{rect:tr.getBoundingClientRect(),pos:String(tr.dataset.position||'')}]))
+}
+function rankingAnimateRows(el,previousRows){
+ requestAnimationFrame(()=>{[...el.querySelectorAll('tr[data-driver]')].forEach(tr=>{const old=previousRows.get(tr.dataset.driver);if(!old||old.pos===String(tr.dataset.position||''))return;const newRect=tr.getBoundingClientRect();const dy=old.rect.top-newRect.top;if(Math.abs(dy)<=1)return;tr.classList.add(Number(tr.dataset.position)<Number(old.pos)?'ranking-position-up':'ranking-position-down');tr.style.transition='none';tr.style.transform=`translateY(${dy}px)`;requestAnimationFrame(()=>{tr.style.transition='transform .52s cubic-bezier(.22,.8,.2,1)';tr.style.transform='translateY(0)';setTimeout(()=>tr.classList.remove('ranking-position-up','ranking-position-down'),560)})})});
+}
 function rows(target,cols){
- const el=document.getElementById(target);const previousRects=new Map([...el.querySelectorAll('tr[data-driver]')].map(tr=>[tr.dataset.driver,tr.getBoundingClientRect()]));
- const fragment=document.createDocumentFragment();
- state.drivers.forEach(d=>{const tr=document.createElement('tr');const key=d.driver||String(d.pos);const signature=String(d.laps)+'|'+String(d.last);const signatureKey=target+'|'+key;const previousSignature=rowLapSignatures.get(signatureKey);tr.dataset.driver=key;tr.className='clickable'+(d.driver===state.followed_driver?' followed':'')+((target==='qualifTable'||target==='enduranceTable')&&previousSignature&&previousSignature!==signature?' lap-flash':'');tr.onclick=()=>followDriver(d.driver);tr.innerHTML=cols(d);fragment.appendChild(tr);rowLapSignatures.set(signatureKey,signature)});
- el.replaceChildren(fragment);
- requestAnimationFrame(()=>{[...el.querySelectorAll('tr[data-driver]')].forEach(tr=>{const oldRect=previousRects.get(tr.dataset.driver);if(!oldRect)return;const newRect=tr.getBoundingClientRect();const dy=oldRect.top-newRect.top;if(Math.abs(dy)>1){tr.style.transition='none';tr.style.transform=`translateY(${dy}px)`;requestAnimationFrame(()=>{tr.style.transition='transform .48s cubic-bezier(.22,.8,.2,1)';tr.style.transform='translateY(0)'})}})});
+ const el=document.getElementById(target);if(!el)return;const previousRows=rankingCaptureRows(el);const fragment=document.createDocumentFragment();
+ state.drivers.forEach(d=>{const tr=document.createElement('tr');const key=rankingDriverKey(d)||String(d.pos);const flash=rankingFlashMeta(d);tr.dataset.driver=key;tr.dataset.position=String(d.pos??'');tr.className='clickable'+(d.driver===state.followed_driver?' followed':'')+flash.className;if(flash.style)tr.setAttribute('style',flash.style);tr.onclick=()=>followDriver(d.driver);tr.innerHTML=cols(d);fragment.appendChild(tr)});
+ el.replaceChildren(fragment);rankingAnimateRows(el,previousRows);
 }
 function absoluteSessionBestSeconds(){
  const valid=(state.drivers||[]).map(d=>parseLapTime(d.best)).filter(Number.isFinite);
@@ -114,7 +141,7 @@ async function maybeAutoFollowBrice(){
 async function followDriver(driverName,{automatic=false}={}){
  const selected=(state.drivers||[]).find(d=>d.driver===driverName);if(!selected)return;
  if(!automatic)manualFollowOverride=true;
- state.followed_driver=driverName;state.followed=selected;state.qualif_delta=qualificationDeltaFor(selected);render();await api('/api/follow',{driver:driverName})
+ state.followed_driver=driverName;state.followed=selected;state.qualif_delta=qualificationDeltaFor(selected);render();if(window.velocityEnduranceTest?.active)return;await api('/api/follow',{driver:driverName})
 }
 function driverAhead(followed){if(!followed||!followed.pos||Number(followed.pos)<=1)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(followed.pos)-1)||null}
 function sprintReferenceFor(driver){
@@ -124,8 +151,10 @@ function sprintReferenceFor(driver){
 }
 function raceGapSeconds(value){
  const raw=String(value??'').trim().replace(',', '.');
- if(!raw||raw==='—'||raw==='--')return 0;
- if(/lap|tour/i.test(raw))return null;
+ if(!raw||raw==='—'||raw==='--')return null;
+ // Ne jamais convertir un écart exprimé en tours en secondes. Apex localise
+ // parfois cette valeur (Rondes, Vueltas, Runden, Giri, Voltas...).
+ if(raceLapInterval(raw)!==null)return null;
  const cleaned=raw.replace(/[+\s]|s(ec)?\.?$/gi,'');
  const parts=cleaned.split(':').map(Number);
  if(parts.some(v=>!Number.isFinite(v)))return null;
@@ -140,17 +169,23 @@ function formatRaceGap(seconds){
 }
 function directRaceGap(behind,ahead){
  if(!behind||!ahead)return null;
+ // Source native Apex prioritaire : l'intervalle de la ligne "behind" est
+ // directement son écart avec le concurrent qui la précède.
+ const interval=raceGapSeconds(behind.interval);
+ if(Number.isFinite(interval))return Math.max(0,interval);
+ // Fallback uniquement si la piste/session ne fournit pas data-type="int".
  const behindGap=raceGapSeconds(behind.gap);
  const aheadGap=Number(ahead.pos)===1?0:raceGapSeconds(ahead.gap);
  if(Number.isFinite(behindGap)&&Number.isFinite(aheadGap)&&behindGap>=aheadGap){
   return behindGap-aheadGap;
  }
- const interval=raceGapSeconds(behind.interval);
- return Number.isFinite(interval)?interval:null;
+ return null;
 }
 function raceLapInterval(value){
  const raw=String(value??'').trim();
- const match=raw.match(/(\d+(?:[.,]\d+)?)\s*(?:lap|laps|tour|tours)/i);
+ // Vocabulaire observé / plausible selon la langue configurée dans Apex.
+ // Le nombre reste la donnée utile ; l'affichage Velocity est normalisé en français.
+ const match=raw.match(/(\d+(?:[.,]\d+)?)\s*(?:laps?|tours?|rondes?|vueltas?|runden?|runde|giri|giro|voltas?|okr(?:ą|a)żenia|okrążenie)/i);
  if(!match)return null;
  const laps=Number(match[1].replace(',', '.'));
  return Number.isFinite(laps)&&laps>0?laps:null;
@@ -189,8 +224,9 @@ function renderDeveloperRecorder(){
 function render(){
  renderDeveloperRecorder();
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);if(circuitNameElement)circuitNameElement.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
- const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelectElement.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}circuitSelectElement.value=state.circuit_id||'';
+ const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelectElement.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}if(circuitSelectElement){const displayedCircuit=circuitChangeInProgress&&pendingCircuitId?pendingCircuitId:(state.circuit_id||'');if(circuitSelectElement.value!==displayedCircuit)circuitSelectElement.value=displayedCircuit;circuitSelectElement.disabled=!!circuitChangeInProgress}
  const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
+ syncRankingLapAnimations();
  const showRankingKart=rankingHasKartColumn();
  document.querySelector('#qualification .qual-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);
  document.querySelector('#sprint .sprint-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);
@@ -216,22 +252,60 @@ function render(){
 }
 function reconnectLive(){connectApexBrowser(true)}
 async function changeCircuit(){
- if(!circuitSelectElement?.value)return;
- if(typeof analyzerBeforeCircuitChange==='function')analyzerBeforeCircuitChange();
- const nextCircuitId=circuitSelectElement.value;
+ if(!circuitSelectElement?.value||circuitChangeInProgress)return;
+ const nextCircuitId=String(circuitSelectElement.value);
+ const previousCircuitId=String(state?.circuit_id||'');
+ circuitChangeInProgress=true;
+ pendingCircuitId=nextCircuitId;
+ circuitSelectElement.disabled=true;
  document.getElementById('homeCircuit')?.classList.remove('needs-selection');
- // Coupe d'abord l'ancienne piste afin qu'aucune trame tardive ne puisse être envoyée.
- closeApexBrowserSocket();
- apexBrowserCircuitId=null;
- rowLapSignatures.clear();
- endurancePitStatuses.clear();enduranceOutUntil.clear();
- lastCrossEvent=null;lastGenericEvent=null;
- crossingOverlay.classList.remove('show');genericOverlay.classList.remove('show');top8PitOverlay.classList.remove('show');
- remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownDirectSyncAt=0;
- state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
- render();
- await api('/api/circuit',{circuit_id:nextCircuitId});
- if(typeof analyzerAfterCircuitChange==='function')analyzerAfterCircuitChange();
+ try{
+  // La sélection serveur est l'unique opération critique. Les nettoyages locaux
+  // ne doivent jamais transformer une erreur annexe en faux refus de circuit.
+  const response=await fetch('/api/circuit',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({circuit_id:nextCircuitId}),
+   cache:'no-store'
+  });
+  let payload=null;
+  try{payload=await response.json()}catch(_){payload=null}
+  if(!response.ok||payload?.ok===false){
+   throw new Error(payload?.error||`Circuit refusé (${response.status})`);
+  }
+
+  // Le serveur a confirmé le circuit : on nettoie maintenant l'ancien affichage.
+  try{if(typeof analyzerBeforeCircuitChange==='function')analyzerBeforeCircuitChange()}catch(error){console.warn('[Velocity] Sauvegarde Analyzer ignorée pendant le changement de circuit',error)}
+  try{closeApexBrowserSocket()}catch(error){console.warn('[Velocity] Fermeture WebSocket navigateur ignorée',error)}
+  apexBrowserCircuitId=null;
+  try{if(typeof analyzerResetTrafficState==='function')analyzerResetTrafficState()}catch(error){console.warn('[Velocity] Réinitialisation Trafic ignorée pendant le changement de circuit',error)}
+  rowLapSignatures.clear();
+  rankingLapAnimations.clear();
+  endurancePitStatuses.clear();
+  enduranceOutUntil.clear();
+  lastCrossEvent=null;
+  lastGenericEvent=null;
+  crossingOverlay?.classList.remove('show');
+  genericOverlay?.classList.remove('show');
+  top8PitOverlay?.classList.remove('show');
+  remainingCountdownMs=null;
+  remainingCountdownPerfAt=0;
+  remainingCountdownDirectSyncAt=0;
+  state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
+  render();
+  await load();
+  try{if(typeof analyzerAfterCircuitChange==='function')analyzerAfterCircuitChange()}catch(error){console.warn('[Velocity] Réinitialisation Analyzer ignorée après changement de circuit',error)}
+ }catch(error){
+  console.error('[Velocity] Changement de circuit refusé :',error);
+  pendingCircuitId='';
+  if(circuitSelectElement)circuitSelectElement.value=previousCircuitId;
+  alert(`Impossible de sélectionner ce circuit.${error?.message?`\n${error.message}`:''}`);
+ }finally{
+  circuitChangeInProgress=false;
+  pendingCircuitId='';
+  if(circuitSelectElement)circuitSelectElement.disabled=false;
+  render();
+ }
 }function followSelected(){api('/api/follow',{driver:driverSelect.value})}function testCrossing(){api('/api/test-crossing',{lap:lapValue.value})}function addPenalty(){api('/api/add-penalty',{driver:driverSelect.value,penalty:penaltyValue.value})}function moveDriver(){api('/api/move',{driver:driverSelect.value,pos:movePos.value})}function addQuickChange(){api('/api/add-quick-change',{previous_team:qcTeam.value,pace_rank:qcRank.value,kart:qcKart.value,avg5:qcAvg.value,kart_delta:'--'})}function popQuickChange(){api('/api/pop-quick-change')}function testTop8PitEntry(){api('/api/test-top8-pit-entry')}function clearAlert(){genericOverlay.classList.remove('show');api('/api/clear-alert')}function clearTop8Alert(){top8PitOverlay.classList.remove('show');api('/api/clear-alert')}
 document.getElementById('iphoneFrame').addEventListener('load',resetPreviewViewport);
 document.getElementById('iphonePreview').addEventListener('click',e=>{if(e.target.id==='iphonePreview')toggleIphonePreview(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('sprintFocus')?.classList.contains('show'))closeSprintFocus();else if(document.getElementById('qualificationFocus')?.classList.contains('show'))closeQualificationFocus();else toggleIphonePreview(false)}});

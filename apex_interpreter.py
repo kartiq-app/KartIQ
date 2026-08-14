@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 LAP_RE = re.compile(r"^(?:(\d+):)?(\d{1,2})\.(\d{3})$")
+DRIVER_STINT_RE = re.compile(r"^(.*?)\s*\[(\d{1,3}:\d{2}(?::\d{2})?)\]\s*$")
 
 FIELD_BY_APEX_TYPE = {
     "rk": "position",
@@ -24,6 +25,9 @@ FIELD_BY_APEX_TYPE = {
     # `otr`, car de nombreuses autres cellules Apex utilisent aussi la classe
     # générique `in`.
     "otr": "on_track_timer",
+    # Colonne de statut Apex : certaines pistes matérialisent IN avec la classe `si`
+    # et le damier avec `sf`, sans fournir de compteur `otr`.
+    "sta": "status_flag",
     # Types fréquemment employés par les configurations Apex pour le nombre d'arrêts.
     "pit": "pit_stops",
     "pst": "pit_stops",
@@ -83,11 +87,11 @@ class ApexInterpreter:
 
     def _row(self, row: int) -> dict[str, Any]:
         return self.rows.setdefault(row, {
-            "row": row, "position": None, "name": None, "kart": None,
+            "row": row, "position": None, "name": None, "pilot": None, "kart": None,
             "last_lap": None, "best_lap": None, "gap": None,
             "interval": None, "laps": None, "timer": None,
             "pit_timer": None, "track_timer": None,
-            "pit_stops": None, "penalty": None, "status": "unknown", "last_lap_kind": None,
+            "pit_stops": None, "penalty": None, "status": "unknown", "status_source": None, "last_lap_kind": None,
             "updated_at": None,
         })
 
@@ -107,19 +111,56 @@ class ApexInterpreter:
 
         apex_type = self.schema.get(col) if col is not None else None
         field = FIELD_BY_APEX_TYPE.get(apex_type or "")
+        raw_label = (self.labels.get(col) or "").strip().lower() if col is not None else ""
+        label = unicodedata.normalize("NFKD", raw_label).encode("ascii", "ignore").decode("ascii")
+        label = re.sub(r"[^a-z0-9]+", " ", label).strip()
+
+        # Certaines grilles Endurance Apex séparent l'équipe et le pilote courant.
+        # On ne considère une colonne comme PILOTE que si son libellé est explicite
+        # et qu'il ne s'agit pas du libellé combiné « Équipe / Pilote ».
+        pilot_labels = {"pilote", "pilot", "driver", "conducteur", "nom pilote", "driver name", "pilote actuel"}
+        normalized_labels = []
+        for other in self.labels.values():
+            normalized = unicodedata.normalize("NFKD", str(other or "").lower()).encode("ascii", "ignore").decode("ascii")
+            normalized_labels.append(re.sub(r"[^a-z0-9]+", " ", normalized).strip())
+        has_team_column = any(any(token in other for token in ("equipe", "team")) and not any(token in other for token in ("pilote", "pilot", "driver")) for other in normalized_labels)
+        if label in pilot_labels and has_team_column:
+            field = "pilot"
+        elif any(token in label for token in ("equipe", "team")) and not any(token in label for token in ("pilote", "pilot", "driver")):
+            field = "name"
+
         # Certaines pistes utilisent un type Apex personnalisé pour cette colonne.
         # Le libellé de grille permet alors d'identifier STANDS / PITS / ARRÊTS.
         if field is None and col is not None:
-            raw_label = (self.labels.get(col) or "").strip().lower()
+            # Les installations Apex peuvent traduire les libellés sans renseigner
+            # data-type (ex. Belgique : « Rondes » pour les tours). On mappe donc
+            # les colonnes métier par libellé en dernier recours.
+            if label in {"position", "pos", "clt", "classement", "rang", "rank"}:
+                field = "position"
+            elif label in {"kart", "no", "n", "numero", "numero kart", "kart no", "kart number"}:
+                field = "kart"
+            elif label in {
+                "tours", "tour", "laps", "lap", "rondes", "ronde",
+                "vueltas", "vuelta", "giri", "giro", "runden", "runde",
+                "voltas", "volta", "okrążenia", "okrążenie", "okrazenia", "okrazenie"
+            }:
+                field = "laps"
+            elif label in {"dernier", "dernier tour", "last", "last lap", "tour precedent", "temps dernier tour"}:
+                field = "last_lap"
+            elif label in {"meilleur", "meilleur tour", "best", "best lap", "record", "temps meilleur"}:
+                field = "best_lap"
+            elif label in {"ecart", "gap", "difference"}:
+                field = "gap"
+            elif label in {"intervalle", "interval", "interv", "int"}:
+                field = "interval"
+            elif label in {"en piste", "temps en piste", "on track", "on track time", "track time", "rijtijd", "op de baan"}:
+                field = "on_track_timer"
             # Apex abrège souvent la colonne des pénalités en « Péna. ».
-            # On retire les accents et la ponctuation pour reconnaître aussi
-            # « Pena », « Pénalité », « Penalty » et « Sanction ».
-            label = unicodedata.normalize("NFKD", raw_label).encode("ascii", "ignore").decode("ascii")
-            label = re.sub(r"[^a-z0-9]+", " ", label).strip()
-            if any(token in label for token in ("stand", "pit", "arret")):
-                field = "pit_stops"
             elif any(token in label for token in ("pena", "penalite", "penalty", "sanction")):
                 field = "penalty"
+            # Ne pas confondre « Totale pit tijd » (durée) et « Pits » (nombre).
+            elif label in {"pits", "pit stops", "stops", "arrets", "arret", "stands"}:
+                field = "pit_stops"
 
         if field in {"position", "kart", "laps", "pit_stops"}:
             parsed = self._as_int(value)
@@ -129,7 +170,28 @@ class ApexInterpreter:
                 if field == "laps" and old is not None and parsed > old and not initial:
                     self._emit(update.row, "lap_count", "Nouveau tour", f"Tour {parsed}", str(parsed))
         elif field == "name":
-            row["name"] = value.strip() or None
+            cleaned = value.strip()
+            stint = DRIVER_STINT_RE.match(cleaned)
+            if stint:
+                # Certaines courses endurance affichent le pilote courant sous la
+                # forme « NOM [0:04] ». Le compteur entre crochets est le temps de
+                # roulage du pilote. On l'expose comme pilote + EN PISTE sans
+                # dépendre d'une colonne `otr` absente.
+                pilot_name = stint.group(1).strip()
+                driver_time = stint.group(2).strip()
+                # Le format Apex [H:MM] exprime heures:minutes, pas minutes:secondes.
+                # On normalise en HH:MM:SS pour les calculateurs Analyzer.
+                parts = driver_time.split(":")
+                normalized_driver_time = f"{int(parts[0]):02d}:{int(parts[1]):02d}:00" if len(parts) == 2 else driver_time
+                row["name"] = pilot_name or None
+                row["pilot"] = pilot_name or row.get("pilot")
+                if row.get("status") != "pit":
+                    row["track_timer"] = normalized_driver_time
+                    row["timer"] = normalized_driver_time
+            else:
+                row["name"] = cleaned or None
+        elif field == "pilot":
+            row["pilot"] = value.strip() or None
         elif field == "penalty":
             cleaned = value.strip()
             row["penalty"] = cleaned or None
@@ -151,6 +213,30 @@ class ApexInterpreter:
                 row["best_lap"] = value
         elif field in {"gap", "interval"}:
             row[field] = value or None
+        elif field == "status_flag":
+            # Certaines interfaces Apex n'exposent le statut stands que via la
+            # colonne `sta`. `si` correspond au badge rouge IN, tandis que `sf`
+            # correspond au damier / concurrent terminé. On conserve la source
+            # afin que le frontend puisse filtrer les non-partants marqués IN.
+            old = row.get("status")
+            if code == "si":
+                row["status"] = "pit"
+                row["status_source"] = "sta"
+                if not initial and old != "pit":
+                    self._emit(update.row, "pit_in", "Entrée aux stands", "Statut Apex IN (sta/si)", value, "pit")
+            elif code == "sf":
+                row["status"] = "finished"
+                row["status_source"] = "sta"
+                if not initial and old == "pit":
+                    self._emit(update.row, "pit_out", "Sortie du statut IN", "Statut Apex damier (sta/sf)", value, "track")
+            else:
+                # `sr`, `su`, `sd` et les autres classes de statut non-IN sont
+                # des états piste/position. Il faut explicitement effacer un ancien
+                # `pit`, sinon l'équipe reste bloquée avec la mention IN.
+                if old == "pit" and row.get("status_source") == "sta" and not initial:
+                    self._emit(update.row, "pit_out", "Sortie des stands", f"Statut Apex {code or 'normal'}", value, "track")
+                row["status"] = "track"
+                row["status_source"] = "sta"
         elif field == "on_track_timer":
             # La colonne Apex `otr` porte le compteur du relais en cours.
             # Sa classe `to` correspond au compteur de stand, tandis que `in`
@@ -161,6 +247,7 @@ class ApexInterpreter:
             old = row.get("status")
             if code in {"to", "*in"}:
                 row["status"] = "pit"
+                row["status_source"] = "otr"
                 row["pit_timer"] = value or row.get("pit_timer")
                 row["timer"] = row.get("pit_timer")
                 if not initial and old != "pit":
@@ -171,6 +258,7 @@ class ApexInterpreter:
                 # sur certains habillages, puisque le type de colonne `otr` est
                 # désormais la source de vérité.
                 row["status"] = "track"
+                row["status_source"] = "otr"
                 row["track_timer"] = value or row.get("track_timer")
                 row["timer"] = row.get("track_timer")
                 if not initial and old == "pit":

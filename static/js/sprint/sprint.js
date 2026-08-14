@@ -1,28 +1,28 @@
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('sprint-focus-active');renderSprintFocus();
+ overlay.classList.add('show');document.body.classList.add('sprint-focus-active');setFocusLandscapeLock(true);renderSprintFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
- try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
+ await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)sprintFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeSprintFocus(){
- document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');
+ document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');setFocusLandscapeLock(false);
  try{if(sprintFocusWakeLock){await sprintFocusWakeLock.release();sprintFocusWakeLock=null}}catch(e){}
- try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
+ unlockFocusOrientationForAndroid();
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 async function openEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('endurance-focus-active');endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
+ overlay.classList.add('show');document.body.classList.add('endurance-focus-active');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
- try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}
+ await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeEnduranceFocus(){
- document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');
+ document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');setFocusLandscapeLock(false);
  setEndurancePitOverlay(null);
  try{if(enduranceFocusWakeLock){await enduranceFocusWakeLock.release();enduranceFocusWakeLock=null}}catch(e){}
- try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(e){}
+ unlockFocusOrientationForAndroid();
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 
@@ -30,11 +30,11 @@ function sprintDriverAhead(driver){if(!driver?.pos||Number(driver.pos)<=1)return
 function sprintDriverBehind(driver){if(!driver?.pos)return null;return (state.drivers||[]).find(d=>Number(d.pos)===Number(driver.pos)+1)||null}
 function sprintGapAhead(driver){
  const ahead=sprintDriverAhead(driver);if(!ahead)return '--';
- return formatRaceInterval(driver,ahead,'-');
+ return formatRaceInterval(driver,ahead,'+');
 }
 function sprintGapBehind(driver){
  const behind=sprintDriverBehind(driver);if(!behind)return '--';
- return formatRaceInterval(behind,driver,'+');
+ return formatRaceInterval(behind,driver,'-');
 }
 function penaltyTime(p){if(p?.time)return p.time;const at=String(p?.at||'');return at.length>=16?at.slice(11,16):'--:--'}
 function escapePenaltyHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}

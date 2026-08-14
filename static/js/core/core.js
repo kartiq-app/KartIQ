@@ -1,7 +1,34 @@
+
+const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
+function setFocusLandscapeLock(active){
+  // iPhone/iPad : aucun fallback CSS, iOS conserve son orientation native.
+  // Android : le verrouillage est demandé via Screen Orientation API dans les fonctions Focus.
+  document.documentElement.classList.remove('focus-landscape-locked');
+  document.body.classList.remove('focus-landscape-locked');
+}
+async function lockFocusOrientationForAndroid(){
+  if(!isAndroidDevice)return false;
+  try{
+    if(screen.orientation?.lock){
+      await screen.orientation.lock('landscape');
+      return true;
+    }
+  }catch(error){console.warn('Verrouillage paysage Android indisponible',error)}
+  return false;
+}
+function unlockFocusOrientationForAndroid(){
+  if(!isAndroidDevice)return;
+  try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(error){console.warn('Déverrouillage orientation Android',error)}
+}
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
+// Pont explicite pour les modules isolés : `state` est un binding global `let`
+// et n'est donc pas automatiquement disponible sous `window.state`.
+try{Object.defineProperty(window,'velocityState',{configurable:true,get:()=>state})}catch(_){window.velocityState=state}
+let circuitChangeInProgress=false,pendingCircuitId='';
 let stateLoadInFlight=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
+let elapsedCountMs=null,elapsedCountPerfAt=0,elapsedCountDirectSyncAt=0;
 const isEmbeddedPreview=new URLSearchParams(location.search).get('preview')==='1';
 
 // Journal local du décodeur Apex. Les trames sont conservées uniquement dans
@@ -72,7 +99,7 @@ function exportDecoderDiagnostics(){
  const payload={
   type:'apex-decoder-diagnostic',
   exportedAt:now.toISOString(),
-  appVersion:String(state?.version||'7.2.55'),
+  appVersion:String(state?.version||'7.2.106'),
   pageUrl:location.href,
   userAgent:navigator.userAgent,
   circuit:{id:state?.circuit_id||null,name:circuit?.name||null,websocketUrl:circuit?.websocket_url||null,sessionRequest:circuit?.session_request||null},
@@ -110,8 +137,29 @@ function ingestApexCountdown(frame){
  if(!matches.length)return false;
  return syncRemainingFromApex(Number(matches[matches.length-1][1]),{direct:true});
 }
+function syncElapsedFromApex(milliseconds,{direct=false}={}){
+ const ms=Number(milliseconds);
+ if(!Number.isFinite(ms)||ms<0)return false;
+ elapsedCountMs=Math.max(0,ms);
+ elapsedCountPerfAt=Date.now();
+ if(direct)elapsedCountDirectSyncAt=Date.now();
+ state={...(state||{}),time_elapsed_ms:elapsedCountMs,time_elapsed_updated_at_ms:Date.now()};
+ updateRemainingDisplay();
+ return true;
+}
+function ingestApexElapsed(frame){
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|count\|(\d+)/g)];
+ if(!matches.length)return false;
+ return syncElapsedFromApex(Number(matches[matches.length-1][1]),{direct:true});
+}
+function liveElapsedMilliseconds(){
+ if(Number.isFinite(elapsedCountMs)&&elapsedCountPerfAt)return Math.max(0,elapsedCountMs+(Date.now()-elapsedCountPerfAt));
+ const base=Number(state?.time_elapsed_ms),serverAt=Number(state?.time_elapsed_updated_at_ms);
+ if(Number.isFinite(base)&&base>=0&&Number.isFinite(serverAt))return Math.max(0,base+(Date.now()-serverAt));
+ return null;
+}
 function ingestApexLapProgress(frame){
- const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|text\|[^\r\n]*?(?:giro|giri|tour|tours|lap|laps)\s*(\d+)\s*\/\s*(\d+)/gi)];
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|text\|[^\r\n]*?(?:giro|giri|tour|tours|lap|laps|vuelta|vueltas|runde|runden|volta|voltas|ronde|rondes|okrazenie|okrazenia|okrążenie|okrążenia)\s*(\d+)\s*\/\s*(\d+)/gi)];
  if(!matches.length)return false;
  const match=matches[matches.length-1];
  const current=Math.max(0,Number(match[1])||0),total=Math.max(0,Number(match[2])||0);
@@ -122,6 +170,14 @@ function ingestApexLapProgress(frame){
  return true;
 }
 function syncRemainingFromState(nextState){
+ const elapsedBase=Number(nextState?.time_elapsed_ms),elapsedAt=Number(nextState?.time_elapsed_updated_at_ms);
+ if(Number.isFinite(elapsedBase)&&elapsedBase>=0){
+  const directElapsedFresh=elapsedCountDirectSyncAt>0&&(Date.now()-elapsedCountDirectSyncAt)<45000;
+  if(!directElapsedFresh){
+   elapsedCountMs=elapsedBase;
+   elapsedCountPerfAt=Number.isFinite(elapsedAt)?elapsedAt:Date.now();
+  }
+ }
  if(Number(nextState?.total_laps)>0){remainingCountdownMs=null;remainingCountdownPerfAt=0;remainingCountdownUsesHours=false;remainingCountdownDirectSyncAt=0;updateRemainingDisplay();return}
  const endAt=Number(nextState?.time_remaining_end_at_ms);
  let candidate=null;
@@ -205,9 +261,16 @@ function mainSessionProgressDisplay(){
 }
 function updateRemainingDisplay(){
  const lapMode=raceUsesLapTarget();
- const ms=lapMode?null:liveRemainingMilliseconds();
- const display=lapMode?formatRaceLapProgress():formatMainRemainingDisplay(ms,state.time_remaining||'—');
- const seconds=ms===null?null:ms/1000;
+ const remaining=lapMode?null:liveRemainingMilliseconds();
+ const elapsed=!lapMode&&!Number.isFinite(remaining)?liveElapsedMilliseconds():null;
+ const display=lapMode
+  ?formatRaceLapProgress()
+  :Number.isFinite(remaining)
+   ?formatMainRemainingDisplay(remaining,state.time_remaining||'—')
+   :Number.isFinite(elapsed)
+    ?formatRemainingMilliseconds(elapsed)
+    :(state.time_remaining||'—');
+ const seconds=Number.isFinite(remaining)?remaining/1000:null;
  const q=document.getElementById('qRemaining');if(q){q.textContent=display;q.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
@@ -229,6 +292,8 @@ async function load(){
   const response=await fetch('/api/state',{cache:'no-store'});
   if(!response.ok)throw new Error(`État Velocity indisponible (${response.status})`);
   const nextState=await response.json();
+  // Pendant un changement de circuit, ignorer les anciens états encore en transit.
+  if(circuitChangeInProgress&&pendingCircuitId&&String(nextState?.circuit_id||'')!==String(pendingCircuitId))return;
   syncRemainingFromState(nextState);
   state=nextState;
   if(!(state.drivers||[]).length){autoBriceFollowApplied=false;manualFollowOverride=false}
@@ -265,6 +330,28 @@ function velocityApexMapEntryPhase(entry,at=Date.now()){
 function resetVelocityApexMap(circuitId=null){
  window.velocityApexMap.rows.clear();window.velocityApexMap.lastEventAt=0;window.velocityApexMap.noLive=true;window.velocityApexMap.circuitId=circuitId;
 }
+function velocityDriverHasParticipated(driver){
+ const laps=Number(driver?.laps);
+ if(Number.isFinite(laps)&&laps>0)return true;
+ const values=[driver?.last,driver?.best,driver?.last_lap,driver?.best_lap];
+ return values.some(value=>{const text=String(value??'').trim().toLowerCase();return Boolean(text&&text!=='—'&&!text.includes('non partant'));});
+}
+// Source de vérité unique pour STANDS / Spotter et Heat Map.
+// - impulsion MAP *in : toujours prioritaire ;
+// - statut backend pit : accepté ;
+// - sta/si : accepté seulement pour un concurrent ayant réellement participé,
+//   afin de ne pas envoyer les « Non partant » dans la pit lane.
+function velocityKartIsInPit(driver){
+ if(!driver)return false;
+ const row=Number(driver?.apex_row);
+ const mapEntry=Number.isFinite(row)?window.velocityApexMap?.rows?.get(row):null;
+ if(mapEntry?.inPit)return true;
+ if(String(driver?.status||'').toLowerCase()!=='pit')return false;
+ if(String(driver?.status_source||'').toLowerCase()==='sta'&&!velocityDriverHasParticipated(driver))return false;
+ return true;
+}
+window.velocityDriverHasParticipated=velocityDriverHasParticipated;
+window.velocityKartIsInPit=velocityKartIsInPit;
 function ingestApexMapEvents(frame,circuitId){
  const registry=window.velocityApexMap;
  if(registry.circuitId!==circuitId)resetVelocityApexMap(circuitId);
@@ -356,6 +443,7 @@ function connectApexBrowser(force=false){
   recordApexFrameReceived(frame,circuit.id);
   const lapProgressFrame=ingestApexLapProgress(frame);
   if(!lapProgressFrame)ingestApexCountdown(frame);
+  ingestApexElapsed(frame);
   ingestApexMapEvents(frame,circuit.id);
   try{
    const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});
@@ -406,3 +494,5 @@ function showMode(mode){
 }
 
 let sprintFocusWakeLock=null;
+
+if(!window.__velocitySessionClockTimer){window.__velocitySessionClockTimer=setInterval(updateRemainingDisplay,1000)}
