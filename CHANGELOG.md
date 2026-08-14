@@ -1,14 +1,15 @@
-# V7.2.172C1 — Spotter clean baseline
+# V7.2.172N — Normal Mode / Spotter + Focus + Session
 
-- Base stricte V7.2.172.
-- Première passe de nettoyage Spotter volontairement conservative.
-- Suppression uniquement des commentaires de rustines/version devenus inutiles.
-- Aucun code exécutable Spotter modifié.
-- Aucun comportement Spotter modifié.
-- Aucun changement Analyzer, Focus, timing ou Mode Test.
-- Cette version sert de témoin avant toute consolidation fonctionnelle du Spotter.
+- Base stricte : V7.2.172 d'origine.
+- Réintégration du Spotter récent de V196.
+- Maintenance STANDS dans Analyzer déclarée comme vraie zone de drop.
+- Focus Endurance mobile/portrait : dernier rendu récent réintégré.
+- Classement Live : le libellé « Temps restant » est remplacé par le nom de session Apex (`title2`, puis `title1`) quand il est disponible.
+- Taille du libellé Classement Live inchangée.
+- Aucun moteur DYN1 générique V173+ réinjecté.
+- Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
 
-# Velocity V7.2.172C1C1 — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.172NN — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.
