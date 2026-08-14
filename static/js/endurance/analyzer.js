@@ -4190,32 +4190,77 @@ function raceSessionRenderSelectedTeam(){
  const host=document.getElementById('raceSessionSelectedTeamCard'),team=currentRaceTeam();
  if(!host)return;
  if(!team){host.innerHTML='<div class="analyzer-empty">Sélectionnez une équipe.</div>';return}
- host.innerHTML=`<div class="race-team-title"><div><span>ÉQUIPE</span><h3>${analyzerEscape(team.name)}</h3></div><b>${team.members?.length||0} membre(s)</b></div>
- <div class="race-member-list">${(team.members||[]).map(m=>`<article class="race-member-card" data-existing-member="${analyzerEscape(m.id)}">
-   <div class="race-member-head">
-    <div><strong>${analyzerEscape(m.name)}</strong><span>${(m.roles||[]).map(r=>raceRoleLabel(r)).join(' · ')||'Aucun rôle'}</span></div>
-    <div class="race-member-head-actions">
-     <button type="button" class="race-inline-edit" onclick="raceSessionEditExistingMember('${analyzerEscape(m.id)}')">ÉDITER</button>
-     <button type="button" class="race-ui-btn danger" onclick="openRaceMemberDeleteModal('${analyzerEscape(m.id)}','${analyzerEscape(m.name).replace(/'/g,'&#39;')}')">SUPPRIMER</button>
-    </div>
-   </div>
-  </article>`).join('')||'<div class="analyzer-empty">Aucun membre.</div>'}</div>
- <div class="race-existing-team-add-wrap">
-  <button type="button" class="race-ui-btn" onclick="raceSessionToggleAddExistingMember()">+ AJOUTER UN MEMBRE</button>
-  <div id="raceExistingTeamAddMember" class="race-existing-team-add" hidden>
-   <input id="raceExistingMemberName" placeholder="Nom du membre" maxlength="80">
-   <div class="race-member-roles">
-    <label><input class="race-existing-new-role" type="checkbox" value="pilot" checked> PILOTE</label>
-    <label><input class="race-existing-new-role" type="checkbox" value="spotter"> SPOTTER</label>
-    <label><input class="race-existing-new-role" type="checkbox" value="team_manager"> TEAM MANAGER</label>
-   </div>
-   <div class="race-existing-member-actions">
-    <button type="button" class="race-inline-edit" onclick="raceSessionToggleAddExistingMember(false)">ANNULER</button>
-    <button type="button" class="race-inline-ok pending" onclick="raceSessionSaveNewExistingMember()">OK</button>
+ host.innerHTML=`<div class="race-team-title">
+   <div><span>ÉQUIPE</span><h3>${analyzerEscape(team.name)}</h3></div>
+   <div class="race-team-title-actions">
+    <b>${team.members?.length||0} membre(s)</b>
+    <button type="button" class="race-inline-edit" onclick="raceSessionEditSelectedTeamName()">ÉDITER</button>
+    <button type="button" class="race-ui-btn danger" onclick="openRaceTeamDeleteModal('${analyzerEscape(team.id)}','${analyzerEscape(team.name).replace(/'/g,'&#39;')}')">SUPPRIMER</button>
    </div>
   </div>
- </div>`;
+  <div class="race-member-list">${(team.members||[]).map(m=>{
+   const paired=(m.device_ids||[]).length>0;
+   return `<article class="race-member-card" data-existing-member="${analyzerEscape(m.id)}">
+    <div class="race-member-head">
+     <div class="race-member-ident">
+      <strong>${analyzerEscape(m.name)}</strong>
+      <span class="race-member-role-summary">${(m.roles||[]).map(r=>raceRoleLabel(r)).join(' · ')||'Aucun rôle'}</span>
+      <span class="${paired?'paired':'unpaired'}">${paired?'● APPAREIL ASSOCIÉ':'○ APPAREIL NON ASSOCIÉ'}</span>
+     </div>
+     <div class="race-member-head-actions race-member-three-actions">
+      <button type="button" class="race-ui-btn" onclick="inviteRaceMember('${analyzerEscape(m.id)}','${analyzerEscape(m.name).replace(/'/g,'&#39;')}')">ASSOCIER L'APPAREIL</button>
+      <button type="button" class="race-inline-edit" onclick="raceSessionEditExistingMember('${analyzerEscape(m.id)}')">ÉDITER</button>
+      <button type="button" class="race-ui-btn danger" onclick="openRaceMemberDeleteModal('${analyzerEscape(m.id)}','${analyzerEscape(m.name).replace(/'/g,'&#39;')}')">SUPPRIMER</button>
+     </div>
+    </div>
+   </article>`;
+  }).join('')||'<div class="analyzer-empty">Aucun membre.</div>'}</div>
+  <div class="race-existing-team-add-wrap">
+   <button type="button" class="race-ui-btn" onclick="raceSessionToggleAddExistingMember()">+ AJOUTER UN MEMBRE</button>
+   <div id="raceExistingTeamAddMember" class="race-existing-team-add" hidden>
+    <input id="raceExistingMemberName" placeholder="Nom du membre" maxlength="80">
+    <div class="race-member-roles">
+     <label><input class="race-existing-new-role" type="checkbox" value="pilot" checked> PILOTE</label>
+     <label><input class="race-existing-new-role" type="checkbox" value="spotter"> SPOTTER</label>
+     <label><input class="race-existing-new-role" type="checkbox" value="team_manager"> TEAM MANAGER</label>
+    </div>
+    <div class="race-existing-member-actions">
+     <button type="button" class="race-inline-edit" onclick="raceSessionToggleAddExistingMember(false)">ANNULER</button>
+     <button type="button" class="race-inline-ok pending" onclick="raceSessionSaveNewExistingMember()">OK</button>
+    </div>
+   </div>
+  </div>`;
 }
+function raceSessionEditSelectedTeamName(){
+ const team=currentRaceTeam();if(!team)return;
+ const host=document.getElementById('raceSessionSelectedTeamCard');
+ if(!host)return;
+ const title=host.querySelector('.race-team-title h3');if(!title)return;
+ title.innerHTML=`<input class="race-inline-edit-input" id="raceSelectedTeamNameInput" value="${analyzerEscape(team.name||'')}">`;
+ const actions=host.querySelector('.race-team-title-actions');
+ if(actions){
+  actions.innerHTML=`<button type="button" class="race-inline-edit" onclick="raceSessionRenderSelectedTeam()">ANNULER</button><button type="button" class="race-inline-ok pending" onclick="raceSessionSaveSelectedTeamName()">OK</button>`;
+ }
+ document.getElementById('raceSelectedTeamNameInput')?.focus();
+}
+async function raceSessionSaveSelectedTeamName(){
+ const team=currentRaceTeam();if(!team)return;
+ const name=String(document.getElementById('raceSelectedTeamNameInput')?.value||'').trim();
+ if(!name)return raceSessionFeedback("Saisissez le nom de l'équipe.",true);
+ try{
+  const r=await fetch(`/api/teams/${encodeURIComponent(team.id)}`,{
+   method:'PATCH',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({name})
+  });
+  const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Modification impossible');
+  await refreshRaceSessionManager();
+  raceSessionRenderSelectedTeam();
+  void velocityTeamBackupRefresh();
+  raceSessionFeedback(`Équipe renommée ${name}.`);
+ }catch(e){raceSessionFeedback(e.message||String(e),true)}
+}
+
 function raceSessionToggleAddExistingMember(force){
  const box=document.getElementById('raceExistingTeamAddMember');if(!box)return;
  const show=typeof force==='boolean'?force:box.hidden;

@@ -841,6 +841,27 @@ def create_team():
     return jsonify(ok=True,team=team)
 
 
+
+@app.patch("/api/teams/<team_id>")
+def update_team(team_id):
+    body=request.get_json(force=True,silent=True) or {}
+    name=str(body.get("name") or "").strip()[:80]
+    if not name:return jsonify(ok=False,error="Nom de Team requis."),400
+    with TEAM_DATA_LOCK:
+        team=next((t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))==str(team_id)),None)
+        if not team:return jsonify(ok=False,error="Team introuvable."),404
+        team["name"]=name
+        for dev in TEAM_DATA.get("devices",{}).values():
+            if str(dev.get("team_id"))==str(team_id):dev["team_name"]=name
+        for invite in TEAM_DATA.get("invites",{}).values():
+            if str(invite.get("team_id"))==str(team_id):invite["team_name"]=name
+        session=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
+        if session and str(session.get("team_id"))==str(team_id):
+            session["team_name"]=name
+        _save_team_data(TEAM_DATA)
+    return jsonify(ok=True,team=deepcopy(team))
+
+
 @app.delete("/api/teams/<team_id>")
 def delete_team(team_id):
     with TEAM_DATA_LOCK:
