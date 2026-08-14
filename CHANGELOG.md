@@ -1,13 +1,25 @@
-# V7.2.1722 — FULL REINTEGRATION FIX
+# V7.2.1723 — Focus Endurance smartphone sizing
+
+- Base stricte V7.2.1722 stable.
+- Aucun changement fonctionnel.
+- Aucun nouveau bloc CSS de surcharge ajouté.
+- Modification directe des dimensions de référence existantes du Focus Endurance smartphone.
+- Valeurs Delta : -10 %.
+- Noms équipe/pilote : +10 %.
+- Règles iPhone paysage virtuel ajustées directement aux mêmes proportions.
+- Desktop et autres modes Focus inchangés.
+- Version numérique : 7.2.1723.
+
+# V7.2.1723 — FULL REINTEGRATION FIX
 
 - Base stricte V7.2.172N.
 - Toutes les fonctions récentes de V172N sont conservées.
 - Correction de l'erreur V1721 : `analyzerApplySharedRulesFromState()` est conservée.
 - `analyzerRulesDesktopLeader()` et `analyzerRulesConfigured()` sont également conservées.
 - Retrait uniquement du bootstrap automatique V166 et de son rappel récursif de `renderAnalyzer()`.
-- Version numérique : 7.2.1722.
+- Version numérique : 7.2.1723.
 
-# V7.2.1722 — Normal Mode / Spotter + Focus + Session
+# V7.2.1723 — Normal Mode / Spotter + Focus + Session
 
 - Base stricte : V7.2.172 d'origine.
 - Réintégration du Spotter récent de V196.
@@ -18,7 +30,7 @@
 - Aucun moteur DYN1 générique V173+ réinjecté.
 - Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
 
-# Velocity V7.2.1722N — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.1723N — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.
