@@ -948,7 +948,8 @@ body.iphone-focus-virtual-landscape{
 }
 body.iphone-focus-virtual-landscape #qualificationFocus,
 body.iphone-focus-virtual-landscape #sprintFocus,
-body.iphone-focus-virtual-landscape #enduranceFocus{
+body.iphone-focus-virtual-landscape #enduranceFocus,
+body.iphone-focus-virtual-landscape #driverMessageOverlay{
   position:fixed!important;
   inset:auto!important;
   top:50%!important;
@@ -991,14 +992,15 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 @supports not (height:100dvw){
   body.iphone-focus-virtual-landscape #qualificationFocus,
   body.iphone-focus-virtual-landscape #sprintFocus,
-  body.iphone-focus-virtual-landscape #enduranceFocus{
+  body.iphone-focus-virtual-landscape #enduranceFocus,
+  body.iphone-focus-virtual-landscape #driverMessageOverlay{
     width:100vh!important;
     height:100vw!important;
   }
 }
 
 
-/* Velocity V7.2.1729N — Focus Endurance smartphone : lisibilité maximale.
+/* Velocity V7.2.1730N — Focus Endurance smartphone : lisibilité maximale.
    Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
 @media (max-width: 900px), (pointer: coarse){
   #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{

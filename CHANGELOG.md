@@ -1,4 +1,16 @@
-# V7.2.1729 — Spotter smartphone : hitbox Maintenance
+# V7.2.1730 — Messages pilote en paysage Focus iPhone
+
+- Base stricte V7.2.1729 stable.
+- Le conteneur global `driverMessageOverlay` rejoint la règle source existante du paysage virtuel iPhone.
+- Tous les messages pilote affichés pendant un Focus utilisent désormais la même rotation 90° et les mêmes dimensions que le Focus.
+- Messages urgents et messages différés concernés, puisqu'ils utilisent le même overlay.
+- Animation d'entrée/sortie et auto-fit du texte conservés.
+- Android inchangé : verrouillage paysage natif conservé.
+- Aucun changement Analyzer, Spotter, timing, calculs ou logique de messagerie.
+- Aucune nouvelle surcouche CSS : extension de la règle paysage existante.
+- Version numérique 7.2.1730.
+
+# V7.2.1730 — Spotter smartphone : hitbox Maintenance
 
 - Base stricte V7.2.1728.
 - Correction ciblée du drag & drop tactile vers Maintenance.
@@ -11,9 +23,9 @@
 - Aucun changement CSS.
 - Aucun changement de logique de transfert kart/équipe/temps d'arrêt.
 - Aucun changement Focus Endurance / Analyzer / timing / Velocity.
-- Version numérique : 7.2.1729.
+- Version numérique : 7.2.1730.
 
-# V7.2.1729 — Focus Endurance smartphone : Delta -15 %
+# V7.2.1730 — Focus Endurance smartphone : Delta -15 %
 
 - Base stricte V7.2.1727.
 - Géométrie 65/35 conservée.
@@ -23,9 +35,9 @@
 - Aucune autre modification CSS.
 - Aucune nouvelle surcouche.
 - Desktop et autres modes Focus inchangés.
-- Version numérique : 7.2.1729.
+- Version numérique : 7.2.1730.
 
-# V7.2.1729 — Focus Endurance smartphone : noms équipes +20 %
+# V7.2.1730 — Focus Endurance smartphone : noms équipes +20 %
 
 - Base stricte V7.2.1726.
 - Géométrie 65/35 conservée.
@@ -36,9 +48,9 @@
 - Modification directe des deux règles actives existantes.
 - Aucune nouvelle surcouche CSS.
 - Aucun changement desktop / autres Focus / logique métier.
-- Version numérique : 7.2.1729.
+- Version numérique : 7.2.1730.
 
-# V7.2.1729 — Focus Endurance smartphone 65/35 + Delta grid
+# V7.2.1730 — Focus Endurance smartphone 65/35 + Delta grid
 
 - Base stricte V7.2.1722 stable.
 - Focus Endurance smartphone : répartition principale 60/40 -> 65/35.
@@ -53,18 +65,18 @@
 - Aucune modification de taille de police dans cette passe.
 - Aucun nouveau bloc CSS ajouté en fin de fichier.
 - Desktop et autres modes Focus inchangés.
-- Version numérique : 7.2.1729.
+- Version numérique : 7.2.1730.
 
-# V7.2.1729 — FULL REINTEGRATION FIX
+# V7.2.1730 — FULL REINTEGRATION FIX
 
 - Base stricte V7.2.172N.
 - Toutes les fonctions récentes de V172N sont conservées.
 - Correction de l'erreur V1721 : `analyzerApplySharedRulesFromState()` est conservée.
 - `analyzerRulesDesktopLeader()` et `analyzerRulesConfigured()` sont également conservées.
 - Retrait uniquement du bootstrap automatique V166 et de son rappel récursif de `renderAnalyzer()`.
-- Version numérique : 7.2.1729.
+- Version numérique : 7.2.1730.
 
-# V7.2.1729 — Normal Mode / Spotter + Focus + Session
+# V7.2.1730 — Normal Mode / Spotter + Focus + Session
 
 - Base stricte : V7.2.172 d'origine.
 - Réintégration du Spotter récent de V196.
@@ -75,7 +87,7 @@
 - Aucun moteur DYN1 générique V173+ réinjecté.
 - Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
 
-# Velocity V7.2.1729N — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.1730N — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.
