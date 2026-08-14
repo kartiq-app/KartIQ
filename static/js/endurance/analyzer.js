@@ -859,6 +859,24 @@ function analyzerPilotContinuity(metrics){
  const same=analyzerNormalizePilot(current)===analyzerNormalizePilot(previous);
  return same?{known:true,same:true,label:'👤',title:'Pilote identique'}:{known:true,same:false,label:'👥',title:'Changement pilote'};
 }
+let analyzerSharedRulesUpdatedAt=0;
+function analyzerApplySharedRulesFromState(){
+ const shared=state?.analyzer_rules;if(!shared||!shared.rules)return false;
+ const currentCircuit=String(state?.circuit_id||analyzerSessionCircuit()||'');
+ if(shared.circuit_id&&currentCircuit&&String(shared.circuit_id)!==currentCircuit)return false;
+ const updated=Number(shared.updated_at_ms)||0;if(updated<=analyzerSharedRulesUpdatedAt)return false;
+ analyzerSharedRulesUpdatedAt=updated;
+ analyzerRules={...ANALYZER_DEFAULT_RULES,...shared.rules};
+ analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));
+ return true;
+}
+async function analyzerPublishRules(){
+ try{
+  const response=await fetch('/api/analyzer-rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules:analyzerRules})});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const data=await response.json();analyzerSharedRulesUpdatedAt=Number(data?.analyzer_rules?.updated_at_ms)||Date.now();
+ }catch(error){console.warn('[Velocity Analyzer] Synchronisation règlement impossible',error)}
+}
 function analyzerLoad(){
  analyzerStorageCleanupOnce();
  try{analyzerRules={...ANALYZER_DEFAULT_RULES,...JSON.parse(localStorage.getItem(ANALYZER_RULES_KEY)||'{}')}}catch(_){analyzerRules={...ANALYZER_DEFAULT_RULES}}
@@ -3068,6 +3086,7 @@ function analyzerScrollToCard(id){
 }
 
 function renderAnalyzer(){
+ analyzerApplySharedRulesFromState();
  ensureAnalyzerWeather();
  if(!document.getElementById('analyzerTable'))return;
  if(typeof syncRankingLapAnimations==='function')syncRankingLapAnimations();
@@ -3325,7 +3344,7 @@ function closeAnalyzerRules(){document.getElementById('analyzerRulesModal')?.cla
 function saveAnalyzerRules(event){
  event?.preventDefault();
  analyzerRules={raceHours:analyzerNullableNumeric(document.getElementById('ruleRaceHours')?.value),requiredStops:analyzerNullableNumeric(document.getElementById('ruleRequiredStops')?.value),minStintMinutes:analyzerNullableNumeric(document.getElementById('ruleMinStint')?.value),maxStintMinutes:analyzerNullableNumeric(document.getElementById('ruleMaxStint')?.value),minPitSeconds:analyzerNullableNumeric(document.getElementById('ruleMinPit')?.value),pitCloseMinutes:analyzerNullableNumeric(document.getElementById('rulePitClose')?.value),safetyMarginMinutes:analyzerNullableNumeric(document.getElementById('ruleSafetyMargin')?.value),driversCount:analyzerNullableNumeric(document.getElementById('ruleDriversCount')?.value),driverMinimumMinutes:analyzerNullableNumeric(document.getElementById('ruleDriverMinimum')?.value)};
- analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-update');closeAnalyzerRules();renderAnalyzer();
+ analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-update');analyzerPublishRules();closeAnalyzerRules();renderAnalyzer();
 }
 function renderApexTeamPilots(){
  const host=document.getElementById('apexHistoryPilotsList'),status=document.getElementById('apexHistoryPilotsStatus');if(!host)return;

@@ -1,3 +1,9 @@
+# V7.2.164 — SYNCHRONISATION ANALYZER SMARTPHONE
+- Conformité réglementaire synchronisée côté serveur entre desktop et smartphone.
+- Les paramètres de règlement ne dépendent plus uniquement du localStorage de chaque appareil.
+- Stratégie Relais et Capital stratégique utilisent ainsi le même règlement partagé sur tous les appareils du circuit actif.
+- Une modification du règlement est publiée au serveur puis récupérée via le flux d’état Analyzer.
+
 # V7.2.163 — FENÊTRE CONSEILLÉE / RETOURS DE KARTS
 
 - Stratégie Relais : la Fenêtre conseillée exploite désormais les karts disponibles et les fins de relais Velocity.
