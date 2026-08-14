@@ -94,6 +94,7 @@
     <div class="analyzer-toolbar">
       <button class="inline-home-btn analyzer-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button>
       <div class="analyzer-heading"><span class="analyzer-kicker">ENDURANCE</span></div>
+      <button type="button" class="race-session-top-launch" data-race-session-launch onclick="openRaceSessionManager()"><span>CRÉER UNE SESSION</span></button>
       <input id="analyzerSessionImport" type="file" accept="application/json,.json" hidden onchange="importAnalyzerSession(event)">
     </div>
 
@@ -343,7 +344,7 @@
       <button type="button" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
       <button type="button" class="analyzer-test-launch" onclick="openAnalyzerEnduranceTest()">🧪 MODE TEST ENDURANCE</button>
       <button type="button" class="velocity-lab-launch" onclick="openVelocityLab()">⚙ VELOCITY LAB</button>
-      <button type="button" class="race-session-launch" onclick="openRaceSessionManager()">🏁 SESSION COURSE</button>
+      <button type="button" class="race-session-launch" data-race-session-launch onclick="openRaceSessionManager()"><span>CRÉER UNE SESSION</span></button>
     </footer>
   </div>
 

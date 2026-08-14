@@ -221,11 +221,32 @@ function renderDeveloperRecorder(){
  dev.checked=!!state.developer_mode;rec.checked=!!state.traffic_recording;rec.disabled=!dev.checked;
  if(label){label.classList.toggle('recording-on',!!state.traffic_recording);label.classList.toggle('recording-off',!state.traffic_recording)}
 }
+function velocityPerformanceSessionRole(){
+ const role=String(window.velocityDeviceRole||'');
+ const session=window.velocityRaceSession;
+ return session&&session.status==='active'&&['team_manager','spotter','pilot'].includes(role)?role:'';
+}
+function velocityRenderRoleOnly(role){
+ if(role==='pilot'){
+  if(typeof renderEnduranceFocus==='function')renderEnduranceFocus();
+  if(typeof renderDriverMessageOverlay==='function')renderDriverMessageOverlay();
+  return true;
+ }
+ if(role==='spotter'){
+  // Spotter possède ses propres boucles de synchronisation/rendu.
+  // Le state Apex continue d'être chargé normalement par load().
+  return true;
+ }
+ return false;
+}
+
 function render(){
  renderDeveloperRecorder();
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);if(circuitNameElement)circuitNameElement.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
  const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelectElement.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}if(circuitSelectElement){const displayedCircuit=circuitChangeInProgress&&pendingCircuitId?pendingCircuitId:(state.circuit_id||'');if(circuitSelectElement.value!==displayedCircuit)circuitSelectElement.value=displayedCircuit;circuitSelectElement.disabled=!!circuitChangeInProgress}
  const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
+ const performanceRole=velocityPerformanceSessionRole();
+ if(velocityRenderRoleOnly(performanceRole))return;
  syncRankingLapAnimations();
  const showRankingKart=rankingHasKartColumn();
  document.querySelector('#qualification .qual-table-wrap table')?.classList.toggle('has-kart-column',showRankingKart);

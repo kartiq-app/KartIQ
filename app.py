@@ -723,6 +723,107 @@ def team_invite(token):
     return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token=str(token))
 
 
+
+@app.get("/api/team-management/snapshot")
+def team_management_snapshot():
+    """Snapshot durable côté navigateur TM : profils, rôles et appareils, sans session active."""
+    with TEAM_DATA_LOCK:
+        snapshot = {
+            "schema": 1,
+            "teams": deepcopy(TEAM_DATA.get("teams", [])),
+            "devices": deepcopy(TEAM_DATA.get("devices", {})),
+            "invites": deepcopy(TEAM_DATA.get("invites", {})),
+            "saved_at_ms": int(time.time() * 1000),
+        }
+    return jsonify(ok=True, snapshot=snapshot)
+
+
+@app.post("/api/team-management/restore")
+def team_management_restore():
+    """Restaure le backup navigateur uniquement si Render n'a plus aucune Team."""
+    body = request.get_json(force=True, silent=True) or {}
+    snapshot = body.get("snapshot") or {}
+    teams = snapshot.get("teams")
+    devices = snapshot.get("devices")
+    invites = snapshot.get("invites")
+    if not isinstance(teams, list) or not isinstance(devices, dict) or not isinstance(invites, dict):
+        return jsonify(ok=False, error="Sauvegarde Team Management invalide."), 400
+    # Garde-fous simples contre un payload accidentellement énorme.
+    if len(teams) > 50 or len(devices) > 500 or len(invites) > 500:
+        return jsonify(ok=False, error="Sauvegarde Team Management trop volumineuse."), 400
+    with TEAM_DATA_LOCK:
+        if TEAM_DATA.get("teams"):
+            return jsonify(ok=True, restored=False, reason="server_not_empty", teams=deepcopy(TEAM_DATA.get("teams", [])))
+        clean_teams = []
+        valid_roles = {"pilot", "spotter", "team_manager"}
+        member_ids = set()
+        team_ids = set()
+        for raw_team in teams:
+            if not isinstance(raw_team, dict):
+                continue
+            tid = str(raw_team.get("id") or "").strip()[:80]
+            name = str(raw_team.get("name") or "").strip()[:80]
+            if not tid or not name or tid in team_ids:
+                continue
+            team_ids.add(tid)
+            clean_members = []
+            for raw_member in raw_team.get("members") or []:
+                if not isinstance(raw_member, dict):
+                    continue
+                mid = str(raw_member.get("id") or "").strip()[:80]
+                mname = str(raw_member.get("name") or "").strip()[:80]
+                if not mid or not mname or mid in member_ids:
+                    continue
+                member_ids.add(mid)
+                roles = [r for r in (raw_member.get("roles") or []) if r in valid_roles]
+                device_ids = [str(x)[:160] for x in (raw_member.get("device_ids") or []) if str(x).strip()]
+                clean_members.append({
+                    "id": mid,
+                    "name": mname,
+                    "roles": roles,
+                    "device_ids": list(dict.fromkeys(device_ids)),
+                    "created_at_ms": int(raw_member.get("created_at_ms") or int(time.time()*1000)),
+                })
+            clean_teams.append({
+                "id": tid,
+                "name": name,
+                "members": clean_members,
+                "created_at_ms": int(raw_team.get("created_at_ms") or int(time.time()*1000)),
+            })
+        clean_devices = {}
+        for did, raw_dev in devices.items():
+            if not isinstance(raw_dev, dict):
+                continue
+            did = str(did).strip()[:160]
+            mid = str(raw_dev.get("member_id") or "").strip()
+            tid = str(raw_dev.get("team_id") or "").strip()
+            if not did or mid not in member_ids or tid not in team_ids:
+                continue
+            dev = deepcopy(raw_dev)
+            dev["id"] = did
+            dev["member_id"] = mid
+            dev["team_id"] = tid
+            dev["version"] = APP_VERSION
+            clean_devices[did] = dev
+        clean_invites = {}
+        for token, raw_invite in invites.items():
+            if not isinstance(raw_invite, dict):
+                continue
+            token = str(token).strip()[:240]
+            mid = str(raw_invite.get("member_id") or "").strip()
+            tid = str(raw_invite.get("team_id") or "").strip()
+            if token and mid in member_ids and tid in team_ids:
+                clean_invites[token] = deepcopy(raw_invite)
+        TEAM_DATA["teams"] = clean_teams
+        TEAM_DATA["devices"] = clean_devices
+        TEAM_DATA["invites"] = clean_invites
+        # Une MAJ ne restaure jamais une ancienne course active.
+        TEAM_DATA["sessions"] = []
+        TEAM_DATA["active_session_id"] = None
+        _save_team_data(TEAM_DATA)
+    return jsonify(ok=True, restored=True, teams=deepcopy(clean_teams))
+
+
 @app.get("/api/teams")
 def get_teams():
     with TEAM_DATA_LOCK:
