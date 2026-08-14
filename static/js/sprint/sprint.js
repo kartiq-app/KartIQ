@@ -419,41 +419,9 @@ function renderDriverMessageOverlay(){
 }
 
 
-function enduranceFocusSelectedDriver(){
- const remote=window.velocityPilotFocusTarget||null;
- const isPilot=document.body.classList.contains('race-role-pilot')||String(window.velocityDeviceRole||'')==='pilot'||String(window.VELOCITY_RACE_ACCESS?.role||'')==='pilot';
- if(isPilot&&remote){
-  const row=Number(remote.apex_row);
-  if(Number.isFinite(row)){
-   const byRow=(state.drivers||[]).find(d=>Number(d?.apex_row)===row);
-   if(byRow)return byRow;
-  }
-  const name=String(remote.driver||'').trim();
-  if(name){
-   const normalized=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-   const byName=(state.drivers||[]).find(d=>String(d?.driver||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()===normalized);
-   if(byName)return byName;
-  }
- }
- return state.followed||{};
-}
-function fitEnduranceLastLap(){
- const el=document.getElementById('enduranceFocusLastLap');if(!el)return;
- const cell=el.closest('.endurance-focus-last-lap-cell');if(!cell)return;
- // Taille maximale avec un blanc tournant permanent, sans jamais sortir de la case.
- const style=getComputedStyle(cell),padX=(parseFloat(style.paddingLeft)||0)+(parseFloat(style.paddingRight)||0),padY=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);
- const maxW=Math.max(1,cell.clientWidth-padX-8),maxH=Math.max(1,cell.clientHeight-padY-8);
- let lo=28,hi=Math.max(28,Math.min(260,maxH*1.12)),best=lo;
- el.style.fontSize=hi+'px';
- for(let i=0;i<10;i++){
-  const mid=(lo+hi)/2;el.style.fontSize=mid+'px';
-  if(el.scrollWidth<=maxW&&el.scrollHeight<=maxH){best=mid;lo=mid}else hi=mid;
- }
- el.style.fontSize=Math.floor(best)+'px';
-}
 function renderEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay?.classList.contains('show'))return;
- const f=enduranceFocusSelectedDriver();
+ const f=state.followed||{};
  renderEndurancePitState(f);
  const endurancePenaltyList=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));
  renderEndurancePenaltyAlert(endurancePenaltyList,f);
@@ -483,7 +451,6 @@ function renderEnduranceFocus(){
   lastLapEl.textContent=f.last||'—';
   lastLapEl.classList.remove('endurance-last-orange','endurance-last-green','endurance-last-purple');
   lastLapEl.classList.add(enduranceLastLapColorClass(f));
-  requestAnimationFrame(fitEnduranceLastLap);
  }
 }
 
