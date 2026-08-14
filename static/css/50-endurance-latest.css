@@ -999,18 +999,18 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 
 
 /* Focus Endurance smartphone — dimensions de référence.
-   Deltas réduits de 10 % et noms équipe/pilote augmentés de 10 % par rapport à V7.2.1723.
+   Deltas réduits de 10 % et noms équipe/pilote augmentés de 10 % par rapport à V7.2.1724.
    Les valeurs sont modifiées directement ici : aucune surcouche CSS supplémentaire. */
 @media (max-width: 900px), (pointer: coarse){
   #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
     font-size:clamp(70.2px,17.55vh,198.9px)!important;
   }
   #enduranceFocus .endurance-focus-driver .sprint-focus-name{
-    font-size:121%!important;
+    font-size:133.1%!important;
     max-width:100%!important;
   }
   #enduranceFocus .endurance-focus-neighbour-name{
-    font-size:clamp(18.15px,3.146vh,36.3px)!important;
+    font-size:clamp(19.965px,3.4606vh,39.93px)!important;
   }
   #enduranceFocus .endurance-focus-last-lap-cell{
     box-sizing:border-box!important;
@@ -1033,10 +1033,10 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .spr
   font-size:clamp(73.8px,18dvw,198px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
-  font-size:clamp(19.8px,5.61dvw,41.8px)!important;
+  font-size:clamp(21.78px,6.171dvw,45.98px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
-  font-size:clamp(16.5px,4.565dvw,33px)!important;
+  font-size:clamp(18.15px,5.0215dvw,36.3px)!important;
 }
 
 
