@@ -1,14 +1,8 @@
 
 const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
-const isIPhoneDevice=/iPhone|iPod/i.test(navigator.userAgent||'');
 function setFocusLandscapeLock(active){
-  // iPhone : l'OS reste volontairement en portrait. Le Focus est simplement
-  // dessiné à 90° dans le viewport portrait ; le pilote tourne physiquement
-  // le téléphone sans provoquer de changement d'orientation iOS.
-  const iphoneVirtual=!!active&&isIPhoneDevice;
-  document.documentElement.classList.toggle('iphone-focus-virtual-landscape',iphoneVirtual);
-  document.body.classList.toggle('iphone-focus-virtual-landscape',iphoneVirtual);
-  // Android conserve son comportement historique via Screen Orientation API.
+  // iPhone/iPad : aucun fallback CSS, iOS conserve son orientation native.
+  // Android : le verrouillage est demandé via Screen Orientation API dans les fonctions Focus.
   document.documentElement.classList.remove('focus-landscape-locked');
   document.body.classList.remove('focus-landscape-locked');
 }
@@ -498,29 +492,6 @@ function connectApexBrowser(force=false){
  });
 }
 function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer','current-spotter');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
-const VELOCITY_FOCUS_SESSION_KEY='velocity_active_focus_v1';
-let velocityFocusRestoreInFlight=false;
-function rememberVelocityFocus(mode){try{sessionStorage.setItem(VELOCITY_FOCUS_SESSION_KEY,String(mode||''))}catch(_){}}
-function clearVelocityFocusMemory(mode=''){try{const active=sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'';if(!mode||active===mode)sessionStorage.removeItem(VELOCITY_FOCUS_SESSION_KEY)}catch(_){}}
-function velocityStoredFocus(){try{return String(sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'')}catch(_){return ''}}
-async function velocityRestoreFocusIfNeeded(){
- if(velocityFocusRestoreInFlight)return;
- const focus=velocityStoredFocus();if(!focus)return;
- if(document.body.classList.contains('velocity-device-waiting-mode')||!document.getElementById('raceRoleEnded')?.hidden)return;
- const map={sprint:['sprint','sprintFocus','openSprintFocus'],qualification:['qualification','qualificationFocus','openQualificationFocus'],endurance:['endurance','enduranceFocus','openEnduranceFocus']};
- const target=map[focus];if(!target)return clearVelocityFocusMemory();
- const [mode,overlayId,opener]=target,overlay=document.getElementById(overlayId);
- if(overlay?.classList.contains('show'))return;
- velocityFocusRestoreInFlight=true;
- try{if(currentMode!==mode)showMode(mode);const fn=window[opener];if(typeof fn==='function')await fn()}catch(e){console.warn('[Velocity] Restauration Focus',e)}finally{velocityFocusRestoreInFlight=false}
-}
-function velocityFocusWatchdogStart(){
- if(window.__velocityFocusWatchdog)return;
- window.__velocityFocusWatchdog=setInterval(()=>velocityRestoreFocusIfNeeded(),1500);
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>velocityRestoreFocusIfNeeded(),80)});
- window.addEventListener('pageshow',()=>setTimeout(()=>velocityRestoreFocusIfNeeded(),80));
-}
-velocityFocusWatchdogStart();
 function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}
 function showMode(mode){
  if(mode!=='home'&&!state?.circuit_id){

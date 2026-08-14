@@ -99,7 +99,6 @@ class RaceStateService:
             "time_elapsed": "—",
             "time_elapsed_ms": None,
             "time_elapsed_updated_at_ms": None,
-            "apex_session_title": "",
             "apex_session_type": "unknown",
             "apex_laps_remaining": "—",
             "current_lap": 0,
