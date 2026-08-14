@@ -1,25 +1,15 @@
-# V7.2.1721 — FULL REINTEGRATION TEST
+# V7.2.1722 — FULL REINTEGRATION FIX
 
-- Base fonctionnelle : V7.2.172N.
-- Conserve les évolutions V167 à V171 / V172N :
-  - polish Analyzer desktop ;
-  - First Kart'Inn / conformité UI ;
-  - Focus persistant ;
-  - Focus iPhone paysage virtuel ;
-  - synchronisation Stratégie Relais desktop/mobile ;
-  - Spotter récent + Maintenance Analyzer ;
-  - Focus Endurance récent ;
-  - nom de session Apex au-dessus du Classement Live.
-- Retire uniquement la régression V166 :
-  - pas de bootstrap automatique du règlement au premier render Analyzer ;
-  - pas de fetch règlement récursif ;
-  - pas de `then(() => renderAnalyzer())`.
-- Version entièrement numérique : 7.2.1721.
-- Objectif : vérifier si l'ensemble des fonctions récentes reste stable sans la régression V166.
+- Base stricte V7.2.172N.
+- Toutes les fonctions récentes de V172N sont conservées.
+- Correction de l'erreur V1721 : `analyzerApplySharedRulesFromState()` est conservée.
+- `analyzerRulesDesktopLeader()` et `analyzerRulesConfigured()` sont également conservées.
+- Retrait uniquement du bootstrap automatique V166 et de son rappel récursif de `renderAnalyzer()`.
+- Version numérique : 7.2.1722.
 
-# V7.2.172111 — Normal Mode / Spotter + Focus + Session
+# V7.2.1722 — Normal Mode / Spotter + Focus + Session
 
-- Base stricte : V7.2.17211 d'origine.
+- Base stricte : V7.2.172 d'origine.
 - Réintégration du Spotter récent de V196.
 - Maintenance STANDS dans Analyzer déclarée comme vraie zone de drop.
 - Focus Endurance mobile/portrait : dernier rendu récent réintégré.
@@ -28,7 +18,7 @@
 - Aucun moteur DYN1 générique V173+ réinjecté.
 - Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
 
-# Velocity V7.2.172111N — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.1722N — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.
