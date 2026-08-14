@@ -31,7 +31,7 @@ function analyzerUpdateRaceRemaining(){
 /* Velocity V6.10.5 — titres alignés, MAP inactive visible et réglages météo */
 const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
 const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
-const ANALYZER_DEFAULT_RULES={raceHours:null,requiredStops:null,minStintMinutes:null,maxStintMinutes:null,minPitSeconds:null,pitCloseMinutes:null,safetyMarginMinutes:null,driversCount:null,driverMinimumMinutes:null};
+const ANALYZER_DEFAULT_RULES={raceHours:24,requiredStops:28,minStintMinutes:10,maxStintMinutes:60,minPitSeconds:150,pitCloseMinutes:30,safetyMarginMinutes:2,driversCount:6,driverMinimumMinutes:210};
 
 const ANALYZER_SESSIONS_INDEX_KEY='kartiq-analyzer-sessions-index-v1';
 const ANALYZER_ACTIVE_SESSION_KEY='kartiq-analyzer-active-session-v1';
@@ -838,7 +838,6 @@ function analyzerFormatDuration(seconds,{signed=false,compact=false}={}){
  return signed?(negative?'-':'+')+value:value;
 }
 function analyzerNumeric(value,fallback=0){const n=Number(String(value??'').replace(',','.'));return Number.isFinite(n)?n:fallback}
-function analyzerNullableNumeric(value){if(value===null||value===undefined||String(value).trim()==='')return null;const n=Number(String(value).replace(',','.'));return Number.isFinite(n)?n:null}
 function analyzerTeamKey(driver){
  const base=String(driver?.apex_row??driver?.driver??driver?.pos??'unknown');
  const test=window.velocityEnduranceTest;
@@ -858,70 +857,6 @@ function analyzerPilotContinuity(metrics){
  if(!current||!previous)return {known:false,same:null,label:'—',title:'Comparaison pilote indisponible'};
  const same=analyzerNormalizePilot(current)===analyzerNormalizePilot(previous);
  return same?{known:true,same:true,label:'👤',title:'Pilote identique'}:{known:true,same:false,label:'👥',title:'Changement pilote'};
-}
-let analyzerSharedRulesUpdatedAt=0;
-let analyzerRulesBootstrapCircuit='';
-let analyzerRulesBootstrapPending=false;
-function analyzerRulesDesktopLeader(){
- // Le poste desktop est la source de vérité au démarrage d'Analyzer.
- // Un smartphone/tablette ne republie jamais son snapshot local automatiquement.
- const ua=String(navigator?.userAgent||'');
- return !/(iPhone|iPad|iPod|Android|Mobile)/i.test(ua);
-}
-function analyzerRulesConfigured(){
- const r=analyzerStrategyRulesConfig();
- return Boolean(r?.ready);
-}
-async function analyzerBootstrapSharedRulesFromDesktop(){
- const circuit=String(state?.circuit_id||analyzerSessionCircuit()||'');
- if(!circuit||!analyzerRulesDesktopLeader()||!analyzerRulesConfigured())return false;
- if(analyzerRulesBootstrapCircuit===circuit||analyzerRulesBootstrapPending)return false;
- // Marquer avant l'appel réseau : pendant ce court délai, le vieux snapshot serveur
- // ne doit surtout pas écraser le règlement local que le desktop vient de restaurer.
- analyzerRulesBootstrapPending=true;
- analyzerRulesBootstrapCircuit=circuit;
- try{
-  const response=await fetch('/api/analyzer-rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules:analyzerRules})});
-  if(!response.ok)throw new Error(`HTTP ${response.status}`);
-  const data=await response.json();
-  const shared=data?.analyzer_rules;
-  if(shared){
-   analyzerSharedRulesUpdatedAt=Number(shared.updated_at_ms)||Date.now();
-   state={...(state||{}),analyzer_rules:shared};
-  }
-  return true;
- }catch(error){
-  // Autoriser une nouvelle tentative au prochain rendu si le réseau était indisponible.
-  analyzerRulesBootstrapCircuit='';
-  console.warn('[Velocity Analyzer] Publication automatique du règlement desktop impossible',error);
-  return false;
- }finally{analyzerRulesBootstrapPending=false}
-}
-function analyzerApplySharedRulesFromState(){
- const shared=state?.analyzer_rules;if(!shared||!shared.rules)return false;
- const currentCircuit=String(state?.circuit_id||analyzerSessionCircuit()||'');
- if(shared.circuit_id&&currentCircuit&&String(shared.circuit_id)!==currentCircuit)return false;
- const updated=Number(shared.updated_at_ms)||0;if(updated<=analyzerSharedRulesUpdatedAt)return false;
- analyzerSharedRulesUpdatedAt=updated;
- analyzerRules={...ANALYZER_DEFAULT_RULES,...shared.rules};
- analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));
- // Le règlement serveur est la source de vérité. On met aussi à jour la session
- // locale active afin qu'un ancien snapshot smartphone ne puisse plus le réinjecter.
- if(analyzerActiveSessionId){
-  const session=analyzerSessionRead(analyzerActiveSessionId);
-  if(session&&String(session.circuitId||'')===currentCircuit){
-   session.rules={...analyzerRules};session.updatedAt=Date.now();session.saveReason='shared-rules-sync';
-   analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+session.id,JSON.stringify(session));analyzerSessionUpdateIndex(session);
-  }
- }
- return true;
-}
-async function analyzerPublishRules(){
- try{
-  const response=await fetch('/api/analyzer-rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules:analyzerRules})});
-  if(!response.ok)throw new Error(`HTTP ${response.status}`);
-  const data=await response.json();analyzerSharedRulesUpdatedAt=Number(data?.analyzer_rules?.updated_at_ms)||Date.now();
- }catch(error){console.warn('[Velocity Analyzer] Synchronisation règlement impossible',error)}
 }
 function analyzerLoad(){
  analyzerStorageCleanupOnce();
@@ -1201,34 +1136,22 @@ function analyzerRelayScorePilotLabel(driver){
  const pilot=String(analyzerOfficialCurrentPilot(driver)||analyzerDriverPilot(driver)||'').trim();
  return pilot&&analyzerNormalizePilot(pilot)!==analyzerNormalizePilot(team)?`${team} / ${pilot}`:team;
 }
-function analyzerRelayScoreSourceLaps(laps,pits){
- // Contrairement au débrief historique, Score Relais doit conserver les tours pluie / séchant.
- // On retire seulement les tours de stand ; le filtrage des anomalies est ensuite local au relais.
- const pitLaps=new Set((pits||[]).map(p=>Number(p?.lap)).filter(Number.isFinite));
- return (laps||[]).filter(l=>Number(l?.lap)>0&&Number(l?.lapTime)>0&&!pitLaps.has(Number(l?.lap))).map(l=>({...l,seconds:Number(l.lapTime)/1000})).sort((a,b)=>Number(a.lap)-Number(b.lap));
-}
 function analyzerRelayScoreSlices(laps,pits,driver=null){
- const clean=analyzerRelayScoreSourceLaps(laps,pits);
+ const clean=analyzerDebriefCleanLaps(laps,pits);
  const chronologicalPits=(pits||[]).slice().sort((a,b)=>Number(a?.stop)-Number(b?.stop));
  const pitLaps=chronologicalPits.map(p=>Number(p?.lap)).filter(Number.isFinite).sort((a,b)=>a-b);
  const bounds=[0,...pitLaps,Infinity],relays=[];
  for(let i=0;i<bounds.length-1;i++){
   let segment=clean.filter(l=>Number(l.lap)>bounds[i]&&Number(l.lap)<bounds[i+1]);
   if(segment.length>1)segment=segment.slice(1); // départ / tour de sortie
-  const rawValues=segment.map(l=>Number(l.seconds)).filter(Number.isFinite);
-  if(!rawValues.length)continue;
-  // Sur piste stable on conserve le comportement historique : on neutralise les tours > médiane locale +5 s.
-  // Les points bruts restent dans lapPoints pour permettre au moteur dynamique de détecter et noter une
-  // transition sec -> pluie au lieu de la supprimer comme une anomalie.
-  const localMedian=analyzerMedian(rawValues);
-  const values=rawValues.filter(v=>!Number.isFinite(localMedian)||v<=localMedian+5);
-  const scoredValues=values.length>=3?values:rawValues;
-  const sorted=scoredValues.slice().sort((a,b)=>a-b),top3=sorted.slice(0,3);
+  const values=segment.map(l=>Number(l.seconds)).filter(Number.isFinite);
+  if(!values.length)continue;
+  const sorted=values.slice().sort((a,b)=>a-b),top3=sorted.slice(0,3);
   // Le .P Apex rattache chaque arrêt au pilote du relais qui vient de se terminer.
   // Le dernier relais sans arrêt terminé utilise le pilote courant officiel de .INF.
   const completedPilot=String(chronologicalPits[i]?.driverName||'').trim();
   const currentPilot=i===bounds.length-2?String(analyzerOfficialCurrentPilot(driver)||'').trim():'';
-  relays.push({index:i+1,from:segment[0]?.lap||null,to:segment[segment.length-1]?.lap||null,laps:scoredValues.length,average:analyzerMean(scoredValues),best3:analyzerMean(top3),consistency:analyzerStdDev(scoredValues),values:scoredValues,lapPoints:segment.map(l=>({lap:Number(l.lap),seconds:Number(l.seconds)})).filter(l=>Number.isFinite(l.lap)&&Number.isFinite(l.seconds)),pilot:completedPilot||currentPilot||null});
+  relays.push({index:i+1,from:segment[0]?.lap||null,to:segment[segment.length-1]?.lap||null,laps:values.length,average:analyzerMean(values),best3:analyzerMean(top3),consistency:analyzerStdDev(values),values,lapPoints:segment.map(l=>({lap:Number(l.lap),seconds:Number(l.seconds)})).filter(l=>Number.isFinite(l.lap)&&Number.isFinite(l.seconds)),pilot:completedPilot||currentPilot||null});
  }
  return relays;
 }
@@ -1266,158 +1189,44 @@ function analyzerRelayWindowValues(team,from,to){
  for(const relay of (team?.relays||[]))for(const point of (relay?.lapPoints||[]))if(Number(point.lap)>=Number(from)&&Number(point.lap)<=Number(to)&&Number.isFinite(Number(point.seconds)))values.push(Number(point.seconds));
  return values;
 }
-
-/* Velocity V7.2.161 — Score Relais adaptatif aux changements de conditions.
-   Principe : sur piste stable, la logique historique reste inchangée. Dès que le plateau
-   change fortement de rythme au cours d'une même fenêtre (pluie, séchant, neutralisation
-   progressive), chaque tour est replacé par rapport à une référence temporelle locale de
-   la grille. Cela évite de confondre +15 s de pluie avec un kart soudainement mauvais. */
-function analyzerRelayAllLapPoints(teams){
- const points=[];
- for(const team of (teams||[]))for(const relay of (team?.relays||[]))for(const point of (relay?.lapPoints||[])){
-  const lap=Number(point?.lap),seconds=Number(point?.seconds);
-  if(Number.isFinite(lap)&&Number.isFinite(seconds)&&seconds>0)points.push({team,relay,lap,seconds});
- }
- return points;
-}
-function analyzerRelayTemporalReference(points,lap,{radius=1}={}){
- const target=Number(lap);if(!Number.isFinite(target))return null;
- let cohort=(points||[]).filter(p=>Math.abs(Number(p.lap)-target)<=radius).map(p=>Number(p.seconds)).filter(Number.isFinite);
- if(cohort.length<6)cohort=(points||[]).filter(p=>Math.abs(Number(p.lap)-target)<=2).map(p=>Number(p.seconds)).filter(Number.isFinite);
- if(cohort.length<4)return null;
- const dist=analyzerRobustDistribution(cohort),median=dist.median;
- if(!Number.isFinite(median))return null;
- // Coupe uniquement les valeurs réellement aberrantes autour du plateau local. Sous la pluie,
- // une dispersion de plusieurs secondes reste donc parfaitement autorisée.
- const tolerance=Math.max(5,Number.isFinite(dist.sigma)?4*dist.sigma:5);
- const clean=cohort.filter(v=>Math.abs(v-median)<=tolerance);
- const reference=analyzerMedian(clean.length>=4?clean:cohort);
- const spreadDist=analyzerRobustDistribution(clean.length>=4?clean:cohort);
- return {reference,spread:Number(spreadDist.sigma)||0,count:(clean.length>=4?clean:cohort).length};
-}
-function analyzerRelayPilotKey(relay){return analyzerNormalizePilot(relay?.pilot||'')}
-function analyzerRelayRelativeProfile(team,relay,teams,allPoints,pilotBaselines=null){
- const points=(relay?.lapPoints||[]).map(point=>{
-  const ref=analyzerRelayTemporalReference(allPoints,point.lap);
-  const seconds=Number(point.seconds);
-  if(!ref||!Number.isFinite(seconds))return null;
-  return {lap:Number(point.lap),seconds,reference:ref.reference,spread:ref.spread,count:ref.count,delta:seconds-ref.reference};
- }).filter(Boolean);
- if(points.length<3)return null;
- const references=points.map(p=>p.reference),refDist=analyzerRobustDistribution(references);
- const refSwing=Math.max(...references)-Math.min(...references);
- const referenceMedian=analyzerMedian(references);
- const relativeRaw=points.map(p=>p.delta);
- const pilotKey=analyzerRelayPilotKey(relay);
- const pilotBaseline=pilotBaselines?.get?.(pilotKey);
- const usePilotBaseline=pilotKey&&pilotBaseline&&pilotBaseline.samples>=12&&pilotBaseline.relays>=2&&Number.isFinite(pilotBaseline.median);
- const relative=relativeRaw.map(v=>v-(usePilotBaseline?pilotBaseline.median:0));
- const sorted=relative.slice().sort((a,b)=>a-b);
- const medianSpread=analyzerMedian(points.map(p=>p.spread).filter(Number.isFinite));
- // Le mode dynamique s'active sur une vraie évolution de piste, pas juste parce qu'il existe
- // trois secondes entre un spécialiste pluie et le fond de grille.
- const dynamic=refSwing>=2.5||(Number.isFinite(refDist.sigma)&&refDist.sigma>=1.0);
- return {
-  dynamic,points,relative,relativeRaw,average:analyzerMean(relative),best3:analyzerMean(sorted.slice(0,3)),
-  consistency:analyzerStdDev(relative),laps:relative.length,referenceMedian,referenceSwing:refSwing,
-  gridSpread:Number.isFinite(medianSpread)?medianSpread:0,pilotBaseline:usePilotBaseline?pilotBaseline.median:0,
-  pilotBaselineApplied:Boolean(usePilotBaseline),pilotBaselineSamples:usePilotBaseline?pilotBaseline.samples:0
- };
-}
-function analyzerRelayBuildPilotBaselines(teams,allPoints){
- const buckets=new Map();
- for(const team of (teams||[]))for(const relay of (team?.relays||[])){
-  const key=analyzerRelayPilotKey(relay);if(!key)continue;
-  const deltas=[];
-  for(const point of (relay?.lapPoints||[])){const ref=analyzerRelayTemporalReference(allPoints,point.lap);const seconds=Number(point.seconds);if(ref&&Number.isFinite(seconds))deltas.push(seconds-ref.reference)}
-  if(deltas.length<3)continue;
-  const item=buckets.get(key)||{values:[],relays:new Set()};item.values.push(...deltas);item.relays.add(Number(relay.index));buckets.set(key,item);
- }
- const out=new Map();
- for(const [key,item] of buckets){if(!item.values.length)continue;out.set(key,{median:analyzerMedian(item.values),samples:item.values.length,relays:item.relays.size})}
- return out;
-}
-function analyzerRelayWindowPeerMetrics(teams,relay,context=null){
+function analyzerRelayWindowPeerMetrics(teams,relay){
  const from=Number(relay?.from),to=Number(relay?.to);if(!Number.isFinite(from)||!Number.isFinite(to))return [];
- const allPoints=context?.allPoints||analyzerRelayAllLapPoints(teams),pilotBaselines=context?.pilotBaselines||null;
- return (teams||[]).map(team=>{
-  const windowPoints=[];
-  for(const teamRelay of (team?.relays||[]))for(const point of (teamRelay?.lapPoints||[])){
-   const lap=Number(point?.lap),seconds=Number(point?.seconds);if(lap<from||lap>to||!Number.isFinite(seconds))continue;
-   const ref=analyzerRelayTemporalReference(allPoints,lap);if(!ref)continue;
-   const pilotKey=analyzerRelayPilotKey(teamRelay),pilotBaseline=pilotBaselines?.get?.(pilotKey);
-   const usePilot=pilotKey&&pilotBaseline&&pilotBaseline.samples>=12&&pilotBaseline.relays>=2&&Number.isFinite(pilotBaseline.median);
-   windowPoints.push({lap,seconds,reference:ref.reference,spread:ref.spread,delta:seconds-ref.reference-(usePilot?pilotBaseline.median:0),pilotBaselineApplied:Boolean(usePilot)});
-  }
-  if(windowPoints.length<3)return null;
-  const rawValues=windowPoints.map(p=>p.seconds),rawMedian=analyzerMedian(rawValues),stableValues=rawValues.filter(v=>!Number.isFinite(rawMedian)||v<=rawMedian+5),rawScored=stableValues.length>=3?stableValues:rawValues;
-  const refs=windowPoints.map(p=>p.reference),refDist=analyzerRobustDistribution(refs),refSwing=Math.max(...refs)-Math.min(...refs);
-  const dynamic=refSwing>=2.5||(Number.isFinite(refDist.sigma)&&refDist.sigma>=1.0);
-  const relative=windowPoints.map(p=>p.delta),values=dynamic?relative:rawScored,sorted=values.slice().sort((a,b)=>a-b);
-  return {team,average:analyzerMean(values),best3:analyzerMean(sorted.slice(0,3)),consistency:analyzerStdDev(values),laps:values.length,dynamic,rawAverage:analyzerMean(rawScored),profile:{dynamic,average:analyzerMean(relative),best3:analyzerMean(relative.slice().sort((a,b)=>a-b).slice(0,3)),consistency:analyzerStdDev(relative),laps:relative.length,referenceSwing:refSwing,gridSpread:analyzerMedian(windowPoints.map(p=>p.spread)),pilotBaselineApplied:windowPoints.some(p=>p.pilotBaselineApplied)}};
- }).filter(Boolean);
+ return (teams||[]).map(team=>{const values=analyzerRelayWindowValues(team,from,to);if(values.length<3)return null;const sorted=values.slice().sort((a,b)=>a-b);return {team,average:analyzerMean(values),best3:analyzerMean(sorted.slice(0,3)),consistency:analyzerStdDev(values),laps:values.length}}).filter(Boolean);
 }
-
-function analyzerRelayWindowGrid(teams,relay,context=null){return analyzerMedian(analyzerRelayWindowPeerMetrics(teams,relay,context).map(x=>x.rawAverage).filter(Number.isFinite))}
+function analyzerRelayWindowGrid(teams,relay){return analyzerMedian(analyzerRelayWindowPeerMetrics(teams,relay).map(x=>x.average).filter(Number.isFinite))}
 function analyzerRelayScoreCompute(teams,qualification){
  const maxRelay=Math.max(0,...teams.map(team=>team.relays.length)),matrix=new Map(),gridByRelay=new Map(),allTransitions=[];
- const allPoints=analyzerRelayAllLapPoints(teams),pilotBaselines=analyzerRelayBuildPilotBaselines(teams,allPoints),context={allPoints,pilotBaselines};
- // Pré-calcul : la référence reste historique sur piste stable ; elle devient temporelle et relative
- // uniquement lorsqu'une vraie évolution du rythme de la grille est détectée à l'intérieur du relais.
+ // Pré-calcul des transitions avec une référence plateau sur la même fenêtre de tours.
  for(const team of teams){
   for(const relay of team.relays){
    if(relay.laps<3||!Number.isFinite(relay.average))continue;
    const previous=team.relays.find(r=>r.index===relay.index-1)||null;
-   const profile=analyzerRelayRelativeProfile(team,relay,teams,allPoints,pilotBaselines);
-   const previousProfile=previous?analyzerRelayRelativeProfile(team,previous,teams,allPoints,pilotBaselines):null;
-   const dynamic=Boolean(profile?.dynamic);
-   const gridNow=analyzerRelayWindowGrid(teams,relay,context);
-   const previousGrid=previous?analyzerRelayWindowGrid(teams,previous,context):qualification.grid;
+   const gridNow=analyzerRelayWindowGrid(teams,relay);
+   const previousGrid=previous?analyzerRelayWindowGrid(teams,previous):qualification.grid;
    const previousAverage=previous?.average??qualification.byRow.get(Number(team.driver.apex_row));
    const rawDelta=Number.isFinite(previousAverage)?relay.average-previousAverage:null;
    const gridDelta=Number.isFinite(gridNow)&&Number.isFinite(previousGrid)?gridNow-previousGrid:0;
-   let correctedDelta=Number.isFinite(rawDelta)?rawDelta-gridDelta:null;
-   // En conditions dynamiques, le delta est calculé sur la performance relative au plateau local.
-   // Un relais sec -> pluie peut ainsi rester excellent si le pilote reste meilleur que sa cohorte.
-   if(dynamic&&Number.isFinite(profile?.average)){
-    if(previousProfile&&Number.isFinite(previousProfile.average))correctedDelta=profile.average-previousProfile.average;
-    else correctedDelta=profile.average;
-   }
+   const correctedDelta=Number.isFinite(rawDelta)?rawDelta-gridDelta:null;
    const midpoint=(Number(relay.from)+Number(relay.to))/2;
-   allTransitions.push({team,relay,previous,previousAverage,gridNow,previousGrid,rawDelta,gridDelta,correctedDelta,midpoint,dynamic,conditionProfile:profile,previousConditionProfile:previousProfile});
+   allTransitions.push({team,relay,previous,previousAverage,gridNow,previousGrid,rawDelta,gridDelta,correctedDelta,midpoint});
   }
  }
  for(let index=1;index<=maxRelay;index++){
   const indexRows=allTransitions.filter(x=>x.relay.index===index);gridByRelay.set(index,analyzerMedian(indexRows.map(x=>x.gridNow).filter(Number.isFinite)));
  }
  for(const raw of allTransitions){
-  const peers=analyzerRelayWindowPeerMetrics(teams,raw.relay,context);
-  // Tous les concurrents de la fenêtre sont évalués sur la même convention : brute si piste stable,
-  // relative au plateau temporel si les conditions changent.
-  const rawPeer=peers.find(p=>p.team===raw.team);
-  const useDynamic=Boolean(rawPeer?.dynamic&&rawPeer?.profile);
-  const paceValue=useDynamic?rawPeer.profile.average:raw.relay.average;
-  const potentialValue=useDynamic?rawPeer.profile.best3:raw.relay.best3;
-  const consistencyValue=useDynamic?rawPeer.profile.consistency:raw.relay.consistency;
-  const paceValues=peers.map(x=>x.dynamic?x.average:x.rawAverage).filter(Number.isFinite);
-  const potentialValues=peers.map(x=>x.best3).filter(Number.isFinite),consistencyValues=peers.map(x=>x.consistency).filter(Number.isFinite),lapValues=peers.map(x=>x.laps).filter(Number.isFinite);
+  const peers=analyzerRelayWindowPeerMetrics(teams,raw.relay);
+  const paceValues=peers.map(x=>x.average).filter(Number.isFinite),potentialValues=peers.map(x=>x.best3).filter(Number.isFinite),consistencyValues=peers.map(x=>x.consistency).filter(Number.isFinite),lapValues=peers.map(x=>x.laps).filter(Number.isFinite);
   let transitionPeers=allTransitions.filter(x=>Number.isFinite(x.correctedDelta)&&Number.isFinite(x.midpoint)&&Math.abs(x.midpoint-raw.midpoint)<=30).map(x=>x.correctedDelta);
   if(transitionPeers.length<6)transitionPeers=allTransitions.map(x=>x.correctedDelta).filter(Number.isFinite);
   const hasTransition=Number.isFinite(raw.correctedDelta)&&transitionPeers.length>=3;
-  const pace=analyzerPercentileScore(paceValue,paceValues),transition=hasTransition?analyzerPercentileScore(raw.correctedDelta,transitionPeers):null,potential=Number.isFinite(potentialValue)?analyzerPercentileScore(potentialValue,potentialValues):50,consistency=Number.isFinite(consistencyValue)?analyzerPercentileScore(consistencyValue,consistencyValues):50,sample=analyzerPercentileScore(raw.relay.laps,lapValues,{lowerIsBetter:false});
+  const pace=analyzerPercentileScore(raw.relay.average,paceValues),transition=hasTransition?analyzerPercentileScore(raw.correctedDelta,transitionPeers):null,potential=Number.isFinite(raw.relay.best3)?analyzerPercentileScore(raw.relay.best3,potentialValues):50,consistency=Number.isFinite(raw.relay.consistency)?analyzerPercentileScore(raw.relay.consistency,consistencyValues):50,sample=analyzerPercentileScore(raw.relay.laps,lapValues,{lowerIsBetter:false});
   const signal=hasTransition?analyzerTransitionSignal(raw.correctedDelta,transitionPeers):{z:null,median:null,sigma:null},weights=analyzerTransitionAdaptiveWeights(signal.z,hasTransition);
   const score=Math.max(0,Math.min(100,Math.round(pace*weights.pace+(transition??0)*weights.transition+potential*weights.potential+consistency*weights.consistency+sample*weights.sample)));
-  let conditionConfidencePenalty=0;
-  if(useDynamic){
-   // Une grande dispersion pluie est normale : on ne dégrade pas le score, seulement la certitude
-   // d'attribuer la différence au kart lorsque le niveau pluie du pilote est encore inconnu.
-   if((rawPeer?.profile?.gridSpread||raw.conditionProfile?.gridSpread||0)>=1.25&&!(rawPeer?.profile?.pilotBaselineApplied||raw.conditionProfile?.pilotBaselineApplied))conditionConfidencePenalty=15;
-   else if((rawPeer?.profile?.gridSpread||raw.conditionProfile?.gridSpread||0)>=.8&&!(rawPeer?.profile?.pilotBaselineApplied||raw.conditionProfile?.pilotBaselineApplied))conditionConfidencePenalty=8;
-  }
   if(!matrix.has(Number(raw.team.driver.apex_row)))matrix.set(Number(raw.team.driver.apex_row),new Map());
-  matrix.get(Number(raw.team.driver.apex_row)).set(raw.relay.index,{...raw,score,criteria:{pace,transition,potential,consistency,sample},weights,transitionZ:signal.z,transitionMedian:signal.median,transitionSigma:signal.sigma,transitionPopulation:transitionPeers.length,conditionMode:useDynamic?'dynamic':'stable',conditionConfidencePenalty,conditionReferenceSwing:rawPeer?.profile?.referenceSwing??raw.conditionProfile?.referenceSwing??0,conditionGridSpread:rawPeer?.profile?.gridSpread??raw.conditionProfile?.gridSpread??0,pilotBaselineApplied:Boolean(rawPeer?.profile?.pilotBaselineApplied||raw.conditionProfile?.pilotBaselineApplied),pilotBaselineSamples:raw.conditionProfile?.pilotBaselineSamples??0});
+  matrix.get(Number(raw.team.driver.apex_row)).set(raw.relay.index,{...raw,score,criteria:{pace,transition,potential,consistency,sample},weights,transitionZ:signal.z,transitionMedian:signal.median,transitionSigma:signal.sigma,transitionPopulation:transitionPeers.length});
  }
- return {maxRelay,matrix,gridByRelay,pilotBaselines};
+ return {maxRelay,matrix,gridByRelay};
 }
 
 async function analyzerLoadRelayScores({force=false}={}){
@@ -1478,7 +1287,6 @@ function analyzerVelocityUnifiedMetrics(driver){
  let confidence=laps<3?20:laps<5?40:laps<8?65:85;
  if(Number.isFinite(cell.correctedDelta)&&Number.isFinite(cell.gridNow))confidence+=5;
  if(populationSize>=6)confidence+=5;
- confidence-=Number(cell.conditionConfidencePenalty)||0;
  confidence=analyzerKartAttributionConfidence({currentPilot:relay.pilot||analyzerOfficialCurrentPilot(driver)||fallback.currentPilot||null,previousPilot:cell.previous?.pilot||fallback.previousPilot||null,correctedDelta:cell.correctedDelta},confidence);
  const bestLaps=(relay.values||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b).slice(0,3);
  return {
@@ -1510,12 +1318,7 @@ function analyzerVelocityUnifiedMetrics(driver){
   criteriaPopulation:{pace:populationSize,transition:populationSize,potential:populationSize,consistency:populationSize,sample:populationSize},
   populationSize,
   status:laps<3?'learning':'rated',
-  velocitySource:'stats-relay',
-  conditionMode:cell.conditionMode||'stable',
-  conditionReferenceSwing:Number(cell.conditionReferenceSwing)||0,
-  conditionGridSpread:Number(cell.conditionGridSpread)||0,
-  pilotBaselineApplied:Boolean(cell.pilotBaselineApplied),
-  pilotBaselineSamples:Number(cell.pilotBaselineSamples)||0
+  velocitySource:'stats-relay'
  };
 }
 
@@ -2447,210 +2250,6 @@ function analyzerStopsInfo(followed){
  const cadence=remaining>0&&Number.isFinite(usable)?usable/remaining:null;
  return {done,remaining,cadence};
 }
-
-/* V7.2.163 — Fenêtre conseillée enrichie par les retours de karts et détail au clic. */
-function analyzerStrategySignedSeconds(value,digits=2){
- if(!Number.isFinite(value))return '—';
- const sign=value>0?'+':value<0?'−':'';
- return `${sign}${Math.abs(value).toFixed(digits).replace('.',',')} s`;
-}
-function analyzerStrategyClockMinutes(seconds){
- if(!Number.isFinite(seconds))return '—';
- if(seconds<=0)return 'FERMÉ';
- const total=Math.max(0,Math.floor(seconds/60)),hours=Math.floor(total/60),minutes=total%60;
- return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
-}
-function analyzerStrategyRuleNumber(key){
- const raw=analyzerRules?.[key];
- if(raw===null||raw===undefined||raw==='')return null;
- const value=Number(raw);
- return Number.isFinite(value)?value:null;
-}
-function analyzerStrategyRulesConfig(){
- const raceHours=analyzerStrategyRuleNumber('raceHours');
- const requiredStops=analyzerStrategyRuleNumber('requiredStops');
- const minStintMinutes=analyzerStrategyRuleNumber('minStintMinutes');
- const maxStintMinutes=analyzerStrategyRuleNumber('maxStintMinutes');
- const minPitSeconds=analyzerStrategyRuleNumber('minPitSeconds');
- const pitCloseMinutes=analyzerStrategyRuleNumber('pitCloseMinutes');
- const safetyMarginMinutes=analyzerStrategyRuleNumber('safetyMarginMinutes');
- const ready=[raceHours,requiredStops,minStintMinutes,maxStintMinutes,minPitSeconds,pitCloseMinutes,safetyMarginMinutes].every(Number.isFinite)
-  &&raceHours>0&&requiredStops>=0&&minStintMinutes>=0&&maxStintMinutes>0&&maxStintMinutes>=minStintMinutes&&minPitSeconds>=0&&pitCloseMinutes>=0&&safetyMarginMinutes>=0;
- return {ready,raceHours,requiredStops,minStintMinutes,maxStintMinutes,minPitSeconds,pitCloseMinutes,safetyMarginMinutes};
-}
-function analyzerStrategyCapitalFromState({raceRemaining,track,stopsRemaining,rules}){
- if(!rules?.ready||!Number.isFinite(raceRemaining))return {remaining:null,totalSlack:null,closureSlack:null};
- const maxStint=rules.maxStintMinutes*60,pitSeconds=rules.minPitSeconds,closeLead=rules.pitCloseMinutes*60;
- const s=Math.max(0,Number(stopsRemaining)||0),t=Math.max(0,Number(track)||0),remaining=Math.max(0,raceRemaining);
- const rollingRequired=Math.max(0,remaining-s*pitSeconds);
- const totalCapacity=Math.max(0,maxStint-t)+s*maxStint;
- const totalSlack=Math.max(0,totalCapacity-rollingRequired);
- if(s===0)return {remaining:totalSlack,totalSlack,closureSlack:totalSlack};
- const untilClose=Math.max(0,remaining-closeLead);
- const rollingRequiredBeforeClose=Math.max(0,untilClose-s*pitSeconds);
- const finalPreCloseCapacity=Math.max(0,maxStint-closeLead);
- const preCloseCapacity=Math.max(0,maxStint-t)+Math.max(0,s-1)*maxStint+finalPreCloseCapacity;
- const closureSlack=Math.max(0,preCloseCapacity-rollingRequiredBeforeClose);
- return {remaining:Math.max(0,Math.min(totalSlack,closureSlack)),totalSlack,closureSlack};
-}
-function analyzerStrategyCapital(followed,stopsInfo=null){
- const rules=analyzerStrategyRulesConfig();
- const stops=stopsInfo||analyzerStopsInfo(followed),raceRemaining=analyzerRemainingSeconds();
- const track=followed?.status==='pit'?0:(analyzerParseDuration(followed?.track_timer)||0);
- if(!rules.ready)return {initial:null,remaining:null,percent:null,track,configured:false};
- const raceSeconds=rules.raceHours*3600;
- const initialCalc=analyzerStrategyCapitalFromState({raceRemaining:raceSeconds,track:0,stopsRemaining:rules.requiredStops,rules});
- const initial=initialCalc.remaining;
- if(!Number.isFinite(raceRemaining))return {initial,remaining:null,percent:null,track,configured:true};
- const currentCalc=analyzerStrategyCapitalFromState({raceRemaining,track,stopsRemaining:stops.remaining,rules});
- const rawRemaining=currentCalc.remaining;
- // Le capital restant ne peut jamais dépasser le capital initial.
- // Avant le départ, certains flux Apex renvoient 0 s de temps restant :
- // le calcul brut produit alors une capacité théorique très supérieure au capital réel.
- const remaining=Number.isFinite(rawRemaining)&&Number.isFinite(initial)?Math.min(initial,rawRemaining):rawRemaining;
- const percent=Number.isFinite(initial)&&initial>0&&Number.isFinite(remaining)?Math.max(0,Math.min(100,remaining/initial*100)):(initial===0?100:null);
- return {initial,remaining,percent,track,configured:true,totalSlack:currentCalc.totalSlack,closureSlack:currentCalc.closureSlack};
-}
-function analyzerStrategyDeltaPerLap(followed,metrics){
- const cell=analyzerRelayScoreLatestCell(followed);
- if(Number.isFinite(cell?.conditionProfile?.average))return Number(cell.conditionProfile.average);
- if(Number.isFinite(cell?.relay?.average)&&Number.isFinite(cell?.gridNow))return Number(cell.relay.average)-Number(cell.gridNow);
- return null;
-}
-function analyzerStrategyKartWindow(followed,currentMetrics){
- const currentScore=Number(currentMetrics?.score);
- const currentConfidence=Number(currentMetrics?.confidence);
- const minGain=8;
- const targetScore=Number.isFinite(currentScore)?Math.max(70,Math.min(92,currentScore+minGain)):75;
- const candidateFromDriver=(driver,seconds,source)=>{
-  if(!driver||driver===followed||driver.driver===followed?.driver)return null;
-  const metrics=analyzerVelocityUnifiedMetrics(driver);
-  const score=Number(metrics?.score),confidence=Number(metrics?.confidence);
-  if(!Number.isFinite(score)||!Number.isFinite(confidence)||confidence<60||score<targetScore)return null;
-  const kart=validKartNumber(driver)||driver.apex||'—';
-  return {driver,kart,team:driver.driver||'—',score:Math.round(score),confidence:Math.round(confidence),seconds,source};
- };
- const available=[];
- analyzerQueueCandidates().filter(q=>q.index===0).forEach(q=>{
-  const score=Number(q.score),confidence=Number(q.confidence);
-  if(Number.isFinite(score)&&Number.isFinite(confidence)&&confidence>=60&&score>=targetScore){
-   available.push({driver:q.driver||null,kart:q.kart||'—',team:q.driver?.driver||q.item?.team||'File stands',score:Math.round(score),confidence:Math.round(confidence),seconds:0,source:'available',queue:q.queue});
-  }
- });
- const incoming=[];
- (state.drivers||[]).forEach(driver=>{
-  if(driver===followed||driver.driver===followed?.driver||driver.status==='pit')return;
-  const seconds=analyzerKartRelayRemaining(driver);
-  if(!Number.isFinite(seconds)||seconds<0||seconds>30*60)return;
-  const c=candidateFromDriver(driver,seconds,'incoming');if(c)incoming.push(c);
- });
- available.sort((a,b)=>b.score-a.score||b.confidence-a.confidence);
- incoming.sort((a,b)=>a.seconds-b.seconds||b.score-a.score);
- const all=[...available,...incoming];
- let label='—',summary='Aucune opportunité supérieure identifiée',windowStart=null,windowEnd=null;
- if(available.length){
-  label=available.length>1?'MAINTENANT → 3 MIN':'MAINTENANT';
-  summary=available.length>1?`${available.length} bons karts disponibles`:`Bon kart disponible : #${available[0].kart}`;
-  windowStart=0;windowEnd=180;
- }else if(incoming.length){
-  const first=incoming[0];
-  const cluster=incoming.filter(c=>c.seconds<=first.seconds+4*60);
-  const a=Math.max(1,Math.floor(first.seconds/60));
-  const last=cluster[cluster.length-1];
-  const b=Math.max(a+2,Math.ceil(last.seconds/60)+1);
-  label=`DANS ${a}–${b} MIN`;
-  summary=cluster.length>1?`${cluster.length} bons karts attendus`:`Bon kart attendu ~${Math.max(1,Math.round(first.seconds/60))} min`;
-  windowStart=a*60;windowEnd=b*60;
- }
- return {label,summary,available,incoming,all,targetScore,currentScore,currentConfidence,windowStart,windowEnd};
-}
-function analyzerStrategyWindowDetailsHtml(insight){
- if(!insight)return '<div class="strategy-window-empty">Aucune projection disponible.</div>';
- const rows=[];
- insight.available.slice(0,4).forEach(c=>rows.push(`<div class="strategy-window-row best"><b>MAINTENANT</b><span>Kart ${analyzerEscape(c.kart)}</span><span>Score ${c.score}</span><span>${c.confidence}%</span></div>`));
- insight.incoming.slice(0,7).forEach(c=>rows.push(`<div class="strategy-window-row"><b>~ ${Math.max(1,Math.round(c.seconds/60))} min</b><span>Kart ${analyzerEscape(c.kart)}</span><span>Score ${c.score}</span><span>${c.confidence}%</span></div>`));
- if(!rows.length)return `<div class="strategy-window-empty">Aucun kart avec un gain suffisant et une confiance ≥ 60 %. Seuil actuel : score ${Math.round(insight.targetScore)}.</div>`;
- return `<div class="strategy-window-details-head"><span>RETOURS / DISPONIBILITÉS CIBLES</span><small>Seuil : score ≥ ${Math.round(insight.targetScore)} · confiance ≥ 60 %</small></div>${rows.join('')}`;
-}
-function toggleAnalyzerStrategyWindowDetails(event){
- if(event)event.stopPropagation();
- const el=document.getElementById('analyzerStrategyWindowDetails');if(!el)return;
- const open=!el.classList.contains('show');
- el.classList.toggle('show',open);el.hidden=!open;
-}
-window.toggleAnalyzerStrategyWindowDetails=toggleAnalyzerStrategyWindowDetails;
-function analyzerRelayStrategy(followed,stopsInfo=null){
- const stops=stopsInfo||analyzerStopsInfo(followed);
- const metrics=followed?analyzerVelocityUnifiedMetrics(followed):null;
- const score=Number(metrics?.score),confidence=Number(metrics?.confidence);
- const capital=analyzerStrategyCapital(followed,stops);
- const rules=analyzerStrategyRulesConfig();
- const track=capital.track||0,minStint=rules.ready?rules.minStintMinutes*60:0,maxStint=rules.ready?rules.maxStintMinutes*60:0;
- const targetLong=rules.ready?Math.max(minStint,Math.min(maxStint,maxStint-rules.safetyMarginMinutes*60)):0;
- const delta=analyzerStrategyDeltaPerLap(followed,metrics);
- const lapTime=Number(metrics?.average);
- const remainingToLong=Math.max(0,targetLong-track);
- const projectedLaps=Number.isFinite(lapTime)&&lapTime>20?remainingToLong/lapTime:null;
- const impact=Number.isFinite(delta)&&Number.isFinite(projectedLaps)?delta*projectedLaps:null;
- const raceRemaining=analyzerRemainingSeconds(),pitCloseRemaining=rules.ready&&Number.isFinite(raceRemaining)?raceRemaining-rules.pitCloseMinutes*60:null;
- const pitSeconds=rules.ready?rules.minPitSeconds:0;
- const firstWait=Math.max(0,minStint-track);
- const minTimeToCompleteStops=stops.remaining>0?firstWait+stops.remaining*pitSeconds+Math.max(0,stops.remaining-1)*minStint:0;
- const closePressure=stops.remaining>0&&Number.isFinite(pitCloseRemaining)&&minTimeToCompleteStops>=pitCloseRemaining;
- const closed=Number.isFinite(pitCloseRemaining)&&pitCloseRemaining<=0;
- let recommendation='CONSERVER LE RELAIS',windowLabel='—',kind='neutral';
- if(!followed){recommendation='SÉLECTIONNER UNE ÉQUIPE';kind='neutral'}
- else if(closed){recommendation='STANDS FERMÉS';kind='danger'}
- else if(closePressure){recommendation='ARRÊT PRIORITAIRE';windowLabel='DÈS QUE POSSIBLE';kind='danger'}
- else if(!rules.ready){recommendation='CONFIGURER LE RÈGLEMENT';windowLabel='—';kind='wait'}
- else if(track<minStint){recommendation='ATTENDRE LE MINIMUM';windowLabel=analyzerFormatDuration(minStint,{compact:true});kind='wait'}
- else if(track>=maxStint-rules.safetyMarginMinutes*60){recommendation='RENTRER';windowLabel='MAINTENANT';kind='danger'}
- else if(!Number.isFinite(score)||Number(metrics?.laps)<3){recommendation='APPRENTISSAGE';windowLabel='—';kind='wait'}
- else if(confidence<65){recommendation='SURVEILLER';windowLabel='—';kind='wait'}
- else if(score>=75||(Number.isFinite(delta)&&delta<=-.15)){recommendation='PROLONGER LE RELAIS';windowLabel=`${Math.max(rules.minStintMinutes,Math.floor(targetLong/60)-1)}–${Math.floor(targetLong/60)+1} min`;kind='good'}
- else if(score<45&&Number.isFinite(delta)&&delta>.12&&Number.isFinite(impact)&&impact>=5&&stops.remaining>0){
-   let earliest=Math.max(Math.ceil(track/60)+3,Math.ceil(minStint/60));
-   const capitalMinutes=Number.isFinite(capital.remaining)?capital.remaining/60:0;
-   earliest=Math.max(earliest,Math.ceil(maxStint/60-capitalMinutes));
-   let latest=Math.min(Math.floor(targetLong/60),earliest+6);
-   if(Number.isFinite(pitCloseRemaining))latest=Math.min(latest,Math.max(earliest,Math.floor(pitCloseRemaining/60)));
-   if(earliest<Math.floor(targetLong/60)&&capitalMinutes>0){recommendation='RACCOURCIR LE RELAIS';windowLabel=`${earliest}–${latest} min`;kind='danger'}
-   else{recommendation='CONSERVER LE RELAIS';windowLabel='CAPITAL FAIBLE';kind='wait'}
- }else if(score<60&&Number.isFinite(delta)&&delta>0){recommendation='SURVEILLER';windowLabel='—';kind='wait'}
- const kartWindow=analyzerStrategyKartWindow(followed,metrics);
- const strategyCanUseKartWindow=!!followed&&rules.ready&&!closed&&!closePressure&&track>=minStint&&track<maxStint-rules.safetyMarginMinutes*60&&Number.isFinite(score)&&confidence>=60;
- if(strategyCanUseKartWindow){
-  if(kartWindow.available.length&&score<75){recommendation='RENTRER';windowLabel=kartWindow.label;kind='good'}
-  else if(!kartWindow.available.length&&kartWindow.incoming.length&&(score<75||(Number.isFinite(delta)&&delta>0))){
-   const waitSeconds=kartWindow.windowStart;
-   const canWait=!Number.isFinite(waitSeconds)||track+waitSeconds<maxStint-rules.safetyMarginMinutes*60;
-   if(canWait){recommendation='PROLONGER LE RELAIS';windowLabel=kartWindow.label;kind='wait'}
-  }
- }
- return {score:Number.isFinite(score)?Math.round(score):null,confidence:Number.isFinite(confidence)?Math.round(confidence):null,track,delta,impact,capital,targetLong,pitCloseRemaining,recommendation,windowLabel,kind,kartWindow};
-}
-function analyzerRenderRelayStrategy(followed,stopsInfo=null){
- const data=analyzerRelayStrategy(followed,stopsInfo);
- const score=document.getElementById('analyzerStrategyScore'),confidence=document.getElementById('analyzerStrategyConfidence'),track=document.getElementById('analyzerStrategyTrack'),delta=document.getElementById('analyzerStrategyDelta'),impact=document.getElementById('analyzerStrategyImpact');
- if(score){score.textContent=Number.isFinite(data.score)?String(data.score):'—';score.className=Number.isFinite(data.score)?analyzerScoreClass(data.score):''}
- if(confidence)confidence.textContent=Number.isFinite(data.confidence)?`${data.confidence} %`:'—';
- if(track){const rules=analyzerStrategyRulesConfig();track.textContent=rules.ready?`${analyzerFormatDuration(data.track,{compact:true})} / ${analyzerFormatDuration(rules.maxStintMinutes*60,{compact:true})}`:'—'};
- if(delta){delta.textContent=analyzerStrategySignedSeconds(data.delta,2);delta.className=Number.isFinite(data.delta)?(data.delta>0?'strategy-loss':data.delta<0?'strategy-gain':''):''}
- if(impact){impact.textContent=analyzerStrategySignedSeconds(data.impact,0);impact.className=Number.isFinite(data.impact)?(data.impact>0?'strategy-loss':data.impact<0?'strategy-gain':''):''}
- const capValue=document.getElementById('analyzerStrategyCapitalValue'),capPercent=document.getElementById('analyzerStrategyCapitalPercent'),capBar=document.getElementById('analyzerStrategyCapitalBar');
- if(capValue){const rem=Number.isFinite(data.capital.remaining)?Math.round(data.capital.remaining/60):null,ini=Number.isFinite(data.capital.initial)?Math.round(data.capital.initial/60):null;capValue.textContent=rem!==null?`${rem} min`:(ini!==null?`${ini} min`:'—')}
- if(capPercent)capPercent.textContent=Number.isFinite(data.capital.percent)?`${Math.round(data.capital.percent)} %`:'—';
- if(capBar)capBar.style.width=Number.isFinite(data.capital.percent)?`${data.capital.percent}%`:'0%';
- const recommendation=document.getElementById('analyzerStrategyRecommendation'),windowEl=document.getElementById('analyzerStrategyWindow'),block=document.getElementById('analyzerRelayStrategy');
- if(recommendation)recommendation.textContent=data.recommendation;if(windowEl)windowEl.textContent=data.windowLabel;
- const windowHint=document.getElementById('analyzerStrategyWindowHint'),windowDetails=document.getElementById('analyzerStrategyWindowDetails');
- if(windowHint)windowHint.textContent=data.kartWindow?.summary||'';
- if(windowDetails)windowDetails.innerHTML=analyzerStrategyWindowDetailsHtml(data.kartWindow);
- if(block){block.classList.remove('good','wait','danger','neutral');block.classList.add(data.kind)}
- const closeRule=document.getElementById('analyzerPitCloseRule'),closeCountdown=document.getElementById('analyzerPitCloseCountdown');
- if(closeRule){const rules=analyzerStrategyRulesConfig();closeRule.textContent=rules.ready?`T - ${analyzerFormatDuration(rules.pitCloseMinutes*60,{compact:true})}`:'—'};
- if(closeCountdown)closeCountdown.textContent=analyzerStrategyClockMinutes(data.pitCloseRemaining);
-}
 function analyzerQueueCandidates(){
  const spotter=analyzerSpotterState();
  if(spotter?.configured&&Array.isArray(spotter.queue)){
@@ -3135,18 +2734,7 @@ function renderAnalyzer(){
  ensureAnalyzerWeather();
  if(!document.getElementById('analyzerTable'))return;
  if(typeof syncRankingLapAnimations==='function')syncRankingLapAnimations();
- // Restaurer d'abord la session locale, puis appliquer le règlement partagé.
- // En V7.2.164 l'ordre inverse permettait au snapshot smartphone (ex. 3h30)
- // d'écraser juste après la valeur serveur/desktop (ex. 5h00).
  analyzerEnsureSession();
- // Au premier affichage Analyzer du desktop, publier immédiatement le règlement
- // restauré localement. Cela supprime l'ancien process où il fallait ouvrir
- // « Règlement » puis ENREGISTRER pour synchroniser le smartphone.
- const rulesBootstrapNeeded=analyzerRulesDesktopLeader()&&analyzerRulesConfigured()&&analyzerRulesBootstrapCircuit!==String(state?.circuit_id||analyzerSessionCircuit()||'');
- if(rulesBootstrapNeeded){analyzerBootstrapSharedRulesFromDesktop().then(()=>renderAnalyzer());}
- // Tant que la publication desktop initiale est en cours, ignorer l'ancien
- // snapshot partagé afin qu'il ne puisse pas réinjecter une valeur obsolète.
- if(!rulesBootstrapNeeded&&!analyzerRulesBootstrapPending)analyzerApplySharedRulesFromState();
  analyzerLearnFromState();
  analyzerScheduleRelayHydration();
  const all=analyzerRows();const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
@@ -3168,13 +2756,11 @@ function renderAnalyzer(){
  analyzerRenderFollowedPerformance(followed);
  analyzerRenderFollowedDeltas(followed);
  analyzerRenderTrafficAhead(followed);
- {const r=analyzerStrategyRulesConfig();document.getElementById('analyzerRuleRelay').textContent=r.ready?`${analyzerFormatDuration(r.minStintMinutes*60,{compact:true})} → ${analyzerFormatDuration(r.maxStintMinutes*60,{compact:true})}`:'—'};
- {const r=analyzerStrategyRulesConfig();document.getElementById('analyzerRulePit').textContent=r.ready?analyzerFormatDuration(r.minPitSeconds,{compact:true}):'—'};
- const ruleStops=document.getElementById('analyzerRuleStops');if(ruleStops){const r=analyzerStrategyRulesConfig();ruleStops.textContent=r.ready?`${stops.done} / ${r.requiredStops}`:'—'};
- document.getElementById('analyzerStopsRemaining').textContent=`${stops.remaining} restant${stops.remaining>1?'s':''}`;
- document.getElementById('analyzerStopCadence').textContent=Number(analyzerRules.driverMinimumMinutes)>0?analyzerFormatDuration(analyzerRules.driverMinimumMinutes*60,{compact:true}):'—';
+ document.getElementById('analyzerRuleRelay').textContent=`${analyzerFormatDuration(analyzerRules.minStintMinutes*60)} → ${analyzerFormatDuration(analyzerRules.maxStintMinutes*60)}`;
+ document.getElementById('analyzerRulePit').textContent=analyzerFormatDuration(analyzerRules.minPitSeconds);
+ document.getElementById('analyzerStopsRemaining').textContent=String(stops.remaining);
+ document.getElementById('analyzerStopCadence').textContent=Number.isFinite(analyzerRules.driverMinimumMinutes)?analyzerFormatDuration(analyzerRules.driverMinimumMinutes*60,{compact:true}):'—';
  renderAnalyzerRulesPilots(followed);
- analyzerRenderRelayStrategy(followed,stops);
  const max=analyzerRules.maxStintMinutes*60,min=analyzerRules.minStintMinutes*60;
  const rulesStatus=document.getElementById('analyzerRulesStatus');rulesStatus.className='rules-status';
  if(!followed)rulesStatus.textContent='Équipe non sélectionnée';
@@ -3382,13 +2968,8 @@ function renderAnalyzerRulesPilots(driver){
  const host=document.getElementById('analyzerRulesPilots');if(!host)return;
  const pilots=driver?analyzerOfficialPilotTotals(driver):[];
  if(driver&&!pilots.length)analyzerEnsureOfficialPilotTotals(driver).then(()=>{const followed=(state.drivers||[]).find(d=>analyzerFollowed(d));if(followed&&Number(followed.apex_row)===Number(driver.apex_row))renderAnalyzerRulesPilots(followed)}).catch(()=>{});
- const minimum=Number(analyzerRules.driverMinimumMinutes)>0?Number(analyzerRules.driverMinimumMinutes)*60:null;
- host.hidden=false;
- if(!pilots.length){host.innerHTML='<div class="analyzer-pilots-empty">En attente des données Apex…</div>';return}
- host.innerHTML=pilots.map(p=>{
-  const seconds=Math.max(0,Number(p.seconds)||0),time=analyzerPilotHoursLabel(seconds),minLabel=Number.isFinite(minimum)?analyzerPilotHoursLabel(minimum):null,ok=Number.isFinite(minimum)&&seconds>=minimum;
-  return `<div class="rules-pilot-card${ok?' complete':''}"><span class="rules-pilot-name">${analyzerEscape(String(p.name||'Pilote').trim())}</span><strong>${analyzerEscape(time)}${minLabel?` <small>/ ${analyzerEscape(minLabel)}</small>`:''}</strong></div>`;
- }).join('');
+ host.hidden=!pilots.length;
+ host.innerHTML=pilots.map(p=>{const parts=String(p.name).trim().split(/\s+/),first=parts.shift()||'',last=parts.join(' ');return `<div class="rules-pilot-card"><span class="rules-pilot-name">${analyzerEscape(first)}${last?`<br>${analyzerEscape(last)}`:''}</span><strong>${analyzerEscape(analyzerPilotHoursLabel(p.seconds))}</strong></div>`}).join('');
 }
 function setAnalyzerSort(value){analyzerSort=value||'position';renderAnalyzer()}
 function openAnalyzerRules(){
@@ -3399,9 +2980,10 @@ function openAnalyzerRules(){
 function closeAnalyzerRules(){document.getElementById('analyzerRulesModal')?.classList.remove('show')}
 function saveAnalyzerRules(event){
  event?.preventDefault();
- analyzerRules={raceHours:analyzerNullableNumeric(document.getElementById('ruleRaceHours')?.value),requiredStops:analyzerNullableNumeric(document.getElementById('ruleRequiredStops')?.value),minStintMinutes:analyzerNullableNumeric(document.getElementById('ruleMinStint')?.value),maxStintMinutes:analyzerNullableNumeric(document.getElementById('ruleMaxStint')?.value),minPitSeconds:analyzerNullableNumeric(document.getElementById('ruleMinPit')?.value),pitCloseMinutes:analyzerNullableNumeric(document.getElementById('rulePitClose')?.value),safetyMarginMinutes:analyzerNullableNumeric(document.getElementById('ruleSafetyMargin')?.value),driversCount:analyzerNullableNumeric(document.getElementById('ruleDriversCount')?.value),driverMinimumMinutes:analyzerNullableNumeric(document.getElementById('ruleDriverMinimum')?.value)};
- analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-update');analyzerPublishRules();closeAnalyzerRules();renderAnalyzer();
+ analyzerRules={raceHours:analyzerNumeric(document.getElementById('ruleRaceHours')?.value,24),requiredStops:analyzerNumeric(document.getElementById('ruleRequiredStops')?.value,28),minStintMinutes:analyzerNumeric(document.getElementById('ruleMinStint')?.value,10),maxStintMinutes:analyzerNumeric(document.getElementById('ruleMaxStint')?.value,60),minPitSeconds:analyzerNumeric(document.getElementById('ruleMinPit')?.value,150),pitCloseMinutes:analyzerNumeric(document.getElementById('rulePitClose')?.value,30),safetyMarginMinutes:analyzerNumeric(document.getElementById('ruleSafetyMargin')?.value,2),driversCount:analyzerNumeric(document.getElementById('ruleDriversCount')?.value,6),driverMinimumMinutes:analyzerNumeric(document.getElementById('ruleDriverMinimum')?.value,210)};
+ analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-update');closeAnalyzerRules();renderAnalyzer();
 }
+function resetAnalyzerRules(){analyzerRules={...ANALYZER_DEFAULT_RULES};analyzerStorageSafeSet(ANALYZER_RULES_KEY,JSON.stringify(analyzerRules));analyzerSaveSession('rules-reset');openAnalyzerRules();renderAnalyzer()}
 function renderApexTeamPilots(){
  const host=document.getElementById('apexHistoryPilotsList'),status=document.getElementById('apexHistoryPilotsStatus');if(!host)return;
  const driver=(state.drivers||[]).find(d=>Number(d.apex_row)===Number(apexHistorySelectedRowId));

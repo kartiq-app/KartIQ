@@ -99,7 +99,6 @@ class RaceStateService:
             "time_elapsed": "—",
             "time_elapsed_ms": None,
             "time_elapsed_updated_at_ms": None,
-            "apex_session_type": "unknown",
             "apex_laps_remaining": "—",
             "current_lap": 0,
             "total_laps": 0,
@@ -601,7 +600,6 @@ class RaceStateService:
         self.state["time_elapsed_ms"] = elapsed_ms
         self.state["time_elapsed"] = self._format_remaining(elapsed_ms)
         self.state["time_elapsed_updated_at_ms"] = now_ms if elapsed_ms is not None else None
-        self.state["apex_session_type"] = session.get("apex_session_type") or "unknown"
 
         # Apex ne fournit pas toujours un objectif de tours. Lorsque ce total est
         # disponible, on affiche les tours restants ; sinon on affiche le nombre de

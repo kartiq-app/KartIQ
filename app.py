@@ -81,7 +81,6 @@ STATE = {
     "traffic_recording_started_at": None,
     "driver_message": None,
     "spotter": {"configured": False, "updated_at_ms": None, "queue_mode": 1, "setup_karts": ["X", "Y", "Z"], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server"},
-    "analyzer_rules": None,
 }
 
 
@@ -93,7 +92,6 @@ WEATHER_LOCATION_CACHE = {}
 WEATHER_LOCK = threading.Lock()
 DRIVER_MESSAGE_LOCK = threading.Lock()
 SPOTTER_LOCK = threading.Lock()
-ANALYZER_RULES_LOCK = threading.Lock()
 RACE_SESSION_LOCK = threading.Lock()
 RACE_SESSION = None
 TEAM_DATA_LOCK = threading.Lock()
@@ -640,8 +638,6 @@ def payload():
         data["driver_message"] = deepcopy(message) if message else None
     with SPOTTER_LOCK:
         data["spotter"] = deepcopy(STATE.get("spotter") or {})
-    with ANALYZER_RULES_LOCK:
-        data["analyzer_rules"] = deepcopy(STATE.get("analyzer_rules"))
     return data
 
 
@@ -1083,26 +1079,6 @@ def weather():
 @app.get("/api/state")
 def get_state():
     return jsonify(payload())
-
-
-@app.post("/api/analyzer-rules")
-def update_analyzer_rules():
-    body = request.get_json(force=True, silent=True) or {}
-    rules = body.get("rules")
-    if not isinstance(rules, dict):
-        return jsonify(ok=False, error="Règlement Analyzer invalide"), 400
-    allowed = {"raceHours", "requiredStops", "minStintMinutes", "maxStintMinutes", "minPitSeconds", "pitCloseMinutes", "safetyMarginMinutes", "driversCount", "driverMinimumMinutes"}
-    clean = {key: deepcopy(value) for key, value in rules.items() if key in allowed}
-    snapshot = {"rules": clean, "updated_at_ms": int(time.time() * 1000), "circuit_id": str(STATE.get("circuit_id") or ""), "app_release": APP_VERSION}
-    with ANALYZER_RULES_LOCK:
-        STATE["analyzer_rules"] = snapshot
-    return jsonify(ok=True, analyzer_rules=deepcopy(snapshot))
-
-
-@app.get("/api/analyzer-rules")
-def get_analyzer_rules():
-    with ANALYZER_RULES_LOCK:
-        return jsonify(ok=True, analyzer_rules=deepcopy(STATE.get("analyzer_rules")))
 
 
 @app.post("/api/spotter-state")
