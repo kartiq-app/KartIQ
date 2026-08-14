@@ -4186,7 +4186,52 @@ let velocityRaceDraftMembers=[];let velocityRacePendingEdits={team:null,session:
 function raceSessionShowPane(id){['raceSessionLanding','raceSessionSelectTeamPane','raceSessionCreateTeamPane','raceSessionCreatePane','raceSessionActive'].forEach(pid=>{const el=document.getElementById(pid);if(el)el.hidden=pid!==id})}
 function raceSessionOpenSelectTeam(){raceSessionShowPane('raceSessionSelectTeamPane');const sel=document.getElementById('raceSessionTeamSelect');if(sel){sel.innerHTML='<option value="">Sélectionnez une équipe</option>'+velocityRaceTeams.map(t=>`<option value="${analyzerEscape(t.id)}">${analyzerEscape(t.name)}</option>`).join('');if(velocityRaceTeamId)sel.value=velocityRaceTeamId}raceSessionRenderSelectedTeam()}
 function raceSessionSelectTeamChanged(id){selectRaceTeam(id);raceSessionRenderSelectedTeam()}
-function raceSessionRenderSelectedTeam(){const host=document.getElementById('raceSessionSelectedTeamCard'),team=currentRaceTeam();if(!host)return;if(!team){host.innerHTML='<div class="analyzer-empty">Sélectionnez une équipe.</div>';return}host.innerHTML=`<div class="race-team-title"><div><span>ÉQUIPE</span><h3>${analyzerEscape(team.name)}</h3></div><b>${team.members?.length||0} membre(s)</b></div><div class="race-member-list">${(team.members||[]).map(m=>`<article class="race-member-card"><div class="race-member-head"><strong>${analyzerEscape(m.name)}</strong><span>${(m.roles||[]).map(r=>raceRoleLabel(r)).join(' · ')||'Aucun rôle'}</span></div></article>`).join('')||'<div class="analyzer-empty">Aucun membre.</div>'}</div>`}
+function raceSessionRenderSelectedTeam(){
+ const host=document.getElementById('raceSessionSelectedTeamCard'),team=currentRaceTeam();
+ if(!host)return;
+ if(!team){host.innerHTML='<div class="analyzer-empty">Sélectionnez une équipe.</div>';return}
+ host.innerHTML=`<div class="race-team-title"><div><span>ÉQUIPE</span><h3>${analyzerEscape(team.name)}</h3></div><b>${team.members?.length||0} membre(s)</b></div>
+ <div class="race-member-list">${(team.members||[]).map(m=>`<article class="race-member-card" data-existing-member="${analyzerEscape(m.id)}">
+   <div class="race-member-head">
+    <div><strong>${analyzerEscape(m.name)}</strong><span>${(m.roles||[]).map(r=>raceRoleLabel(r)).join(' · ')||'Aucun rôle'}</span></div>
+    <button type="button" class="race-inline-edit" onclick="raceSessionEditExistingMember('${analyzerEscape(m.id)}')">ÉDITER</button>
+   </div>
+  </article>`).join('')||'<div class="analyzer-empty">Aucun membre.</div>'}</div>`;
+}
+function raceSessionEditExistingMember(memberId){
+ const team=currentRaceTeam(),member=(team?.members||[]).find(m=>String(m.id)===String(memberId));
+ const card=document.querySelector(`[data-existing-member="${CSS.escape(String(memberId))}"]`);
+ if(!member||!card)return;
+ card.innerHTML=`<div class="race-existing-member-edit">
+   <input class="race-existing-member-name" value="${analyzerEscape(member.name||'')}" maxlength="80">
+   <div class="race-member-roles">
+    <label><input type="checkbox" value="pilot" ${member.roles?.includes('pilot')?'checked':''}> PILOTE</label>
+    <label><input type="checkbox" value="spotter" ${member.roles?.includes('spotter')?'checked':''}> SPOTTER</label>
+    <label><input type="checkbox" value="team_manager" ${member.roles?.includes('team_manager')?'checked':''}> TEAM MANAGER</label>
+   </div>
+   <div class="race-existing-member-actions">
+    <button type="button" class="race-inline-edit" onclick="raceSessionRenderSelectedTeam()">ANNULER</button>
+    <button type="button" class="race-inline-ok pending" onclick="raceSessionSaveExistingMember('${analyzerEscape(member.id)}')">OK</button>
+   </div>
+  </div>`;
+ card.querySelector('.race-existing-member-name')?.focus();
+}
+async function raceSessionSaveExistingMember(memberId){
+ const card=document.querySelector(`[data-existing-member="${CSS.escape(String(memberId))}"]`);
+ if(!card)return;
+ const name=String(card.querySelector('.race-existing-member-name')?.value||'').trim();
+ const roles=[...card.querySelectorAll('.race-member-roles input:checked')].map(x=>x.value);
+ if(!name)return raceSessionFeedback('Saisissez le nom du membre.',true);
+ try{
+  const r=await fetch(`/api/members/${encodeURIComponent(memberId)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,roles})});
+  const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Modification impossible');
+  await refreshRaceSessionManager();
+  raceSessionRenderSelectedTeam();
+  void velocityTeamBackupRefresh();
+  raceSessionFeedback(`${name} mis à jour.`);
+ }catch(e){raceSessionFeedback(e.message||String(e),true)}
+}
+
 function raceSessionOpenCreateTeam(){velocityRaceDraftMembers=[];const n=document.getElementById('raceCreateTeamName');if(n)n.value='';raceSessionRenderDraftMembers();raceSessionShowPane('raceSessionCreateTeamPane')}
 function raceSessionAddDraftMember(){velocityRaceDraftMembers.push({name:'',roles:['pilot']});raceSessionRenderDraftMembers()}
 function raceSessionRenderDraftMembers(){const host=document.getElementById('raceCreateTeamMembers');if(!host)return;host.innerHTML=velocityRaceDraftMembers.length?velocityRaceDraftMembers.map((m,i)=>`<article class="race-member-card race-draft-member"><input placeholder="Nom du membre" value="${analyzerEscape(m.name||'')}" oninput="velocityRaceDraftMembers[${i}].name=this.value"><div class="race-member-roles"><label><input type="checkbox" ${m.roles?.includes('pilot')?'checked':''} onchange="raceSessionDraftRole(${i},'pilot',this.checked)"> PILOTE</label><label><input type="checkbox" ${m.roles?.includes('spotter')?'checked':''} onchange="raceSessionDraftRole(${i},'spotter',this.checked)"> SPOTTER</label><label><input type="checkbox" ${m.roles?.includes('team_manager')?'checked':''} onchange="raceSessionDraftRole(${i},'team_manager',this.checked)"> TEAM MANAGER</label></div><button type="button" class="race-ui-btn danger" onclick="velocityRaceDraftMembers.splice(${i},1);raceSessionRenderDraftMembers()">SUPPRIMER</button></article>`).join(''):'<div class="analyzer-empty">Ajoutez les membres de l’équipe.</div>'}
@@ -4289,7 +4334,9 @@ function closeRaceTeamActionModal(){const modal=document.getElementById('raceTea
 function openRaceTeamCreateModal(){openRaceTeamActionModal({type:'create-team',title:'CRÉER UNE TEAM',text:'Donnez un nom à votre nouvelle Team.',input:true,confirmLabel:'CRÉER'})}
 function openRaceTeamDeleteModal(teamId,teamName){openRaceTeamActionModal({type:'delete-team',id:teamId,name:teamName,title:'SUPPRIMER LA TEAM',text:`Supprimer ${teamName} ? Les membres, appareils associés et invitations seront également supprimés.`,confirmLabel:'SUPPRIMER',danger:true})}
 function openRaceMemberDeleteModal(memberId,memberName){openRaceTeamActionModal({type:'delete-member',id:memberId,name:memberName,title:'SUPPRIMER LE MEMBRE',text:`Supprimer ${memberName} de la Team ? Son appareil et ses invitations seront également dissociés.`,confirmLabel:'SUPPRIMER',danger:true})}
-function openRaceSessionEndModal(){openRaceTeamActionModal({type:'end-session',title:'TERMINER LA SESSION',text:'Terminer la Session Course ? Tous les rôles actifs seront immédiatement révoqués sur les appareils des membres.',confirmLabel:'TERMINER LA SESSION',danger:true})}
+function openRaceSessionEndModal(){const modal=document.getElementById('raceSessionEndConfirm');if(modal)modal.hidden=false}
+function closeRaceSessionEndModal(){const modal=document.getElementById('raceSessionEndConfirm');if(modal)modal.hidden=true}
+async function confirmRaceSessionEnd(){const btn=document.getElementById('raceSessionEndConfirmBtn');if(btn)btn.disabled=true;try{await performEndRaceSession();closeRaceSessionEndModal();closeRaceSessionManager();showMode('analyzer')}catch(e){raceSessionFeedback(e.message||String(e),true)}finally{if(btn)btn.disabled=false}}
 async function confirmRaceTeamAction(){
   const action={...velocityTeamAction},confirm=document.getElementById('raceTeamActionConfirm'),input=document.getElementById('raceTeamActionInput'),error=document.getElementById('raceTeamActionError');
   if(confirm)confirm.disabled=true;if(error)error.textContent='';
@@ -4420,8 +4467,12 @@ function velocityShowDeviceGate(title='Vérification de votre accès…',message
 function velocityResetRoleUI(){document.body.classList.remove('race-role-access','race-role-spotter','race-role-pilot','velocity-device-waiting-mode','velocity-device-pending-mode');document.getElementById('velocityDeviceWaiting').hidden=true}
 function velocityDeviceAccessKey(data){const roles=[...(data?.authorized_roles||[])].map(String).sort().join(',');return [data?.paired?'1':'0',String(data?.role||''),String(data?.session_id||data?.session?.id||''),String(data?.device?.id||''),roles,String(data?.session?.pilot_focus_apex_row??''),String(data?.session?.pilot_focus_driver||'')].join('|')}
 function velocityApplyDeviceRole(data){
- window.velocityRaceSession=data?.session||null;
- velocitySessionButtonUpdate(window.velocityRaceSession);
+ // Un navigateur TM non associé ne doit pas effacer l'état Session Course
+ // chargé par Team Management. Les appareils associés, eux, suivent leur session.
+ if(data?.paired){
+  window.velocityRaceSession=data?.session||null;
+  velocitySessionButtonUpdate(window.velocityRaceSession);
+ }
  const signature=velocityDeviceAccessKey(data);
  if(signature===velocityDeviceAccessSignature)return;
  velocityDeviceAccessSignature=signature;const role=String(data?.role||'');velocityDeviceRole=role;window.velocityDeviceRole=role;
