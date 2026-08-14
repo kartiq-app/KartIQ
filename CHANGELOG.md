@@ -1,4 +1,15 @@
-# V7.2.156 — ANALYZER PORTRAIT : MENU FIXE TYPE ENDURANCE
+# V7.2.157 — ANALYZER PORTRAIT : FINITIONS UX
+- Carte Équipe suivie descendue sous le menu fixe et lignes légèrement resserrées.
+- Ligne TRAFIC allongée ; géométrie et espacement 0 / ±2 conservés via le moteur commun desktop.
+- HEAT MAP / SIMULER UN ARRÊT / plein écran regroupés sur une seule ligne.
+- PIT LANE repositionnée sous le radar et ensemble Radar + Pit Lane centré.
+- Conformité : colonne Relais élargie et blocs Stand minimum / Temps mini. par pilote décalés vers la droite.
+- Footer portrait simplifié : suppression des outils techniques demandés ; Velocity Lab et Session Course conservés.
+- Velocity Lab : croix de fermeture fixée en haut à droite sur smartphone.
+- Ajout d’identifiants stables aux cartes Analyzer pour fiabiliser les règles portrait et l’ordre mobile.
+- Aucun changement des calculs Analyzer ni du desktop.
+
+# V7.2.157 — ANALYZER PORTRAIT : MENU FIXE TYPE ENDURANCE
 - Le menu Analyzer portrait reprend le traitement visuel du bandeau Endurance.
 - Filet orange supérieur et filet orange inférieur.
 - Bandeau fixé sous la zone système iPhone via `env(safe-area-inset-top)`.

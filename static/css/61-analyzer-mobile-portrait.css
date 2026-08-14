@@ -62,7 +62,7 @@
 
  /* Le menu étant fixed, on réserve exactement sa hauteur avant la première carte. */
  body[data-app-mode="analyzer"] .analyzer-shell{
-   padding-top:127px!important;
+   padding-top:calc(137px + env(safe-area-inset-top,0px))!important;
  }
  /* Les wrappers desktop deviennent transparents au layout afin de respecter l'ordre mobile. */
  body[data-app-mode="analyzer"] .analyzer-hero,
@@ -91,7 +91,7 @@
  body[data-app-mode="analyzer"] #analyzerRulesCard,
  body[data-app-mode="analyzer"] #analyzerPenaltiesPanel,
  body[data-app-mode="analyzer"] #analyzerWeatherCard,
- body[data-app-mode="analyzer"] #analyzerDriverMessageCard{scroll-margin-top:calc(127px + env(safe-area-inset-top,0px));margin-left:0!important;margin-right:0!important;width:100%!important;box-sizing:border-box}
+ body[data-app-mode="analyzer"] #analyzerDriverMessageCard{scroll-margin-top:calc(137px + env(safe-area-inset-top,0px));margin-left:0!important;margin-right:0!important;width:100%!important;box-sizing:border-box}
 
  /* Classement Live : colonnes utiles uniquement. */
  body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-toolbar-left{display:flex;align-items:center;gap:6px;width:100%;flex-wrap:wrap}
@@ -136,7 +136,7 @@
  /* Footer = outils : conserve les fonctions existantes sans perturber les cartes. */
  body[data-app-mode="analyzer"] .analyzer-footer{width:100%;box-sizing:border-box}
 
- /* V7.2.156 — la zone scrollable passe sous le bandeau fixe, le bandeau lui-même ne bouge jamais. */
+ /* V7.2.157 — la zone scrollable passe sous le bandeau fixe, le bandeau lui-même ne bouge jamais. */
  body[data-app-mode="analyzer"] #analyzer.screen.active{
    overflow-y:auto!important;
    -webkit-overflow-scrolling:touch;
@@ -146,4 +146,165 @@
    transform:translateZ(0);
    -webkit-transform:translateZ(0);
  }
+
+ /* V7.2.157 — finition Analyzer portrait. */
+
+ /* Équipe suivie : descendue sous le bandeau fixe et légèrement resserrée pour tenir plus facilement sur un écran. */
+ body[data-app-mode="analyzer"] #analyzerFollowedCard{
+   padding:10px 12px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-name-row{
+   margin-top:5px!important;
+   margin-bottom:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-layout{
+   gap:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-list{
+   gap:5px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-list>div{
+   padding-bottom:4px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-deltas{
+   padding-top:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-neighbor{
+   gap:4px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-neighbor-divider{
+   margin:10px 8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-traffic{
+   margin-top:10px!important;
+   padding-top:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-traffic-head{
+   margin-bottom:5px!important;
+ }
+ /* Ligne Trafic quasiment bord à bord. Le calcul des positions/ticks reste exactement celui du desktop,
+    donc l'écart physique entre 0 et ±2 reste piloté par analyzerTrafficGeometry(). */
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-traffic-track{
+   margin-left:3px!important;
+   margin-right:3px!important;
+   height:58px!important;
+ }
+
+ /* Heat Map : trois commandes sur une seule ligne : HEAT MAP | SIMULER UN ARRÊT | plein écran. */
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-pit-simulator-title{
+   display:flex!important;
+   flex-direction:row!important;
+   align-items:center!important;
+   justify-content:flex-start!important;
+   gap:7px!important;
+   width:100%!important;
+   flex-wrap:nowrap!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-heatmap-title-group,
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-map-actions{
+   display:contents!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel #pitSimulatorTitle{
+   order:1!important;
+   flex:0 0 auto!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel #pitSimulatorButton{
+   order:2!important;
+   flex:0 0 auto!important;
+   margin:0!important;
+   font-size:8px!important;
+   padding:8px 9px!important;
+   white-space:nowrap!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-heatmap-expand{
+   order:3!important;
+   margin-left:auto!important;
+   flex:0 0 auto!important;
+ }
+
+ /* Radar + Pit Lane : même axe visuel, Pit Lane sous le radar et ensemble centré dans la carte. */
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-stage{
+   display:flex!important;
+   flex-direction:column!important;
+   align-items:center!important;
+   justify-content:flex-start!important;
+   gap:4px!important;
+   width:100%!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-radar-pane{
+   width:100%!important;
+   max-width:360px!important;
+   margin:0 auto!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-pitlane-pane{
+   width:100%!important;
+   max-width:360px!important;
+   min-height:92px!important;
+   padding:0!important;
+   margin:-4px auto 0!important;
+   align-items:center!important;
+   justify-content:center!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-pitlane-pane svg{
+   display:block!important;
+   width:100%!important;
+   max-width:360px!important;
+   max-height:105px!important;
+   margin:0 auto!important;
+ }
+
+ /* Conformité : on redonne un peu plus de place à la colonne Relais,
+    et on décale les deux blocs de droite. */
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid{
+   grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
+   column-gap:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid>div:nth-child(even){
+   padding-left:12px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid b{
+   overflow:visible!important;
+   text-overflow:clip!important;
+ }
+
+ /* Bas de page portrait : retirer les outils techniques demandés.
+    Velocity Lab et Session Course restent disponibles. */
+ body[data-app-mode="analyzer"] .analyzer-footer>span,
+ body[data-app-mode="analyzer"] .analyzer-footer>button{
+   display:none!important;
+ }
+ body[data-app-mode="analyzer"] .analyzer-footer>.velocity-lab-launch,
+ body[data-app-mode="analyzer"] .analyzer-footer>.race-session-launch{
+   display:inline-flex!important;
+ }
+ body[data-app-mode="analyzer"] .analyzer-footer{
+   justify-content:center!important;
+   gap:8px!important;
+   padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px))!important;
+ }
+
+ /* Velocity Lab smartphone : croix toujours visible en haut à droite pour revenir à Analyzer. */
+ body[data-app-mode="analyzer"] .velocity-lab-overlay.active .velocity-lab-head{
+   position:sticky!important;
+   top:0!important;
+   z-index:26010!important;
+   background:#080a0e!important;
+   padding-right:58px!important;
+   padding-top:calc(10px + env(safe-area-inset-top,0px))!important;
+ }
+ body[data-app-mode="analyzer"] .velocity-lab-overlay.active .velocity-lab-close{
+   display:flex!important;
+   align-items:center!important;
+   justify-content:center!important;
+   position:fixed!important;
+   top:calc(8px + env(safe-area-inset-top,0px))!important;
+   right:10px!important;
+   z-index:26020!important;
+   width:42px!important;
+   height:42px!important;
+   margin:0!important;
+   background:#11161d!important;
+   color:#fff!important;
+ }
+
 }
