@@ -1,4 +1,4 @@
-# Velocity V7.2.172SS — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.172SFFS — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.

@@ -998,7 +998,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 }
 
 
-/* Velocity V7.2.172SS — Focus Endurance smartphone : lisibilité maximale.
+/* Velocity V7.2.172SFFS — Focus Endurance smartphone : lisibilité maximale.
    Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
 @media (max-width: 900px), (pointer: coarse){
   #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
@@ -1036,4 +1036,30 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .spr
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
   font-size:clamp(15px,4.15dvw,30px)!important;
+}
+
+
+/* V7.2.172SFFF — Focus Endurance portrait, latest validated presentation only */
+@media (orientation:portrait) and (max-width:900px){
+  #enduranceFocus .endurance-focus-main{grid-template-rows:60% 40%!important}
+  #enduranceFocus .endurance-focus-last-lap-cell{
+    box-sizing:border-box!important;padding:clamp(5px,1vw,12px)!important;overflow:hidden!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap{
+    width:100%!important;max-width:100%!important;max-height:100%!important;
+    line-height:.84!important;white-space:nowrap!important;overflow:hidden!important;
+  }
+  #enduranceFocus .endurance-focus-delta{font-size:130%!important}
+  #enduranceFocus .endurance-focus-team,
+  #enduranceFocus .endurance-focus-driver{font-size:110%!important}
+}
+/* iPhone: device remains portrait while Focus content uses the validated rotated layout */
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-main{grid-template-rows:60% 40%!important}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap-cell{
+  padding:clamp(4px,.8dvw,10px)!important;overflow:hidden!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
+  font-size:clamp(59px,21.6dvw,123px)!important;line-height:.82!important;
+  letter-spacing:-.025em!important;width:100%!important;max-width:100%!important;
+  text-align:center!important;white-space:nowrap!important;overflow:hidden!important;
 }
