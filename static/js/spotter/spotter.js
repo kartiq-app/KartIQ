@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.1728';
+const SPOTTER_APP_RELEASE='7.2.1729';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -788,6 +788,22 @@ function spotterFindTargetColumn(x,y){
  }
  return best;
 }
+
+function spotterMobileMaintenanceDropTarget(clientX,clientY){
+ const zone=document.querySelector('[data-spotter-drop-zone="maintenance"]');
+ if(!zone)return null;
+ const coarse=window.matchMedia?.('(pointer: coarse)')?.matches
+  ||/iPhone|iPad|iPod|Android|Mobile/i.test(String(navigator?.userAgent||''));
+ if(!coarse)return null;
+ const rect=zone.getBoundingClientRect();
+ const padX=24;
+ const padTop=70;
+ const padBottom=90;
+ return clientX>=rect.left-padX&&clientX<=rect.right+padX
+  &&clientY>=rect.top-padTop&&clientY<=rect.bottom+padBottom
+  ?zone:null;
+}
+
 function spotterOnDragMove(event){
  if(spotterDrag.pointerId!==null&&event.pointerId!==spotterDrag.pointerId)return;
  spotterDrag.lastX=event.clientX;spotterDrag.lastY=event.clientY;
@@ -802,7 +818,8 @@ function spotterOnDragMove(event){
  spotterClearDropHighlights();
 
  const element=document.elementFromPoint(event.clientX,event.clientY);
- const maintenance=element?.closest('[data-spotter-drop-zone="maintenance"]');
+ const maintenance=spotterMobileMaintenanceDropTarget(event.clientX,event.clientY)
+  ||element?.closest('[data-spotter-drop-zone="maintenance"]');
  if(maintenance){
   maintenance.classList.add('spotter-drop-target');
   spotterDrag.target={type:'maintenance'};
