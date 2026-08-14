@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.154"
-APP_RELEASE_NAME = "ALGO V2 PLATEAU RELATIF"
+APP_VERSION = "7.2.168"
+APP_RELEASE_NAME = "POLISH ANALYZER DESKTOP"
 
 
 def _circuit_sort_key(circuit):

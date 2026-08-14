@@ -94,7 +94,6 @@
     <div class="analyzer-toolbar">
       <button class="inline-home-btn analyzer-home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button>
       <div class="analyzer-heading"><span class="analyzer-kicker">ENDURANCE</span></div>
-      <button id="analyzerEventNotice" class="analyzer-event-notice" type="button" onclick="openAnalyzerEventNotifications()" aria-label="Voir les nouvelles pénalités et informations" hidden><span class="analyzer-event-notice-icon" aria-hidden="true">✉️</span><span id="analyzerEventNoticeText" class="analyzer-event-notice-text">Informations</span><span id="analyzerEventNoticeBadge" class="analyzer-event-notice-badge" hidden>1</span></button>
       <input id="analyzerSessionImport" type="file" accept="application/json,.json" hidden onchange="importAnalyzerSession(event)">
     </div>
 
@@ -110,7 +109,10 @@
       <article id="analyzerFollowedCard" class="analyzer-hero-card followed-card">
         <div class="analyzer-card-title-row analyzer-followed-title-row">
           <span class="analyzer-card-label">ÉQUIPE SUIVIE</span>
-          <button id="analyzerDebriefButton" class="analyzer-debrief-button" type="button" onclick="openAnalyzerDebrief()">COMPTE RENDU</button>
+          <div class="analyzer-followed-action">
+            <button id="analyzerDebriefButton" class="analyzer-debrief-button" type="button" onclick="openAnalyzerDebrief()">COMPTE RENDU</button>
+            <button id="analyzerEventNotice" class="analyzer-event-notice analyzer-event-notice-overlay" type="button" onclick="openAnalyzerEventNotifications()" aria-label="Voir les nouvelles pénalités et informations" hidden><span class="analyzer-event-notice-icon" aria-hidden="true">✉️</span><span id="analyzerEventNoticeText" class="analyzer-event-notice-text">Informations</span><span id="analyzerEventNoticeBadge" class="analyzer-event-notice-badge" hidden>1</span></button>
+          </div>
         </div>
         <div class="analyzer-followed-name-row"><strong id="analyzerFollowedName">—</strong></div>
         <div class="analyzer-followed-layout">
@@ -149,29 +151,46 @@
         </div>
       </article>
       <article id="analyzerRulesCard" class="analyzer-hero-card rules-card">
+        <div class="analyzer-rules-top">
           <div class="analyzer-card-title-row analyzer-rules-title-row">
             <span class="analyzer-card-label">CONFORMITÉ RÈGLEMENTAIRE</span>
-            <button class="rules-card-button" type="button" onclick="openAnalyzerRules()">RÈGLEMENT</button>
+            <div class="analyzer-rules-title-actions"><span class="rules-status" id="analyzerRulesStatus">—</span><button class="rules-card-button" type="button" onclick="openAnalyzerRules()">RÈGLEMENT</button></div>
           </div>
-          <div class="rules-status-row"><div class="rules-status" id="analyzerRulesStatus">—</div></div>
-          <div class="rules-mini-grid">
+          <div class="rules-mini-grid rules-mini-grid-v160">
+            <div><span>Arrêts</span><b id="analyzerRuleStops">— / —</b><small id="analyzerStopsRemaining">— restant(s)</small></div>
             <div><span>Relais</span><b id="analyzerRuleRelay">10:00 → 60:00</b></div>
-            <div><span>Stand minimum</span><b id="analyzerRulePit">02:30</b></div>
-            <div><span>Passages restants</span><b id="analyzerStopsRemaining">—</b></div>
-            <div><span>Temps mini. par pilote</span><b id="analyzerStopCadence">—</b></div>
+            <div><span>Stand min.</span><b id="analyzerRulePit">02:30</b></div>
+            <div><span>Temps/pilote</span><b id="analyzerStopCadence">—</b></div>
+            <div><span>Fermeture</span><b id="analyzerPitCloseRule">T - 30:00</b><small id="analyzerPitCloseCountdown">—</small></div>
           </div>
-          <div id="analyzerRulesPilots" class="rules-pilots" hidden></div>
-        </article>
+        </div>
+        <div class="relay-strategy-block" id="analyzerRelayStrategy">
+          <div class="relay-strategy-title">STRATÉGIE RELAIS</div>
+          <div class="relay-strategy-metrics">
+            <div><span>Score</span><b id="analyzerStrategyScore">—</b></div>
+            <div><span>Confiance</span><b id="analyzerStrategyConfidence">—</b></div>
+            <div><span>Temps en piste</span><b id="analyzerStrategyTrack">—</b></div>
+            <div><span>Delta/tour</span><b id="analyzerStrategyDelta">—</b></div>
+            <div><span>Impact/relais</span><b id="analyzerStrategyImpact">—</b></div>
+          </div>
+          <div class="relay-strategy-capital">
+            <div class="relay-strategy-capital-head"><span>CAPITAL STRATÉGIQUE</span></div>
+            <div class="relay-strategy-capital-value-row"><div class="relay-strategy-capital-value" id="analyzerStrategyCapitalValue">—</div><strong id="analyzerStrategyCapitalPercent">—</strong></div>
+            <div class="relay-strategy-capital-bar"><i id="analyzerStrategyCapitalBar"></i></div>
+          </div>
+          <div class="relay-strategy-decision">
+            <div><span>Recommandation</span><b id="analyzerStrategyRecommendation">—</b></div>
+            <div class="relay-strategy-window-card" role="button" tabindex="0" onclick="toggleAnalyzerStrategyWindowDetails(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAnalyzerStrategyWindowDetails(event)}"><span>Fenêtre conseillée</span><b id="analyzerStrategyWindow">—</b><small id="analyzerStrategyWindowHint"></small></div>
+          </div>
+          <div id="analyzerStrategyWindowDetails" class="relay-strategy-window-details" hidden></div>
+        </div>
+      </article>
       <div class="analyzer-weather-message-stack">
         <article class="analyzer-hero-card weather-card" id="analyzerWeatherCard">
         <span class="analyzer-card-label">MÉTÉO</span>
         <div class="weather-main">
-          <div class="weather-current-left"><img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo"><div class="weather-current"><strong id="analyzerWeatherTemperature">—</strong><span id="analyzerWeatherCondition">En attente…</span></div></div>
+          <div class="weather-current-left"><img id="analyzerWeatherIcon" class="weather-icon" src="/static/assets/weather/cloudy.svg" alt="Conditions météo"><div class="weather-current"><strong id="analyzerWeatherTemperature">—</strong><div class="weather-summary-line"><span id="analyzerWeatherCondition">En attente…</span><span class="weather-summary-separator" aria-hidden="true">|</span><span class="weather-summary-stat">Vent <b id="analyzerWeatherWind">—</b></span><span class="weather-summary-separator" aria-hidden="true">|</span><span class="weather-summary-stat">Pluie <b id="analyzerWeatherRain">—</b></span></div></div></div>
           <div class="weather-local-block"><span id="analyzerWeatherLocalTime" class="weather-local-time">--:--</span><span id="analyzerWeatherCircuitName" class="weather-circuit-name">—</span></div>
-        </div>
-        <div class="weather-stats">
-          <div><span>Vent</span><b id="analyzerWeatherWind">—</b></div>
-          <div><span>Pluie</span><b id="analyzerWeatherRain">—</b></div>
         </div>
         <div class="weather-timeline-wrap">
           <div class="weather-timeline" id="analyzerWeatherTimeline" aria-label="Douze prévisions météo horaires locales">
@@ -179,6 +198,10 @@
           </div>
         </div>
       </article>
+        <article id="analyzerPilotsCard" class="analyzer-hero-card analyzer-pilots-card" aria-label="Temps de roulage des pilotes">
+          <span class="analyzer-card-label">TEMPS PILOTES</span>
+          <div id="analyzerRulesPilots" class="rules-pilots analyzer-pilot-time-list"><div class="analyzer-pilots-empty">En attente des données Apex…</div></div>
+        </article>
         <article id="analyzerDriverMessageCard" class="analyzer-hero-card analyzer-driver-message-card" aria-label="Envoyer un message au pilote">
           <div class="analyzer-driver-message-title-row">
             <span class="analyzer-driver-message-icon" aria-hidden="true">📨</span>
@@ -444,8 +467,7 @@
         <label>Nombre de pilotes<input id="ruleDriversCount" type="number" min="2" max="10" required></label>
         <label>Temps minimum par pilote (minutes)<input id="ruleDriverMinimum" type="number" min="0" max="1440" step="5" required></label>
       </div>
-      <div class="analyzer-rules-note">Paramètres préremplis pour la catégorie RACE des 24 Heures Fun & Race 2026 : 28 passages, relais de 10 à 60 minutes, passage dans les stands de 2 min 30 et fermeture des stands dans les 30 dernières minutes.</div>
-      <div class="analyzer-rules-actions"><button type="button" onclick="resetAnalyzerRules()">VALEURS FUN & RACE</button><button type="submit" class="primary">ENREGISTRER</button></div>
+      <div class="analyzer-rules-actions"><button type="submit" class="primary">ENREGISTRER</button></div>
     </form>
   </div>
 

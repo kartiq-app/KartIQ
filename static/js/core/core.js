@@ -132,10 +132,17 @@ function syncRemainingFromApex(milliseconds,{direct=false}={}){
  updateRemainingDisplay();
  return true;
 }
+function apexDynamicTimeToMilliseconds(raw){
+ const value=String(raw??'').trim().split('_',1)[0];
+ const parsed=Number(value);
+ if(!Number.isFinite(parsed))return null;
+ return Math.max(0,Math.round(value.includes('.')?parsed*1000:parsed));
+}
 function ingestApexCountdown(frame){
- const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|countdown\|(\d+)/g)];
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|(?:countdown|countdown_text)\|([0-9]+(?:\.[0-9]+)?(?:_[^\r\n|]*)?)/g)];
  if(!matches.length)return false;
- return syncRemainingFromApex(Number(matches[matches.length-1][1]),{direct:true});
+ const ms=apexDynamicTimeToMilliseconds(matches[matches.length-1][1]);
+ return ms===null?false:syncRemainingFromApex(ms,{direct:true});
 }
 function syncElapsedFromApex(milliseconds,{direct=false}={}){
  const ms=Number(milliseconds);
@@ -148,9 +155,18 @@ function syncElapsedFromApex(milliseconds,{direct=false}={}){
  return true;
 }
 function ingestApexElapsed(frame){
- const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|count\|(\d+)/g)];
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])dyn1\|count\|([0-9]+(?:\.[0-9]+)?)/g)];
  if(!matches.length)return false;
- return syncElapsedFromApex(Number(matches[matches.length-1][1]),{direct:true});
+ const ms=apexDynamicTimeToMilliseconds(matches[matches.length-1][1]);
+ return ms===null?false:syncElapsedFromApex(ms,{direct:true});
+}
+function ingestApexSessionType(frame){
+ const matches=[...String(frame||'').matchAll(/(?:^|[\r\n])init\|([^|\r\n]+)/g)];
+ if(!matches.length)return false;
+ const code=String(matches[matches.length-1][1]||'').trim().toLowerCase();
+ const type=code==='n'?'no_live':(code==='r'?'race':'best_time');
+ state={...(state||{}),apex_session_type:type};
+ return true;
 }
 function liveElapsedMilliseconds(){
  if(Number.isFinite(elapsedCountMs)&&elapsedCountPerfAt)return Math.max(0,elapsedCountMs+(Date.now()-elapsedCountPerfAt));
@@ -444,6 +460,7 @@ function connectApexBrowser(force=false){
   const lapProgressFrame=ingestApexLapProgress(frame);
   if(!lapProgressFrame)ingestApexCountdown(frame);
   ingestApexElapsed(frame);
+  ingestApexSessionType(frame);
   ingestApexMapEvents(frame,circuit.id);
   try{
    const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});

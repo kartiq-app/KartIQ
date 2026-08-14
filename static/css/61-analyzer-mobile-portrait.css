@@ -3,93 +3,310 @@
 .analyzer-mobile-nav{display:none}
 
 @media (max-width:700px) and (orientation:portrait){
- body.current-analyzer header{display:none!important}
- body.current-analyzer .analyzer-screen{padding:0!important}
- body.current-analyzer .analyzer-shell{display:flex!important;flex-direction:column;gap:8px;padding:0 0 16px!important;overflow:visible!important}
- body.current-analyzer .analyzer-toolbar{display:none!important}
+ body[data-app-mode="analyzer"] header{display:none!important}
+ body[data-app-mode="analyzer"] .analyzer-screen{padding:0!important}
+ body[data-app-mode="analyzer"] .analyzer-shell{display:flex!important;flex-direction:column;gap:8px;padding:0 0 16px!important;overflow:visible!important}
+ body[data-app-mode="analyzer"] .analyzer-toolbar{display:none!important}
 
- /* Navigation persistante : 3 dalles puis 2 dalles. */
- body.current-analyzer .analyzer-mobile-nav{display:grid;grid-template-columns:20% 40% 40%;position:sticky;top:0;z-index:1200;background:#0b0d12;border-top:3px solid #ff8a00;border-bottom:1px solid #2a2e36;box-shadow:0 5px 16px rgba(0,0,0,.42);padding-top:env(safe-area-inset-top)}
- body.current-analyzer .analyzer-mobile-nav button{min-width:0;border:0;border-right:1px solid #292d35;border-bottom:1px solid #292d35;background:#0d0f14;color:#fff;min-height:70px;padding:8px 6px;font-family:inherit;font-weight:900;letter-spacing:.03em}
- body.current-analyzer .analyzer-mobile-nav-menu{font-size:27px}
- body.current-analyzer .analyzer-mobile-nav-team,body.current-analyzer .analyzer-mobile-nav-velocity,body.current-analyzer .analyzer-mobile-nav-track{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
- body.current-analyzer .analyzer-mobile-nav-team span{font-size:22px;font-family:'F1 Torque',Arial,sans-serif}
- body.current-analyzer .analyzer-mobile-nav-team strong{max-width:100%;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- body.current-analyzer .analyzer-mobile-nav-velocity span,body.current-analyzer .analyzer-mobile-nav-track span{font-size:9px;color:#9299a5}
- body.current-analyzer .analyzer-mobile-nav-velocity strong{font-size:24px;color:#35e892;font-family:'F1 Torque',Arial,sans-serif}
- body.current-analyzer .analyzer-mobile-nav-ranking{grid-column:1/3;min-height:54px!important;color:#ff941d!important;font-size:11px}
- body.current-analyzer .analyzer-mobile-nav-track{grid-column:3;min-height:54px!important}
- body.current-analyzer .analyzer-mobile-nav-track strong{font-size:16px}
+ /* Navigation Analyzer portrait : reprend le comportement du bandeau Endurance.
+    Le bandeau est FIXE sous la zone système iPhone et reste accessible pendant tout le scroll. */
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav{
+   display:grid;
+   grid-template-columns:20% 40% 40%;
+   position:fixed!important;
+   left:0;
+   right:0;
+   top:env(safe-area-inset-top,0px)!important;
+   width:100%;
+   z-index:5000;
+   background:#0b0d12;
+   border-top:3px solid #ff8a00!important;
+   border-bottom:3px solid #ff8a00!important;
+   border-radius:10px 10px 0 0;
+   box-shadow:none;
+   padding:0!important;
+   margin:0!important;
+   overflow:hidden;
+   box-sizing:border-box;
+ }
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav button{
+   min-width:0;
+   border:0;
+   border-right:1px solid #29292e;
+   border-bottom:1px solid #29292e;
+   background:#0d0f14;
+   color:#fff;
+   min-height:70px;
+   padding:8px 6px;
+   font-family:inherit;
+   font-weight:900;
+   letter-spacing:.03em;
+   border-radius:0!important;
+ }
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav button:nth-child(3),
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav button:nth-child(5){border-right:0}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-menu{font-size:27px}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-team,
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-velocity,
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-track{
+   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px
+ }
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-team span{font-size:22px;font-family:'F1 Torque',Arial,sans-serif}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-team strong{max-width:100%;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-velocity span,
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-track span{font-size:9px;color:#9299a5}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-velocity strong{font-size:24px;color:#35e892;font-family:'F1 Torque',Arial,sans-serif}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-ranking{grid-column:1/3;min-height:54px!important;color:#ff941d!important;font-size:11px}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-track{grid-column:3;min-height:54px!important}
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav-track strong{font-size:16px}
 
+ /* Le menu étant fixed, on réserve exactement sa hauteur avant la première carte. */
+ body[data-app-mode="analyzer"] .analyzer-shell{
+   padding-top:calc(137px + env(safe-area-inset-top,0px))!important;
+ }
  /* Les wrappers desktop deviennent transparents au layout afin de respecter l'ordre mobile. */
- body.current-analyzer .analyzer-hero,
- body.current-analyzer .analyzer-desktop-dashboard,
- body.current-analyzer .analyzer-ranking-column,
- body.current-analyzer .analyzer-strategy-column,
- body.current-analyzer .analyzer-weather-message-stack{display:contents!important}
+ body[data-app-mode="analyzer"] .analyzer-hero,
+ body[data-app-mode="analyzer"] .analyzer-desktop-dashboard,
+ body[data-app-mode="analyzer"] .analyzer-ranking-column,
+ body[data-app-mode="analyzer"] .analyzer-strategy-column,
+ body[data-app-mode="analyzer"] .analyzer-weather-message-stack{display:contents!important}
 
- body.current-analyzer #analyzerFollowedCard{order:10}
- body.current-analyzer #analyzerRankingPanel{order:20}
- body.current-analyzer #analyzerVelocityPanel{order:30}
- body.current-analyzer #analyzerHeatMapPanel{order:40}
- body.current-analyzer #analyzerSpotterCards{order:50}
- body.current-analyzer #analyzerRulesCard{order:60}
- body.current-analyzer #analyzerPenaltiesPanel{order:70}
- body.current-analyzer #analyzerWeatherCard{order:80}
- body.current-analyzer #analyzerDriverMessageCard{order:90}
- body.current-analyzer .analyzer-opportunity-panel{display:none!important}
- body.current-analyzer .analyzer-footer{order:100}
+ body[data-app-mode="analyzer"] #analyzerFollowedCard{order:10}
+ body[data-app-mode="analyzer"] #analyzerRankingPanel{order:20}
+ body[data-app-mode="analyzer"] #analyzerVelocityPanel{order:30}
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel{order:40}
+ body[data-app-mode="analyzer"] #analyzerSpotterCards{order:50}
+ body[data-app-mode="analyzer"] #analyzerRulesCard{order:60}
+ body[data-app-mode="analyzer"] #analyzerPenaltiesPanel{order:70}
+ body[data-app-mode="analyzer"] #analyzerWeatherCard{order:80}
+ body[data-app-mode="analyzer"] #analyzerPilotsCard{order:85}
+ body[data-app-mode="analyzer"] #analyzerDriverMessageCard{order:90}
+ body[data-app-mode="analyzer"] .analyzer-opportunity-panel{display:none!important}
+ body[data-app-mode="analyzer"] .analyzer-footer{order:100}
 
- body.current-analyzer #analyzerFollowedCard,
- body.current-analyzer #analyzerRankingPanel,
- body.current-analyzer #analyzerVelocityPanel,
- body.current-analyzer #analyzerHeatMapPanel,
- body.current-analyzer #analyzerSpotterCards,
- body.current-analyzer #analyzerRulesCard,
- body.current-analyzer #analyzerPenaltiesPanel,
- body.current-analyzer #analyzerWeatherCard,
- body.current-analyzer #analyzerDriverMessageCard{scroll-margin-top:132px;margin-left:0!important;margin-right:0!important;width:100%!important;box-sizing:border-box}
+ body[data-app-mode="analyzer"] #analyzerFollowedCard,
+ body[data-app-mode="analyzer"] #analyzerRankingPanel,
+ body[data-app-mode="analyzer"] #analyzerVelocityPanel,
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel,
+ body[data-app-mode="analyzer"] #analyzerSpotterCards,
+ body[data-app-mode="analyzer"] #analyzerRulesCard,
+ body[data-app-mode="analyzer"] #analyzerPenaltiesPanel,
+ body[data-app-mode="analyzer"] #analyzerWeatherCard,
+ body[data-app-mode="analyzer"] #analyzerPilotsCard,
+ body[data-app-mode="analyzer"] #analyzerDriverMessageCard{scroll-margin-top:calc(137px + env(safe-area-inset-top,0px));margin-left:0!important;margin-right:0!important;width:100%!important;box-sizing:border-box}
 
  /* Classement Live : colonnes utiles uniquement. */
- body.current-analyzer #analyzerRankingPanel .analyzer-ranking-toolbar-left{display:flex;align-items:center;gap:6px;width:100%;flex-wrap:wrap}
- body.current-analyzer #analyzerRankingPanel .analyzer-race-remaining{display:none!important}
- body.current-analyzer #analyzerRankingPanel .analyzer-ranking-switch{display:flex;flex:1 1 auto;min-width:0}
- body.current-analyzer #analyzerRankingPanel .analyzer-ranking-switch button{padding:8px 7px;font-size:8px;white-space:nowrap}
- body.current-analyzer #analyzerRankingPanel .analyzer-table-controls label{font-size:0!important}
- body.current-analyzer #analyzerRankingPanel .analyzer-table-controls select{font-size:9px;min-height:32px;padding:4px 22px 4px 7px}
- body.current-analyzer .analyzer-ranking-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
- body.current-analyzer .analyzer-ranking-table{min-width:760px}
- body.current-analyzer .analyzer-ranking-table th:nth-child(5),body.current-analyzer .analyzer-ranking-table td:nth-child(5),
- body.current-analyzer .analyzer-ranking-table th:nth-child(6),body.current-analyzer .analyzer-ranking-table td:nth-child(6),
- body.current-analyzer .analyzer-ranking-table th:nth-child(10),body.current-analyzer .analyzer-ranking-table td:nth-child(10),
- body.current-analyzer .analyzer-ranking-table th:nth-child(13),body.current-analyzer .analyzer-ranking-table td:nth-child(13),
- body.current-analyzer .analyzer-ranking-table th:nth-child(15),body.current-analyzer .analyzer-ranking-table td:nth-child(15),
- body.current-analyzer .analyzer-ranking-table th:nth-child(16),body.current-analyzer .analyzer-ranking-table td:nth-child(16){display:none!important}
+ body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-toolbar-left{display:flex;align-items:center;gap:6px;width:100%;flex-wrap:wrap}
+ body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-race-remaining{display:none!important}
+ body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-switch{display:flex;flex:1 1 auto;min-width:0}
+ body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-switch button{padding:8px 7px;font-size:8px;white-space:nowrap}
+ body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-table-controls label{font-size:0!important}
+ body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-table-controls select{font-size:9px;min-height:32px;padding:4px 22px 4px 7px}
+ body[data-app-mode="analyzer"] .analyzer-ranking-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+ body[data-app-mode="analyzer"] .analyzer-ranking-table{min-width:760px}
+ body[data-app-mode="analyzer"] .analyzer-ranking-table th:nth-child(5),body[data-app-mode="analyzer"] .analyzer-ranking-table td:nth-child(5),
+ body[data-app-mode="analyzer"] .analyzer-ranking-table th:nth-child(6),body[data-app-mode="analyzer"] .analyzer-ranking-table td:nth-child(6),
+ body[data-app-mode="analyzer"] .analyzer-ranking-table th:nth-child(10),body[data-app-mode="analyzer"] .analyzer-ranking-table td:nth-child(10),
+ body[data-app-mode="analyzer"] .analyzer-ranking-table th:nth-child(13),body[data-app-mode="analyzer"] .analyzer-ranking-table td:nth-child(13),
+ body[data-app-mode="analyzer"] .analyzer-ranking-table th:nth-child(15),body[data-app-mode="analyzer"] .analyzer-ranking-table td:nth-child(15),
+ body[data-app-mode="analyzer"] .analyzer-ranking-table th:nth-child(16),body[data-app-mode="analyzer"] .analyzer-ranking-table td:nth-child(16){display:none!important}
 
  /* Velocity : EVOL., R et TOURS masqués en portrait. */
- body.current-analyzer #analyzerVelocityPanel .kartiq-evolution,
- body.current-analyzer #analyzerVelocityPanel .kartiq-relay-index,
- body.current-analyzer #analyzerVelocityPanel .kartiq-relay-laps{display:none!important}
- body.current-analyzer #analyzerVelocityPanel .analyzer-kartiq-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+ body[data-app-mode="analyzer"] #analyzerVelocityPanel .kartiq-evolution,
+ body[data-app-mode="analyzer"] #analyzerVelocityPanel .kartiq-relay-index,
+ body[data-app-mode="analyzer"] #analyzerVelocityPanel .kartiq-relay-laps{display:none!important}
+ body[data-app-mode="analyzer"] #analyzerVelocityPanel .analyzer-kartiq-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
  /* Heat Map : uniquement Heat Map, Simuler un arrêt et plein écran. */
- body.current-analyzer #analyzerHeatMapPanel .map-control{display:none!important}
- body.current-analyzer #analyzerHeatMapPanel .analyzer-pit-simulator-title{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px}
- body.current-analyzer #analyzerHeatMapPanel .analyzer-heatmap-title-group,body.current-analyzer #analyzerHeatMapPanel .analyzer-map-actions{display:contents!important}
- body.current-analyzer #analyzerHeatMapPanel #pitSimulatorTitle{order:1}
- body.current-analyzer #analyzerHeatMapPanel #pitSimulatorButton{order:2;font-size:8px;padding:8px 9px;white-space:nowrap}
- body.current-analyzer #analyzerHeatMapPanel .analyzer-heatmap-expand{order:3;margin-left:auto}
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-control{display:none!important}
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-pit-simulator-title{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px}
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-heatmap-title-group,body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-map-actions{display:contents!important}
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel #pitSimulatorTitle{order:1}
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel #pitSimulatorButton{order:2;font-size:8px;padding:8px 9px;white-space:nowrap}
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-heatmap-expand{order:3;margin-left:auto}
 
  /* STANDS et pénalités : titres alignés à gauche. */
- body.current-analyzer #analyzerSpotterCards .analyzer-panel-title,
- body.current-analyzer #analyzerPenaltiesPanel .analyzer-panel-title{justify-content:flex-start!important;text-align:left!important}
- body.current-analyzer #analyzerPenaltiesCount{display:none!important}
+ body[data-app-mode="analyzer"] #analyzerSpotterCards .analyzer-panel-title,
+ body[data-app-mode="analyzer"] #analyzerPenaltiesPanel .analyzer-panel-title{justify-content:flex-start!important;text-align:left!important}
+ body[data-app-mode="analyzer"] #analyzerPenaltiesCount{display:none!important}
 
  /* Conformité : plus d'espace aux libellés longs à droite. */
- body.current-analyzer #analyzerRulesCard .rules-mini-grid{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)!important;column-gap:14px!important}
- body.current-analyzer #analyzerRulesCard .rules-mini-grid>div:nth-child(even){padding-left:8px}
- body.current-analyzer #analyzerRulesCard .rules-mini-grid span{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)!important;column-gap:14px!important}
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid>div:nth-child(even){padding-left:8px}
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid span{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
 
  /* Footer = outils : conserve les fonctions existantes sans perturber les cartes. */
- body.current-analyzer .analyzer-footer{width:100%;box-sizing:border-box}
+ body[data-app-mode="analyzer"] .analyzer-footer{width:100%;box-sizing:border-box}
+
+ /* V7.2.157 — la zone scrollable passe sous le bandeau fixe, le bandeau lui-même ne bouge jamais. */
+ body[data-app-mode="analyzer"] #analyzer.screen.active{
+   overflow-y:auto!important;
+   -webkit-overflow-scrolling:touch;
+   overscroll-behavior-y:contain;
+ }
+ body[data-app-mode="analyzer"] .analyzer-mobile-nav{
+   transform:translateZ(0);
+   -webkit-transform:translateZ(0);
+ }
+
+ /* V7.2.157 — finition Analyzer portrait. */
+
+ /* Équipe suivie : descendue sous le bandeau fixe et légèrement resserrée pour tenir plus facilement sur un écran. */
+ body[data-app-mode="analyzer"] #analyzerFollowedCard{
+   padding:10px 12px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-name-row{
+   margin-top:5px!important;
+   margin-bottom:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-layout{
+   gap:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-list{
+   gap:5px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-list>div{
+   padding-bottom:4px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-deltas{
+   padding-top:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-neighbor{
+   gap:4px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-neighbor-divider{
+   margin:10px 8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-traffic{
+   margin-top:10px!important;
+   padding-top:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-traffic-head{
+   margin-bottom:5px!important;
+ }
+ /* Ligne Trafic quasiment bord à bord. Le calcul des positions/ticks reste exactement celui du desktop,
+    donc l'écart physique entre 0 et ±2 reste piloté par analyzerTrafficGeometry(). */
+ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-traffic-track{
+   margin-left:3px!important;
+   margin-right:3px!important;
+   height:58px!important;
+ }
+
+ /* Heat Map : trois commandes sur une seule ligne : HEAT MAP | SIMULER UN ARRÊT | plein écran. */
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-pit-simulator-title{
+   display:flex!important;
+   flex-direction:row!important;
+   align-items:center!important;
+   justify-content:flex-start!important;
+   gap:7px!important;
+   width:100%!important;
+   flex-wrap:nowrap!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-heatmap-title-group,
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-map-actions{
+   display:contents!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel #pitSimulatorTitle{
+   order:1!important;
+   flex:0 0 auto!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel #pitSimulatorButton{
+   order:2!important;
+   flex:0 0 auto!important;
+   margin:0!important;
+   font-size:8px!important;
+   padding:8px 9px!important;
+   white-space:nowrap!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .analyzer-heatmap-expand{
+   order:3!important;
+   margin-left:auto!important;
+   flex:0 0 auto!important;
+ }
+
+ /* Radar + Pit Lane : même axe visuel, Pit Lane sous le radar et ensemble centré dans la carte. */
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-stage{
+   display:flex!important;
+   flex-direction:column!important;
+   align-items:center!important;
+   justify-content:flex-start!important;
+   gap:4px!important;
+   width:100%!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-radar-pane{
+   width:100%!important;
+   max-width:360px!important;
+   margin:0 auto!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-pitlane-pane{
+   width:100%!important;
+   max-width:360px!important;
+   min-height:92px!important;
+   padding:0!important;
+   margin:-4px auto 0!important;
+   align-items:center!important;
+   justify-content:center!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerHeatMapPanel .map-pitlane-pane svg{
+   display:block!important;
+   width:100%!important;
+   max-width:360px!important;
+   max-height:105px!important;
+   margin:0 auto!important;
+ }
+
+ /* Conformité : on redonne un peu plus de place à la colonne Relais,
+    et on décale les deux blocs de droite. */
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid{
+   grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
+   column-gap:8px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid>div:nth-child(even){
+   padding-left:12px!important;
+ }
+ body[data-app-mode="analyzer"] #analyzerRulesCard .rules-mini-grid b{
+   overflow:visible!important;
+   text-overflow:clip!important;
+ }
+
+ /* Bas de page portrait : retirer les outils techniques demandés.
+    Velocity Lab et Session Course restent disponibles. */
+ body[data-app-mode="analyzer"] .analyzer-footer>span,
+ body[data-app-mode="analyzer"] .analyzer-footer>button{
+   display:none!important;
+ }
+ body[data-app-mode="analyzer"] .analyzer-footer>.velocity-lab-launch,
+ body[data-app-mode="analyzer"] .analyzer-footer>.race-session-launch{
+   display:inline-flex!important;
+ }
+ body[data-app-mode="analyzer"] .analyzer-footer{
+   justify-content:center!important;
+   gap:8px!important;
+   padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px))!important;
+ }
+
+ /* Velocity Lab smartphone : croix toujours visible en haut à droite pour revenir à Analyzer. */
+ body[data-app-mode="analyzer"] .velocity-lab-overlay.active .velocity-lab-head{
+   position:sticky!important;
+   top:0!important;
+   z-index:26010!important;
+   background:#080a0e!important;
+   padding-right:58px!important;
+   padding-top:calc(10px + env(safe-area-inset-top,0px))!important;
+ }
+ body[data-app-mode="analyzer"] .velocity-lab-overlay.active .velocity-lab-close{
+   display:flex!important;
+   align-items:center!important;
+   justify-content:center!important;
+   position:fixed!important;
+   top:calc(8px + env(safe-area-inset-top,0px))!important;
+   right:10px!important;
+   z-index:26020!important;
+   width:42px!important;
+   height:42px!important;
+   margin:0!important;
+   background:#11161d!important;
+   color:#fff!important;
+ }
+
 }
