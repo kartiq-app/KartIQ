@@ -1,17 +1,14 @@
-# V7.2.172Q1 — Spotter étape 1 : files indépendantes
+# V7.2.172C1 — Spotter clean baseline
 
 - Base stricte V7.2.172.
-- Une seule évolution fonctionnelle : préparation du Quick Change par file.
-- Chaque file possède toujours au moins un kart.
-- Chaque file possède son propre bouton « Ajouter un kart ».
-- Suppression de la répartition automatique modulo au lancement.
-- Synchronisation du mapping `setup_queue_files`.
-- Aucun changement du drag & drop.
-- Aucun changement Maintenance.
-- Aucun changement des cartes rouges.
-- Aucun changement Analyzer / Focus / timing / Mode Test.
+- Première passe de nettoyage Spotter volontairement conservative.
+- Suppression uniquement des commentaires de rustines/version devenus inutiles.
+- Aucun code exécutable Spotter modifié.
+- Aucun comportement Spotter modifié.
+- Aucun changement Analyzer, Focus, timing ou Mode Test.
+- Cette version sert de témoin avant toute consolidation fonctionnelle du Spotter.
 
-# Velocity V7.2.172Q1Q1 — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.172C1C1 — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.
