@@ -1,27 +1,30 @@
-# V7.2.1725 — Focus Endurance clean layout
+# V7.2.1726 — Focus Endurance smartphone 65/35 + Delta grid
 
 - Base stricte V7.2.1722 stable.
-- Suppression/consolidation des deux surcouches finales Focus Endurance mobile (V1722 + ancien bloc V196).
-- Une seule règle finale mobile/iPhone fait désormais autorité.
-- Zone Temps en piste + Dernier temps : 40 % -> 38 % (-5 %).
-- Zone haute Delta : 60 % -> 62 %.
-- Valeurs Delta : -10 % par rapport à V1722.
-- Noms équipe/pilote : +10 % par rapport à V1722.
-- Aucun changement desktop.
-- Aucun changement des autres modes Focus.
-- Aucun changement fonctionnel hors CSS Focus Endurance.
-- Version numérique : 7.2.1725.
+- Focus Endurance smartphone : répartition principale 60/40 -> 65/35.
+- La zone haute gagne 5 points de hauteur ; la zone Temps en piste / Dernier temps passe à 35 %.
+- Correction de la géométrie interne de la case Delta :
+  - nom équipe devant = ligne dédiée ;
+  - Delta devant = zone flexible ;
+  - filet = 1 px ;
+  - Delta derrière = zone flexible ;
+  - nom équipe derrière = ligne dédiée.
+- Les noms ne dépendent plus de l'espace résiduel laissé par les grandes valeurs Delta.
+- Aucune modification de taille de police dans cette passe.
+- Aucun nouveau bloc CSS ajouté en fin de fichier.
+- Desktop et autres modes Focus inchangés.
+- Version numérique : 7.2.1726.
 
-# V7.2.1725 — FULL REINTEGRATION FIX
+# V7.2.1726 — FULL REINTEGRATION FIX
 
 - Base stricte V7.2.172N.
 - Toutes les fonctions récentes de V172N sont conservées.
 - Correction de l'erreur V1721 : `analyzerApplySharedRulesFromState()` est conservée.
 - `analyzerRulesDesktopLeader()` et `analyzerRulesConfigured()` sont également conservées.
 - Retrait uniquement du bootstrap automatique V166 et de son rappel récursif de `renderAnalyzer()`.
-- Version numérique : 7.2.1725.
+- Version numérique : 7.2.1726.
 
-# V7.2.1725 — Normal Mode / Spotter + Focus + Session
+# V7.2.1726 — Normal Mode / Spotter + Focus + Session
 
 - Base stricte : V7.2.172 d'origine.
 - Réintégration du Spotter récent de V196.
@@ -32,7 +35,7 @@
 - Aucun moteur DYN1 générique V173+ réinjecté.
 - Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
 
-# Velocity V7.2.1725N — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.1726N — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.
