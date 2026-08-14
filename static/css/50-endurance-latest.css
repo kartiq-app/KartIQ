@@ -967,6 +967,34 @@ body.iphone-focus-virtual-landscape #driverMessageOverlay{
    Le padding droit garantit aussi une séparation nette avec le filet coloré. */
 body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header,
 body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header,
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-overlay{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-in-time{
+  bottom:clamp(10px,2.2dvw,28px)!important;
+  right:clamp(14px,2.4dvh,34px)!important;
+  font-size:clamp(28px,7dvw,56px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-out-message{
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  padding:clamp(18px,4dvh,46px)!important;
+  gap:clamp(8px,2dvw,24px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-out-passage{
+  font-size:clamp(18px,5dvw,34px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-out-title{
+  font-size:clamp(38px,10dvw,82px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-out-time{
+  font-size:clamp(48px,15dvw,104px)!important;
+}
+
 body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header{
   box-sizing:border-box!important;
   padding-left:clamp(28px,8vw,42px)!important;
@@ -1000,7 +1028,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 }
 
 
-/* Velocity V7.2.1730N — Focus Endurance smartphone : lisibilité maximale.
+/* Velocity V7.2.1731N — Focus Endurance smartphone : lisibilité maximale.
    Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
 @media (max-width: 900px), (pointer: coarse){
   #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
