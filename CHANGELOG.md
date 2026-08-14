@@ -1,4 +1,20 @@
-# V7.2.1732 — Session Course Performance + profils persistants navigateur
+# V7.2.1733 — Session Course UX + équipe source du Focus pilote
+
+- Base stricte V7.2.1732.
+- Premier écran : SÉLECTIONNER UNE ÉQUIPE / CRÉER UNE ÉQUIPE.
+- Suppression de l'ancien onglet SESSION COURSE.
+- Sélection d'équipe via menu déroulant.
+- Création d'équipe : nom + membres + rôles, puis CRÉER UNE SESSION.
+- Création de session : Circuit → Équipe → Nom de session → rôles → DÉMARRER LA SESSION.
+- Le Focus pilote suit automatiquement le nom de l'équipe de la Session Course.
+- Aucune vérification Apex lors de la création.
+- SESSION ACTIVE : ÉDITER / OK pour nom d'équipe et nom de session.
+- OK orange pendant l'édition.
+- Bas d'écran : VALIDER LES CHANGEMENTS / TERMINER LA SESSION.
+- Mode Performance et sauvegarde navigateur V1732 conservés.
+- Version numérique 7.2.1733.
+
+# V7.2.1733 — Session Course Performance + profils persistants navigateur
 
 - Base stricte V7.2.1731.
 - Nouveau bouton Session Course en haut à droite d'Analyzer.
@@ -14,9 +30,9 @@
   - TEAM MANAGER : comportement Analyzer complet conservé pour ne sacrifier aucun calcul stratégique.
 - Polling `/api/state` et moteur Apex inchangés dans cette première passe.
 - Aucun changement des algorithmes Velocity / stratégie / Spotter.
-- Version numérique 7.2.1732.
+- Version numérique 7.2.1733.
 
-# V7.2.1732 — Focus Endurance iPhone : stands en paysage virtuel
+# V7.2.1733 — Focus Endurance iPhone : stands en paysage virtuel
 
 - Base stricte V7.2.1730.
 - Le temps aux stands reste dans `#enduranceFocus` et hérite donc de la rotation paysage 90° existante.
@@ -27,9 +43,9 @@
 - Aucun changement de logique IN/OUT, chronométrage, détection stands ou auto-hide.
 - Android inchangé.
 - Aucun changement Analyzer / Spotter / timing / calculs.
-- Version numérique 7.2.1732.
+- Version numérique 7.2.1733.
 
-# V7.2.1732 — Messages pilote en paysage Focus iPhone
+# V7.2.1733 — Messages pilote en paysage Focus iPhone
 
 - Base stricte V7.2.1729 stable.
 - Le conteneur global `driverMessageOverlay` rejoint la règle source existante du paysage virtuel iPhone.
@@ -39,9 +55,9 @@
 - Android inchangé : verrouillage paysage natif conservé.
 - Aucun changement Analyzer, Spotter, timing, calculs ou logique de messagerie.
 - Aucune nouvelle surcouche CSS : extension de la règle paysage existante.
-- Version numérique 7.2.1732.
+- Version numérique 7.2.1733.
 
-# V7.2.1732 — Spotter smartphone : hitbox Maintenance
+# V7.2.1733 — Spotter smartphone : hitbox Maintenance
 
 - Base stricte V7.2.1728.
 - Correction ciblée du drag & drop tactile vers Maintenance.
@@ -54,9 +70,9 @@
 - Aucun changement CSS.
 - Aucun changement de logique de transfert kart/équipe/temps d'arrêt.
 - Aucun changement Focus Endurance / Analyzer / timing / Velocity.
-- Version numérique : 7.2.1732.
+- Version numérique : 7.2.1733.
 
-# V7.2.1732 — Focus Endurance smartphone : Delta -15 %
+# V7.2.1733 — Focus Endurance smartphone : Delta -15 %
 
 - Base stricte V7.2.1727.
 - Géométrie 65/35 conservée.
@@ -66,9 +82,9 @@
 - Aucune autre modification CSS.
 - Aucune nouvelle surcouche.
 - Desktop et autres modes Focus inchangés.
-- Version numérique : 7.2.1732.
+- Version numérique : 7.2.1733.
 
-# V7.2.1732 — Focus Endurance smartphone : noms équipes +20 %
+# V7.2.1733 — Focus Endurance smartphone : noms équipes +20 %
 
 - Base stricte V7.2.1726.
 - Géométrie 65/35 conservée.
@@ -79,9 +95,9 @@
 - Modification directe des deux règles actives existantes.
 - Aucune nouvelle surcouche CSS.
 - Aucun changement desktop / autres Focus / logique métier.
-- Version numérique : 7.2.1732.
+- Version numérique : 7.2.1733.
 
-# V7.2.1732 — Focus Endurance smartphone 65/35 + Delta grid
+# V7.2.1733 — Focus Endurance smartphone 65/35 + Delta grid
 
 - Base stricte V7.2.1722 stable.
 - Focus Endurance smartphone : répartition principale 60/40 -> 65/35.
@@ -96,18 +112,18 @@
 - Aucune modification de taille de police dans cette passe.
 - Aucun nouveau bloc CSS ajouté en fin de fichier.
 - Desktop et autres modes Focus inchangés.
-- Version numérique : 7.2.1732.
+- Version numérique : 7.2.1733.
 
-# V7.2.1732 — FULL REINTEGRATION FIX
+# V7.2.1733 — FULL REINTEGRATION FIX
 
 - Base stricte V7.2.172N.
 - Toutes les fonctions récentes de V172N sont conservées.
 - Correction de l'erreur V1721 : `analyzerApplySharedRulesFromState()` est conservée.
 - `analyzerRulesDesktopLeader()` et `analyzerRulesConfigured()` sont également conservées.
 - Retrait uniquement du bootstrap automatique V166 et de son rappel récursif de `renderAnalyzer()`.
-- Version numérique : 7.2.1732.
+- Version numérique : 7.2.1733.
 
-# V7.2.1732 — Normal Mode / Spotter + Focus + Session
+# V7.2.1733 — Normal Mode / Spotter + Focus + Session
 
 - Base stricte : V7.2.172 d'origine.
 - Réintégration du Spotter récent de V196.
@@ -118,7 +134,7 @@
 - Aucun moteur DYN1 générique V173+ réinjecté.
 - Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
 
-# Velocity V7.2.1732N — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.1733N — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.

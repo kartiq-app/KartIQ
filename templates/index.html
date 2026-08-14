@@ -351,31 +351,36 @@
   <div class="analyzer-rules-modal race-session-modal" id="raceSessionModal" role="dialog" aria-modal="true" aria-labelledby="raceSessionTitle">
     <div class="analyzer-rules-card race-session-card">
       <div class="analyzer-rules-head"><div><span>TEAM MANAGEMENT</span><h2 id="raceSessionTitle">Session Course</h2></div><button type="button" onclick="closeRaceSessionManager()" aria-label="Fermer">×</button></div>
-      <div class="race-session-tabs"><button id="raceTeamsTabBtn" class="active" onclick="raceSessionTab('teams')">TEAMS</button><button id="raceCourseTabBtn" onclick="raceSessionTab('course')">SESSION COURSE</button></div>
-
-      <section id="raceTeamsPane" class="race-session-pane">
-        <div class="race-team-toolbar"><select id="raceTeamSelect" onchange="selectRaceTeam(this.value)"><option value="">Aucune Team</option></select><button type="button" class="race-ui-btn" onclick="openRaceTeamCreateModal()">+ CRÉER UNE TEAM</button></div>
-        <div id="raceTeamEditor" class="race-team-editor"><div class="analyzer-empty">Créez ou sélectionnez une Team.</div></div>
+      
+      <section id="raceSessionLanding" class="race-session-pane race-session-landing">
+        <button type="button" class="race-session-choice" onclick="raceSessionOpenSelectTeam()">SÉLECTIONNER UNE ÉQUIPE</button>
+        <button type="button" class="race-session-choice" onclick="raceSessionOpenCreateTeam()">CRÉER UNE ÉQUIPE</button>
+      </section>
+      <section id="raceSessionSelectTeamPane" class="race-session-pane" hidden>
+        <div class="race-session-field"><label>ÉQUIPE</label><select id="raceSessionTeamSelect" onchange="raceSessionSelectTeamChanged(this.value)"><option value="">Sélectionnez une équipe</option></select></div>
+        <div id="raceSessionSelectedTeamCard"></div>
+        <div class="race-session-bottom-actions"><button type="button" class="race-ui-btn primary" onclick="raceSessionOpenCreateCourse()">CRÉER UNE SESSION</button></div>
+      </section>
+      <section id="raceSessionCreateTeamPane" class="race-session-pane" hidden>
+        <div class="race-session-field"><label>NOM DE L'ÉQUIPE</label><input id="raceCreateTeamName" placeholder="Nom de l'équipe"></div>
+        <div id="raceCreateTeamMembers"></div>
+        <div class="race-session-bottom-actions"><button type="button" class="race-ui-btn" onclick="raceSessionAddDraftMember()">+ AJOUTER UN MEMBRE</button><button type="button" class="race-ui-btn primary" onclick="raceSessionCreateTeamAndContinue()">CRÉER UNE SESSION</button></div>
+      </section>
+      <section id="raceSessionCreatePane" class="race-session-pane" hidden>
+        <div class="race-session-field"><label>CIRCUIT</label><select id="raceSessionCircuitSelect"></select></div>
+        <div class="race-session-field"><label>ÉQUIPE</label><div class="race-session-readonly" id="raceSessionTeamNameCreate">—</div></div>
+        <div class="race-session-field"><label>NOM DE LA SESSION</label><input id="raceSessionNameCreate" placeholder="Ex. 24H FUN AND RACE"></div>
+        <div class="race-assignment-grid"><div class="race-role-picker"><span>TEAM MANAGER</span><div id="raceAssignTM" class="race-role-members"></div></div><div class="race-role-picker"><span>SPOTTER</span><div id="raceAssignSpotter" class="race-role-members"></div></div><div class="race-role-picker"><span>PILOTE</span><div id="raceAssignPilot" class="race-role-members"></div></div></div>
+        <div class="race-session-bottom-actions"><button type="button" class="primary race-session-create" onclick="createRaceSession()">DÉMARRER LA SESSION</button></div>
+      </section>
+      <section id="raceSessionActive" class="race-session-pane race-session-active" hidden>
+        <div class="race-session-edit-row"><span>CIRCUIT</span><strong id="raceSessionActiveCircuit">—</strong></div>
+        <div class="race-session-edit-row"><span>ÉQUIPE</span><div class="race-session-edit-value"><strong id="raceSessionActiveTeam">—</strong><button type="button" class="race-inline-edit" id="raceEditTeamBtn" onclick="raceSessionToggleEdit('team')">ÉDITER</button><button type="button" class="race-inline-ok" id="raceEditTeamOk" onclick="raceSessionConfirmEdit('team')" hidden>OK</button></div></div>
+        <div class="race-session-edit-row"><span>NOM DE LA SESSION</span><div class="race-session-edit-value"><strong id="raceSessionActiveName">—</strong><button type="button" class="race-inline-edit" id="raceEditSessionBtn" onclick="raceSessionToggleEdit('session')">ÉDITER</button><button type="button" class="race-inline-ok" id="raceEditSessionOk" onclick="raceSessionConfirmEdit('session')" hidden>OK</button></div></div>
+        <div id="raceActiveAssignments" class="race-active-assignments"></div>
+        <div class="race-session-bottom-actions race-session-active-actions"><button type="button" class="race-ui-btn primary" onclick="saveRaceSessionChanges()">VALIDER LES CHANGEMENTS</button><button type="button" class="race-ui-btn danger race-session-end" onclick="openRaceSessionEndModal()">TERMINER LA SESSION</button></div>
       </section>
 
-      <section id="raceCoursePane" class="race-session-pane" hidden>
-        <div id="raceSessionEmpty" class="race-session-empty">
-          <p>La session utilise le <b>circuit actif</b>. Les membres viennent de la Team sélectionnée et ne voient que leur rôle actif dans Velocity.</p>
-          <label>Nom de la session<input id="raceSessionName" type="text" maxlength="80" placeholder="Ex. 24H Fun & Race"></label>
-          <div class="race-session-context"><span>Circuit</span><b id="raceSessionCircuit">—</b><span>Team</span><b id="raceSessionTeam">—</b></div>
-          <div class="race-assignment-grid">
-            <div class="race-role-picker"><span>TEAM MANAGER</span><div id="raceAssignTM" class="race-role-members"></div></div>
-            <div class="race-role-picker"><span>SPOTTER</span><div id="raceAssignSpotter" class="race-role-members"></div></div>
-            <div class="race-role-picker"><span>PILOTE</span><div id="raceAssignPilot" class="race-role-members"></div></div>
-          </div>
-          <button type="button" class="primary race-session-create" onclick="createRaceSession()">CRÉER LA SESSION</button>
-        </div>
-        <div id="raceSessionActive" class="race-session-active" hidden>
-          <div class="race-session-summary"><div><span>SESSION</span><b id="raceSessionActiveName">—</b></div><div><span>CIRCUIT VERROUILLÉ</span><b id="raceSessionActiveCircuit">—</b></div><div><span>TEAM</span><b id="raceSessionActiveTeam">—</b></div></div>
-          <div id="raceActiveAssignments" class="race-active-assignments"></div>
-          <div class="race-session-actions"><button type="button" class="race-ui-btn" onclick="saveRaceAssignments()">APPLIQUER LES RÔLES</button><button type="button" class="race-ui-btn danger race-session-end" onclick="endRaceSession()">TERMINER LA SESSION</button></div>
-        </div>
-      </section>
       <div id="raceSessionFeedback" class="race-session-feedback" aria-live="polite"></div>
       <div class="analyzer-rules-note">Les invitations servent à associer un appareil une seule fois. Ensuite le membre ouvre simplement Velocity depuis son écran d’accueil : sa session et son rôle sont détectés automatiquement.</div>
     </div>

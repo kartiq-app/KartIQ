@@ -420,21 +420,8 @@ function renderDriverMessageOverlay(){
 
 
 function enduranceFocusSelectedDriver(){
- const remote=window.velocityPilotFocusTarget||null;
- const isPilot=document.body.classList.contains('race-role-pilot')||String(window.velocityDeviceRole||'')==='pilot'||String(window.VELOCITY_RACE_ACCESS?.role||'')==='pilot';
- if(isPilot&&remote){
-  const row=Number(remote.apex_row);
-  if(Number.isFinite(row)){
-   const byRow=(state.drivers||[]).find(d=>Number(d?.apex_row)===row);
-   if(byRow)return byRow;
-  }
-  const name=String(remote.driver||'').trim();
-  if(name){
-   const normalized=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-   const byName=(state.drivers||[]).find(d=>String(d?.driver||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()===normalized);
-   if(byName)return byName;
-  }
- }
+ const sessionTeam=String(window.velocityRaceSession?.team_name||'').trim();
+ if(sessionTeam){const exact=(state.drivers||[]).find(d=>String(d?.driver||'').trim().toLowerCase()===sessionTeam.toLowerCase());if(exact)return exact}
  return state.followed||{};
 }
 function fitEnduranceLastLap(){

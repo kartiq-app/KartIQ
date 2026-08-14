@@ -1032,7 +1032,7 @@ def create_race_session():
         now_ms=int(time.time()*1000); sid=secrets.token_hex(4).upper()
         initial_focus_driver=str(STATE.get("followed_driver") or "").strip()
         initial_focus_entry=driver_by_name(initial_focus_driver) if initial_focus_driver else None
-        session={"id":sid,"name":str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE","status":"active","circuit_id":circuit_id,"circuit_name":str(circuit.get("name") or circuit_id),"followed_driver":initial_focus_driver,"pilot_focus_driver":initial_focus_driver,"pilot_focus_apex_row":(initial_focus_entry or {}).get("apex_row"),"team_id":team.get("id"),"team_name":team.get("name"),"assignments":clean,"created_at_ms":now_ms,"ended_at_ms":None}
+        session={"id":sid,"name":str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE","status":"active","circuit_id":circuit_id,"circuit_name":str(circuit.get("name") or circuit_id),"followed_driver":initial_focus_driver,"pilot_focus_driver":initial_focus_driver,"pilot_focus_apex_row":(initial_focus_entry or {}).get("apex_row"),"team_id":team.get("id"),"team_name":str(body.get("team_name") or team.get("name") or "").strip()[:80] or team.get("name"),"assignments":clean,"created_at_ms":now_ms,"ended_at_ms":None}
         TEAM_DATA.setdefault("sessions",[]).append(session); TEAM_DATA["active_session_id"]=sid; _save_team_data(TEAM_DATA)
     # Miroir de compatibilité avec le verrouillage déjà présent côté V7.2.87.
     with RACE_SESSION_LOCK: RACE_SESSION=deepcopy(session)
@@ -1060,6 +1060,43 @@ def update_race_assignments():
             clean[role]=valid
         session["assignments"]=clean; _save_team_data(TEAM_DATA)
     return jsonify(ok=True,session=_race_session_public(session))
+
+
+@app.patch("/api/race-session/update")
+def update_race_session():
+    body=request.get_json(force=True,silent=True) or {}
+    assignments=body.get("assignments")
+    with TEAM_DATA_LOCK:
+        session=_session_by_id(TEAM_DATA,TEAM_DATA.get("active_session_id")) if TEAM_DATA.get("active_session_id") else None
+        if not session or session.get("status")!="active": return jsonify(ok=False,error="Aucune session active."),400
+        team=next((t for t in TEAM_DATA.get("teams",[]) if str(t.get("id"))==str(session.get("team_id"))),None)
+        if not team:return jsonify(ok=False,error="Team introuvable."),404
+        if assignments is not None:
+            member_map={str(m.get("id")):m for m in team.get("members",[])};clean={}
+            for role in ("team_manager","spotter","pilot"):
+                raw=assignments.get(role) or [];mids=raw if isinstance(raw,list) else ([raw] if raw else []);valid=[]
+                for mid in mids:
+                    mid=str(mid or "").strip()
+                    if not mid or mid in valid:continue
+                    m=member_map.get(mid)
+                    if not m or role not in (m.get("roles") or []):return jsonify(ok=False,error=f"Rôle {role} non autorisé."),400
+                    valid.append(mid)
+                clean[role]=valid
+            session["assignments"]=clean
+        if "session_name" in body:
+            value=str(body.get("session_name") or "").strip()[:80]
+            if value:session["name"]=value
+        if "team_name" in body:
+            value=str(body.get("team_name") or "").strip()[:80]
+            if value:
+                session["team_name"]=value;team["name"]=value
+                for dev in TEAM_DATA.get("devices",{}).values():
+                    if str(dev.get("team_id"))==str(team.get("id")):dev["team_name"]=value
+        _save_team_data(TEAM_DATA);public=_race_session_public(session)
+    with RACE_SESSION_LOCK:
+        global RACE_SESSION
+        RACE_SESSION=deepcopy(session)
+    return jsonify(ok=True,session=public)
 
 
 @app.patch("/api/race-session/pilot-focus")
