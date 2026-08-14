@@ -1,3 +1,9 @@
+# V7.2.158 — COMPATIBILITÉ APEX QUALIF / SPRINT / ENDURANCE
+
+- Support complet de `dyn1|count`, `countdown` et `countdown_text`, y compris valeurs décimales Apex exprimées en secondes.
+- Sprint : classement du dernier tour limité aux pilotes ayant terminé le même numéro de tour que le pilote suivi.
+- Conservation diagnostique du type de session Apex (`race`, `best_time`, `no_live`) sans changement automatique du mode Velocity.
+
 # V7.2.157 — ANALYZER PORTRAIT : FINITIONS UX
 - Carte Équipe suivie descendue sous le menu fixe et lignes légèrement resserrées.
 - Ligne TRAFIC allongée ; géométrie et espacement 0 / ±2 conservés via le moteur commun desktop.

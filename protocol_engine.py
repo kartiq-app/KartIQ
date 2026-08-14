@@ -35,6 +35,7 @@ class ProtocolEngine:
         self.remaining_end_at_ms: int | None = None
         self.elapsed_ms: int | None = None
         self.elapsed_updated_at_ms: int | None = None
+        self.apex_session_type: str = "unknown"
         self.current_lap: int | None = None
         self.total_laps: int | None = None
         self.lap_progress_updated_at_ms: int | None = None
@@ -45,6 +46,14 @@ class ProtocolEngine:
     def observe_frame(self, frame: str, grid: Any | None, updates: list[Any]) -> None:
         self.frames += 1
         received_at_ms = int(time.time() * 1000)
+
+        # Type de session annoncé directement par Apex : r = course, n = aucun live,
+        # toute autre valeur active correspond au mode meilleur temps. Cette donnée
+        # reste diagnostique : Velocity ne change jamais automatiquement le mode choisi.
+        init_matches = re.findall(r"(?:^|[\r\n])init\|([^|\r\n]+)", frame)
+        if init_matches:
+            init_code = str(init_matches[-1]).strip().lower()
+            self.apex_session_type = "no_live" if init_code == "n" else ("race" if init_code == "r" else "best_time")
 
         # Les courses au nombre de tours peuvent publier la progression comme
         # texte localisé, par exemple :
@@ -69,19 +78,25 @@ class ProtocolEngine:
                 self.remaining_updated_at_ms = None
                 self.remaining_end_at_ms = None
 
-        # Certaines configurations internationales publient un chrono montant :
-        # dyn1|count|<millisecondes>. Il s'agit du temps ÉCOULÉ, jamais du temps restant.
-        counts = re.findall(r"(?:^|[\r\n])dyn1\|count\|(\d+)", frame)
+        # Apex accepte deux encodages pour count/countdown : un entier déjà exprimé
+        # en millisecondes, ou une valeur décimale exprimée en secondes. countdown_text
+        # peut en plus suffixer un libellé après un underscore. On reproduit ici la
+        # conversion du JavaScript officiel Apex.
+        def _apex_dynamic_time_to_ms(raw: str) -> int:
+            value = str(raw or "").strip()
+            numeric = value.split("_", 1)[0]
+            parsed = float(numeric)
+            return max(0, int(round(parsed * 1000 if "." in numeric else parsed)))
+
+        counts = re.findall(r"(?:^|[\r\n])dyn1\|count\|([0-9]+(?:\.[0-9]+)?)", frame)
         if counts:
-            self.elapsed_ms = max(0, int(counts[-1]))
+            self.elapsed_ms = _apex_dynamic_time_to_ms(counts[-1])
             self.elapsed_updated_at_ms = received_at_ms
 
-        # Apex publie le temps restant sous la forme
-        # dyn1|countdown|<millisecondes>. On ne l'applique que si la même trame
-        # ne vient pas d'annoncer une course au nombre de tours.
-        countdowns = re.findall(r"(?:^|[\r\n])dyn1\|countdown\|(\d+)", frame)
+        # Le temps restant peut arriver via countdown ou countdown_text.
+        countdowns = re.findall(r"(?:^|[\r\n])dyn1\|(?:countdown|countdown_text)\|([0-9]+(?:\.[0-9]+)?(?:_[^\r\n|]*)?)", frame)
         if countdowns and not lap_progresses:
-            self.remaining_ms = max(0, int(countdowns[-1]))
+            self.remaining_ms = _apex_dynamic_time_to_ms(countdowns[-1])
             self.remaining_updated_at_ms = received_at_ms
             self.remaining_end_at_ms = received_at_ms + self.remaining_ms
             self.current_lap = None
@@ -255,6 +270,7 @@ class ProtocolEngine:
             "current_lap": self.current_lap,
             "total_laps": self.total_laps,
             "lap_progress_updated_at_ms": self.lap_progress_updated_at_ms,
+            "apex_session_type": self.apex_session_type,
         }
         snap["comments"] = {
             "raw": self.comments_raw,
