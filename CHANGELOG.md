@@ -1,3 +1,12 @@
+# Velocity V7.2.172SS — Focus Endurance mobile + pilotage Team Manager
+
+- Focus Endurance smartphone : valeurs Delta +30 %.
+- Noms équipe/pilote +10 %.
+- Dernier temps agrandi dynamiquement au maximum de sa case avec marge de sécurité.
+- Le Focus Endurance Pilote possède désormais une équipe cible indépendante de « Équipe suivie » Analyzer.
+- Le Team Manager peut changer l'équipe affichée sur le téléphone du pilote pendant une session active.
+- La cible Focus Pilote est synchronisée vers les appareils autorisés sans modifier l'équipe suivie du Team Manager.
+
 # V7.2.171 — SYNC STRATÉGIE RELAIS DESKTOP / MOBILE
 
 - Desktop devient source de vérité pour la carte Stratégie Relais.

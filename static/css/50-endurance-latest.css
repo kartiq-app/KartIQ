@@ -996,3 +996,44 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
     height:100vw!important;
   }
 }
+
+
+/* Velocity V7.2.172SS — Focus Endurance smartphone : lisibilité maximale.
+   Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
+@media (max-width: 900px), (pointer: coarse){
+  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+    font-size:clamp(78px,19.5vh,221px)!important;
+  }
+  #enduranceFocus .endurance-focus-driver .sprint-focus-name{
+    font-size:110%!important;
+    max-width:100%!important;
+  }
+  #enduranceFocus .endurance-focus-neighbour-name{
+    font-size:clamp(16.5px,2.86vh,33px)!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap-cell{
+    box-sizing:border-box!important;
+    padding:clamp(10px,2.2vw,22px)!important;
+    overflow:hidden!important;
+  }
+  #enduranceFocus .endurance-focus-last-lap{
+    max-width:100%!important;
+    max-height:100%!important;
+    margin:0!important;
+    padding:0!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+}
+
+/* Le mode iPhone paysage virtuel a un viewport OS portrait : on force ici
+   les proportions adaptées au paysage visible sans toucher à Android. */
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+  font-size:clamp(82px,20dvw,220px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
+  font-size:clamp(18px,5.1dvw,38px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
+  font-size:clamp(15px,4.15dvw,30px)!important;
+}
