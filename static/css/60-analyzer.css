@@ -609,7 +609,7 @@
 .weather-current strong{font-size:31px;line-height:1;color:#fff;font-variant-numeric:tabular-nums}
 .weather-current span{margin-top:6px;color:#d5dce6;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .weather-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.weather-stats div{border-top:1px solid #29303a;padding-top:7px;display:flex;flex-direction:column;gap:3px}
+.weather-stats div{border-top:1px solid #29303a;padding-top:7px;display:flex;flex-direction:row;align-items:baseline;gap:6px}
 .weather-stats span{font-size:8px;color:#87919f;text-transform:uppercase;letter-spacing:.08em}
 .weather-stats b{font-size:11px;color:#fff;font-variant-numeric:tabular-nums}
 .weather-timeline-wrap{margin-top:10px;width:100%;overflow-x:auto;overflow-y:hidden;padding-bottom:2px;scrollbar-width:thin}
@@ -2394,24 +2394,26 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .analyzer-followed-action .analyzer-event-notice-overlay:hover{transform:translateY(calc(-50% - 1px))}
 .analyzer-rules-title-actions{display:flex;align-items:center;gap:7px;margin-left:auto;min-width:0}
 .analyzer-rules-title-actions .rules-status{font-family:inherit!important;font-size:8px!important;font-weight:900!important;letter-spacing:.04em!important;white-space:nowrap}
-.rules-mini-grid-v160{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:5px!important;margin-top:5px!important}
+.rules-mini-grid-v160{grid-template-columns:.9fr 1.2fr 1fr 1.08fr 1.08fr!important;gap:5px!important;margin-top:5px!important}
 .rules-mini-grid-v160>div{padding:5px 5px!important;border-left-width:2px!important}
 .rules-mini-grid-v160 span{font-size:6.7px!important;letter-spacing:.025em!important;white-space:nowrap!important}
 .rules-mini-grid-v160 b{font-size:10.5px!important;line-height:1.05!important;margin-top:3px!important;overflow:visible!important;text-overflow:clip!important}
+#analyzerRuleRelay{font-size:10px!important;white-space:nowrap!important;letter-spacing:-.01em!important}
 .rules-mini-grid-v160 small{display:block;margin-top:3px;color:#8e97a8;font-size:6.8px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .relay-strategy-block{margin-top:8px;padding-top:8px;border-top:1px solid #2a313c;display:flex;flex-direction:column;gap:7px;min-height:0}
-.relay-strategy-title{color:#ff8a1f;font-family:var(--font-torque,Arial,sans-serif);font-size:11px;font-weight:900;letter-spacing:.055em}
+.relay-strategy-title{color:#ff8a1f;font-family:var(--font-torque,Arial,sans-serif);font-size:13px;font-weight:900;letter-spacing:.055em}
 .relay-strategy-metrics{display:grid;grid-template-columns:.65fr .85fr 1.25fr .9fr 1fr;gap:4px}
 .relay-strategy-metrics>div,.relay-strategy-decision>div{min-width:0;background:#07090e;border-left:2px solid #39414d;padding:5px 6px}
 .relay-strategy-metrics span,.relay-strategy-decision span{display:block;color:#818b9a;font-size:6.6px;font-weight:900;letter-spacing:.025em;text-transform:uppercase;white-space:nowrap}
-.relay-strategy-metrics b{display:block;margin-top:3px;color:#fff;font-size:11px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.relay-strategy-metrics span{font-size:13.2px}
+.relay-strategy-metrics b{display:block;margin-top:3px;color:#fff;font-size:22px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .relay-strategy-metrics b.high{color:#35d889}.relay-strategy-metrics b.mid{color:#ff9b32}.relay-strategy-metrics b.low{color:#ff6262}
 .strategy-loss{color:#ff6464!important}.strategy-gain{color:#35d889!important}
 .relay-strategy-capital{padding:7px 8px;border:1px solid #2b333e;border-radius:8px;background:#080b10}
-.relay-strategy-capital-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#ff9b32;font-size:8px;font-weight:950;letter-spacing:.06em}
+.relay-strategy-capital-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#ff9b32;font-size:13px;font-weight:950;letter-spacing:.06em}
 .relay-strategy-capital-head strong{font-size:13px;color:#fff;font-variant-numeric:tabular-nums}
 .relay-strategy-capital-value{margin-top:2px;color:#fff;font-family:var(--font-torque,Arial,sans-serif);font-size:18px;font-weight:900;line-height:1.05}
-.relay-strategy-capital-bar{height:7px;margin-top:6px;border-radius:999px;background:#1c232c;overflow:hidden}
+.relay-strategy-capital-bar{height:14px;margin-top:6px;border-radius:999px;background:#1c232c;overflow:hidden}
 .relay-strategy-capital-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff7a00,#35d889);border-radius:inherit;transition:width .35s ease}
 .relay-strategy-decision{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr);gap:6px}
 .relay-strategy-decision b{display:block;margin-top:3px;font-size:11px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2441,7 +2443,9 @@ html.velocity-member-shared-mode .testbar{display:none!important}
  .analyzer-weather-message-stack>.weather-card .weather-circuit-name{margin-top:3px!important;font-size:8px!important}
  .analyzer-weather-message-stack>.weather-card .weather-stats{margin-top:3px!important}
  .analyzer-weather-message-stack>.weather-card .weather-stats div{padding-top:3px!important}
- .analyzer-weather-message-stack>.weather-card .weather-stats span{font-size:6px!important}.analyzer-weather-message-stack>.weather-card .weather-stats b{font-size:9px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-stats{display:flex!important;align-items:center!important;gap:18px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-stats div{flex:0 0 auto!important;display:flex!important;flex-direction:row!important;align-items:baseline!important;gap:7px!important;border-top:0!important;padding-top:0!important}
+ .analyzer-weather-message-stack>.weather-card .weather-stats span{font-size:12px!important}.analyzer-weather-message-stack>.weather-card .weather-stats b{font-size:18px!important}
  .analyzer-weather-message-stack>.weather-card .weather-timeline-wrap{margin-top:3px!important}
  .analyzer-weather-message-stack>.weather-card .weather-slot{padding:2px 2px!important;gap:1px!important}
  .analyzer-weather-message-stack>.weather-card .weather-slot-icon{width:34px!important;height:34px!important}
@@ -2459,3 +2463,5 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 }
 /* V7.2.161 — correction d'axe de la liste TEMPS PILOTES. */
 .analyzer-pilot-time-list .rules-pilot-card{flex:0 0 auto!important;flex-direction:row!important}
+
+/* V7.2.162 — lisibilité Stratégie Relais / Capital / Météo. */

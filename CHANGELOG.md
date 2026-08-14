@@ -1,3 +1,13 @@
+# V7.2.162 — CAPITAL STRATÉGIQUE / LISIBILITÉ STRATÉGIE RELAIS
+- Capital stratégique affiché sous la forme d’une seule valeur restante (ex. `398 min`) au lieu de `1710 min / 398 min`.
+- Avant le départ, le capital est disponible immédiatement depuis le règlement et ne peut jamais dépasser son capital initial.
+- Pendant la course, chaque relais validé plus court que le maximum réglementaire consomme la différence correspondante dans le capital.
+- Titre STRATÉGIE RELAIS aligné sur la taille de CONFORMITÉ RÈGLEMENTAIRE.
+- Libellés et valeurs Score / Confiance / Temps en piste / Delta/tour / Impact/relais agrandis ×2.
+- Titre CAPITAL STRATÉGIQUE aligné sur STRATÉGIE RELAIS et barre de capital doublée en hauteur.
+- Carte Météo : Vent + valeur et Pluie + valeur sur une seule ligne, textes agrandis ×2.
+- Colonne Relais de Conformité élargie afin de conserver l’amplitude complète sur une seule ligne.
+
 # V7.2.161 — STRATÉGIE RELAIS 100 % PARAMÉTRIQUE
 - Suppression du bouton « Valeurs Fun & Race » et du préremplissage associé.
 - Les nouvelles configurations réglementaires sont vierges : chaque valeur est saisie manuellement.
