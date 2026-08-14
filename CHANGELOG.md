@@ -1,27 +1,91 @@
-# V7.2.1661 — Réversion ciblée bootstrap automatique règlement Analyzer
+# V7.2.1721 — FULL REINTEGRATION TEST
 
-- Base stricte : V7.2.166.
-- `static/js/endurance/analyzer.js` est remis exactement au comportement V7.2.165.
-- Cela retire uniquement les ajouts V166 suivants :
-  - `analyzerRulesDesktopLeader()`;
-  - `analyzerRulesConfigured()`;
-  - `analyzerBootstrapSharedRulesFromDesktop()`;
-  - `analyzerRulesBootstrapCircuit`;
-  - `analyzerRulesBootstrapPending`;
-  - publication automatique du règlement au premier rendu Analyzer;
-  - rappel `then(() => renderAnalyzer())`.
-- Tous les autres fichiers restent ceux de V7.2.166.
-- Mode Test Endurance inchangé.
-- Objectif : confirmer expérimentalement la frontière V165 stable -> V166 instable.
+- Base fonctionnelle : V7.2.172N.
+- Conserve les évolutions V167 à V171 / V172N :
+  - polish Analyzer desktop ;
+  - First Kart'Inn / conformité UI ;
+  - Focus persistant ;
+  - Focus iPhone paysage virtuel ;
+  - synchronisation Stratégie Relais desktop/mobile ;
+  - Spotter récent + Maintenance Analyzer ;
+  - Focus Endurance récent ;
+  - nom de session Apex au-dessus du Classement Live.
+- Retire uniquement la régression V166 :
+  - pas de bootstrap automatique du règlement au premier render Analyzer ;
+  - pas de fetch règlement récursif ;
+  - pas de `then(() => renderAnalyzer())`.
+- Version entièrement numérique : 7.2.1721.
+- Objectif : vérifier si l'ensemble des fonctions récentes reste stable sans la régression V166.
 
-# V7.2.1661 — SYNCHRO AUTOMATIQUE RÈGLEMENT ANALYZER
+# V7.2.172111 — Normal Mode / Spotter + Focus + Session
+
+- Base stricte : V7.2.17211 d'origine.
+- Réintégration du Spotter récent de V196.
+- Maintenance STANDS dans Analyzer déclarée comme vraie zone de drop.
+- Focus Endurance mobile/portrait : dernier rendu récent réintégré.
+- Classement Live : le libellé « Temps restant » est remplacé par le nom de session Apex (`title2`, puis `title1`) quand il est disponible.
+- Taille du libellé Classement Live inchangée.
+- Aucun moteur DYN1 générique V173+ réinjecté.
+- Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
+
+# Velocity V7.2.172111N — Focus Endurance mobile + pilotage Team Manager
+
+- Focus Endurance smartphone : valeurs Delta +30 %.
+- Noms équipe/pilote +10 %.
+- Dernier temps agrandi dynamiquement au maximum de sa case avec marge de sécurité.
+- Le Focus Endurance Pilote possède désormais une équipe cible indépendante de « Équipe suivie » Analyzer.
+- Le Team Manager peut changer l'équipe affichée sur le téléphone du pilote pendant une session active.
+- La cible Focus Pilote est synchronisée vers les appareils autorisés sans modifier l'équipe suivie du Team Manager.
+
+# V7.2.171 — SYNC STRATÉGIE RELAIS DESKTOP / MOBILE
+
+- Desktop devient source de vérité pour la carte Stratégie Relais.
+- Synchronisation serveur du score, confiance, temps en piste, delta/tour, impact/relais, capital stratégique, recommandation et fenêtre conseillée.
+- Smartphone consomme le snapshot Desktop quand il est récent et correspond au même circuit / à la même équipe suivie.
+- Repli automatique sur le calcul local si le snapshot partagé est absent ou périmé.
+- Aucun changement de logique métier du moteur de stratégie.
+
+# V7.2.170 — FOCUS IPHONE PAYSAGE VIRTUEL
+
+- iPhone uniquement : les modes Focus Qualification, Sprint et Endurance restent techniquement en portrait et leur interface est pivotée de 90° en CSS.
+- Le pilote peut verrouiller l’iPhone en portrait puis tourner physiquement le téléphone : aucun basculement iOS n’est nécessaire.
+- Android conserve strictement son verrouillage paysage natif existant.
+- Les titres Qualifications, Sprint et Endurance sont décalés pour laisser la zone iPhone libre et gardent un espace de sécurité avec le filet coloré.
+- La persistance Focus de la V7.2.169 est conservée.
+
+# V7.2.169 — FOCUS PERSISTANT
+
+- Les modes Focus Qualification, Sprint et Endurance restent actifs tant que le pilote ne les ferme pas explicitement.
+- Suppression de la fermeture involontaire du Focus Endurance lors d'un rafraîchissement des droits/appareils.
+- Mémorisation temporaire du Focus actif dans la session du navigateur et restauration automatique après un retour au premier plan ou un rafraîchissement UI.
+- Watchdog léger : si un rerender ou une transition interne masque un Focus actif, Velocity le rouvre automatiquement.
+- La fin réelle d'une session de course continue à fermer le Focus et efface sa mémorisation.
+- Aucun changement apporté aux données, deltas ou au rendu métier des modes Focus.
+
+# V7.2.168 — FIRST KART 'INN + LISIBILITÉ CONFORMITÉ
+
+- Ajout du circuit belge First Kart 'Inn (Apex Timing 8113), Machelen.
+- Les valeurs Relais, Temps/pilote et Temps en piste exploitent maintenant toute la largeur de leur case sans être artificiellement plus petites que les autres valeurs.
+- Le panneau de détail ouvert depuis Fenêtre conseillée gagne 50 % de taille de texte sur Desktop.
+- Aucune modification de la ligne Trafic.
+
+# V7.2.167 — POLISH ANALYZER DESKTOP
+
+- ÉQUIPE SUIVIE : centrage emoji + libellé + badge dans la notification orange, sans modification de la ligne TRAFIC / dead zone / graduations.
+- CONFORMITÉ : valeurs RELAIS et TEMPS/PILOTE adaptatives à la largeur de leur case.
+- STRATÉGIE : TEMPS EN PISTE adaptatif, CAPITAL STRATÉGIQUE valeur + pourcentage sur une même ligne et même taille.
+- RECOMMANDATION / FENÊTRE CONSEILLÉE : typographies renforcées ; résultat/détail de fenêtre agrandi.
+- MÉTÉO : « Ciel | Vent | Pluie » regroupés sous la température, taille homogène ; nom du circuit +50 %.
+- ENTÊTES : alignement vertical et blanc tournant harmonisés entre ÉQUIPE SUIVIE / COMPTE RENDU, CONFORMITÉ / RÈGLEMENT et MÉTÉO.
+
+# V7.2.166 — SYNCHRO AUTOMATIQUE RÈGLEMENT ANALYZER
 
 - Le règlement actif du desktop est désormais publié automatiquement dès l’ouverture d’Analyzer.
 - Il n’est plus nécessaire d’ouvrir « Règlement » puis de cliquer sur ENREGISTRER pour synchroniser le smartphone.
 - Pendant l’initialisation, un ancien snapshot serveur ne peut plus écraser les valeurs restaurées sur le desktop.
 - Le smartphone reste consommateur du règlement partagé et ne republie pas automatiquement son ancien état local.
 
-# V7.2.1661 — SOURCE DE VÉRITÉ RÈGLEMENT ANALYZER
+# V7.2.165 — SOURCE DE VÉRITÉ RÈGLEMENT ANALYZER
 - Correction de l’ordre de restauration : la session locale smartphone est chargée avant le règlement partagé serveur.
 - Le règlement partagé devient prioritaire sur les anciens snapshots locaux de chaque appareil.
 - Une règle reçue du serveur met à jour le snapshot local actif pour empêcher toute réinjection ultérieure d’une ancienne valeur (ex. Temps pilote 3h30 au lieu de 5h00).

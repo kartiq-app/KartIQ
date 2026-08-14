@@ -32,6 +32,7 @@
 | Solokart | 47.524200 | -1.839700 | Europe/Paris | La Piardière, Plessé |
 | Top Gun Évasion | 44.655294 | -0.928550 | Europe/Paris | 310 avenue de la Côte d'Argent, Biganos |
 | Goodwill Karting | 51.149294 | 4.892230 | Europe/Brussels | Hoogbuul 47, 2250 Olen |
+| First Kart 'Inn | 50.906040 | 4.417250 | Europe/Brussels | Budasteenweg 2, 1830 Machelen |
 | Karting des Fagnes Mariembourg | 50.094900 | 4.506900 | Europe/Brussels | Mariembourg / Couvin |
 | KartCenter Campillos | 37.038437 | -4.913829 | Europe/Madrid | Ctra A-384, km 101, Campillos, Málaga |
 | Circuito Internazionale Triscina | 37.579800 | 12.795600 | Europe/Rome | Triscina, Castelvetrano |

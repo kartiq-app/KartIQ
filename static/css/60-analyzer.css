@@ -2480,3 +2480,167 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .strategy-window-row.best{background:rgba(53,216,137,.07)}
 .strategy-window-row.best b{color:#35d889}
 .strategy-window-empty{padding:5px 2px;color:#8f9baa;font-size:8px}
+
+
+/* V7.2.167 — polish desktop Analyzer : entêtes, conformité, stratégie, météo.
+   IMPORTANT : aucune règle .analyzer-traffic* ici afin de préserver dead zone + graduations existantes. */
+.relay-strategy-capital-value-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-width:0}
+.relay-strategy-capital-value-row>strong{color:#fff;font-family:var(--font-torque,Arial,sans-serif);font-size:18px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
+.weather-summary-line{display:flex;align-items:baseline;gap:7px;min-width:0;margin-top:6px;color:#d5dce6;font-size:12px;font-weight:800;white-space:nowrap}
+.weather-summary-line>span{margin:0!important;color:inherit!important;font-size:inherit!important;font-weight:inherit!important;overflow:visible!important;text-overflow:clip!important}
+.weather-summary-stat b{font-size:inherit;color:#fff;font-weight:900;font-variant-numeric:tabular-nums}
+.weather-summary-separator{color:#697483!important}
+
+@media(min-width:1051px){
+  /* Même axe et même blanc tournant pour les trois entêtes de la rangée haute. */
+  .analyzer-hero>article.followed-card,
+  .analyzer-hero>article.rules-card,
+  .analyzer-weather-message-stack>.weather-card{padding-top:10px!important}
+  .analyzer-followed-title-row,
+  .analyzer-rules-title-row{
+    min-height:30px!important;
+    margin-bottom:6px!important;
+    align-items:center!important;
+  }
+  .analyzer-followed-title-row>.analyzer-card-label,
+  .analyzer-rules-title-row>.analyzer-card-label,
+  .analyzer-weather-message-stack>.weather-card>.analyzer-card-label{
+    display:flex!important;
+    align-items:center!important;
+    min-height:30px!important;
+    margin:0!important;
+    line-height:1!important;
+  }
+  .analyzer-followed-title-row .analyzer-debrief-button,
+  .analyzer-rules-title-row .rules-card-button{min-height:30px!important}
+  .analyzer-weather-message-stack>.weather-card .weather-main{margin-top:6px!important}
+
+  /* Notification orange : emoji + libellé + badge parfaitement centrés dans le bloc. */
+  .analyzer-followed-action .analyzer-event-notice-overlay{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+  }
+  .analyzer-followed-action .analyzer-event-notice-overlay[hidden]{display:none!important}
+  .analyzer-followed-action .analyzer-event-notice-text{flex:0 1 auto!important;text-align:center!important}
+  .analyzer-followed-action .analyzer-event-notice-icon,
+  .analyzer-followed-action .analyzer-event-notice-badge{align-self:center!important}
+
+  /* Conformité : les valeurs utilisent réellement la largeur disponible sans tronquer. */
+  .rules-mini-grid-v160>div{container-type:inline-size}
+  .rules-mini-grid-v160 b{
+    max-width:100%!important;
+    white-space:nowrap!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+  #analyzerRuleRelay{
+    font-size:clamp(11px,10.5cqi,17px)!important;
+    letter-spacing:-.025em!important;
+  }
+  #analyzerStopCadence{
+    font-size:clamp(11px,12cqi,17px)!important;
+    letter-spacing:-.02em!important;
+  }
+
+  /* Stratégie : Temps en piste reste dans sa case même avec une valeur longue. */
+  .relay-strategy-metrics>div{container-type:inline-size}
+  #analyzerStrategyTrack{
+    font-size:clamp(13px,14cqi,22px)!important;
+    letter-spacing:-.02em!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+
+  /* Capital : valeur et pourcentage sur une même ligne et strictement à la même taille. */
+  .relay-strategy-capital-head{margin-bottom:4px!important}
+  .relay-strategy-capital-value-row{margin-top:0!important}
+  .relay-strategy-capital-value,
+  .relay-strategy-capital-value-row>strong{
+    margin:0!important;
+    font-size:18px!important;
+    line-height:1.05!important;
+  }
+
+  /* Recommandation / fenêtre : lisibilité accrue. */
+  .relay-strategy-decision span{font-size:8.6px!important} /* +30 % vs 6.6 */
+  .relay-strategy-window-card span{font-size:9.9px!important} /* ~+50 % vs base */
+  .relay-strategy-window-card b{font-size:16.5px!important;line-height:1.12!important}
+  .relay-strategy-window-card small{
+    font-size:10.5px!important;
+    line-height:1.25!important;
+    margin-top:5px!important;
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+
+  /* Météo : condition + vent + pluie sous la température, sur une ligne et même corps. */
+  .analyzer-weather-message-stack>.weather-card .weather-current{min-width:0!important}
+  .analyzer-weather-message-stack>.weather-card .weather-summary-line{
+    display:flex!important;
+    align-items:baseline!important;
+    gap:7px!important;
+    margin-top:4px!important;
+    font-size:9px!important;
+    line-height:1.15!important;
+  }
+  .analyzer-weather-message-stack>.weather-card .weather-summary-line>span,
+  .analyzer-weather-message-stack>.weather-card .weather-summary-stat b{
+    font-size:9px!important;
+    line-height:1.15!important;
+  }
+  .analyzer-weather-message-stack>.weather-card .weather-circuit-name{
+    font-size:12px!important; /* 8 -> 12 (+50 %) */
+    line-height:1.15!important;
+  }
+}
+
+
+
+/* V7.2.168 — ajout First Kart 'Inn + lisibilité conformité/fenêtre conseillée.
+   Aucun style Trafic modifié. */
+@media(min-width:1051px){
+  /* Les trois valeurs longues partent du même corps que les autres cases et ne réduisent
+     leur taille que si la largeur disponible l'impose réellement. */
+  #analyzerRuleRelay,
+  #analyzerStopCadence,
+  #analyzerStrategyTrack{
+    max-width:100%!important;
+    width:100%!important;
+    white-space:nowrap!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    font-size:clamp(10.5px,14cqi,17px)!important;
+    line-height:1.05!important;
+    letter-spacing:-.025em!important;
+  }
+  #analyzerStopCadence{font-size:clamp(10.5px,15cqi,17px)!important}
+  #analyzerStrategyTrack{font-size:clamp(13.2px,15cqi,22px)!important}
+
+  /* Détail ouvert de Fenêtre conseillée : +50 % sur tout le contenu du panneau. */
+  .relay-strategy-window-details{padding:10px 12px!important}
+  .strategy-window-details-head{font-size:12px!important;gap:12px!important;margin-bottom:8px!important}
+  .strategy-window-details-head small{font-size:10.5px!important}
+  .strategy-window-row{
+    grid-template-columns:108px 1fr 112px 72px!important;
+    gap:12px!important;
+    padding:6px 8px!important;
+    font-size:12.75px!important;
+  }
+  .strategy-window-empty{padding:8px 3px!important;font-size:12px!important;line-height:1.35!important}
+}
+
+
+/* Velocity V7.2.172111N — contrôle indépendant du Focus Endurance pilote. */
+.race-pilot-focus-target{
+  grid-column:1/-1;display:grid;grid-template-columns:minmax(180px,.42fr) minmax(260px,1fr);
+  gap:14px;align-items:center;padding:14px 16px;margin-top:8px;border:1px solid #303743;
+  border-left:4px solid var(--orange,#ff8500);background:#090d12;border-radius:8px
+}
+.race-pilot-focus-target>span{font-family:var(--font-driver);font-weight:850;color:var(--orange,#ff8500);letter-spacing:.04em}
+.race-pilot-focus-target>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.race-pilot-focus-target select{width:100%;min-height:42px;background:#05080c;color:#f5f7fa;border:1px solid #3a4350;border-radius:6px;padding:8px 10px;font-family:var(--font-driver);font-weight:750}
+.race-pilot-focus-target small{color:#9da6b5;font-size:12px;line-height:1.3}
+@media(max-width:720px){.race-pilot-focus-target{grid-template-columns:1fr}}
