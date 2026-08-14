@@ -998,7 +998,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 }
 
 
-/* Velocity V7.2.1726N — Focus Endurance smartphone : lisibilité maximale.
+/* Velocity V7.2.1727N — Focus Endurance smartphone : lisibilité maximale.
    Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
 @media (max-width: 900px), (pointer: coarse){
   #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
@@ -1009,7 +1009,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
     max-width:100%!important;
   }
   #enduranceFocus .endurance-focus-neighbour-name{
-    font-size:clamp(16.5px,2.86vh,33px)!important;
+    font-size:clamp(19.8px,3.432vh,39.6px)!important;
   }
   #enduranceFocus .endurance-focus-last-lap-cell{
     box-sizing:border-box!important;
@@ -1035,7 +1035,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .spr
   font-size:clamp(18px,5.1dvw,38px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{
-  font-size:clamp(15px,4.15dvw,30px)!important;
+  font-size:clamp(18px,4.98dvw,36px)!important;
 }
 
 

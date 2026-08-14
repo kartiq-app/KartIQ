@@ -1,4 +1,17 @@
-# V7.2.1726 — Focus Endurance smartphone 65/35 + Delta grid
+# V7.2.1727 — Focus Endurance smartphone : noms équipes +20 %
+
+- Base stricte V7.2.1726.
+- Géométrie 65/35 conservée.
+- Grille Delta avec lignes dédiées aux noms conservée.
+- Taille des valeurs Delta strictement inchangée.
+- Noms des équipes voisines : +20 % sur smartphone.
+- Noms des équipes voisines : +20 % sur iPhone en paysage virtuel.
+- Modification directe des deux règles actives existantes.
+- Aucune nouvelle surcouche CSS.
+- Aucun changement desktop / autres Focus / logique métier.
+- Version numérique : 7.2.1727.
+
+# V7.2.1727 — Focus Endurance smartphone 65/35 + Delta grid
 
 - Base stricte V7.2.1722 stable.
 - Focus Endurance smartphone : répartition principale 60/40 -> 65/35.
@@ -13,18 +26,18 @@
 - Aucune modification de taille de police dans cette passe.
 - Aucun nouveau bloc CSS ajouté en fin de fichier.
 - Desktop et autres modes Focus inchangés.
-- Version numérique : 7.2.1726.
+- Version numérique : 7.2.1727.
 
-# V7.2.1726 — FULL REINTEGRATION FIX
+# V7.2.1727 — FULL REINTEGRATION FIX
 
 - Base stricte V7.2.172N.
 - Toutes les fonctions récentes de V172N sont conservées.
 - Correction de l'erreur V1721 : `analyzerApplySharedRulesFromState()` est conservée.
 - `analyzerRulesDesktopLeader()` et `analyzerRulesConfigured()` sont également conservées.
 - Retrait uniquement du bootstrap automatique V166 et de son rappel récursif de `renderAnalyzer()`.
-- Version numérique : 7.2.1726.
+- Version numérique : 7.2.1727.
 
-# V7.2.1726 — Normal Mode / Spotter + Focus + Session
+# V7.2.1727 — Normal Mode / Spotter + Focus + Session
 
 - Base stricte : V7.2.172 d'origine.
 - Réintégration du Spotter récent de V196.
@@ -35,7 +48,7 @@
 - Aucun moteur DYN1 générique V173+ réinjecté.
 - Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
 
-# Velocity V7.2.1726N — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.1727N — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.
