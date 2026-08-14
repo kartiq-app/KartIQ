@@ -79,6 +79,7 @@
  body[data-app-mode="analyzer"] #analyzerRulesCard{order:60}
  body[data-app-mode="analyzer"] #analyzerPenaltiesPanel{order:70}
  body[data-app-mode="analyzer"] #analyzerWeatherCard{order:80}
+ body[data-app-mode="analyzer"] #analyzerPilotsCard{order:85}
  body[data-app-mode="analyzer"] #analyzerDriverMessageCard{order:90}
  body[data-app-mode="analyzer"] .analyzer-opportunity-panel{display:none!important}
  body[data-app-mode="analyzer"] .analyzer-footer{order:100}
@@ -91,6 +92,7 @@
  body[data-app-mode="analyzer"] #analyzerRulesCard,
  body[data-app-mode="analyzer"] #analyzerPenaltiesPanel,
  body[data-app-mode="analyzer"] #analyzerWeatherCard,
+ body[data-app-mode="analyzer"] #analyzerPilotsCard,
  body[data-app-mode="analyzer"] #analyzerDriverMessageCard{scroll-margin-top:calc(137px + env(safe-area-inset-top,0px));margin-left:0!important;margin-right:0!important;width:100%!important;box-sizing:border-box}
 
  /* Classement Live : colonnes utiles uniquement. */

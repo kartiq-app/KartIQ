@@ -2386,3 +2386,76 @@ html.velocity-member-shared-mode .testbar{display:none!important}
  text-anchor:middle;
  letter-spacing:.08em;
 }
+
+
+/* V7.2.161 — première zone Analyzer : Conformité + Stratégie, Météo/Pilotes/Messagerie, notif sur Compte rendu. */
+.analyzer-followed-action{position:relative;display:inline-flex;align-items:center;justify-content:flex-end;flex:0 0 auto}
+.analyzer-followed-action .analyzer-event-notice-overlay{position:absolute!important;right:0;top:50%;transform:translateY(-50%);z-index:6;margin:0!important;max-width:250px;min-width:145px;min-height:32px;padding:6px 9px;font-size:9px}
+.analyzer-followed-action .analyzer-event-notice-overlay:hover{transform:translateY(calc(-50% - 1px))}
+.analyzer-rules-title-actions{display:flex;align-items:center;gap:7px;margin-left:auto;min-width:0}
+.analyzer-rules-title-actions .rules-status{font-family:inherit!important;font-size:8px!important;font-weight:900!important;letter-spacing:.04em!important;white-space:nowrap}
+.rules-mini-grid-v160{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:5px!important;margin-top:5px!important}
+.rules-mini-grid-v160>div{padding:5px 5px!important;border-left-width:2px!important}
+.rules-mini-grid-v160 span{font-size:6.7px!important;letter-spacing:.025em!important;white-space:nowrap!important}
+.rules-mini-grid-v160 b{font-size:10.5px!important;line-height:1.05!important;margin-top:3px!important;overflow:visible!important;text-overflow:clip!important}
+.rules-mini-grid-v160 small{display:block;margin-top:3px;color:#8e97a8;font-size:6.8px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.relay-strategy-block{margin-top:8px;padding-top:8px;border-top:1px solid #2a313c;display:flex;flex-direction:column;gap:7px;min-height:0}
+.relay-strategy-title{color:#ff8a1f;font-family:var(--font-torque,Arial,sans-serif);font-size:11px;font-weight:900;letter-spacing:.055em}
+.relay-strategy-metrics{display:grid;grid-template-columns:.65fr .85fr 1.25fr .9fr 1fr;gap:4px}
+.relay-strategy-metrics>div,.relay-strategy-decision>div{min-width:0;background:#07090e;border-left:2px solid #39414d;padding:5px 6px}
+.relay-strategy-metrics span,.relay-strategy-decision span{display:block;color:#818b9a;font-size:6.6px;font-weight:900;letter-spacing:.025em;text-transform:uppercase;white-space:nowrap}
+.relay-strategy-metrics b{display:block;margin-top:3px;color:#fff;font-size:11px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.relay-strategy-metrics b.high{color:#35d889}.relay-strategy-metrics b.mid{color:#ff9b32}.relay-strategy-metrics b.low{color:#ff6262}
+.strategy-loss{color:#ff6464!important}.strategy-gain{color:#35d889!important}
+.relay-strategy-capital{padding:7px 8px;border:1px solid #2b333e;border-radius:8px;background:#080b10}
+.relay-strategy-capital-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#ff9b32;font-size:8px;font-weight:950;letter-spacing:.06em}
+.relay-strategy-capital-head strong{font-size:13px;color:#fff;font-variant-numeric:tabular-nums}
+.relay-strategy-capital-value{margin-top:2px;color:#fff;font-family:var(--font-torque,Arial,sans-serif);font-size:18px;font-weight:900;line-height:1.05}
+.relay-strategy-capital-bar{height:7px;margin-top:6px;border-radius:999px;background:#1c232c;overflow:hidden}
+.relay-strategy-capital-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff7a00,#35d889);border-radius:inherit;transition:width .35s ease}
+.relay-strategy-decision{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr);gap:6px}
+.relay-strategy-decision b{display:block;margin-top:3px;font-size:11px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.relay-strategy-block.danger .relay-strategy-decision>div:first-child{border-left-color:#ff4f4f}.relay-strategy-block.danger #analyzerStrategyRecommendation{color:#ff6565}
+.relay-strategy-block.good .relay-strategy-decision>div:first-child{border-left-color:#35d889}.relay-strategy-block.good #analyzerStrategyRecommendation{color:#35d889}
+.relay-strategy-block.wait .relay-strategy-decision>div:first-child{border-left-color:#ff9b32}.relay-strategy-block.wait #analyzerStrategyRecommendation{color:#ffb15f}
+.analyzer-pilots-card{padding:7px 10px!important;overflow:hidden;display:flex;flex-direction:column;min-height:0!important}
+.analyzer-pilots-card .analyzer-card-label{font-size:10px!important;margin-bottom:4px!important}
+.analyzer-pilot-time-list{display:flex!important;flex-direction:column!important;gap:1px!important;margin:0!important;min-height:0;overflow:hidden}
+.analyzer-pilot-time-list .rules-pilot-card{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:0!important;padding:2px 4px!important;border:0!important;border-bottom:1px solid #202630!important;border-radius:0!important;background:transparent!important;text-align:left!important}
+.analyzer-pilot-time-list .rules-pilot-card:last-child{border-bottom:0!important}
+.analyzer-pilot-time-list .rules-pilot-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px!important;line-height:1.05!important;color:#eef2f7!important}
+.analyzer-pilot-time-list .rules-pilot-card strong{margin:0!important;flex:0 0 auto;font-size:9px!important;line-height:1!important;color:#fff!important;font-variant-numeric:tabular-nums}
+.analyzer-pilot-time-list .rules-pilot-card strong small{color:#7f8998;font-size:7px;font-weight:800}
+.analyzer-pilot-time-list .rules-pilot-card.complete strong{color:#35d889!important}
+.analyzer-pilots-empty{margin:auto;color:#7e8898;font-size:8px;text-align:center}
+@media(min-width:1051px){
+ .analyzer-hero>.rules-card{padding:10px 11px!important}
+ .analyzer-weather-message-stack{grid-template-rows:minmax(0,63fr) minmax(0,16fr) minmax(0,21fr)!important;gap:7px!important}
+ .analyzer-weather-message-stack>.weather-card{padding:8px 10px!important}
+ .analyzer-weather-message-stack>.weather-card .analyzer-card-label{margin-bottom:3px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-main{margin-top:2px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-icon{width:40px!important;height:40px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-current strong{font-size:25px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-current span{font-size:9px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-local-time{font-size:27px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-circuit-name{margin-top:3px!important;font-size:8px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-stats{margin-top:3px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-stats div{padding-top:3px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-stats span{font-size:6px!important}.analyzer-weather-message-stack>.weather-card .weather-stats b{font-size:9px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-timeline-wrap{margin-top:3px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-slot{padding:2px 2px!important;gap:1px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-slot-icon{width:34px!important;height:34px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-slot-time,.analyzer-weather-message-stack>.weather-card .weather-slot-rain{font-size:13px!important}
+ .analyzer-weather-message-stack>.weather-card .weather-slot-temp{font-size:15px!important}
+}
+@media(max-width:1050px){.rules-mini-grid-v160{grid-template-columns:repeat(3,minmax(0,1fr))!important}.relay-strategy-metrics{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}.analyzer-weather-message-stack{grid-template-rows:auto auto auto!important}.analyzer-pilots-card{min-height:110px!important}}
+@media(max-width:700px){
+ .analyzer-followed-action .analyzer-event-notice-overlay{max-width:210px;min-width:120px;font-size:8px}
+ .rules-mini-grid-v160{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .relay-strategy-metrics{grid-template-columns:repeat(5,minmax(100px,1fr));overflow-x:auto}
+ .relay-strategy-capital-value{font-size:17px}
+ .relay-strategy-decision{grid-template-columns:1fr 1fr}
+ .analyzer-pilot-time-list .rules-pilot-name{font-size:10px!important}.analyzer-pilot-time-list .rules-pilot-card strong{font-size:11px!important}
+}
+/* V7.2.161 — correction d'axe de la liste TEMPS PILOTES. */
+.analyzer-pilot-time-list .rules-pilot-card{flex:0 0 auto!important;flex-direction:row!important}
