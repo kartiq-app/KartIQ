@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.166"
+APP_VERSION = "7.2.166B"
 APP_RELEASE_NAME = "SYNC ANALYZER MOBILE"
 
 

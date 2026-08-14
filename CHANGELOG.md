@@ -1,11 +1,27 @@
-# V7.2.166 — SYNCHRO AUTOMATIQUE RÈGLEMENT ANALYZER
+# V7.2.166B — Réversion ciblée bootstrap automatique règlement Analyzer
+
+- Base stricte : V7.2.166.
+- `static/js/endurance/analyzer.js` est remis exactement au comportement V7.2.165.
+- Cela retire uniquement les ajouts V166 suivants :
+  - `analyzerRulesDesktopLeader()`;
+  - `analyzerRulesConfigured()`;
+  - `analyzerBootstrapSharedRulesFromDesktop()`;
+  - `analyzerRulesBootstrapCircuit`;
+  - `analyzerRulesBootstrapPending`;
+  - publication automatique du règlement au premier rendu Analyzer;
+  - rappel `then(() => renderAnalyzer())`.
+- Tous les autres fichiers restent ceux de V7.2.166.
+- Mode Test Endurance inchangé.
+- Objectif : confirmer expérimentalement la frontière V165 stable -> V166 instable.
+
+# V7.2.166BB — SYNCHRO AUTOMATIQUE RÈGLEMENT ANALYZER
 
 - Le règlement actif du desktop est désormais publié automatiquement dès l’ouverture d’Analyzer.
 - Il n’est plus nécessaire d’ouvrir « Règlement » puis de cliquer sur ENREGISTRER pour synchroniser le smartphone.
 - Pendant l’initialisation, un ancien snapshot serveur ne peut plus écraser les valeurs restaurées sur le desktop.
 - Le smartphone reste consommateur du règlement partagé et ne republie pas automatiquement son ancien état local.
 
-# V7.2.165 — SOURCE DE VÉRITÉ RÈGLEMENT ANALYZER
+# V7.2.166B — SOURCE DE VÉRITÉ RÈGLEMENT ANALYZER
 - Correction de l’ordre de restauration : la session locale smartphone est chargée avant le règlement partagé serveur.
 - Le règlement partagé devient prioritaire sur les anciens snapshots locaux de chaque appareil.
 - Une règle reçue du serveur met à jour le snapshot local actif pour empêcher toute réinjection ultérieure d’une ancienne valeur (ex. Temps pilote 3h30 au lieu de 5h00).
