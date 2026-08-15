@@ -1,35 +1,18 @@
-# V7.2.1744 — Fiabilisation Spotter / registre KV
+# V7.2.1745 — Rebuild Spotter depuis V7.2.1742 fonctionnelle
 
-- Base V7.2.1743.
-- Registre KV retiré du polling `/api/spotter-state` à 750 ms.
-- Nouveau `/api/spotter-registry` séparé :
-  - lecture uniquement à l'ouverture du registre / activation ;
-  - écriture uniquement lorsqu'un événement modifie le registre ;
-  - garde-fous : 250 KV max, 80 passages max par KV.
-- Undo Spotter restaure maintenant aussi `nextKvNumber`, le registre KV et l'état du suivi.
-- Après Undo, le registre restauré est resynchronisé côté serveur.
-- `Ajouter un kart` refuse :
-  - un kart déjà présent dans une file ;
-  - un kart en Zone Méca ;
-  - un kart actuellement attribué à une équipe ;
-  - un kart déjà présent parmi les ajouts du même formulaire.
-- Message d'alerte avec KV existant lorsque disponible.
-- Aucun changement FIFO / Quick Change / Analyzer métier / Focus / OAuth.
-
-# V7.2.1743 — Spotter : registre KV, ajout de karts et Zone Méca
-
-- Base V7.2.1742.
-- Numéro affiché au-dessus du nom de l'équipe sur les cartes.
-- `Score :`, `Confiance :` et `KV :` affichés au même niveau typographique.
-- KV visible également sur smartphone.
-- `MAINTENANCE` renommé `ZONE MECA` dans Spotter et Analyzer.
-- Zone Méca agrandie sur smartphone pour faciliter le drag & drop.
-- `MODIFIER LA FILE` remplacé par `AJOUTER UN KART`.
-- `AJOUTER UN KART` reprend la présentation Quick Change : ajout d'un ou plusieurs karts par file, toujours en dernière position.
-- Nouveau `SUIVI KARTS` opt-in avec registre longitudinal KV → équipe → Score Velocity.
-- Arrêter le suivi conserve l'historique et marque la trace comme interrompue.
-- Registre synchronisé via l'état partagé Spotter.
-- Aucun changement aux algorithmes Velocity, Focus Endurance ou OAuth.
+- Repart de la V7.2.1742 fournie et fonctionnelle.
+- Mode Spotter / navigation d'origine conservés.
+- Numéro au-dessus du nom d'équipe.
+- Score / Confiance / KV homogènes ; KV visible sur smartphone.
+- MAINTENANCE renommée ZONE MECA.
+- Zone Méca smartphone agrandie.
+- MODIFIER LA FILE remplacé par AJOUTER UN KART.
+- Ajouter un kart reprend la présentation par files du Quick Change, accepte plusieurs karts et ajoute en fin de file.
+- Anti-doublon des karts physiques.
+- SUIVI KARTS opt-in : registre KV → équipe → Score Velocity.
+- Registre séparé du polling 750 ms.
+- Undo restaure nextKvNumber + registre.
+- Registre borné à 250 KV / 80 passages.
 
 # V7.2.1742 — Correctif icône iPhone / PWA
 

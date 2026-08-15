@@ -1508,7 +1508,6 @@ def update_spotter_registry():
     registry = body.get("registry")
     if not isinstance(registry, dict):
         return jsonify(ok=False, error="Registre Spotter invalide"), 400
-    # Garde-fou de taille : le registre est historique mais doit rester borné.
     clean = {}
     for kv, row in list(registry.items())[:250]:
         if not isinstance(row, dict):
@@ -1562,7 +1561,7 @@ def reset_race_state_for_new_circuit(circuit_id):
     # Le Quick Change est partagé entre Analyzer et Spotter pour un circuit donné.
     # Un changement de piste ne doit jamais réutiliser les files du circuit précédent.
     with SPOTTER_LOCK:
-        STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "kart_tracking_enabled": False, "kart_registry": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
+        STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
         STATE["spotter_registry"] = {}
     with ANALYZER_STRATEGY_LOCK:
         STATE["analyzer_strategy"] = None

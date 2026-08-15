@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1744"
+APP_VERSION = "7.2.1745"
 APP_RELEASE_NAME = "FOCUS ENDURANCE MOBILE + PILOTAGE TEAM MANAGER"
 
 
