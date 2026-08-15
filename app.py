@@ -832,6 +832,10 @@ def velocity_private_access_guard():
     # OAuth admin / Team Manager.
     if path in public_exact or path.startswith("/static/auth/"):
         return None
+    # Les métadonnées PWA et icônes doivent rester publiques pour qu'iOS
+    # puisse créer correctement le raccourci avant/après authentification.
+    if path == "/static/manifest.json" or path.startswith("/static/icons/"):
+        return None
     if _velocity_is_authorized():
         return None
 

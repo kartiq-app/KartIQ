@@ -1,3 +1,15 @@
+# V7.2.1742 — Correctif icône iPhone / PWA
+
+- Base stricte V7.2.1741 minimal.
+- Cause identifiée : la page Google/login ne déclarait aucune apple-touch-icon.
+- Les icônes et le manifest PWA étaient aussi protégés par le garde OAuth, ce qui pouvait empêcher iOS de les récupérer.
+- `/static/icons/*` et `/static/manifest.json` deviennent publics ; aucun JS/CSS/API Velocity n'est exposé.
+- Ajout de l'icône Velocity et du manifest sur la page de connexion.
+- Cache-busting `?v=7.2.1742` sur manifest et apple-touch-icon.
+- Cache Service Worker porté de `velocity-v7-2-172` à `velocity-v7-2-1742` afin d'évacuer l'ancien cache d'icône.
+- Aucun changement Analyzer / Spotter / Focus / OAuth / accès membres / algorithmes.
+- Version numérique : 7.2.1742.
+
 # V7.2.1741 — Accès membres sans Google + login Velocity rouge
 
 - Base stricte V7.2.1739.
