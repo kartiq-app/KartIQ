@@ -537,6 +537,18 @@
     <div><span>VELOCITY</span><h1 id="velocityDeviceWaitingName">Membre associé</h1><p id="velocityDeviceWaitingTeam">Aucune session active.</p><b>En attente d’affectation…</b></div>
   </div>
 
+<div id="raceMemberDeleteConfirm" class="velocity-invite-overlay" hidden>
+  <div class="velocity-team-dialog" role="dialog" aria-modal="true" aria-labelledby="raceMemberDeleteConfirmTitle">
+    <span class="velocity-invite-kicker">ÉQUIPE</span>
+    <h1 id="raceMemberDeleteConfirmTitle">SUPPRIMER LE MEMBRE</h1>
+    <p>Supprimer <strong id="raceMemberDeleteName">ce membre</strong> ? Son appareil et ses invitations seront également dissociés.</p>
+    <div class="velocity-team-dialog-actions">
+      <button type="button" class="race-ui-btn" onclick="closeRaceMemberDeleteModal()">ANNULER</button>
+      <button id="raceMemberDeleteConfirmBtn" type="button" class="race-ui-btn danger" onclick="confirmRaceMemberDelete()">SUPPRIMER</button>
+    </div>
+  </div>
+</div>
+
 <div id="raceSessionEndConfirm" class="velocity-invite-overlay" hidden>
   <div class="velocity-team-dialog" role="dialog" aria-modal="true" aria-labelledby="raceSessionEndConfirmTitle">
     <span class="velocity-invite-kicker">SESSION COURSE</span>
