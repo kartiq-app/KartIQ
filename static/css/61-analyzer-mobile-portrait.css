@@ -310,3 +310,11 @@
  }
 
 }
+
+/* V7.2.1743 — Zone Méca Analyzer, cible smartphone renforcée */
+@media(max-width:899px){
+ .analyzer-spotter-maintenance-panel[data-spotter-drop-zone="maintenance"]{min-height:230px!important}
+ .analyzer-spotter-maintenance-panel[data-spotter-drop-zone="maintenance"] .analyzer-panel-body,
+ .analyzer-spotter-maintenance-panel[data-spotter-drop-zone="maintenance"] .analyzer-spotter-list{min-height:180px!important}
+ body.spotter-drag-active .analyzer-spotter-maintenance-panel[data-spotter-drop-zone="maintenance"]{min-height:285px!important}
+}

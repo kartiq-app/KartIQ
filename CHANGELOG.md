@@ -1,3 +1,36 @@
+# V7.2.1744 — Fiabilisation Spotter / registre KV
+
+- Base V7.2.1743.
+- Registre KV retiré du polling `/api/spotter-state` à 750 ms.
+- Nouveau `/api/spotter-registry` séparé :
+  - lecture uniquement à l'ouverture du registre / activation ;
+  - écriture uniquement lorsqu'un événement modifie le registre ;
+  - garde-fous : 250 KV max, 80 passages max par KV.
+- Undo Spotter restaure maintenant aussi `nextKvNumber`, le registre KV et l'état du suivi.
+- Après Undo, le registre restauré est resynchronisé côté serveur.
+- `Ajouter un kart` refuse :
+  - un kart déjà présent dans une file ;
+  - un kart en Zone Méca ;
+  - un kart actuellement attribué à une équipe ;
+  - un kart déjà présent parmi les ajouts du même formulaire.
+- Message d'alerte avec KV existant lorsque disponible.
+- Aucun changement FIFO / Quick Change / Analyzer métier / Focus / OAuth.
+
+# V7.2.1743 — Spotter : registre KV, ajout de karts et Zone Méca
+
+- Base V7.2.1742.
+- Numéro affiché au-dessus du nom de l'équipe sur les cartes.
+- `Score :`, `Confiance :` et `KV :` affichés au même niveau typographique.
+- KV visible également sur smartphone.
+- `MAINTENANCE` renommé `ZONE MECA` dans Spotter et Analyzer.
+- Zone Méca agrandie sur smartphone pour faciliter le drag & drop.
+- `MODIFIER LA FILE` remplacé par `AJOUTER UN KART`.
+- `AJOUTER UN KART` reprend la présentation Quick Change : ajout d'un ou plusieurs karts par file, toujours en dernière position.
+- Nouveau `SUIVI KARTS` opt-in avec registre longitudinal KV → équipe → Score Velocity.
+- Arrêter le suivi conserve l'historique et marque la trace comme interrompue.
+- Registre synchronisé via l'état partagé Spotter.
+- Aucun changement aux algorithmes Velocity, Focus Endurance ou OAuth.
+
 # V7.2.1742 — Correctif icône iPhone / PWA
 
 - Base stricte V7.2.1741 minimal.

@@ -104,7 +104,8 @@ STATE = {
     "traffic_recording": False,
     "traffic_recording_started_at": None,
     "driver_message": None,
-    "spotter": {"configured": False, "updated_at_ms": None, "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server"},
+    "spotter": {"configured": False, "updated_at_ms": None, "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "kart_tracking_enabled": False, "mode": "live", "app_release": APP_VERSION, "client_id": "server"},
+    "spotter_registry": {},
     "analyzer_rules": None,
     "analyzer_strategy": None,
 }
@@ -1495,13 +1496,40 @@ def get_analyzer_strategy():
         return jsonify(ok=True, analyzer_strategy=deepcopy(STATE.get("analyzer_strategy")))
 
 
+@app.get("/api/spotter-registry")
+def get_spotter_registry():
+    with SPOTTER_LOCK:
+        return jsonify(ok=True, registry=deepcopy(STATE.get("spotter_registry") or {}))
+
+
+@app.post("/api/spotter-registry")
+def update_spotter_registry():
+    body = request.get_json(force=True, silent=True) or {}
+    registry = body.get("registry")
+    if not isinstance(registry, dict):
+        return jsonify(ok=False, error="Registre Spotter invalide"), 400
+    # Garde-fou de taille : le registre est historique mais doit rester borné.
+    clean = {}
+    for kv, row in list(registry.items())[:250]:
+        if not isinstance(row, dict):
+            continue
+        item = deepcopy(row)
+        history = item.get("history")
+        if isinstance(history, list):
+            item["history"] = history[-80:]
+        clean[str(kv)[:32]] = item
+    with SPOTTER_LOCK:
+        STATE["spotter_registry"] = clean
+    return jsonify(ok=True, count=len(clean))
+
+
 @app.post("/api/spotter-state")
 def update_spotter_state():
     body = request.get_json(force=True, silent=True) or {}
     snapshot = body.get("spotter")
     if not isinstance(snapshot, dict):
         return jsonify(ok=False, error="État Spotter invalide"), 400
-    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "setup_karts", "setup_queue_files", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release"}
+    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "kart_tracking_enabled", "setup_karts", "setup_queue_files", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release"}
     if str(snapshot.get("app_release") or "") != APP_VERSION:
         return jsonify(ok=False, error="Version Spotter obsolète", expected=APP_VERSION), 409
     clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
@@ -1534,7 +1562,8 @@ def reset_race_state_for_new_circuit(circuit_id):
     # Le Quick Change est partagé entre Analyzer et Spotter pour un circuit donné.
     # Un changement de piste ne doit jamais réutiliser les files du circuit précédent.
     with SPOTTER_LOCK:
-        STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
+        STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "kart_tracking_enabled": False, "kart_registry": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
+        STATE["spotter_registry"] = {}
     with ANALYZER_STRATEGY_LOCK:
         STATE["analyzer_strategy"] = None
     stop_live_connection()

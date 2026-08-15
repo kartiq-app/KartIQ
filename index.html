@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Velocity">
-<link rel="manifest" href="/static/manifest.json?v=7.2.1742">
-<link rel="apple-touch-icon" href="/static/icons/kartiq-180.png?v=7.2.1742">
+<link rel="manifest" href="/static/manifest.json?v=7.2.1744">
+<link rel="apple-touch-icon" href="/static/icons/kartiq-180.png?v=7.2.1744">
 <title>Velocity V{{ app_version }} — Architecture 5 modes</title>
 <link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
 <script>window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};window.VELOCITY_INVITE_TOKEN={{ velocity_invite_token|tojson }};</script>
@@ -283,7 +283,8 @@
               <button type="button" class="spotter-undo-button analyzer-spotter-undo" onclick="spotterUndoLastAction()" title="Annuler la dernière action" aria-label="Annuler la dernière action">↩</button>
               <button type="button" onclick="openSpotterSetup('analyzer')">PRÉPARER LA ZONE QUICK CHANGE</button>
               <button id="analyzerSpotterAutoButton" type="button" onclick="spotterToggleAuto()">AUTO</button>
-              <button type="button" onclick="spotterModifyQueueMode()">MODIFIER LA FILE</button>
+              <button type="button" onclick="spotterOpenAddKart('analyzer')">AJOUTER UN KART</button>
+              <button type="button" onclick="spotterOpenKartRegistry()">SUIVI KARTS</button>
               <button type="button" class="analyzer-spotter-reset" onclick="resetSpotterFoundation()">RÉINITIALISER</button>
             </div>
             <div id="analyzerSpotterFiles" class="analyzer-spotter-files spotter-desktop-queues">
@@ -303,7 +304,7 @@
 
           <section class="panel analyzer-panel analyzer-spotter-maintenance-panel" data-spotter-drop-zone="maintenance" aria-labelledby="analyzerSpotterMaintenanceTitle">
             <div class="analyzer-panel-title">
-              <span id="analyzerSpotterMaintenanceTitle">MAINTENANCE</span>
+              <span id="analyzerSpotterMaintenanceTitle">ZONE MECA</span>
               <span id="analyzerSpotterMaintenanceCount" class="analyzer-spotter-count">0</span>
             </div>
             <div id="analyzerSpotterMaintenance" class="analyzer-spotter-list">
