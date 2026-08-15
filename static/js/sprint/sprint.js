@@ -162,18 +162,34 @@ function formatEndurancePitElapsed(ms){
  const pad=n=>String(n).padStart(2,'0');
  return hours?`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`:`${pad(minutes)}:${pad(seconds)}`;
 }
+function formatEndurancePitDuration(ms){
+ const totalMs=Math.max(0,Math.floor(Number(ms||0)));
+ const minutes=Math.floor(totalMs/60000);
+ const seconds=Math.floor((totalMs%60000)/1000);
+ const millis=totalMs%1000;
+ return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`;
+}
 function formatEndurancePitClock(value){
  const raw=String(value??'').trim();
- if(!raw||raw==='—')return '00:00';
- const clean=raw.replace(/\.$/,'');
- if(/^\d+$/.test(clean)){
-  const total=Math.max(0,Number(clean));
-  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+ if(!raw||raw==='—')return '00:00.000';
+ const clean=raw.replace(/,$/,'.').replace(/\.$/,'');
+ let totalMs=NaN;
+ if(/^\d+(?:[.,]\d+)?$/.test(clean)){
+  totalMs=Math.round(Number(clean.replace(',','.'))*1000);
+ }else{
+  const parts=clean.split(':');
+  if(parts.length===2){
+   const minutes=Number(parts[0]);
+   const seconds=Number(parts[1].replace(',','.'));
+   if(Number.isFinite(minutes)&&Number.isFinite(seconds))totalMs=Math.round((minutes*60+seconds)*1000);
+  }else if(parts.length===3){
+   const hours=Number(parts[0]);
+   const minutes=Number(parts[1]);
+   const seconds=Number(parts[2].replace(',','.'));
+   if(Number.isFinite(hours)&&Number.isFinite(minutes)&&Number.isFinite(seconds))totalMs=Math.round((hours*3600+minutes*60+seconds)*1000);
+  }
  }
- const parts=clean.split(':').map(v=>Number(v));
- if(parts.length===2&&parts.every(Number.isFinite))return `${String(parts[0]).padStart(2,'0')}:${String(Math.floor(parts[1])).padStart(2,'0')}`;
- if(parts.length===3&&parts.every(Number.isFinite))return `${String(parts[0]*60+parts[1]).padStart(2,'0')}:${String(Math.floor(parts[2])).padStart(2,'0')}`;
- return clean;
+ return Number.isFinite(totalMs)?formatEndurancePitDuration(totalMs):clean;
 }
 function endurancePitPassageLabel(count){
  const value=Math.max(1,Number(count)||1);
@@ -189,7 +205,7 @@ function setEndurancePitOverlay(mode,timeValue='—',passageCount=endurancePitPa
  overlay.classList.toggle('show',Boolean(mode));
  overlay.classList.toggle('pit-in-active',mode==='in');
  overlay.classList.toggle('pit-out-active',mode==='out');
- if(inTime)inTime.textContent=timeValue||'—';
+ if(inTime)inTime.textContent=formatEndurancePitClock(timeValue);
  if(outPassage)outPassage.textContent=endurancePitPassageLabel(passageCount);
  if(outTime)outTime.textContent=formatEndurancePitClock(timeValue);
  if(outMessage)outMessage.setAttribute('aria-hidden',mode==='out'?'false':'true');
@@ -203,7 +219,7 @@ function simulateEndurancePitIn(){
 function simulateEndurancePitOut(){
  const now=Date.now();
  let duration=endurancePitLastTime;
- if(endurancePitSimulation?.mode==='in')duration=formatEndurancePitElapsed(now-endurancePitSimulation.startedAt);
+ if(endurancePitSimulation?.mode==='in')duration=formatEndurancePitDuration(now-endurancePitSimulation.startedAt);
  endurancePitLastTime=duration||'—';
  endurancePitPassageCount=Math.max(1,endurancePitPassageCount+1);
  endurancePitSimulation={mode:'out',startedAt:now,duration:endurancePitLastTime,passageCount:endurancePitPassageCount};
@@ -221,7 +237,7 @@ function resetEndurancePitSimulation(){
 function renderEndurancePitState(f){
  const now=Date.now();
  if(endurancePitSimulation?.mode==='in'){
-  const value=formatEndurancePitElapsed(now-endurancePitSimulation.startedAt);
+  const value=formatEndurancePitDuration(now-endurancePitSimulation.startedAt);
   endurancePitLastTime=value;
   setEndurancePitOverlay('in',value);
   return true;
@@ -242,7 +258,7 @@ function renderEndurancePitState(f){
   if(endurancePitPreviousStatus!=='pit')endurancePitEnteredAt=now;
   enduranceTrackStartedAt=0;
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
-  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
+  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitDuration(now-endurancePitEnteredAt);
   endurancePitPreviousStatus='pit';
   endurancePitOutUntil=0;
   setEndurancePitOverlay('in',endurancePitLastTime);
@@ -255,7 +271,7 @@ function renderEndurancePitState(f){
   const apexPassages=Number(f?.pit_stops);
   if(Number.isFinite(apexPassages)&&apexPassages>0)endurancePitPassageCount=apexPassages;
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
-  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
+  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitDuration(now-endurancePitEnteredAt);
   endurancePitOutUntil=now+5000;
   enduranceTrackStartedAt=now;
  }
@@ -307,23 +323,12 @@ function samePenaltyTarget(p,f){
  return Boolean(pk&&fk&&pk===fk);
 }
 function renderEndurancePenaltyAlert(list,f){
+ // V7.2.1750 — messages automatiques de pénalité désactivés en Focus Endurance.
+ // Les données de pénalité restent disponibles dans les autres écrans de Velocity.
  const banner=document.getElementById('endurancePenaltyBanner');
- const nameEl=document.getElementById('endurancePenaltyBannerName');
- const textEl=document.getElementById('endurancePenaltyBannerText');
- if(!banner)return;
- const relevant=list.filter(p=>samePenaltyTarget(p,f));
- if(!endurancePenaltyInitialized){relevant.forEach(p=>endurancePenaltySeen.add(sprintFocusPenaltyKey(p)));endurancePenaltyInitialized=true}
- const newest=relevant.find(p=>!endurancePenaltySeen.has(sprintFocusPenaltyKey(p)));
- if(newest){
-  relevant.forEach(p=>endurancePenaltySeen.add(sprintFocusPenaltyKey(p)));
-  endurancePenaltyAlert=newest;endurancePenaltyAlertUntil=Date.now()+15000;
- }
- const active=endurancePenaltyAlert&&Date.now()<endurancePenaltyAlertUntil;
- banner.classList.toggle('show',Boolean(active));
- if(active){
-  if(nameEl)nameEl.textContent=endurancePenaltyAlert.driver||f?.driver||state.followed_driver||'—';
-  if(textEl)textEl.textContent=penaltyRawText(endurancePenaltyAlert)||'Pénalité';
- }else endurancePenaltyAlert=null;
+ if(banner)banner.classList.remove('show');
+ endurancePenaltyAlert=null;
+ endurancePenaltyAlertUntil=0;
 }
 
 

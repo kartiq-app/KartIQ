@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1749"
-APP_RELEASE_NAME = "FOCUS ENDURANCE MOBILE + PILOTAGE TEAM MANAGER"
+APP_VERSION = "7.2.1750"
+APP_RELEASE_NAME = "FOCUS ENDURANCE — MESSAGES STANDS"
 
 
 def _circuit_sort_key(circuit):

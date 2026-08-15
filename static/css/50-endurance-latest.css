@@ -445,7 +445,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   right:clamp(14px,2.4vw,34px);
   color:#198cff;
   font-family:var(--font-display,inherit);
-  font-size:clamp(22px,4.2vh,58px);
+  font-size:clamp(33px,6.3vh,87px);
   line-height:1;
   font-weight:800;
   letter-spacing:.03em;
@@ -497,7 +497,7 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   #enduranceFocus .endurance-pit-out-passage{font-size:clamp(18px,6vw,34px);white-space:normal}
   #enduranceFocus .endurance-pit-out-title{font-size:clamp(38px,12vw,82px);white-space:normal}
   #enduranceFocus .endurance-pit-out-time{font-size:clamp(42px,16vw,96px)}
-  #enduranceFocus .endurance-pit-in-time{font-size:clamp(22px,7vw,42px)}
+  #enduranceFocus .endurance-pit-in-time{font-size:clamp(33px,10.5vw,63px)}
 }
 
 
@@ -976,7 +976,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-overlay{
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-in-time{
   bottom:clamp(10px,2.2dvw,28px)!important;
   right:clamp(14px,2.4dvh,34px)!important;
-  font-size:clamp(28px,7dvw,56px)!important;
+  font-size:clamp(42px,10.5dvw,84px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-out-message{
   inset:0!important;

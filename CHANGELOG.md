@@ -1,3 +1,11 @@
+# V7.2.1750 — Focus Endurance : messages automatiques stands
+
+- Sortie des stands : durée affichée au format `MM:SS.mmm` (ex. `02:34.295`).
+- Entrée aux stands : chrono en bas à droite au même format `MM:SS.mmm`.
+- Entrée aux stands : taille du chrono augmentée de 50 %, y compris sur l’affichage iPhone Focus.
+- Messages automatiques de pénalité désactivés uniquement en Focus Endurance.
+- Les pénalités restent disponibles dans les autres vues de Velocity.
+
 # V7.2.1749 — Synchronisation Spotter Desktop / Smartphone / Analyzer
 
 - Corrige l'absence de réplication du Quick Change préparé sur Desktop vers le Spotter smartphone.
