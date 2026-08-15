@@ -1028,7 +1028,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 }
 
 
-/* Velocity V7.2.1736N — Focus Endurance smartphone : lisibilité maximale.
+/* Velocity V7.2.1737N — Focus Endurance smartphone : lisibilité maximale.
    Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
 @media (max-width: 900px), (pointer: coarse){
   #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
