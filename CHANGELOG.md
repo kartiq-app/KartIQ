@@ -1,3 +1,20 @@
+# V7.2.1752 — Focus Endurance : violet = meilleur absolu de la grille
+
+- Restauration de la règle automobile du violet en Focus Endurance.
+- Violet : dernier tour égal au meilleur temps absolu de toute la grille.
+- Vert / orange inchangés : comparaison avec le meilleur du pilote sur le relais courant.
+- Réinitialisation vert / orange toujours effectuée à chaque sortie des stands.
+
+# V7.2.1751 — Focus Endurance : couleur du dernier tour par pilote/relais
+
+- À chaque sortie des stands, le traitement vert/orange du dernier tour est réinitialisé pour le nouveau relais.
+- Vert : le pilote actuellement en relais vient d'améliorer son meilleur chrono de ce relais.
+- Orange : le pilote actuellement en relais n'améliore pas son meilleur chrono de ce relais.
+- Le premier nouveau tour chronométré du relais devient la référence et s'affiche en vert, sauf s'il est violet.
+- Violet : le pilote bat ou égale le meilleur temps historique de son équipe depuis le début de la course.
+- Le violet n'est plus comparé au meilleur temps absolu de toute la grille en Focus Endurance.
+- Aucun changement sur les couleurs Sprint / Qualification.
+
 # V7.2.1750 — Focus Endurance : messages automatiques stands
 
 - Sortie des stands : durée affichée au format `MM:SS.mmm` (ex. `02:34.295`).

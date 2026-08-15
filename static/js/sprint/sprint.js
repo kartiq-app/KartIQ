@@ -154,6 +154,42 @@ let endurancePitSimulation=null;
 let enduranceTrackStartedAt=0;
 let endurancePitPassageCount=0;
 
+// V7.2.1751 — Focus Endurance : la couleur vert/orange est propre au pilote
+// du relais en cours. Elle est réinitialisée à chaque sortie des stands.
+let enduranceRelayLapColorState={teamKey:'',pilotKey:'',lastMarker:'',bestSeconds:null,lastImproved:false};
+function enduranceRelayTeamKey(f){return String(f?.apex_row??f?.driver??'').trim()}
+function enduranceRelayPilotKey(f){return String(f?.pilot||f?.driver||'').trim().toLowerCase()}
+function enduranceRelayLapMarker(f){return `${String(f?.laps??'')}|${String(f?.last??'')}`}
+function resetEnduranceRelayLapColor(f){
+ enduranceRelayLapColorState={
+  teamKey:enduranceRelayTeamKey(f),
+  pilotKey:enduranceRelayPilotKey(f),
+  // On mémorise le tour encore affiché au PIT OUT pour ne pas le prendre comme
+  // premier tour du nouveau relais. Le prochain nouveau marker sera la référence.
+  lastMarker:enduranceRelayLapMarker(f),
+  bestSeconds:null,
+  lastImproved:false
+ };
+}
+function enduranceRelayLapImproved(f){
+ const teamKey=enduranceRelayTeamKey(f),pilotKey=enduranceRelayPilotKey(f),marker=enduranceRelayLapMarker(f);
+ const ctx=enduranceRelayLapColorState;
+ if(ctx.teamKey!==teamKey||ctx.pilotKey!==pilotKey){
+  resetEnduranceRelayLapColor(f);
+  return false;
+ }
+ if(!marker||marker==='|')return false;
+ if(marker===ctx.lastMarker)return Boolean(ctx.lastImproved);
+ const seconds=lapSeconds(f?.last);
+ ctx.lastMarker=marker;
+ if(!Number.isFinite(seconds)){ctx.lastImproved=false;return false}
+ const previousBest=ctx.bestSeconds;
+ const improved=!Number.isFinite(previousBest)||seconds<previousBest-0.0005;
+ ctx.lastImproved=improved;
+ if(!Number.isFinite(previousBest)||seconds<previousBest)ctx.bestSeconds=seconds;
+ return improved;
+}
+
 function formatEndurancePitElapsed(ms){
  const total=Math.max(0,Math.floor(Number(ms||0)/1000));
  const hours=Math.floor(total/3600);
@@ -223,6 +259,7 @@ function simulateEndurancePitOut(){
  endurancePitLastTime=duration||'—';
  endurancePitPassageCount=Math.max(1,endurancePitPassageCount+1);
  endurancePitSimulation={mode:'out',startedAt:now,duration:endurancePitLastTime,passageCount:endurancePitPassageCount};
+ resetEnduranceRelayLapColor(enduranceFocusSelectedDriver());
  enduranceTrackStartedAt=now;
  endurancePitOutUntil=now+5000;
  renderEnduranceFocus();
@@ -273,6 +310,7 @@ function renderEndurancePitState(f){
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
   else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitDuration(now-endurancePitEnteredAt);
   endurancePitOutUntil=now+5000;
+  resetEnduranceRelayLapColor(f);
   enduranceTrackStartedAt=now;
  }
  endurancePitPreviousStatus=status;
@@ -304,9 +342,17 @@ function enduranceTrackTimeValue(f){
 
 function enduranceLastLapColorClass(f){
  const lastSec=lapSeconds(f?.last);
- const absoluteBest=absoluteSessionBestSeconds();
- if(Number.isFinite(lastSec)&&Number.isFinite(absoluteBest)&&Math.abs(lastSec-absoluteBest)<0.0005)return 'endurance-last-purple';
- if(f?.last_improved_personal_best)return 'endurance-last-green';
+ // On met toujours à jour la référence du relais, même lorsque le tour sera
+ // affiché en violet : le tour suivant doit bien être comparé à ce chrono.
+ const relayImproved=enduranceRelayLapImproved(f);
+ // Violet : meilleur temps absolu de toute la grille, conformément à la
+ // convention automobile. La référence vert/orange reste, elle, propre au
+ // pilote et au relais courant.
+ const sessionBest=absoluteSessionBestSeconds();
+ if(Number.isFinite(lastSec)&&Number.isFinite(sessionBest)&&Math.abs(lastSec-sessionBest)<0.0005)return 'endurance-last-purple';
+ // Vert / orange : comparaison uniquement avec le meilleur du pilote sur le
+ // relais courant, remis à zéro lors de chaque PIT OUT.
+ if(relayImproved)return 'endurance-last-green';
  return 'endurance-last-orange';
 }
 
