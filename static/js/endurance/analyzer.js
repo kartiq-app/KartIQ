@@ -3255,11 +3255,10 @@ function renderAnalyzer(){
 // des scores et de la confiance ; Spotter partage uniquement le KV et son état FIFO.
 function analyzerSpotterState(){
  const shared=window.velocitySharedSpotterState;
- const currentCircuit=String(state?.circuit_id||state?.selected_circuit||'');
+ // Le backend réinitialise l'état Spotter à chaque changement de circuit :
+ // un état partagé configuré est donc la source de vérité inter-appareils.
  if(shared&&typeof shared==='object'){
-  const sameRelease=!shared.app_release||String(shared.app_release)===String(state?.version||'').replace(/\s+TEST.*$/,'')||String(shared.app_release)==='7.2.106';
-  const sameCircuit=!shared.circuit_id||!currentCircuit||String(shared.circuit_id)===currentCircuit;
-  if(sameRelease&&sameCircuit)return shared;
+  if(shared.configured||Array.isArray(shared.queue)||Array.isArray(shared.maintenance))return shared;
  }
  return state?.spotter&&typeof state.spotter==='object'?state.spotter:null;
 }

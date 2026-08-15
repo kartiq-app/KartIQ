@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.1748';
+const SPOTTER_APP_RELEASE='7.2.1749';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -134,7 +134,7 @@ function spotterMergeProtectedIncoming(remoteIncoming){
  });
  return [...remote,...spotterClone(protectedLocal)];
 }
-function spotterApplyRemoteSnapshot(remote){
+function spotterApplyRemoteSnapshot(remote,{force=false}={}){
  if(!remote||typeof remote!=='object'||remote.client_id===SPOTTER_CLIENT_ID)return;
  const wasConfigured=Boolean(spotterState.configured);
  // Un état d'une ancienne version ne doit jamais restaurer une ancienne session.
@@ -142,11 +142,11 @@ function spotterApplyRemoteSnapshot(remote){
  const currentCircuit=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
  if(remote.circuit_id&&currentCircuit&&String(remote.circuit_id)!==currentCircuit)return;
  const updated=Number(remote.updated_at_ms)||0;
- if(updated<=spotterLastRemoteUpdate)return;
+ if(!force&&updated<=spotterLastRemoteUpdate)return;
  const remoteMutation=spotterRemoteMutationAt(remote);
- if(remoteMutation&&spotterLocalMutationAt&&remoteMutation<spotterLocalMutationAt)return;
- if(spotterPushInFlight||spotterPushQueued||Date.now()-spotterLocalMutationAt<1800)return;
- if(document.body.classList.contains('current-spotter')&&spotterUiIsInteractive()){
+ if(!force&&remoteMutation&&spotterLocalMutationAt&&remoteMutation<spotterLocalMutationAt)return;
+ if(!force&&(spotterPushInFlight||spotterPushQueued||Date.now()-spotterLocalMutationAt<1800))return;
+ if(!force&&document.body.classList.contains('current-spotter')&&spotterUiIsInteractive()){
   spotterDeferredRemote=spotterClone(remote);
   return;
  }
@@ -184,13 +184,14 @@ function spotterApplyRemoteSnapshot(remote){
   }
  }finally{spotterApplyingRemote=false}
 }
-async function spotterPullSharedState(){
+async function spotterPullSharedState({force=false}={}){
  try{
   const response=await fetch('/api/spotter-state',{cache:'no-store'});
-  if(!response.ok)return;
+  if(!response.ok)return false;
   const payload=await response.json();
-  spotterApplyRemoteSnapshot(payload?.spotter);
- }catch(error){console.warn('[Spotter] Lecture de l’état partagé impossible',error)}
+  spotterApplyRemoteSnapshot(payload?.spotter,{force});
+  return true;
+ }catch(error){console.warn('[Spotter] Lecture de l’état partagé impossible',error);return false}
 }
 
 function loadSpotterFoundation(){
@@ -243,6 +244,10 @@ async function spotterPushSharedState(){
   if(response.ok){
    const payload=await response.json();
    spotterLastRemoteUpdate=Math.max(spotterLastRemoteUpdate,Number(payload?.updated_at_ms)||0);
+   const published=spotterSharedSnapshot();
+   published.updated_at_ms=spotterLastRemoteUpdate;
+   published.circuit_id=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
+   spotterPublishSharedState(published);
   }else{
    const payload=await response.json().catch(()=>({}));
    console.warn('[Spotter] État partagé refusé',response.status,payload);
@@ -423,13 +428,11 @@ function spotterCancelSetup(){
 function spotterEditQueueSetup(){spotterBeginSetup();spotterUiStep='queue';renderSpotterFoundation('queue')}
 async function spotterEnterMode(){
  spotterSessionOpened=true;
- // Toujours relire l'état serveur juste avant d'ouvrir Spotter. C'est essentiel
- // quand le TM vient de préparer les files depuis Analyzer sur un autre appareil.
- await spotterPullSharedState();
+ // À l'entrée dans Spotter, le serveur est la source de vérité inter-appareils.
+ // Le rendu local "mode" ne doit pas empêcher la récupération du Quick Change
+ // préparé depuis Desktop / Analyzer.
+ await spotterPullSharedState({force:true});
  if(spotterSetupRequested){spotterSetupRequested=false;spotterUiStep='mode';renderSpotterFoundation('mode');return}
- // Une configuration créée depuis Analyzer ou un autre appareil est la seule
- // source de vérité : Spotter l'ouvre directement, y compris au premier accès
- // sur smartphone. L'écran de configuration n'existe que si rien n'est préparé.
  renderSpotterFoundation(spotterState.configured?(spotterState.recalibrating?'recalibrate':'live'):'mode');
 }
 function spotterSetupIndexesForFile(file){

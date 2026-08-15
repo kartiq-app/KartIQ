@@ -1,3 +1,13 @@
+# V7.2.1749 — Synchronisation Spotter Desktop / Smartphone / Analyzer
+
+- Corrige l'absence de réplication du Quick Change préparé sur Desktop vers le Spotter smartphone.
+- Cause : à l'ouverture du Spotter smartphone, l'écran local `mode` était considéré comme interactif et bloquait précisément le snapshot serveur que `spotterEnterMode()` venait chercher.
+- `spotterEnterMode()` force désormais une lecture serveur prioritaire à l'ouverture.
+- Les protections anti-écrasement restent actives pendant une vraie édition utilisateur ; seule l'entrée dans le mode force la synchronisation.
+- Après un push structurel réussi, l'état partagé local est republié avec le timestamp serveur.
+- Analyzer privilégie maintenant l'état Spotter partagé ; le backend reste responsable du reset lors d'un changement de circuit.
+- Aucun changement FIFO / Quick Change / Zone Méca / registre KV.
+
 # V7.2.1748 — Correctif réinsertion ZONE MECA
 
 - Corrige le kart remis dans une file qui revenait ensuite en ZONE MECA.
