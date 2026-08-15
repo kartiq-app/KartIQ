@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.1745';
+const SPOTTER_APP_RELEASE='7.2.1746';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -237,7 +237,18 @@ function spotterOpenAddKart(origin){if(!spotterState.configured){openSpotterSetu
 function spotterAddKartDraftRow(file){const f=Math.max(1,Math.min(spotterState.mode,Number(file)||1));spotterAddKartDraft.push({kart:'',file:f});renderSpotterFoundation('addkart');setTimeout(()=>document.querySelector(`.spotter-add-kart-file[data-add-file="${f}"] .spotter-setup-row:last-of-type input`)?.focus(),0)}
 function spotterRemoveAddKartDraft(index){if(!spotterAddKartDraft?.[index])return;const f=Number(spotterAddKartDraft[index].file)||1;const n=spotterAddKartDraft.filter(r=>Number(r.file)===f).length;if(n<=1)spotterAddKartDraft[index].kart='';else spotterAddKartDraft.splice(index,1);renderSpotterFoundation('addkart')}
 function spotterUpdateAddKartDraft(index,value){if(spotterAddKartDraft?.[index])spotterAddKartDraft[index].kart=String(value||'').trim().slice(0,18)}
-function spotterRenderAddKartFiles(){const count=Math.max(1,Math.min(3,Number(spotterState.mode)||1)),cols=[];for(let file=1;file<=count;file++){const idxs=spotterAddKartDraft.map((r,i)=>Number(r.file)===file?i:-1).filter(i=>i>=0);const rows=idxs.map(i=>`<div class="spotter-setup-row"><div class="spotter-kv">NOUVEAU</div><input autocomplete="off" value="${spotterEscape(spotterAddKartDraft[i]?.kart||'')}" placeholder="Nom / numéro du kart" oninput="spotterUpdateAddKartDraft(${i},this.value)"><button class="spotter-remove" type="button" onclick="spotterRemoveAddKartDraft(${i})">×</button></div>`).join('');cols.push(`<div class="spotter-setup-file spotter-add-kart-file" data-add-file="${file}"><div class="spotter-setup-file-title">FILE ${file}</div>${rows}<button class="spotter-add-row spotter-add-file-row" onclick="spotterAddKartDraftRow(${file})">＋ AJOUTER UN KART</button></div>`)}return `<div class="spotter-setup-files setup-files-${count}">${cols.join('')}</div>`}
+function spotterRenderAddKartFiles(){
+ const count=Math.max(1,Math.min(3,Number(spotterState.mode)||1)),cols=[];
+ if(!Array.isArray(spotterAddKartDraft)||!spotterAddKartDraft.length){
+  spotterAddKartDraft=Array.from({length:count},(_,i)=>({kart:'',file:i+1}));
+ }
+ for(let file=1;file<=count;file++){
+  const idxs=spotterAddKartDraft.map((r,i)=>Number(r.file)===file?i:-1).filter(i=>i>=0);
+  const rows=idxs.map(i=>`<div class="spotter-setup-row"><div class="spotter-kv">NOUVEAU</div><input autocomplete="off" value="${spotterEscape(spotterAddKartDraft[i]?.kart||'')}" placeholder="Nom / numéro du kart" oninput="spotterUpdateAddKartDraft(${i},this.value)"><button class="spotter-remove" type="button" onclick="spotterRemoveAddKartDraft(${i})">×</button></div>`).join('');
+  cols.push(`<div class="spotter-setup-file spotter-add-kart-file" data-add-file="${file}"><div class="spotter-setup-file-title">FILE ${file}</div>${rows}<button class="spotter-add-row spotter-add-file-row" onclick="spotterAddKartDraftRow(${file})">＋ AJOUTER UN KART</button></div>`);
+ }
+ return `<div class="spotter-setup-files setup-files-${count}">${cols.join('')}</div>`;
+}
 function spotterConfirmAddKarts(){const additions=(spotterAddKartDraft||[]).map(r=>({kart:String(r?.kart||'').trim(),file:Math.max(1,Math.min(spotterState.mode,Number(r?.file)||1))})).filter(r=>r.kart);if(!additions.length){alert('Ajoutez au moins un kart.');return}const seen=new Set();for(const row of additions){const n=spotterNormalizePhysicalKart(row.kart);if(seen.has(n)){alert(`Le kart ${row.kart} est présent plusieurs fois dans cet ajout.`);return}seen.add(n);const duplicate=spotterFindPhysicalKartDuplicate(row.kart);if(duplicate){alert(`Kart ${row.kart} est déjà suivi par Velocity${duplicate.kv?` sous ${duplicate.kv}`:''}.`);return}}spotterRememberUndo();additions.forEach(row=>{const item={cardId:spotterCardId('queue'),kv:spotterAllocateKv(),apexKart:row.kart,lastTeam:'Initialisation',currentTeam:null,score:null,confidence:null,status:'available',queueFile:row.file,addedAt:Date.now()};spotterState.queue.push(item);if(spotterState.kartTrackingEnabled){spotterRegistryEnsure(item.kv);spotterScheduleRegistryPush()}spotterLogMovement('manual_kart_added',{kv:item.kv,kart:row.kart,queueFile:row.file})});const origin=spotterSetupOrigin;spotterAddKartDraft=null;spotterSetupOrigin='spotter';saveSpotterFoundation();spotterRenderCurrent();if(origin==='analyzer')setTimeout(()=>showMode('analyzer'),0)}
 function spotterCancelAddKart(){const origin=spotterSetupOrigin;spotterAddKartDraft=null;spotterSetupOrigin='spotter';if(origin==='analyzer'){showMode('analyzer');return}spotterRenderCurrent()}
 

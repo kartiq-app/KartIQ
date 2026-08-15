@@ -1,3 +1,10 @@
+# V7.2.1746 — Correctif runtime Spotter
+
+- Corrige l'écran Spotter vide de V7.2.1745.
+- Cause : le nouveau rendu `AJOUTER UN KART` était évalué à chaque rendu Spotter alors que son brouillon n'était pas encore initialisé.
+- `spotterRenderAddKartFiles()` initialise désormais son brouillon de façon sûre même lorsque le mode Spotter s'ouvre directement sur l'écran principal.
+- Aucun changement au FIFO, Quick Change, registre KV, Analyzer ou OAuth.
+
 # V7.2.1745 — Rebuild Spotter depuis V7.2.1742 fonctionnelle
 
 - Repart de la V7.2.1742 fournie et fonctionnelle.
