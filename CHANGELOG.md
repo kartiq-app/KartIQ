@@ -1,4 +1,24 @@
-# V7.2.1738 — Suppression membre simplifiée + équipe orange
+# V7.2.1739 — PRIVATE ACCESS / Google Authentication
+
+- Base stricte V7.2.1738.
+- Nouvelle page de connexion autonome et minimale.
+- Authentification Google OAuth 2.0 / OpenID Connect côté serveur.
+- Whitelist lue depuis VELOCITY_ALLOWED_EMAILS sur Render.
+- Un visiteur non authentifié ne reçoit pas l'application Velocity.
+- /api/* et /static/* sont refusés (403) avant authentification.
+- Les fichiers JS/CSS Velocity ne sont chargés qu'après autorisation.
+- Cookie de session HttpOnly, SameSite=Lax et Secure sur Render.
+- Déconnexion via /logout.
+- Aucun changement Analyzer / Spotter / Focus / Mode Performance / algorithmes.
+- Variables Render requises :
+  VELOCITY_ALLOWED_EMAILS
+  GOOGLE_CLIENT_ID
+  GOOGLE_CLIENT_SECRET
+  VELOCITY_SESSION_SECRET
+- VELOCITY_PUBLIC_URL est facultative (Render fournit RENDER_EXTERNAL_URL).
+- Version numérique : 7.2.1739.
+
+# V7.2.1739 — Suppression membre simplifiée + équipe orange
 
 - Base stricte V7.2.1737.
 - Suppression d'un membre : box dédiée sans champ de confirmation du nom de l'équipe.
@@ -6,9 +26,9 @@
 - La ligne contenant le nom de l'équipe sélectionnée reçoit un fond orange.
 - Les trois boutons membre restent sur une seule ligne.
 - Aucun autre changement fonctionnel.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Boutons membres sur une seule ligne
+# V7.2.1739 — Boutons membres sur une seule ligne
 
 - Base stricte V7.2.1736.
 - Correction CSS ciblée uniquement.
@@ -17,9 +37,9 @@
 - Sur smartphone, réduction légère des espacements/paddings pour conserver les trois boutons sur la même ligne.
 - Aucun changement fonctionnel.
 - Aucun changement Session Course / association appareil / rôles / Analyzer / Focus / Spotter / Performance.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Sélection équipe : édition, suppression, association appareils
+# V7.2.1739 — Sélection équipe : édition, suppression, association appareils
 
 - Base stricte V7.2.1735.
 - Dans CRÉER UNE SESSION > SÉLECTIONNER UNE ÉQUIPE :
@@ -39,9 +59,9 @@
 - + AJOUTER UN MEMBRE conservé sous la liste.
 - Ajout d'une route PATCH équipe pour renommer proprement la Team et synchroniser appareils/invitations/session active.
 - Aucun changement Mode Performance / Analyzer / Focus / Spotter.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Gestion membres équipe existante
+# V7.2.1739 — Gestion membres équipe existante
 
 - Base stricte V7.2.1734.
 - Dans CRÉER UNE SESSION > SÉLECTIONNER UNE ÉQUIPE :
@@ -55,9 +75,9 @@
 - Les suppressions réutilisent la confirmation existante.
 - Les ajouts et modifications mettent à jour la sauvegarde locale du navigateur TM.
 - Aucun changement Session Active / Mode Performance / Focus / Spotter / Analyzer.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Correctifs Session Course UX
+# V7.2.1739 — Correctifs Session Course UX
 
 - Base stricte V7.2.1733.
 - Correction du bouton Session Active qui apparaissait puis disparaissait :
@@ -72,9 +92,9 @@
   - validation par bouton OK orange.
   - sauvegarde navigateur Team Manager actualisée après modification.
 - Mode Performance, Focus pilote lié au nom d'équipe et sauvegarde profils conservés.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Session Course UX + équipe source du Focus pilote
+# V7.2.1739 — Session Course UX + équipe source du Focus pilote
 
 - Base stricte V7.2.1732.
 - Premier écran : SÉLECTIONNER UNE ÉQUIPE / CRÉER UNE ÉQUIPE.
@@ -88,9 +108,9 @@
 - OK orange pendant l'édition.
 - Bas d'écran : VALIDER LES CHANGEMENTS / TERMINER LA SESSION.
 - Mode Performance et sauvegarde navigateur V1732 conservés.
-- Version numérique 7.2.1738.
+- Version numérique 7.2.1739.
 
-# V7.2.1738 — Session Course Performance + profils persistants navigateur
+# V7.2.1739 — Session Course Performance + profils persistants navigateur
 
 - Base stricte V7.2.1731.
 - Nouveau bouton Session Course en haut à droite d'Analyzer.
@@ -106,9 +126,9 @@
   - TEAM MANAGER : comportement Analyzer complet conservé pour ne sacrifier aucun calcul stratégique.
 - Polling `/api/state` et moteur Apex inchangés dans cette première passe.
 - Aucun changement des algorithmes Velocity / stratégie / Spotter.
-- Version numérique 7.2.1738.
+- Version numérique 7.2.1739.
 
-# V7.2.1738 — Focus Endurance iPhone : stands en paysage virtuel
+# V7.2.1739 — Focus Endurance iPhone : stands en paysage virtuel
 
 - Base stricte V7.2.1730.
 - Le temps aux stands reste dans `#enduranceFocus` et hérite donc de la rotation paysage 90° existante.
@@ -119,9 +139,9 @@
 - Aucun changement de logique IN/OUT, chronométrage, détection stands ou auto-hide.
 - Android inchangé.
 - Aucun changement Analyzer / Spotter / timing / calculs.
-- Version numérique 7.2.1738.
+- Version numérique 7.2.1739.
 
-# V7.2.1738 — Messages pilote en paysage Focus iPhone
+# V7.2.1739 — Messages pilote en paysage Focus iPhone
 
 - Base stricte V7.2.1729 stable.
 - Le conteneur global `driverMessageOverlay` rejoint la règle source existante du paysage virtuel iPhone.
@@ -131,9 +151,9 @@
 - Android inchangé : verrouillage paysage natif conservé.
 - Aucun changement Analyzer, Spotter, timing, calculs ou logique de messagerie.
 - Aucune nouvelle surcouche CSS : extension de la règle paysage existante.
-- Version numérique 7.2.1738.
+- Version numérique 7.2.1739.
 
-# V7.2.1738 — Spotter smartphone : hitbox Maintenance
+# V7.2.1739 — Spotter smartphone : hitbox Maintenance
 
 - Base stricte V7.2.1728.
 - Correction ciblée du drag & drop tactile vers Maintenance.
@@ -146,9 +166,9 @@
 - Aucun changement CSS.
 - Aucun changement de logique de transfert kart/équipe/temps d'arrêt.
 - Aucun changement Focus Endurance / Analyzer / timing / Velocity.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Focus Endurance smartphone : Delta -15 %
+# V7.2.1739 — Focus Endurance smartphone : Delta -15 %
 
 - Base stricte V7.2.1727.
 - Géométrie 65/35 conservée.
@@ -158,9 +178,9 @@
 - Aucune autre modification CSS.
 - Aucune nouvelle surcouche.
 - Desktop et autres modes Focus inchangés.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Focus Endurance smartphone : noms équipes +20 %
+# V7.2.1739 — Focus Endurance smartphone : noms équipes +20 %
 
 - Base stricte V7.2.1726.
 - Géométrie 65/35 conservée.
@@ -171,9 +191,9 @@
 - Modification directe des deux règles actives existantes.
 - Aucune nouvelle surcouche CSS.
 - Aucun changement desktop / autres Focus / logique métier.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Focus Endurance smartphone 65/35 + Delta grid
+# V7.2.1739 — Focus Endurance smartphone 65/35 + Delta grid
 
 - Base stricte V7.2.1722 stable.
 - Focus Endurance smartphone : répartition principale 60/40 -> 65/35.
@@ -188,18 +208,18 @@
 - Aucune modification de taille de police dans cette passe.
 - Aucun nouveau bloc CSS ajouté en fin de fichier.
 - Desktop et autres modes Focus inchangés.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — FULL REINTEGRATION FIX
+# V7.2.1739 — FULL REINTEGRATION FIX
 
 - Base stricte V7.2.172N.
 - Toutes les fonctions récentes de V172N sont conservées.
 - Correction de l'erreur V1721 : `analyzerApplySharedRulesFromState()` est conservée.
 - `analyzerRulesDesktopLeader()` et `analyzerRulesConfigured()` sont également conservées.
 - Retrait uniquement du bootstrap automatique V166 et de son rappel récursif de `renderAnalyzer()`.
-- Version numérique : 7.2.1738.
+- Version numérique : 7.2.1739.
 
-# V7.2.1738 — Normal Mode / Spotter + Focus + Session
+# V7.2.1739 — Normal Mode / Spotter + Focus + Session
 
 - Base stricte : V7.2.172 d'origine.
 - Réintégration du Spotter récent de V196.
@@ -210,7 +230,7 @@
 - Aucun moteur DYN1 générique V173+ réinjecté.
 - Cette version est destinée aux essais en usage normal, sans Mode Test Endurance.
 
-# Velocity V7.2.1738N — Focus Endurance mobile + pilotage Team Manager
+# Velocity V7.2.1739N — Focus Endurance mobile + pilotage Team Manager
 
 - Focus Endurance smartphone : valeurs Delta +30 %.
 - Noms équipe/pilote +10 %.

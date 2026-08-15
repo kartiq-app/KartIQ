@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Velocity — Accès privé</title>
+<style>
+html,body{margin:0;min-height:100%;background:#080a0d;color:#fff;font-family:Arial,Helvetica,sans-serif}
+body{display:grid;place-items:center;min-height:100vh}
+.card{width:min(420px,calc(100vw - 40px));box-sizing:border-box;border:1px solid #2a2f37;border-top:3px solid #ff7400;border-radius:14px;background:#10141a;padding:34px;text-align:center}
+.brand{font-size:34px;font-weight:900;font-style:italic;letter-spacing:-1px}.brand span{color:#ff7400}
+.private{margin:8px 0 28px;color:#9ba5b3;font-size:12px;font-weight:800;letter-spacing:.16em}
+a.google{display:block;text-decoration:none;background:#fff;color:#151515;border-radius:8px;padding:14px 16px;font-weight:800}
+.msg{margin-top:18px;padding:12px;border:1px solid #46362b;border-radius:8px;background:#1b1511;color:#ffb16c;font-size:13px;line-height:1.4}
+.small{margin-top:22px;color:#6f7885;font-size:11px}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand"><span>V</span>ELOCITY</div>
+  <div class="private">ACCÈS PRIVÉ</div>
+  {% if denied_email %}
+    <div class="msg">ACCÈS NON AUTORISÉ<br><strong>{{ denied_email }}</strong><br>Cette adresse Google n'est pas autorisée à accéder à Velocity.</div>
+    <p><a class="google" href="/auth/google">CHANGER DE COMPTE GOOGLE</a></p>
+  {% elif auth_error %}
+    <div class="msg">{{ auth_error }}</div>
+    {% if google_ready %}<p><a class="google" href="/auth/google">RÉESSAYER</a></p>{% endif %}
+  {% elif google_ready %}
+    <a class="google" href="/auth/google">SE CONNECTER AVEC GOOGLE</a>
+  {% else %}
+    <div class="msg">Google OAuth doit encore être configuré sur Render avant d'activer la connexion.</div>
+  {% endif %}
+  <div class="small">Velocity · Private Access</div>
+</main>
+</body>
+</html>

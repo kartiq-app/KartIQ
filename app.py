@@ -19,7 +19,7 @@ try:
 except ImportError:
     websocket = None
 
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, render_template, request, send_file, session, redirect, url_for, abort
 
 try:
     import qrcode
@@ -37,6 +37,30 @@ from backend.network import local_ip
 from backend.services.race_state import RaceStateService
 
 app = Flask(__name__)
+
+# V7.2.1739 — Private Google Authentication
+app.secret_key = os.environ.get("VELOCITY_SESSION_SECRET") or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("RENDER") == "true",
+)
+
+def _velocity_allowed_emails():
+    raw = os.environ.get("VELOCITY_ALLOWED_EMAILS", "")
+    return {e.strip().lower() for e in raw.split(",") if e.strip()}
+
+def _velocity_google_configured():
+    return bool(os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET"))
+
+def _velocity_is_authorized():
+    email = str(session.get("velocity_email") or "").strip().lower()
+    return bool(email and email in _velocity_allowed_emails())
+
+def _velocity_external_base():
+    return (os.environ.get("VELOCITY_PUBLIC_URL") or os.environ.get("RENDER_EXTERNAL_URL") or request.url_root).rstrip("/")
+
+
 
 APEX_TABLE = ApexTable()
 PROTOCOL_ENGINE = ProtocolEngine()
@@ -699,6 +723,94 @@ def _race_access_for_token(token):
         if secrets.compare_digest(str(session.get("tokens", {}).get(role) or ""), token):
             return {"role": role, "session": _race_session_public(session)}
     return None
+
+
+
+@app.get("/login")
+def velocity_login_page():
+    if _velocity_is_authorized():
+        return redirect("/")
+    return render_template("login.html", google_ready=_velocity_google_configured())
+
+@app.get("/auth/google")
+def velocity_google_login():
+    if not _velocity_google_configured():
+        return render_template("login.html", google_ready=False, auth_error="Google OAuth n'est pas encore configuré sur Render."), 503
+    state = secrets.token_urlsafe(32)
+    session["oauth_state"] = state
+    redirect_uri = _velocity_external_base() + "/auth/google/callback"
+    params = {
+        "client_id": os.environ["GOOGLE_CLIENT_ID"],
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "prompt": "select_account",
+    }
+    return redirect("https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params))
+
+@app.get("/auth/google/callback")
+def velocity_google_callback():
+    if request.args.get("state") != session.pop("oauth_state", None):
+        abort(400)
+    code = request.args.get("code")
+    if not code:
+        return render_template("login.html", google_ready=True, auth_error="Connexion Google annulée ou refusée."), 401
+    redirect_uri = _velocity_external_base() + "/auth/google/callback"
+    token_body = urllib.parse.urlencode({
+        "code": code,
+        "client_id": os.environ["GOOGLE_CLIENT_ID"],
+        "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
+    }).encode()
+    req = urllib.request.Request(
+        "https://oauth2.googleapis.com/token",
+        data=token_body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            token_data = json.loads(resp.read().decode("utf-8"))
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise ValueError("Jeton Google absent")
+        user_req = urllib.request.Request(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        with urllib.request.urlopen(user_req, timeout=10) as resp:
+            user = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return render_template("login.html", google_ready=True, auth_error="Impossible de vérifier le compte Google."), 401
+    email = str(user.get("email") or "").strip().lower()
+    if not user.get("email_verified") or email not in _velocity_allowed_emails():
+        session.clear()
+        return render_template("login.html", google_ready=True, denied_email=email), 403
+    session.clear()
+    session["velocity_email"] = email
+    session["velocity_name"] = str(user.get("name") or "")
+    session.permanent = True
+    return redirect("/")
+
+@app.get("/logout")
+def velocity_logout():
+    session.clear()
+    return redirect("/login")
+
+@app.before_request
+def velocity_private_access_guard():
+    path = request.path
+    public_exact = {"/login", "/auth/google", "/auth/google/callback", "/logout", "/favicon.ico"}
+    if path in public_exact or path.startswith("/static/auth/"):
+        return None
+    if _velocity_is_authorized():
+        return None
+    # API and source/static requests never receive Velocity code/data anonymously.
+    if path.startswith("/api/") or path.startswith("/static/"):
+        return ("Accès interdit", 403)
+    return redirect("/login")
 
 
 @app.get("/")
