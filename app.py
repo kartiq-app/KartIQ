@@ -104,7 +104,7 @@ STATE = {
     "traffic_recording": False,
     "traffic_recording_started_at": None,
     "driver_message": None,
-    "spotter": {"configured": False, "updated_at_ms": None, "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "kart_tracking_enabled": False, "mode": "live", "app_release": APP_VERSION, "client_id": "server"},
+    "spotter": {"configured": False, "updated_at_ms": None, "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "kart_tracking_enabled": False, "mutation_at_ms": 0, "mode": "live", "app_release": APP_VERSION, "client_id": "server"},
     "spotter_registry": {},
     "analyzer_rules": None,
     "analyzer_strategy": None,
@@ -1528,7 +1528,7 @@ def update_spotter_state():
     snapshot = body.get("spotter")
     if not isinstance(snapshot, dict):
         return jsonify(ok=False, error="État Spotter invalide"), 400
-    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "kart_tracking_enabled", "setup_karts", "setup_queue_files", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release"}
+    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "kart_tracking_enabled", "mutation_at_ms", "setup_karts", "setup_queue_files", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release"}
     if str(snapshot.get("app_release") or "") != APP_VERSION:
         return jsonify(ok=False, error="Version Spotter obsolète", expected=APP_VERSION), 409
     clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}

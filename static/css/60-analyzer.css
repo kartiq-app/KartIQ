@@ -2759,6 +2759,3 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 #raceSessionSelectedTeamCard > .race-team-title b{
   color:#111!important;
 }
-
-/* V7.2.1745 — Zone Méca mobile Analyzer */
-@media(max-width:899px){.analyzer-spotter-maintenance-panel[data-spotter-drop-zone="maintenance"]{min-height:240px!important}.analyzer-spotter-maintenance-panel[data-spotter-drop-zone="maintenance"] .analyzer-spotter-list{min-height:190px!important}body.spotter-drag-active .analyzer-spotter-maintenance-panel[data-spotter-drop-zone="maintenance"]{min-height:300px!important}}

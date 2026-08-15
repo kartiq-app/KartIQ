@@ -1841,11 +1841,57 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 @media(max-width:899px){.spotter-replacement-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.spotter-replacement-panel{padding:14px}}
 @media(max-width:520px){.spotter-replacement-grid{grid-template-columns:1fr}}
 
-/* V7.2.1745 — Spotter finalisation */
-.spotter-card-stats .spotter-score,.spotter-card-stats .spotter-confidence,.spotter-card-stats .spotter-kv-value{font-family:'F1 Regular',Arial,sans-serif!important;font-size:clamp(7.5px,2vw,12px)!important;line-height:1.08!important;color:#d9dee7!important;letter-spacing:0!important}
-.spotter-card-stats span:first-child{font-size:clamp(7.5px,2vw,12px)!important;color:#d9dee7!important;letter-spacing:0!important}
-.spotter-file-list .spotter-kv-value,.spotter-incoming-grid .spotter-kv-value,.spotter-maintenance-grid .spotter-kv-value{display:block!important}
-.spotter-queue-card>.spotter-team-number{display:block!important;width:100%!important;text-align:center!important;font-family:'F1 Regular',Arial,sans-serif!important;font-size:clamp(8px,2.1vw,12px)!important;line-height:1!important;color:#fff!important;opacity:.92!important;margin-bottom:1px!important}
-.spotter-tracking-command.active,.spotter-footer-actions .tracking-active{border-color:#2fd77c!important;color:#7ff0ad!important;box-shadow:0 0 0 1px rgba(47,215,124,.18)!important}
-@media(max-width:899px){body.current-spotter .spotter-maintenance[data-spotter-drop-zone="maintenance"]{min-height:250px!important}body.current-spotter .spotter-maintenance[data-spotter-drop-zone="maintenance"] .spotter-card-body{min-height:230px!important}body.current-spotter.spotter-drag-active .spotter-maintenance[data-spotter-drop-zone="maintenance"]{min-height:310px!important}}
-.spotter-registry-overlay{position:fixed;inset:0;z-index:130000;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:16px}.spotter-registry-panel{width:min(720px,100%);max-height:92vh;overflow:auto;background:#0c1016;border:1px solid #343b48;border-radius:16px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.7)}.spotter-registry-panel.wide{width:min(1120px,100%)}.spotter-registry-title{font-family:'F1 Regular',Arial,sans-serif;font-size:20px;letter-spacing:.08em;color:#fff}.spotter-registry-warning{font-size:15px;line-height:1.5;color:#d8dde6;margin:16px 0}.spotter-registry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.spotter-registry-head small{display:block;margin-top:5px;color:#63df9c;font-size:12px}.spotter-registry-close{border:0;background:transparent;color:#fff;font-size:30px;line-height:1;cursor:pointer}.spotter-registry-table{display:flex;flex-direction:column;gap:8px}.spotter-registry-row{display:grid;grid-template-columns:62px minmax(0,1fr);gap:10px;align-items:center;border:1px solid #242b36;background:#10151d;border-radius:10px;padding:9px 10px}.spotter-registry-row>strong{font-family:'F1 Regular',Arial,sans-serif;font-size:13px;color:#fff}.spotter-registry-history{display:flex;align-items:center;gap:7px;overflow-x:auto;padding-bottom:2px}.spotter-registry-entry{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;border:1px solid #303846;border-radius:8px;padding:5px 7px;background:#151b24}.spotter-registry-entry b{font-size:12px;color:#fff;white-space:nowrap}.spotter-registry-entry em{font-style:normal;font-family:'F1 Regular',Arial,sans-serif;font-size:12px;font-weight:800;border-radius:5px;padding:2px 5px}.spotter-registry-entry em.high{background:#0d6c3a;color:#8affbb}.spotter-registry-entry em.mid{background:#6b4d08;color:#ffd86a}.spotter-registry-entry em.low{background:#6d1c26;color:#ff8d99}.spotter-registry-entry em.unknown{background:#2b313b;color:#b9c0cb}.spotter-registry-arrow{color:#697383;font-size:17px;flex:0 0 auto}.spotter-registry-lost{flex:0 0 auto;border:1px solid #a34049;color:#ff8792;border-radius:7px;padding:5px 8px;font-size:10px;font-weight:800}.spotter-registry-empty,.spotter-registry-empty-block{color:#8993a1;font-size:12px}.spotter-registry-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.spotter-registry-actions .danger{border-color:#7d2630!important;color:#ff7d88!important}
+
+/* V7.2.1747 — Spotter stable : cartes + registre, sans agrandir physiquement Zone Méca */
+.spotter-card-stats .spotter-score,
+.spotter-card-stats .spotter-confidence,
+.spotter-card-stats .spotter-kv-value{
+  font-family:'F1 Regular',Arial,sans-serif!important;
+  font-size:clamp(7.5px,2vw,12px)!important;
+  line-height:1.08!important;
+  color:#d9dee7!important;
+  letter-spacing:0!important;
+}
+.spotter-card-stats span:first-child{
+  font-size:clamp(7.5px,2vw,12px)!important;
+  color:#d9dee7!important;
+  letter-spacing:0!important;
+}
+.spotter-file-list .spotter-kv-value,
+.spotter-incoming-grid .spotter-kv-value,
+.spotter-maintenance-grid .spotter-kv-value{display:block!important}
+.spotter-queue-card>.spotter-team-number{
+  display:block!important;width:100%!important;text-align:center!important;
+  font-family:'F1 Regular',Arial,sans-serif!important;
+  font-size:clamp(8px,2.1vw,12px)!important;
+  line-height:1!important;color:#fff!important;opacity:.92!important;margin-bottom:1px!important;
+}
+.spotter-tracking-command.active,
+.spotter-footer-actions .tracking-active{
+  border-color:#2fd77c!important;color:#7ff0ad!important;
+  box-shadow:0 0 0 1px rgba(47,215,124,.18)!important;
+}
+.spotter-registry-overlay{position:fixed;inset:0;z-index:130000;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:16px}
+.spotter-registry-panel{width:min(720px,100%);max-height:92vh;overflow:auto;background:#0c1016;border:1px solid #343b48;border-radius:16px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.7)}
+.spotter-registry-panel.wide{width:min(1120px,100%)}
+.spotter-registry-title{font-family:'F1 Regular',Arial,sans-serif;font-size:20px;letter-spacing:.08em;color:#fff}
+.spotter-registry-warning{font-size:15px;line-height:1.5;color:#d8dde6;margin:16px 0}
+.spotter-registry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.spotter-registry-head small{display:block;margin-top:5px;color:#63df9c;font-size:12px}
+.spotter-registry-close{border:0;background:transparent;color:#fff;font-size:30px;line-height:1;cursor:pointer}
+.spotter-registry-table{display:flex;flex-direction:column;gap:8px}
+.spotter-registry-row{display:grid;grid-template-columns:62px minmax(0,1fr);gap:10px;align-items:center;border:1px solid #242b36;background:#10151d;border-radius:10px;padding:9px 10px}
+.spotter-registry-row>strong{font-family:'F1 Regular',Arial,sans-serif;font-size:13px;color:#fff}
+.spotter-registry-history{display:flex;align-items:center;gap:7px;overflow-x:auto;padding-bottom:2px}
+.spotter-registry-entry{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;border:1px solid #303846;border-radius:8px;padding:5px 7px;background:#151b24}
+.spotter-registry-entry b{font-size:12px;color:#fff;white-space:nowrap}
+.spotter-registry-entry em{font-style:normal;font-family:'F1 Regular',Arial,sans-serif;font-size:12px;font-weight:800;border-radius:5px;padding:2px 5px}
+.spotter-registry-entry em.high{background:#0d6c3a;color:#8affbb}
+.spotter-registry-entry em.mid{background:#6b4d08;color:#ffd86a}
+.spotter-registry-entry em.low{background:#6d1c26;color:#ff8d99}
+.spotter-registry-entry em.unknown{background:#2b313b;color:#b9c0cb}
+.spotter-registry-arrow{color:#697383;font-size:17px;flex:0 0 auto}
+.spotter-registry-lost{flex:0 0 auto;border:1px solid #a34049;color:#ff8792;border-radius:7px;padding:5px 8px;font-size:10px;font-weight:800}
+.spotter-registry-empty,.spotter-registry-empty-block{color:#8993a1;font-size:12px}
+.spotter-registry-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.spotter-registry-actions .danger{border-color:#7d2630!important;color:#ff7d88!important}

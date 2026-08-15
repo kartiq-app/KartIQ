@@ -1,24 +1,20 @@
-# V7.2.1746 — Correctif runtime Spotter
-
-- Corrige l'écran Spotter vide de V7.2.1745.
-- Cause : le nouveau rendu `AJOUTER UN KART` était évalué à chaque rendu Spotter alors que son brouillon n'était pas encore initialisé.
-- `spotterRenderAddKartFiles()` initialise désormais son brouillon de façon sûre même lorsque le mode Spotter s'ouvre directement sur l'écran principal.
-- Aucun changement au FIFO, Quick Change, registre KV, Analyzer ou OAuth.
-
-# V7.2.1745 — Rebuild Spotter depuis V7.2.1742 fonctionnelle
+# V7.2.1747 — Spotter stable rebuild + corrections synchronisation
 
 - Repart de la V7.2.1742 fournie et fonctionnelle.
-- Mode Spotter / navigation d'origine conservés.
-- Numéro au-dessus du nom d'équipe.
-- Score / Confiance / KV homogènes ; KV visible sur smartphone.
+- Correction du conflit de synchronisation qui faisait disparaître les menus Spotter.
+- Les écrans Mode Quick Change / préparation des files / Ajouter un kart ne sont plus remplacés par le polling distant.
+- Protection contre les snapshots distants plus anciens qu'une mutation locale.
+- Les entrants DEV sont préservés contre un snapshot distant obsolète.
+- Zone Méca smartphone : zone tactile agrandie virtuellement sans augmenter la hauteur physique de la page.
+- Numéro affiché au-dessus du nom d'équipe.
+- Score / Confiance / identifiant KV sur la même zone ; affichage `KV03` sans préfixe supplémentaire `KV :`.
 - MAINTENANCE renommée ZONE MECA.
-- Zone Méca smartphone agrandie.
 - MODIFIER LA FILE remplacé par AJOUTER UN KART.
-- Ajouter un kart reprend la présentation par files du Quick Change, accepte plusieurs karts et ajoute en fin de file.
+- Ajouter un kart reprend la logique par files du Quick Change, accepte plusieurs karts et les ajoute en dernière position.
 - Anti-doublon des karts physiques.
-- SUIVI KARTS opt-in : registre KV → équipe → Score Velocity.
+- SUIVI KARTS opt-in avec registre KV → équipe → Score Velocity.
 - Registre séparé du polling 750 ms.
-- Undo restaure nextKvNumber + registre.
+- Undo restaure aussi nextKvNumber et le registre.
 - Registre borné à 250 KV / 80 passages.
 
 # V7.2.1742 — Correctif icône iPhone / PWA
