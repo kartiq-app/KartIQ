@@ -38,7 +38,7 @@ from backend.services.race_state import RaceStateService
 
 app = Flask(__name__)
 
-# V7.2.1739 — Private Google Authentication
+# V7.2.1740 — Private Google Authentication
 app.secret_key = os.environ.get("VELOCITY_SESSION_SECRET") or secrets.token_hex(32)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
@@ -799,15 +799,59 @@ def velocity_logout():
     session.clear()
     return redirect("/login")
 
+
+def _velocity_paired_device():
+    """Retourne l'appareil associé si le cookie/header correspond à un membre connu."""
+    device_id = _device_id_from_request()
+    if not device_id:
+        return None
+    with TEAM_DATA_LOCK:
+        dev = TEAM_DATA.get("devices", {}).get(str(device_id))
+        return deepcopy(dev) if dev else None
+
+
+def _velocity_invite_session_valid():
+    """Autorisation temporaire pendant l'écran d'association via QR/lien membre."""
+    token = str(session.get("velocity_invite_token") or "").strip()
+    if not token:
+        return False
+    with TEAM_DATA_LOCK:
+        invite = TEAM_DATA.get("invites", {}).get(token)
+        return bool(invite and not invite.get("revoked"))
+
+
+def _velocity_member_access():
+    return bool(_velocity_paired_device() or _velocity_invite_session_valid())
+
+
 @app.before_request
 def velocity_private_access_guard():
     path = request.path
     public_exact = {"/login", "/auth/google", "/auth/google/callback", "/logout", "/favicon.ico"}
+
+    # OAuth admin / Team Manager.
     if path in public_exact or path.startswith("/static/auth/"):
         return None
     if _velocity_is_authorized():
         return None
-    # API and source/static requests never receive Velocity code/data anonymously.
+
+    # Les liens d'invitation et anciens liens de rôle doivent pouvoir atteindre
+    # leur route afin que le token soit vérifié côté serveur.
+    if path.startswith("/invite/") or path.startswith("/join/"):
+        return None
+
+    # Pendant une invitation valide, seules les ressources nécessaires à
+    # l'association et les fichiers statiques de l'interface sont accessibles.
+    if _velocity_invite_session_valid():
+        if path.startswith("/api/invite/") or path.startswith("/static/"):
+            return None
+
+    # Après association, le cookie/header de l'appareil devient l'autorisation
+    # membre. Le JavaScript existant limite ensuite l'interface au rôle affecté.
+    if _velocity_paired_device():
+        return None
+
+    # Aucun code ou état Velocity n'est servi à un visiteur anonyme.
     if path.startswith("/api/") or path.startswith("/static/"):
         return ("Accès interdit", 403)
     return redirect("/login")
@@ -831,7 +875,9 @@ def team_invite(token):
     with TEAM_DATA_LOCK:
         invite = deepcopy(TEAM_DATA.get("invites", {}).get(str(token)))
     if not invite or invite.get("revoked"):
+        session.pop("velocity_invite_token", None)
         return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token="expired"), 410
+    session["velocity_invite_token"] = str(token)
     return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token=str(token))
 
 
@@ -1056,6 +1102,9 @@ def create_member_invite(member_id):
 
 @app.get("/api/invite/<token>")
 def get_invite(token):
+    if not _velocity_is_authorized() and not _velocity_paired_device():
+        if str(session.get("velocity_invite_token") or "") != str(token):
+            return jsonify(ok=False,error="Invitation non autorisée."),403
     with TEAM_DATA_LOCK: invite=deepcopy(TEAM_DATA.get("invites",{}).get(str(token)))
     if not invite or invite.get("revoked"): return jsonify(ok=False,error="Invitation invalide."),410
     return jsonify(ok=True,invite=invite)
@@ -1063,6 +1112,9 @@ def get_invite(token):
 
 @app.get("/api/invite/<token>/qr")
 def invite_qr(token):
+    if not _velocity_is_authorized() and not _velocity_paired_device():
+        if str(session.get("velocity_invite_token") or "") != str(token):
+            return jsonify(ok=False,error="Invitation non autorisée."),403
     with TEAM_DATA_LOCK:
         invite=deepcopy(TEAM_DATA.get("invites",{}).get(str(token)))
     if not invite or invite.get("revoked"):
@@ -1076,6 +1128,9 @@ def invite_qr(token):
 
 @app.post("/api/invite/<token>/claim")
 def claim_invite(token):
+    if not _velocity_is_authorized() and not _velocity_paired_device():
+        if str(session.get("velocity_invite_token") or "") != str(token):
+            return jsonify(ok=False,error="Invitation non autorisée."),403
     body=request.get_json(force=True,silent=True) or {}; device_id=str(body.get("device_id") or _device_id_from_request() or secrets.token_urlsafe(18)).strip()
     device_name=str(body.get("device_name") or request.user_agent.platform or "Appareil Velocity")[:80]
     with TEAM_DATA_LOCK:
@@ -1086,6 +1141,7 @@ def claim_invite(token):
         if device_id not in member.setdefault("device_ids",[]): member["device_ids"].append(device_id)
         TEAM_DATA.setdefault("devices",{})[device_id]={"id":device_id,"member_id":member.get("id"),"member_name":member.get("name"),"team_id":team.get("id"),"team_name":team.get("name"),"name":device_name,"last_seen_ms":int(time.time()*1000),"version":APP_VERSION}
         invite["claimed_device_id"]=device_id; invite["claimed_at_ms"]=int(time.time()*1000)
+        session.pop("velocity_invite_token", None)
         _save_team_data(TEAM_DATA)
     resp=jsonify(ok=True,device_id=device_id,member={"id":member.get("id"),"name":member.get("name"),"team_name":team.get("name"),"roles":member.get("roles",[])})
     resp.set_cookie("velocity_device_id",device_id,max_age=60*60*24*365*3,samesite="Lax",secure=request.is_secure)

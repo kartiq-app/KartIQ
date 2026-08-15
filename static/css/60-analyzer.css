@@ -2633,7 +2633,7 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 }
 
 
-/* Velocity V7.2.1739N — contrôle indépendant du Focus Endurance pilote. */
+/* Velocity V7.2.1740N — contrôle indépendant du Focus Endurance pilote. */
 .race-pilot-focus-target{
   grid-column:1/-1;display:grid;grid-template-columns:minmax(180px,.42fr) minmax(260px,1fr);
   gap:14px;align-items:center;padding:14px 16px;margin-top:8px;border:1px solid #303743;
@@ -2646,7 +2646,7 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 @media(max-width:720px){.race-pilot-focus-target{grid-template-columns:1fr}}
 
 
-/* V7.2.1739 — Session Course : accès principal + état actif. */
+/* V7.2.1740 — Session Course : accès principal + état actif. */
 .analyzer-toolbar .race-session-top-launch{
   margin-left:auto;
   min-height:34px;
@@ -2676,16 +2676,16 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 body.velocity-performance-pilot [data-home-mode],
 body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 
-/* V7.2.1739 — Session Course UX simplifiée. */
+/* V7.2.1740 — Session Course UX simplifiée. */
 .race-session-landing{display:grid;grid-template-columns:1fr 1fr;gap:16px}.race-session-choice{min-height:82px;border:1px solid rgba(255,116,0,.55);border-radius:12px;background:#11151b;color:#fff;font:800 14px/1 var(--font-display,inherit);letter-spacing:.05em;cursor:pointer}.race-session-choice:hover{border-color:#ff7400}.race-session-field{display:grid;gap:7px;margin:14px 0}.race-session-field>label{font-size:11px;letter-spacing:.08em;color:#9aa4b2;font-weight:800}.race-session-field select,.race-session-field input,.race-inline-edit-input{width:100%;box-sizing:border-box;border:1px solid #343b46;border-radius:8px;background:#0d1117;color:#fff;padding:11px 12px;font:700 14px/1.2 inherit}.race-session-readonly{border:1px solid #262d36;border-radius:8px;background:#0d1117;padding:11px 12px;font-weight:800}.race-session-bottom-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.race-session-active-actions{justify-content:space-between}.race-session-edit-row{display:grid;grid-template-columns:minmax(130px,.35fr) 1fr;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}.race-session-edit-row>span{font-size:11px;letter-spacing:.08em;color:#9aa4b2;font-weight:800}.race-session-edit-value{display:flex;align-items:center;gap:9px;min-width:0}.race-session-edit-value strong{flex:1}.race-inline-edit,.race-inline-ok{border:1px solid #39414c;border-radius:7px;background:#161b22;color:#fff;padding:7px 9px;font-size:10px;font-weight:800;letter-spacing:.05em;cursor:pointer}.race-inline-ok.pending{border-color:#ff7400;background:#ff7400;color:#111}@media(max-width:700px){.race-session-landing{grid-template-columns:1fr}.race-session-edit-row{grid-template-columns:1fr}}
 
-/* V7.2.1739 — édition membres équipe existante. */
+/* V7.2.1740 — édition membres équipe existante. */
 .race-existing-member-edit{display:grid;gap:10px;width:100%}
 .race-existing-member-name{width:100%;box-sizing:border-box;border:1px solid #343b46;border-radius:8px;background:#0d1117;color:#fff;padding:10px 11px;font-weight:700}
 .race-existing-member-actions{display:flex;justify-content:flex-end;gap:8px}
 
 
-/* V7.2.1739 — membres d'une équipe existante : éditer / supprimer / ajouter. */
+/* V7.2.1740 — membres d'une équipe existante : éditer / supprimer / ajouter. */
 .race-member-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .race-existing-team-add-wrap{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
 .race-existing-team-add{display:grid;gap:10px;margin-top:12px;padding:12px;border:1px solid rgba(255,116,0,.25);border-radius:10px;background:#0d1117}
@@ -2693,7 +2693,7 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 @media(max-width:700px){.race-member-head-actions{width:100%;justify-content:flex-start}}
 
 
-/* V7.2.1739 — équipe existante : contrôles complets. */
+/* V7.2.1740 — équipe existante : contrôles complets. */
 .race-team-title-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .race-member-role-summary{font-size:150%!important;line-height:1.15!important}
 .race-member-three-actions{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
@@ -2703,7 +2703,7 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 }
 
 
-/* V7.2.1739 — actions membre strictement sur UNE ligne. */
+/* V7.2.1740 — actions membre strictement sur UNE ligne. */
 .race-member-head-actions.race-member-three-actions{
   display:flex!important;
   flex-direction:row!important;
@@ -2746,7 +2746,7 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 }
 
 
-/* V7.2.1739 — équipe sélectionnée mise en évidence. */
+/* V7.2.1740 — équipe sélectionnée mise en évidence. */
 #raceSessionSelectedTeamCard > .race-team-title{
   background:#ff7400!important;
   border:1px solid #ff7400!important;
