@@ -1,6 +1,6 @@
 /* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
 const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.1747';
+const SPOTTER_APP_RELEASE='7.2.1748';
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -114,6 +114,15 @@ function spotterUiIsInteractive(){
 function spotterRemoteMutationAt(remote){
  return Number(remote?.mutation_at_ms)||Number(remote?.updated_at_ms)||0;
 }
+function spotterMergeProtectedMaintenance(remoteMaintenance){
+ const remote=Array.isArray(remoteMaintenance)?spotterClone(remoteMaintenance):[];
+ const recentReinserted=new Map(
+  (spotterState.queue||[])
+   .filter(item=>item?.cardId&&Number(item?.reinsertedAt)>0&&Date.now()-Number(item.reinsertedAt)<10000)
+   .map(item=>[String(item.cardId),item])
+ );
+ return remote.filter(item=>!recentReinserted.has(String(item?.cardId||'')));
+}
 function spotterMergeProtectedIncoming(remoteIncoming){
  const remote=Array.isArray(remoteIncoming)?spotterClone(remoteIncoming):[];
  const ids=new Set(remote.map(item=>String(item?.id||'')));
@@ -147,8 +156,13 @@ function spotterApplyRemoteSnapshot(remote){
   if(Number.isFinite(Number(remote.queue_mode)))spotterState.mode=Math.max(1,Math.min(3,Number(remote.queue_mode)));
   if(Array.isArray(remote.setup_karts)&&remote.setup_karts.length)spotterState.setupKarts=remote.setup_karts.map(value=>String(value||''));
   if(Array.isArray(remote.setup_queue_files)&&remote.setup_queue_files.length)spotterState.setupQueueFiles=remote.setup_queue_files.map(value=>Math.max(1,Math.min(3,Number(value)||1)));
-  if(Array.isArray(remote.queue))spotterState.queue=spotterClone(remote.queue);
-  if(Array.isArray(remote.maintenance))spotterState.maintenance=spotterClone(remote.maintenance);
+  if(Array.isArray(remote.queue)){
+   const incomingQueue=spotterClone(remote.queue);
+   const remoteIds=new Set(incomingQueue.map(item=>String(item?.cardId||'')));
+   const protectedReinserted=(spotterState.queue||[]).filter(item=>item?.cardId&&Number(item?.reinsertedAt)>0&&Date.now()-Number(item.reinsertedAt)<10000&&!remoteIds.has(String(item.cardId)));
+   spotterState.queue=[...incomingQueue,...spotterClone(protectedReinserted)];
+  }
+  if(Array.isArray(remote.maintenance))spotterState.maintenance=spotterMergeProtectedMaintenance(remote.maintenance);
   if(Array.isArray(remote.incoming))spotterState.incoming=spotterMergeProtectedIncoming(remote.incoming);
   if(remote.assignments&&typeof remote.assignments==='object')spotterState.assignments=spotterClone(remote.assignments);
   if(Array.isArray(remote.movement_log))spotterState.movementLog=spotterClone(remote.movement_log);
@@ -676,9 +690,16 @@ function spotterReinsertMaintenance(cardId,targetFile=null){
  const index=spotterState.maintenance.findIndex(item=>item.cardId===cardId);if(index<0)return false;
  spotterRememberUndo();
  const [item]=spotterState.maintenance.splice(index,1);
- item.status='available';item.reinsertedAt=Date.now();item.enteredAt=Date.now();item.queueFile=selectedFile;
+ item.status='available';item.reinsertedAt=Date.now();item.enteredAt=null;item.queueFile=selectedFile;
  spotterState.queue.push(item);delete spotterState.incomingQueueSelections[key];
- spotterLogMovement('maintenance_reinsert',{cardId,kv:item?.kv,queueFile:selectedFile});saveSpotterFoundation();spotterRenderCurrent();return true;
+ // Une réinsertion est une mutation structurelle prioritaire : aucun ancien
+ // snapshot différé ne doit pouvoir remettre ce kart dans ZONE MECA.
+ spotterDeferredRemote=null;
+ spotterLogMovement('maintenance_reinsert',{cardId,kv:item?.kv,queueFile:selectedFile});
+ saveSpotterFoundation();
+ spotterPushSharedState();
+ spotterRenderCurrent();
+ return true;
 }
 function spotterProcessPitOut(team,{source='apex'}={}){
  const key=String(team||'').trim();const index=spotterState.queue.findIndex(item=>item.status==='reserved'&&item.reservedTeam===key);if(index<0)return false;
@@ -1287,4 +1308,4 @@ function spotterMaintenanceCard(item){
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured&&spotterRefreshVelocityMetrics())saveSpotterFoundation()},2000)});
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured&&spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()}},2000)});

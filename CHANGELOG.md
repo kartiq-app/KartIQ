@@ -1,3 +1,13 @@
+# V7.2.1748 — Correctif réinsertion ZONE MECA
+
+- Corrige le kart remis dans une file qui revenait ensuite en ZONE MECA.
+- Cause identifiée : une synchronisation structurelle ancienne pouvait réappliquer l'état précédent après la réinsertion.
+- Une réinsertion Méca est maintenant poussée immédiatement au serveur.
+- Les anciens snapshots différés sont invalidés lors de la réinsertion.
+- Protection de 10 secondes : un snapshot distant obsolète ne peut ni remettre le kart en Méca ni le retirer de la file juste après sa réinsertion.
+- Les rafraîchissements Score / Confiance toutes les 2 secondes ne republient plus l'intégralité des files / Méca / entrants : ils restent locaux, ce qui évite les écrasements entre smartphone et desktop.
+- Aucun changement au FIFO, Quick Change, Ajouter un kart, registre KV ou Analyzer métier.
+
 # V7.2.1747 — Spotter stable rebuild + corrections synchronisation
 
 - Repart de la V7.2.1742 fournie et fonctionnelle.
