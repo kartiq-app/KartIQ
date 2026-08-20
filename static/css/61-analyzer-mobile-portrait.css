@@ -314,6 +314,8 @@
 /* V7.2.1753 — Secteurs ÉQUIPE SUIVIE en portrait : bloc compact, TRAFIC conservé en bas. */
 body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-sectors{margin-top:5px!important;padding-top:5px!important}
 body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-row{grid-template-columns:minmax(108px,1.5fr) repeat(3,minmax(42px,.52fr))!important;gap:5px!important;min-height:16px!important}
+body[data-app-mode="analyzer"] #analyzerFollowedSectors[data-sector-count="2"] .analyzer-sector-row{grid-template-columns:minmax(108px,1.5fr) repeat(2,minmax(42px,.52fr))!important}
+body[data-app-mode="analyzer"] #analyzerFollowedSectors[data-sector-count="1"] .analyzer-sector-row{grid-template-columns:minmax(108px,1.5fr) minmax(42px,.52fr)!important}
 body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-row>span,
 body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-summary span{font-size:7.5px!important}
 body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-row>b,

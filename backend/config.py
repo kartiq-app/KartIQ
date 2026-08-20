@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1754"
+APP_VERSION = "7.2.1755"
 APP_RELEASE_NAME = "ANALYZER — SECTEURS APEX LIVE * / *i1 / *i2"
 
 

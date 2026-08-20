@@ -1,3 +1,14 @@
+# V7.2.1755 — Analyzer : nombre de secteurs Apex dynamique
+
+- Détection du nombre de secteurs sur les tours TERMINÉS, et non depuis le header S1/S2/S3 de la grille Apex.
+- Validation par cohérence : la somme des secteurs disponibles doit reconstituer le temps au tour (tolérance protocolaire serrée).
+- Piste à 2 secteurs : `THÉORIQUE RELAIS = meilleur S1 + meilleur S2`, même si les deux meilleurs secteurs viennent de tours différents.
+- Piste à 3 secteurs : logique inchangée, `S1 + S2 + S3`.
+- Un seul secteur exploitable : pas de temps théorique affiché.
+- La colonne S3 est automatiquement masquée lorsqu'un tour terminé confirme une configuration à 2 secteurs.
+- Avant cette confirmation, les trois colonnes restent visibles afin de ne pas confondre un S3 encore à venir avec une piste à 2 secteurs.
+- `TOUR EN COURS` reste alimenté en direct par les impulsions Apex `*`, `*i1`, `*i2`.
+
 # V7.2.1754 — Analyzer : TOUR EN COURS sur les impulsions secteurs Apex
 - Correction de la source de **TOUR EN COURS** : Analyzer lit désormais directement les impulsions de tracking déjà décodées dans `window.velocityApexMap`, conformément au JavaScript Apex Timing.
 - Protocole live utilisé : `*` → **S1** via le 4e champ `t[3]`, `*i1` → **S2** via `t[2]`, `*i2` → **S3** via `t[2]`.

@@ -2924,6 +2924,11 @@ function analyzerRenderFollowedSectors(followed){
  };
  const available=[...Object.values(live),...Object.values(relayBest||{}),...Object.values(teamBest||{})].some(v=>Number.isFinite(Number(v))&&Number(v)>0);
  block.hidden=!available;if(!available)return;
+ // Tant qu'aucun tour terminé n'a confirmé la configuration, on laisse les
+ // trois colonnes visibles : S3 peut simplement ne pas être encore arrivé.
+ // Dès que l'historique prouve une piste à 2 secteurs, S3 est masqué.
+ const sectorCount=[1,2,3].includes(Number(history?.sectorCount))?Number(history.sectorCount):null;
+ block.dataset.sectorCount=String(sectorCount||3);
  const gridBest=analyzerSectorGridBest();
  analyzerSetSectorCell('analyzerSectorCurrentS1',live.s1,gridBest.s1,{current:true,relayBest:relayBest?.s1});
  analyzerSetSectorCell('analyzerSectorCurrentS2',live.s2,gridBest.s2,{current:true,relayBest:relayBest?.s2});
@@ -2936,8 +2941,13 @@ function analyzerRenderFollowedSectors(followed){
  analyzerSetSectorCell('analyzerSectorTeamS3',teamBest?.s3,gridBest.s3);
  const relayLaps=(relay?.bestLaps||[]).map(Number).filter(v=>Number.isFinite(v)&&v>0);
  const currentBestMs=relayLaps.length?Math.round(Math.min(...relayLaps)*1000):null;
- const theoreticalValues=['s1','s2','s3'].map(key=>Number(relayBest?.[key]));
- const theoreticalMs=theoreticalValues.every(v=>Number.isFinite(v)&&v>0)?theoreticalValues.reduce((a,b)=>a+b,0):null;
+ // THÉORIQUE RELAIS = addition des meilleurs secteurs du relais courant.
+ // 3 secteurs : S1+S2+S3. 2 secteurs confirmés : S1+S2. Avec un seul secteur
+ // (ou tant que la configuration n'est pas confirmée), on n'invente pas de
+ // théorique.
+ const theoreticalKeys=sectorCount===3?['s1','s2','s3']:sectorCount===2?['s1','s2']:[];
+ const theoreticalValues=theoreticalKeys.map(key=>Number(relayBest?.[key]));
+ const theoreticalMs=theoreticalKeys.length>=2&&theoreticalValues.every(v=>Number.isFinite(v)&&v>0)?theoreticalValues.reduce((a,b)=>a+b,0):null;
  const teamBestMs=Number(history?.bestLapTeamMs)||Math.round((typeof parseLap==='function'?parseLap(followed?.best):NaN)*1000);
  const currentBest=document.getElementById('analyzerSectorCurrentBest'),theoretical=document.getElementById('analyzerSectorRelayTheoretical'),teamBestLap=document.getElementById('analyzerSectorTeamBest');
  if(currentBest)currentBest.textContent=formatApexMilliseconds(currentBestMs);
@@ -3663,6 +3673,29 @@ function analyzerSectorBestFromLaps(laps){
   s3:analyzerSectorMinimum(laps,'sector3')
  };
 }
+// V7.2.1755 — Apex peut déclarer S1/S2/S3 dans la grille tout en ne
+// chronométrant réellement que deux secteurs. On déduit donc le nombre de
+// secteurs sur des TOURS TERMINÉS, en vérifiant que leur somme reconstitue le
+// temps au tour. Cela évite de confondre un S3 pas encore reçu avec une piste à
+// deux secteurs.
+function analyzerSectorCountForCompletedLap(lap){
+ const lapTime=Number(lap?.lapTime),s1=Number(lap?.sector1),s2=Number(lap?.sector2),s3=Number(lap?.sector3);
+ if(!Number.isFinite(lapTime)||lapTime<=0||!Number.isFinite(s1)||s1<=0)return null;
+ // Tolérance volontairement serrée : les valeurs historiques du protocole Apex
+ // sont des entiers en millisecondes. On accepte au maximum 50 ms d'écart.
+ const tolerance=50;
+ const matches=sum=>Number.isFinite(sum)&&Math.abs(sum-lapTime)<=tolerance;
+ if(Number.isFinite(s2)&&s2>0&&Number.isFinite(s3)&&s3>0&&matches(s1+s2+s3))return 3;
+ if(Number.isFinite(s2)&&s2>0&&(!Number.isFinite(s3)||s3<=0)&&matches(s1+s2))return 2;
+ if((!Number.isFinite(s2)||s2<=0)&&(!Number.isFinite(s3)||s3<=0)&&matches(s1))return 1;
+ return null;
+}
+function analyzerDetectSectorCountFromLaps(laps){
+ const votes={1:0,2:0,3:0};
+ for(const lap of laps||[]){const count=analyzerSectorCountForCompletedLap(lap);if(count)votes[count]++}
+ const ranked=[3,2,1].map(count=>({count,votes:votes[count]})).sort((a,b)=>b.votes-a.votes||b.count-a.count);
+ return ranked[0].votes>0?ranked[0].count:null;
+}
 function analyzerSectorRawToMilliseconds(value){
  if(value===null||value===undefined)return null;
  if(typeof value==='number'&&Number.isFinite(value))return value>=1000?Math.round(value):Math.round(value*1000);
@@ -3884,6 +3917,10 @@ function analyzerApplyHydratedRelay(driver,laps,pits){
  const pitInLaps=new Set((pits||[]).map(p=>Number(p?.lap)).filter(Number.isFinite));
  const validTeamLaps=(laps||[]).filter(l=>Number(l?.lap)>0&&Number(l?.lapTime)>0&&!pitInLaps.has(Number(l.lap)));
  item.sectorBestTeam=analyzerSectorBestFromLaps(validTeamLaps);
+ // Le header Apex n'est pas une preuve du nombre de secteurs réellement
+ // chronométrés. Ex.: une piste peut exposer S1/S2/S3 mais ses tours terminés
+ // vérifient S1 + S2 = temps au tour, avec S3 vide.
+ item.sectorCount=analyzerDetectSectorCountFromLaps(validTeamLaps)||null;
  const teamLapTimes=validTeamLaps.map(l=>Number(l.lapTime)).filter(v=>Number.isFinite(v)&&v>0);
  item.bestLapTeamMs=teamLapTimes.length?Math.min(...teamLapTimes):null;
  item.sectorDataAvailable=Object.values(item.sectorBestTeam||{}).some(v=>Number.isFinite(Number(v))&&Number(v)>0);
