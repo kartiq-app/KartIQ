@@ -401,26 +401,42 @@ function ingestApexMapEvents(frame,circuitId){
   const value=Number(fields[0]);
   const extra=Number(fields[1]);
   const now=Date.now();
-  const previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},lastPhase:0,sectorMode:false};
+  const previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},currentSectors:{s1:null,s2:null,s3:null},lastPhase:0,sectorMode:false};
+  previous.sectors=previous.sectors||{s1:null,s2:null,s3:null};
+  previous.currentSectors=previous.currentSectors||{s1:null,s2:null,s3:null};
   previous.lastPhase=velocityApexMapEntryPhase(previous,now);
 
   if(code==='*'){
+   // Protocole Apex officiel : * porte S1 dans le 4e champ (t[3]).
+   // C'est également notre marqueur de nouveau tour secteur : S2/S3 du tour
+   // précédent sont effacés pour que « TOUR EN COURS » soit réellement live.
+   const s1=Number.isFinite(extra)&&extra>0?extra:null;
+   previous.currentSectors={s1,s2:null,s3:null};
+   previous.currentSectorSequence=(Number(previous.currentSectorSequence)||0)+1;
+   previous.currentSectorStartedAt=now;
+   previous.currentSectorUpdatedAt=now;
    if(Number.isFinite(value)&&value>0)previous.lapDurationMs=value;
-   if(Number.isFinite(extra)&&extra>0){previous.sectors.s1=extra;previous.sectorMode=true}
-   // Sans durée S1 explicite, Apex anime le tour complet : aucun secteur
-   // intermédiaire n'est requis pour faire apparaître le kart.
-   previous.segment=previous.sectorMode&&Number.isFinite(extra)&&extra>0?'s1':'track';
-   previous.durationMs=previous.segment==='s1'?extra:value;
+   if(Number.isFinite(s1)&&s1>0){previous.sectors.s1=s1;previous.sectorMode=true}
+   // `sectors` reste volontairement un modèle roulant pour TRAFIC/Heat Map :
+   // on ne supprime donc pas ici les anciens S2/S3 nécessaires à l'interpolation.
+   previous.segment=previous.sectorMode&&Number.isFinite(s1)&&s1>0?'s1':'track';
+   previous.durationMs=previous.segment==='s1'?s1:value;
    previous.inPit=false;
   }else if(code==='*i1'){
-   if(Number.isFinite(value)&&value>0)previous.sectors.s2=value;
+   // Protocole Apex officiel : *i1 porte S2 dans t[2].
+   if(Number.isFinite(value)&&value>0){previous.sectors.s2=value;previous.currentSectors.s2=value}
+   previous.currentSectorUpdatedAt=now;
    previous.sectorMode=true;previous.segment='s2';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*i2'){
-   if(Number.isFinite(value)&&value>0)previous.sectors.s3=value;
+   // Protocole Apex officiel : *i2 porte S3 dans t[2].
+   if(Number.isFinite(value)&&value>0){previous.sectors.s3=value;previous.currentSectors.s3=value}
+   previous.currentSectorUpdatedAt=now;
    previous.sectorMode=true;previous.segment='s3';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*in'){
+   previous.currentSectors={s1:null,s2:null,s3:null};previous.currentSectorUpdatedAt=now;
    previous.segment='in';previous.durationMs=8000;previous.inPit=true;previous.pitEnteredAt=previous.pitEnteredAt||now;
   }else if(code==='*out'){
+   previous.currentSectors={s1:null,s2:null,s3:null};previous.currentSectorUpdatedAt=now;
    previous.segment='out';previous.durationMs=Number.isFinite(value)&&value>0?value:5000;previous.inPit=false;previous.pitEnteredAt=null;
   }
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;

@@ -1,3 +1,25 @@
+# V7.2.1754 — Analyzer : TOUR EN COURS sur les impulsions secteurs Apex
+- Correction de la source de **TOUR EN COURS** : Analyzer lit désormais directement les impulsions de tracking déjà décodées dans `window.velocityApexMap`, conformément au JavaScript Apex Timing.
+- Protocole live utilisé : `*` → **S1** via le 4e champ `t[3]`, `*i1` → **S2** via `t[2]`, `*i2` → **S3** via `t[2]`.
+- À chaque nouvelle impulsion `*`, Velocity réinitialise le tour secteur courant : S1 est affiché immédiatement, S2/S3 repassent à `—`, puis se remplissent au fur et à mesure de `*i1` et `*i2`.
+- Les secteurs utilisés pour l'animation **TRAFIC / Heat Map** restent conservés séparément afin de ne pas dégrader l'interpolation déjà en place.
+- Entrée/sortie des stands (`*in` / `*out`) : remise à zéro des secteurs du **TOUR EN COURS**.
+- Couleur du **TOUR EN COURS** : violet si meilleur absolu de grille connu, vert si nouveau meilleur du relais, orange sinon.
+- Les calculs historiques **MEILLEUR DU RELAIS**, **MEILLEUR ÉQUIPE**, **MEILLEUR EN COURS** et **THÉORIQUE RELAIS** restent alimentés par l'historique Apex `.L`.
+- Aucun changement dans **Focus Endurance**.
+
+# V7.2.1753 — Analyzer : secteurs Apex en direct
+- Carte **ÉQUIPE SUIVIE** : ajout du bloc **SECTEURS** entre « Position du chrono » et **TRAFIC**, sans modifier le gabarit desktop de la carte.
+- **TOUR EN COURS** : S1 / S2 / S3 sont remis à zéro à chaque nouveau tour puis affichés au fur et à mesure des cellules live Apex `s1`, `s2`, `s3`.
+- **MEILLEUR DU RELAIS** : meilleurs secteurs du relais actif, même s’ils proviennent de tours différents.
+- **MEILLEUR ÉQUIPE** : meilleurs secteurs de l’équipe depuis le début de la course.
+- **MEILLEUR EN COURS** : meilleur tour complet du relais actif.
+- **THÉORIQUE RELAIS** : somme des meilleurs S1 + S2 + S3 du relais actif.
+- **MEILLEUR ÉQUIPE** (chrono) : meilleur tour complet de l’équipe.
+- Les historiques `.L` Apex déjà utilisés par Analyzer alimentent les meilleurs secteurs ; le module reste masqué si aucune donnée secteur n’est disponible.
+- Couleurs secteurs : violet = meilleur absolu de la grille connu par Velocity, vert = meilleur équipe/relais, orange = secteur live normal.
+- **Focus Endurance inchangé** : cette première intégration concerne uniquement Analyzer.
+
 # V7.2.1752 — Focus Endurance : violet = meilleur absolu de la grille
 
 - Restauration de la règle automobile du violet en Focus Endurance.

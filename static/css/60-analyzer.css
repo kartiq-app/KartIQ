@@ -2759,3 +2759,34 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 #raceSessionSelectedTeamCard > .race-team-title b{
   color:#111!important;
 }
+
+/* V7.2.1753 — Analyzer : secteurs Apex dans ÉQUIPE SUIVIE, sans agrandir la carte. */
+#analyzerFollowedCard .analyzer-followed-sectors{margin-top:7px;padding-top:6px;border-top:1px solid #303744;min-width:0}
+#analyzerFollowedCard .analyzer-sector-table{display:grid;gap:2px;min-width:0}
+#analyzerFollowedCard .analyzer-sector-row{display:grid;grid-template-columns:minmax(118px,1.55fr) repeat(3,minmax(46px,.55fr));gap:8px;align-items:center;min-height:17px}
+#analyzerFollowedCard .analyzer-sector-row>span{min-width:0;color:#818b99;font-size:8px;font-weight:900;letter-spacing:.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#analyzerFollowedCard .analyzer-sector-row>b{font-family:var(--font-time,monospace);font-size:11px;line-height:1;text-align:right;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+#analyzerFollowedCard .analyzer-sector-head{padding-bottom:3px;border-bottom:1px solid #202733}
+#analyzerFollowedCard .analyzer-sector-head>span{color:#a0a9b7;font-size:8.5px;letter-spacing:.09em}
+#analyzerFollowedCard .analyzer-sector-head>b{font-family:var(--font-ui,Arial,sans-serif);font-size:8.5px;color:#a0a9b7;font-weight:900}
+#analyzerFollowedCard .analyzer-sector-summary{display:grid;gap:2px;margin-top:5px;padding-top:4px;border-top:1px solid #202733}
+#analyzerFollowedCard .analyzer-sector-summary>div{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:17px}
+#analyzerFollowedCard .analyzer-sector-summary span{color:#818b99;font-size:8px;font-weight:900;letter-spacing:.035em;white-space:nowrap}
+#analyzerFollowedCard .analyzer-sector-summary b{font-family:var(--font-time,monospace);font-size:11px;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+#analyzerFollowedCard .analyzer-sector-row>b.sector-purple{color:#c96cff!important}
+#analyzerFollowedCard .analyzer-sector-row>b.sector-green{color:#38d878!important}
+#analyzerFollowedCard .analyzer-sector-row>b.sector-orange{color:#ff8a1f!important}
+/* La place du bloc Secteurs est récupérée sur les espaces verticaux existants : TRAFIC reste collé en bas. */
+#analyzerFollowedCard .analyzer-followed-name-row{margin-top:5px!important;margin-bottom:7px!important}
+#analyzerFollowedCard .analyzer-followed-list{gap:5px!important}
+#analyzerFollowedCard .analyzer-followed-list>div{padding-bottom:4px!important}
+#analyzerFollowedCard .analyzer-traffic{margin-top:7px!important;padding-top:6px!important}
+#analyzerFollowedCard .analyzer-traffic-head{margin-bottom:4px!important}
+@media(min-width:1051px){
+ #analyzerFollowedCard{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+ #analyzerFollowedCard .analyzer-traffic{margin-top:auto!important;flex:0 0 auto}
+}
+@media(max-width:1050px){
+ #analyzerFollowedCard .analyzer-sector-row{grid-template-columns:minmax(105px,1.45fr) repeat(3,minmax(44px,.55fr));gap:6px}
+}
+

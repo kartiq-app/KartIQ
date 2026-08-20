@@ -2879,6 +2879,71 @@ function analyzerRenderFollowedPerformance(followed){
  const lapText=followed?.last||'—';
  chronoEl.textContent=`${rankText} | ${lapText}`;
 }
+function analyzerSectorGridBest(){
+ const best={s1:null,s2:null,s3:null};
+ const include=values=>{for(const key of ['s1','s2','s3']){const value=Number(values?.[key]);if(Number.isFinite(value)&&value>0&&(!Number.isFinite(best[key])||value<best[key]))best[key]=value;}};
+ // Références historiques .L déjà apprises par Velocity.
+ for(const item of Object.values(analyzerLearning?.teams||{}))include(item?.sectorBestTeam||{});
+ // Et impulsions du tour actuellement reçues : permet au violet de réagir dès
+ // qu'un nouveau meilleur absolu connu apparaît, sans attendre la fin du tour.
+ for(const entry of analyzerApexMapRegistry().rows.values())include(entry?.currentSectors||{});
+ return best;
+}
+function analyzerSectorValueClass(value,gridBest,{kind='',current=false,relayBest=null}={}){
+ const ms=Number(value);if(!Number.isFinite(ms)||ms<=0)return '';
+ if(kind==='fastest')return 'sector-purple';
+ const absolute=Number(gridBest);if(Number.isFinite(absolute)&&Math.abs(ms-absolute)<=1)return 'sector-purple';
+ if(!current)return 'sector-green';
+ // TOUR EN COURS : vert si ce secteur améliore (ou crée) le meilleur du relais,
+ // orange sinon. Le violet reste prioritaire lorsqu'Apex/Velocity connaît le
+ // meilleur absolu de la grille.
+ const personal=Number(relayBest);
+ if(!Number.isFinite(personal)||personal<=0||ms<=personal+1)return 'sector-green';
+ return 'sector-orange';
+}
+function analyzerSetSectorCell(id,value,gridBest,options={}){
+ const el=document.getElementById(id);if(!el)return;
+ const ms=Number(value);el.textContent=analyzerFormatSectorMilliseconds(ms);
+ el.className=analyzerSectorValueClass(ms,gridBest,options);
+}
+function analyzerRenderFollowedSectors(followed){
+ const block=document.getElementById('analyzerFollowedSectors');if(!block)return;
+ if(!followed){block.hidden=true;return}
+ const history=analyzerTeamHistory(followed),relay=history?.currentRelay||null,relayBest=relay?.sectorBest||{},teamBest=history?.sectorBestTeam||{};
+ // V7.2.1754 — source live conforme au JavaScript Apex Timing :
+ //   *   -> S1 dans t[3]
+ //   *i1 -> S2 dans t[2]
+ //   *i2 -> S3 dans t[2]
+ // core.js conserve ces impulsions dans velocityApexMap.currentSectors.
+ // On ne dépend donc plus de l'affichage éventuel des colonnes S1/S2/S3 de la grille.
+ const apexEntry=analyzerApexMapEntry(followed),rawLive=!apexEntry?.inPit&&analyzerApexRaceIsActive()?(apexEntry?.currentSectors||{}):{};
+ const live={
+  s1:analyzerSectorRawToMilliseconds(rawLive?.s1),
+  s2:analyzerSectorRawToMilliseconds(rawLive?.s2),
+  s3:analyzerSectorRawToMilliseconds(rawLive?.s3)
+ };
+ const available=[...Object.values(live),...Object.values(relayBest||{}),...Object.values(teamBest||{})].some(v=>Number.isFinite(Number(v))&&Number(v)>0);
+ block.hidden=!available;if(!available)return;
+ const gridBest=analyzerSectorGridBest();
+ analyzerSetSectorCell('analyzerSectorCurrentS1',live.s1,gridBest.s1,{current:true,relayBest:relayBest?.s1});
+ analyzerSetSectorCell('analyzerSectorCurrentS2',live.s2,gridBest.s2,{current:true,relayBest:relayBest?.s2});
+ analyzerSetSectorCell('analyzerSectorCurrentS3',live.s3,gridBest.s3,{current:true,relayBest:relayBest?.s3});
+ analyzerSetSectorCell('analyzerSectorRelayS1',relayBest?.s1,gridBest.s1);
+ analyzerSetSectorCell('analyzerSectorRelayS2',relayBest?.s2,gridBest.s2);
+ analyzerSetSectorCell('analyzerSectorRelayS3',relayBest?.s3,gridBest.s3);
+ analyzerSetSectorCell('analyzerSectorTeamS1',teamBest?.s1,gridBest.s1);
+ analyzerSetSectorCell('analyzerSectorTeamS2',teamBest?.s2,gridBest.s2);
+ analyzerSetSectorCell('analyzerSectorTeamS3',teamBest?.s3,gridBest.s3);
+ const relayLaps=(relay?.bestLaps||[]).map(Number).filter(v=>Number.isFinite(v)&&v>0);
+ const currentBestMs=relayLaps.length?Math.round(Math.min(...relayLaps)*1000):null;
+ const theoreticalValues=['s1','s2','s3'].map(key=>Number(relayBest?.[key]));
+ const theoreticalMs=theoreticalValues.every(v=>Number.isFinite(v)&&v>0)?theoreticalValues.reduce((a,b)=>a+b,0):null;
+ const teamBestMs=Number(history?.bestLapTeamMs)||Math.round((typeof parseLap==='function'?parseLap(followed?.best):NaN)*1000);
+ const currentBest=document.getElementById('analyzerSectorCurrentBest'),theoretical=document.getElementById('analyzerSectorRelayTheoretical'),teamBestLap=document.getElementById('analyzerSectorTeamBest');
+ if(currentBest)currentBest.textContent=formatApexMilliseconds(currentBestMs);
+ if(theoretical)theoretical.textContent=formatApexMilliseconds(theoreticalMs);
+ if(teamBestLap)teamBestLap.textContent=formatApexMilliseconds(teamBestMs);
+}
 
 function analyzerTrafficLapSeconds(driver){
  const candidates=[driver?.last,driver?.best,driver?.avg5,driver?.average];
@@ -3179,6 +3244,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerFollowedLimit').textContent=Number.isFinite(ownForecast.maxRemaining)?analyzerFormatDuration(ownForecast.maxRemaining):'—';
  document.getElementById('analyzerFollowedStops').textContent=`${stops.done} / ${analyzerRules.requiredStops}`;
  analyzerRenderFollowedPerformance(followed);
+ analyzerRenderFollowedSectors(followed);
  analyzerRenderFollowedDeltas(followed);
  analyzerRenderTrafficAhead(followed);
  {const r=analyzerStrategyRulesConfig();document.getElementById('analyzerRuleRelay').textContent=r.ready?`${analyzerFormatDuration(r.minStintMinutes*60,{compact:true})} → ${analyzerFormatDuration(r.maxStintMinutes*60,{compact:true})}`:'—'};
@@ -3586,6 +3652,39 @@ function formatApexMilliseconds(ms){
  const minutes=Math.floor(value/60000),seconds=Math.floor((value%60000)/1000),millis=Math.floor(value%1000);
  return minutes?`${minutes}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`:`${seconds}.${String(millis).padStart(3,'0')}`;
 }
+function analyzerSectorMinimum(laps,key){
+ const values=(laps||[]).map(l=>Number(l?.[key])).filter(v=>Number.isFinite(v)&&v>0);
+ return values.length?Math.min(...values):null;
+}
+function analyzerSectorBestFromLaps(laps){
+ return {
+  s1:analyzerSectorMinimum(laps,'sector1'),
+  s2:analyzerSectorMinimum(laps,'sector2'),
+  s3:analyzerSectorMinimum(laps,'sector3')
+ };
+}
+function analyzerSectorRawToMilliseconds(value){
+ if(value===null||value===undefined)return null;
+ if(typeof value==='number'&&Number.isFinite(value))return value>=1000?Math.round(value):Math.round(value*1000);
+ const text=String(value||'').trim().replace(',','.');if(!text||text==='—'||text==='-')return null;
+ // Le live Apex peut fournir soit une valeur déjà formatée (ex. 21.42),
+ // soit un entier protocolaire en millisecondes (ex. 21420).
+ if(/^\d+$/.test(text)){
+  const numeric=Number(text);
+  return Number.isFinite(numeric)&&numeric>0?(numeric>=1000?Math.round(numeric):Math.round(numeric*1000)):null;
+ }
+ const parts=text.split(':').map(part=>part.trim());
+ let seconds=null;
+ if(parts.length===1)seconds=Number(parts[0]);
+ else if(parts.length===2)seconds=Number(parts[0])*60+Number(parts[1]);
+ else if(parts.length===3)seconds=Number(parts[0])*3600+Number(parts[1])*60+Number(parts[2]);
+ return Number.isFinite(seconds)&&seconds>0?Math.round(seconds*1000):null;
+}
+function analyzerFormatSectorMilliseconds(ms){
+ const value=Number(ms);if(!Number.isFinite(value)||value<=0)return '—';
+ const totalSeconds=value/1000,minutes=Math.floor(totalSeconds/60),seconds=totalSeconds-minutes*60;
+ return minutes?`${minutes}:${seconds.toFixed(2).padStart(5,'0')}`:seconds.toFixed(2);
+}
 function apexHistorySleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function fetchAllApexTeamLaps(rowId,sessionId,status){
  const prefix=sessionId?`S#${sessionId}#`:'';
@@ -3765,6 +3864,7 @@ function analyzerBuildHydratedRelay(driver,laps,pits){
   laps:values.slice(-60),
   lapNumbers:lapNumbers.slice(-60),
   bestLaps:values.slice().sort((a,b)=>a-b).slice(0,3),
+  sectorBest:analyzerSectorBestFromLaps(current),
   warmupSkipped:true,
   gridStartPace:gridReference,
   gridEndPace:gridReference,
@@ -3781,6 +3881,12 @@ function analyzerApplyHydratedRelay(driver,laps,pits){
  const key=analyzerTeamKey(driver),now=Date.now();
  const item=analyzerLearning.teams[key]||{name:driver.driver,stints:[],relays:[],lastStatus:null,lastTrackSeconds:null,lastStops:null,lastLapCount:null,currentStintLapSum:0,currentStintLapCount:0,virtualKart:`V-${String(driver.apex||driver.pos||key).replace(/\D/g,'').padStart(2,'0')}`,updatedAt:now};
  item.relays=Array.isArray(item.relays)?item.relays:[];
+ const pitInLaps=new Set((pits||[]).map(p=>Number(p?.lap)).filter(Number.isFinite));
+ const validTeamLaps=(laps||[]).filter(l=>Number(l?.lap)>0&&Number(l?.lapTime)>0&&!pitInLaps.has(Number(l.lap)));
+ item.sectorBestTeam=analyzerSectorBestFromLaps(validTeamLaps);
+ const teamLapTimes=validTeamLaps.map(l=>Number(l.lapTime)).filter(v=>Number.isFinite(v)&&v>0);
+ item.bestLapTeamMs=teamLapTimes.length?Math.min(...teamLapTimes):null;
+ item.sectorDataAvailable=Object.values(item.sectorBestTeam||{}).some(v=>Number.isFinite(Number(v))&&Number(v)>0);
  if(driver.status==='pit'){
   item.currentRelay=null;item.currentStintLapSum=0;item.currentStintLapCount=0;
  }else{

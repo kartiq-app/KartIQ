@@ -415,6 +415,18 @@ class RaceStateService:
                 "penalty": row.get("penalty") if row.get("penalty") is not None else previous.get("penalty", ""),
                 "last": last,
                 "best": best,
+                # Secteurs live Apex. Contrairement aux autres cellules de classement,
+                # on ne réutilise jamais la valeur précédente : au passage d'un nouveau
+                # tour ApexInterpreter les remet à None, puis S1/S2/S3 arrivent au fil du tour.
+                "sector_1": row.get("sector_1"),
+                "sector_2": row.get("sector_2"),
+                "sector_3": row.get("sector_3"),
+                "sector_1_kind": row.get("sector_1_kind"),
+                "sector_2_kind": row.get("sector_2_kind"),
+                "sector_3_kind": row.get("sector_3_kind"),
+                "sector_1_updated_at": row.get("sector_1_updated_at"),
+                "sector_2_updated_at": row.get("sector_2_updated_at"),
+                "sector_3_updated_at": row.get("sector_3_updated_at"),
                 "gap": row.get("gap") if row.get("gap") not in (None, "") else previous.get("gap", "—"),
                 "interval": row.get("interval") if row.get("interval") not in (None, "") else previous.get("interval", "—"),
                 "pace5": pace5,

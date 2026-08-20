@@ -14,6 +14,9 @@ FIELD_BY_APEX_TYPE = {
     "rk": "position",
     "no": "kart",
     "dr": "name",
+    "s1": "sector_1",
+    "s2": "sector_2",
+    "s3": "sector_3",
     "llp": "last_lap",
     "gap": "gap",
     "int": "interval",
@@ -89,6 +92,9 @@ class ApexInterpreter:
         return self.rows.setdefault(row, {
             "row": row, "position": None, "name": None, "pilot": None, "kart": None,
             "last_lap": None, "best_lap": None, "gap": None,
+            "sector_1": None, "sector_2": None, "sector_3": None,
+            "sector_1_kind": None, "sector_2_kind": None, "sector_3_kind": None,
+            "sector_1_updated_at": None, "sector_2_updated_at": None, "sector_3_updated_at": None,
             "interval": None, "laps": None, "timer": None,
             "pit_timer": None, "track_timer": None,
             "pit_stops": None, "penalty": None, "status": "unknown", "status_source": None, "last_lap_kind": None,
@@ -145,6 +151,12 @@ class ApexInterpreter:
                 "voltas", "volta", "okrążenia", "okrążenie", "okrazenia", "okrazenie"
             }:
                 field = "laps"
+            elif label in {"s1", "secteur 1", "sector 1", "sector1", "secteur1"}:
+                field = "sector_1"
+            elif label in {"s2", "secteur 2", "sector 2", "sector2", "secteur2"}:
+                field = "sector_2"
+            elif label in {"s3", "secteur 3", "sector 3", "sector3", "secteur3"}:
+                field = "sector_3"
             elif label in {"dernier", "dernier tour", "last", "last lap", "tour precedent", "temps dernier tour"}:
                 field = "last_lap"
             elif label in {"meilleur", "meilleur tour", "best", "best lap", "record", "temps meilleur"}:
@@ -168,7 +180,20 @@ class ApexInterpreter:
             if parsed is not None:
                 row[field] = parsed
                 if field == "laps" and old is not None and parsed > old and not initial:
+                    # Nouveau tour : les secteurs affichés deviennent ceux du tour EN COURS.
+                    # On efface donc immédiatement les valeurs du tour précédent ; S1, S2
+                    # puis S3 seront republiés au fur et à mesure des cellules live Apex.
+                    for sector in ("sector_1", "sector_2", "sector_3"):
+                        row[sector] = None
+                        row[f"{sector}_kind"] = None
+                        row[f"{sector}_updated_at"] = None
                     self._emit(update.row, "lap_count", "Nouveau tour", f"Tour {parsed}", str(parsed))
+        elif field in {"sector_1", "sector_2", "sector_3"}:
+            cleaned = str(value or "").strip()
+            if cleaned:
+                row[field] = cleaned
+                row[f"{field}_kind"] = {"tb": "fastest", "ti": "team_best", "tn": "normal"}.get(code, "normal")
+                row[f"{field}_updated_at"] = row["updated_at"]
         elif field == "name":
             cleaned = value.strip()
             stint = DRIVER_STINT_RE.match(cleaned)
