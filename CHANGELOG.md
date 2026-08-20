@@ -1,3 +1,13 @@
+# V7.2.1757 — Synchronisation Spotter ↔ Analyzer
+
+- Correction du canal de synchronisation entre le **mode Spotter** et la carte **Spotter dans Analyzer** sur plusieurs appareils / onglets.
+- Suppression du numéro Spotter obsolète `7.2.1749` codé en dur dans `spotter.js`.
+- Spotter utilise désormais automatiquement la **même release que Velocity**, injectée par le template (`window.VELOCITY_APP_VERSION`).
+- Secours automatique : si la variable globale n'est pas disponible, Spotter récupère la release depuis le paramètre `?v=` de son propre script.
+- Les POST `/api/spotter-state` portent donc la release attendue par le backend et ne sont plus rejetés en `409 Version Spotter obsolète`.
+- Les snapshots distants de même version sont de nouveau acceptés puis publiés via `velocitySharedSpotterState` / `velocity:spotter-state`, ce qui rafraîchit Analyzer en temps réel.
+- Aucun changement sur la logique FIFO, les files, les karts entrants, la maintenance, Auto ou les scores Velocity.
+
 # V7.2.1756 — Analyzer : classement secteurs
 
 - Ajout de **CLASSEMENT SECTEURS** à côté de CLASSEMENT LIVE et CLASSEMENT VIRTUEL.
