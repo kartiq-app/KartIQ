@@ -241,7 +241,7 @@
           <div class="analyzer-ranking-heading">
             <div class="analyzer-ranking-toolbar-left">
               <div class="analyzer-race-remaining"><span id="analyzerRaceRemainingLabel">TEMPS RESTANT</span><strong id="analyzerRaceRemaining">—</strong></div>
-              <div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT LIVE</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button></div>
+              <div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT LIVE</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button><button id="analyzerSectorRankingBtn" type="button" onclick="setAnalyzerRankingMode('sectors')">CLASSEMENT SECTEURS</button></div>
               <div class="analyzer-table-controls">
                 <label>TRIER PAR
                   <select id="analyzerSort" onchange="setAnalyzerSort(this.value)">
@@ -259,7 +259,7 @@
         </div>
         <div class="analyzer-ranking-wrap">
           <table class="analyzer-ranking-table">
-            <thead><tr><th>POS</th><th>IN</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>CHRONOS</th><th>TOURS</th><th>EN PISTE</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>T.MOYEN</th><th>ÉCART</th><th>PÉNA.</th><th>ARRÊT PRÉVU</th><th>KART V.</th><th>NOTE</th></tr></thead>
+            <thead><tr id="analyzerRankingHead"><th>POS</th><th>IN</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>CHRONOS</th><th>TOURS</th><th>EN PISTE</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>T.MOYEN</th><th>ÉCART</th><th>PÉNA.</th><th>ARRÊT PRÉVU</th><th>KART V.</th><th>NOTE</th></tr></thead>
             <tbody id="analyzerTable"></tbody>
           </table>
         </div>

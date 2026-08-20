@@ -324,3 +324,13 @@ body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-summary{ma
 body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-summary>div{min-height:16px!important}
 body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-traffic{margin-top:6px!important;padding-top:5px!important}
 
+
+/* V7.2.1756 — le masquage de colonnes du classement LIVE ne doit pas
+   supprimer les colonnes du CLASSEMENT SECTEURS en portrait. */
+body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-table.sector-ranking-mode th,
+body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-table.sector-ranking-mode td{
+  display:table-cell!important;
+}
+body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-table.sector-ranking-mode{
+  min-width:690px!important;
+}

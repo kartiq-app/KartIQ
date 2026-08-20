@@ -2794,3 +2794,75 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
  #analyzerFollowedCard .analyzer-sector-row{grid-template-columns:minmax(105px,1.45fr) repeat(3,minmax(44px,.55fr));gap:6px}
 }
 
+
+/* V7.2.1756 — CLASSEMENT SECTEURS : relais en cours + record équipe en petit. */
+.analyzer-ranking-table.sector-ranking-mode{
+  min-width:820px;
+  table-layout:fixed;
+}
+.analyzer-ranking-table.sector-ranking-mode th,
+.analyzer-ranking-table.sector-ranking-mode td{
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-pos{width:54px!important}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-team{width:28%!important;text-align:left}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-kart{width:72px!important;font-family:var(--font-torque,Arial,sans-serif);font-size:14px;font-weight:900}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-relay{width:72px!important;font-family:var(--font-torque,Arial,sans-serif);font-weight:900}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-time,
+.analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell{width:118px!important}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-delta{width:78px!important;font-variant-numeric:tabular-nums;font-weight:900}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-theoretical{width:142px!important}
+.analyzer-ranking-table.sector-ranking-mode th.selected{color:#ff9b32;border-bottom-color:#ff7a00}
+.analyzer-ranking-table.sector-ranking-mode td.selected strong{color:#ff9b32}
+.analyzer-ranking-table.sector-ranking-mode tbody tr{
+  height:54px!important;
+  min-height:54px!important;
+}
+.analyzer-ranking-table.sector-ranking-mode tbody td{
+  height:54px!important;
+  min-height:54px!important;
+  padding-top:5px!important;
+  padding-bottom:5px!important;
+  line-height:1.05!important;
+  vertical-align:middle!important;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell strong{
+  display:block;
+  font-family:var(--font-torque,Arial,sans-serif);
+  font-size:16px;
+  line-height:1.05;
+  color:#fff;
+  font-variant-numeric:tabular-nums;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell small{
+  display:block;
+  margin-top:4px;
+  color:#737e8f;
+  font-size:9px;
+  line-height:1;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-theoretical strong{
+  font-family:var(--font-torque,Arial,sans-serif);
+  font-size:14px;
+  font-variant-numeric:tabular-nums;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-ranking-empty td{
+  text-align:center!important;
+  color:#7f8998;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.03em;
+}
+.analyzer-ranking-table.sector-ranking-mode tr.followed .sector-rank-team{color:#38dc88!important}
+
+@media(max-width:700px){
+  .analyzer-ranking-table.sector-ranking-mode{min-width:720px;font-size:9px}
+  .analyzer-ranking-table.sector-ranking-mode .sector-rank-team{width:24%!important}
+  .analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell strong{font-size:13px}
+  .analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell small{font-size:8px}
+  .analyzer-ranking-table.sector-ranking-mode .sector-rank-theoretical strong{font-size:12px}
+}

@@ -1,3 +1,14 @@
+# V7.2.1756 — Analyzer : classement secteurs
+
+- Ajout de **CLASSEMENT SECTEURS** à côté de CLASSEMENT LIVE et CLASSEMENT VIRTUEL.
+- Une ligne par équipe, basée uniquement sur le **relais en cours** : kart actuel, numéro de relais, meilleurs S1/S2/S3 et théorique relais.
+- Sous chaque meilleur secteur du relais, affichage en plus petit du **meilleur secteur de l’équipe depuis le début de la course**.
+- Tri par **S1**, **S2**, **S3** ou **Théorique relais** ; le classement va du plus rapide au moins rapide.
+- La colonne Δ suit le critère de tri sélectionné et affiche l’écart avec la meilleure valeur du plateau.
+- Gestion dynamique Apex : **aucun secteur**, **2 secteurs** ou **3 secteurs**. S3 et son tri disparaissent automatiquement lorsqu’une session est confirmée à 2 secteurs.
+- Aucun nouvel archivage des anciens relais n’est ajouté pour cette vue ; elle réutilise les données déjà apprises par Analyzer.
+- Les équipes sans valeur sur le critère choisi restent visibles en bas du tableau avec un rang « — ».
+
 # V7.2.1755 — Analyzer : nombre de secteurs Apex dynamique
 
 - Détection du nombre de secteurs sur les tours TERMINÉS, et non depuis le header S1/S2/S3 de la grille Apex.
