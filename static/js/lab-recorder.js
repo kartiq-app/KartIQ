@@ -1,4 +1,4 @@
-/* Velocity V7.2.1759 — Velocity Lab / Data Recorder autonome Render. */
+/* Velocity V7.2.1763 — Velocity Lab / Data Recorder + rattrapage historique Apex. */
 (function(){
 'use strict';
 
@@ -47,6 +47,17 @@ function renderStorage(storage){
  warning.hidden=persistent;
  warning.textContent=persistent?'':"ATTENTION — stockage local non persistant. Sur Render, configure DATABASE_URL vers Render Postgres avant une course de 24 heures : un redéploiement peut effacer les données locales.";
 }
+function backfillHtml(rec){
+ const info=rec?.metadata||{},status=String(info.backfill_status||''),laps=Number(info.backfill_laps)||0,pits=Number(info.backfill_pits)||0;
+ if(!status&&!laps&&!pits)return '';
+ let label='HISTORIQUE APEX';let detail='';let cls='ready';
+ if(status==='syncing'){detail='Synchronisation des tours précédents en cours…';cls='syncing'}
+ else if(status==='waiting-live'){detail='En attente de la grille Apex pour récupérer les tours précédents…';cls='waiting'}
+ else if(status==='partial'){detail=`Rattrapage partiel · ${fmtInt(laps)} tour(s) récupéré(s)`;cls='partial'}
+ else if(laps||pits){detail=`${fmtInt(laps)} ancien(s) tour(s) · ${fmtInt(pits)} événement(s) stands récupéré(s)`}
+ else detail='Historique vérifié · aucun tour antérieur à récupérer';
+ return `<div class="velocity-recorder-backfill ${cls}"><span>${label}</span><b>${detail}</b></div>`;
+}
 function cardHtml(rec,active){
  const meta=statusMeta(rec.status),end=active?Date.now():(Number(rec.stopped_at_ms)||Date.now()),err=String(rec.last_error||'').trim();
  const buttons=active
@@ -57,6 +68,7 @@ function cardHtml(rec,active){
    <div class="velocity-recorder-metrics">
     <div><span>ÉQUIPES</span><b>${fmtInt(rec.teams_count)}</b></div><div><span>TOURS</span><b>${fmtInt(rec.laps_count)}</b></div><div><span>SECTEURS</span><b>${fmtInt(rec.sectors_count)}</b></div><div><span>SCORES</span><b>${fmtInt(rec.scores_count)}</b></div><div><span>TRAMES APEX</span><b>${fmtInt(rec.frames_count)}</b></div><div><span>DERNIÈRE DATA</span><b>${fmtAge(rec.last_message_at_ms)}</b></div>
    </div>
+   ${backfillHtml(rec)}
    ${err?`<div class="velocity-recorder-error">${esc(err)}</div>`:''}
    <div class="velocity-recorder-card-foot"><small>${active?'Recorder autonome Render':'Terminé le '+fmtDate(rec.stopped_at_ms)}</small><div>${buttons}</div></div>
  </article>`;

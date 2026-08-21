@@ -1,4 +1,4 @@
-/* Velocity V7.2.1761 — Velocity Lab shell / feuille blanche.
+/* Velocity V7.2.1762 — Velocity Lab shell / identité Erlenmeyer.
    Ce fichier est chargé APRES Analyzer desktop + mobile afin que le Lab reste
    totalement isolé des règles globales de l'application (notamment `header`). */
 
@@ -53,10 +53,11 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-lab-kicker b{color:#fff!important}
 
 .velocity-lab-brand-row{
+  --velocity-lab-brand-size:clamp(38px,4.3vw,66px);
   display:flex!important;
   align-items:center!important;
-  flex-wrap:wrap;
-  gap:14px;
+  flex-wrap:nowrap;
+  gap:18px;
   min-width:0;
   margin:0!important;
   padding:0!important;
@@ -69,49 +70,40 @@ body.velocity-lab-open{overflow:hidden!important}
   align-items:baseline;
   flex:0 1 auto;
   margin:0!important;
-  font-size:clamp(38px,4.3vw,66px)!important;
+  font-size:var(--velocity-lab-brand-size)!important;
   line-height:.82!important;
   white-space:nowrap;
   text-shadow:0 8px 24px rgba(0,0,0,.72)!important;
 }
 .velocity-lab-home-logo .velocity-v{color:#e10600!important}
-.velocity-lab-home-logo .kartiq-kart{color:#fff!important}
-
-.velocity-lab-identity{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  min-height:44px;
-  padding:0 0 0 14px;
-  border-left:1px solid rgba(255,255,255,.16);
-  color:#dce1e7;
-  font-family:var(--font-driver,Arial,sans-serif);
-  font-size:clamp(18px,1.7vw,27px);
-  font-style:italic;
-  font-weight:850;
-  letter-spacing:.08em;
+.velocity-lab-home-logo .kartiq-kart,
+.velocity-lab-home-logo .velocity-lab-word{color:#fff!important}
+.velocity-lab-home-logo .velocity-lab-word{
+  display:inline-block;
+  margin-left:.20em;
+  letter-spacing:-.05em;
 }
-.velocity-lab-tube{
+.velocity-lab-flask{
   display:inline-flex;
-  width:34px;
-  height:42px;
   align-items:center;
   justify-content:center;
+  flex:0 0 auto;
+  width:var(--velocity-lab-brand-size);
+  height:var(--velocity-lab-brand-size);
   color:#e10600;
-  filter:drop-shadow(0 0 9px rgba(225,6,0,.25));
-  transform:rotate(8deg);
+  filter:drop-shadow(0 0 10px rgba(225,6,0,.28));
 }
-.velocity-lab-tube svg{
+.velocity-lab-flask svg{
   width:100%;
   height:100%;
   overflow:visible;
   fill:none;
   stroke:currentColor;
-  stroke-width:3.5;
+  stroke-width:3.4;
   stroke-linecap:round;
   stroke-linejoin:round;
 }
-.velocity-lab-tube svg circle{fill:currentColor;stroke:none}
+.velocity-lab-flask svg circle{fill:currentColor;stroke:none}
 
 .velocity-lab-brand-block>p{
   position:static!important;
@@ -231,9 +223,9 @@ body.velocity-lab-open{overflow:hidden!important}
 @media(max-width:820px){
   .velocity-lab-page{padding:0 10px 54px!important}
   .velocity-lab-shell-header{gap:14px;padding:calc(14px + env(safe-area-inset-top,0px)) 2px 15px}
-  .velocity-lab-home-logo{font-size:clamp(34px,10vw,52px)!important}
-  .velocity-lab-identity{min-height:36px;padding-left:10px;font-size:18px}
-  .velocity-lab-tube{width:27px;height:34px}
+  .velocity-lab-brand-row{--velocity-lab-brand-size:clamp(34px,10vw,52px);gap:12px}
+  .velocity-lab-home-logo{font-size:var(--velocity-lab-brand-size)!important}
+  .velocity-lab-flask{width:var(--velocity-lab-brand-size);height:var(--velocity-lab-brand-size)}
   .velocity-lab-close{width:42px!important;height:42px!important;min-width:42px;font-size:28px!important}
   .velocity-lab-brand-block>p{margin-top:10px!important;font-size:11px!important}
   .velocity-lab-mode-switch{gap:7px!important;margin:11px 0 16px!important}
@@ -243,10 +235,10 @@ body.velocity-lab-open{overflow:hidden!important}
 
 @media(max-width:560px){
   .velocity-lab-kicker{font-size:8px!important;margin-bottom:7px}
-  .velocity-lab-brand-row{gap:9px}
-  .velocity-lab-home-logo{font-size:36px!important}
-  .velocity-lab-identity{gap:5px;min-height:31px;padding-left:8px;font-size:15px;letter-spacing:.05em}
-  .velocity-lab-tube{width:23px;height:29px}
+  .velocity-lab-brand-row{--velocity-lab-brand-size:32px;gap:8px}
+  .velocity-lab-home-logo{font-size:var(--velocity-lab-brand-size)!important}
+  .velocity-lab-home-logo .velocity-lab-word{margin-left:.14em}
+  .velocity-lab-flask{width:var(--velocity-lab-brand-size);height:var(--velocity-lab-brand-size)}
   .velocity-lab-brand-block>p{display:none!important}
   .velocity-lab-mode-switch{grid-template-columns:1fr!important}
   .velocity-lab-mode-switch button{min-height:40px}
@@ -267,3 +259,6 @@ body.velocity-lab-open{overflow:hidden!important}
     margin:0!important;
   }
 }
+
+/* V7.2.1763 — état du rattrapage historique du Data Recorder. */
+.velocity-recorder-backfill{display:flex;align-items:center;gap:8px;margin:0 12px;padding:8px 10px;border:1px solid #24313b;border-radius:6px;background:#0d141a;color:#8d99a6;font-size:8px;line-height:1.25}.velocity-recorder-backfill span{color:#d71f27;font-weight:950;letter-spacing:.08em;white-space:nowrap}.velocity-recorder-backfill b{color:#c8d0d8;font-weight:800}.velocity-recorder-backfill.syncing{border-color:#6a4b20}.velocity-recorder-backfill.syncing b{color:#ffb25a}.velocity-recorder-backfill.partial{border-color:#6a4b20}.velocity-recorder-backfill.partial b{color:#ffb25a}.velocity-recorder-backfill.waiting b{color:#9aa5b1}@media(max-width:700px){.velocity-recorder-backfill{align-items:flex-start;flex-direction:column;gap:4px}}

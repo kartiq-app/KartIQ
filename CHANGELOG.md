@@ -1,3 +1,24 @@
+# V7.2.1763 — Data Recorder : rattrapage historique Apex
+
+- Au démarrage d’un REC, le Recorder ouvre immédiatement le WebSocket live puis lance en parallèle une **synchronisation historique Apex** pour chaque équipe déjà présente sur la grille.
+- Récupération rétroactive des **tours depuis le début de la session active**, avec S1/S2/S3 et arrêts stands disponibles via l’historique Apex, même si le REC est lancé plusieurs heures après le départ.
+- Fenêtres historiques adaptatives jusqu’à 3000 tours par équipe afin de retrouver le tour 1 sans charger inutilement Apex sur les sessions courtes.
+- Déduplication : un tour/pit/secteur déjà capté en live n’est pas compté deux fois lorsque le backfill le retrouve.
+- Réconciliation automatique toutes les 5 minutes et immédiatement après une reconnexion WebSocket afin de réparer les éventuels trous de collecte.
+- Le calcul Velocity Score est suspendu pendant la synchronisation initiale puis recalculé sur l’ensemble des tours récupérés avant de reprendre les snapshots live habituels.
+- Le Data Recorder affiche désormais l’état **HISTORIQUE APEX** et le nombre d’anciens tours/événements stands récupérés.
+- Le Recorder reste volontairement **manuel à l’arrêt** : une absence de données Apex ne termine jamais automatiquement un REC.
+- Les trames WebSocket brutes antérieures au démarrage du REC ne peuvent pas être reconstituées ; seuls les historiques structurés qu’Apex expose encore sont rattrapés.
+
+# V7.2.1762 — Identité Velocity Lab : Erlenmeyer
+
+- Remplacement de l’éprouvette du header Velocity Lab par un **Erlenmeyer rouge** en SVG, dessiné dans la même direction artistique que les icônes rouges de la Home.
+- Suppression du filet vertical entre **VELOCITY** et **LAB**.
+- **LAB** utilise désormais le même wordmark, la même taille et le même poids visuel que **VELOCITY**.
+- L’Erlenmeyer est dimensionné à la hauteur du wordmark et reste aligné sur la même ligne.
+- Les trois modes **Comparaison**, **Score Sprint — Expérimental** et **Data Recorder** restent inchangés et opérationnels.
+- Aucun changement sur les algorithmes, le Data Recorder ou Render Postgres.
+
 # V7.2.1761 — Refonte visuelle Velocity Lab
 
 - Refonte du shell CSS de **Velocity Lab** sur une base dédiée et isolée du header global de Velocity.

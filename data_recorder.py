@@ -13,6 +13,8 @@ import tempfile
 import threading
 import time
 import unicodedata
+import urllib.parse
+import urllib.request
 import uuid
 import zipfile
 from bisect import bisect_left, bisect_right
@@ -149,6 +151,132 @@ def _transition_weights(z: float | None, has_transition: bool) -> dict[str, floa
     transition = .25 + .20 * strength
     pace = .45 - .20 * strength
     return {"pace": pace, "transition": transition, "potential": .15, "consistency": .10, "sample": .05}
+
+
+
+def _apex_request_port(circuit: dict[str, Any]) -> int | None:
+    """Déduit le port HTTP historique Apex du WebSocket (WS = request + 3)."""
+    match = re.search(r":(\d+)(?:/|$)", str(circuit.get("websocket_url") or ""))
+    if not match:
+        return None
+    port = int(match.group(1)) - 3
+    return port if port > 0 else None
+
+
+def _apex_http_history(circuit: dict[str, Any], command: str, timeout: int = 20) -> str:
+    """Interroge le endpoint read-only request.php utilisé par Apex/Analyzer."""
+    port = _apex_request_port(circuit)
+    if not port:
+        raise ValueError("Port historique Apex introuvable pour ce circuit")
+    encoded = urllib.parse.urlencode({"port": port, "request": command}).encode("utf-8")
+    live_url = str(circuit.get("live_url") or "https://www.apex-timing.com/")
+    req = urllib.request.Request(
+        "https://live-data.apex-timing.com/live-timing/commonv2/functions/request.php",
+        data=encoded,
+        headers={
+            "User-Agent": "Mozilla/5.0 Velocity-Lab-Recorder",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Origin": live_url.rstrip("/"),
+            "Referer": live_url,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        return response.read().decode("utf-8", errors="replace")
+
+
+def _apex_protocol_number(value: Any) -> int:
+    """Reproduit le parseInt Apex après suppression des marqueurs couleur alphabétiques."""
+    text = re.sub(r"[a-zA-Z]", "", str(value or "")).strip()
+    match = re.match(r"^[+-]?\d+", text)
+    if not match:
+        return 0
+    try:
+        return int(match.group(0))
+    except Exception:
+        return 0
+
+
+def _format_apex_ms(value: int | float | None) -> str | None:
+    ms = int(value or 0)
+    if ms <= 0:
+        return None
+    minutes, remainder = divmod(ms, 60_000)
+    seconds, millis = divmod(remainder, 1_000)
+    if minutes:
+        return f"{minutes}:{seconds:02d}.{millis:03d}"
+    return f"{seconds}.{millis:03d}"
+
+
+def _parse_apex_history(raw: str, row_id: int) -> dict[str, Any]:
+    """Parse les lignes .L/.P/.INF d'une réponse historique Apex courante."""
+    laps: dict[int, dict[str, Any]] = {}
+    pits: dict[int, dict[str, Any]] = {}
+    drivers: dict[int, str] = {}
+    current_driver = ""
+    marker_lap = f"D{row_id}.L"
+    marker_pit = f"D{row_id}.P"
+    marker_inf = f"D{row_id}.INF"
+
+    for raw_line in str(raw or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith(marker_lap):
+            hash_pos = line.find("#", len(marker_lap))
+            if hash_pos < 0:
+                continue
+            lap_no = _apex_protocol_number(line[len(marker_lap):hash_pos])
+            fields = line[hash_pos + 1:].split("|")
+            if lap_no <= 0 or len(fields) < 4:
+                continue
+            s1, s2, s3, lap_time = (_apex_protocol_number(fields[i]) for i in range(4))
+            if lap_time <= 0:
+                continue
+            laps[lap_no] = {"lap": lap_no, "sector1": s1, "sector2": s2, "sector3": s3, "lap_time": lap_time}
+            continue
+
+        if line.startswith(marker_pit):
+            hash_pos = line.find("#", len(marker_pit))
+            if hash_pos < 0:
+                continue
+            marker_stop = _apex_protocol_number(line[len(marker_pit):hash_pos])
+            fields = [str(item or "").strip() for item in line[hash_pos + 1:].split("|")]
+            if marker_stop <= 0 or len(fields) < 4:
+                continue
+            stop = _apex_protocol_number(fields[0]) or marker_stop
+            pits[stop] = {
+                "stop": stop,
+                "lap": _apex_protocol_number(fields[1]) if len(fields) > 1 else 0,
+                "pit_in_ms": _apex_protocol_number(fields[2]) if len(fields) > 2 else 0,
+                "pit_out_ms": _apex_protocol_number(fields[3]) if len(fields) > 3 else 0,
+                "pit_time_ms": _apex_protocol_number(fields[4]) if len(fields) > 4 else 0,
+                "track_time_ms": _apex_protocol_number(fields[5]) if len(fields) > 5 else 0,
+                "relay_laps": _apex_protocol_number(fields[6]) if len(fields) > 6 else 0,
+                "driver_id": _apex_protocol_number(fields[7]) if len(fields) > 7 else 0,
+                "driver_total_ms": _apex_protocol_number(fields[8]) if len(fields) > 8 else 0,
+            }
+            continue
+
+        if line.startswith(marker_inf):
+            # Les balises <driver> sont suffisamment simples pour un parseur d'attributs léger.
+            for tag in re.findall(r"<driver\b[^>]*>", line, flags=re.I):
+                attrs = dict(re.findall(r"([:\w-]+)=[\"']([^\"']*)[\"']", tag))
+                did = _apex_protocol_number(attrs.get("id"))
+                name = str(attrs.get("name") or "").strip()
+                if did and name:
+                    drivers[did] = name
+                    if str(attrs.get("current") or "") == "1":
+                        current_driver = name
+
+    for pit in pits.values():
+        pit["driver_name"] = drivers.get(int(pit.get("driver_id") or 0), "")
+    return {
+        "laps": [laps[k] for k in sorted(laps)],
+        "pits": [pits[k] for k in sorted(pits)],
+        "drivers": drivers,
+        "current_driver": current_driver,
+    }
 
 
 class RecorderStore:
@@ -332,31 +460,68 @@ class RecorderStore:
     def append_frame(self, rid: str, at_ms: int, raw: str):
         self._execute("INSERT INTO velocity_recorder_frames(recording_id,received_at_ms,raw) VALUES (?,?,?)", (rid, at_ms, str(raw)))
 
-    def upsert_lap(self, rid: str, lap: dict[str, Any]):
-        params = (
-            rid, lap["row_id"], lap["lap_number"], lap["received_at_ms"], lap.get("team"), lap.get("pilot"), lap.get("kart"), lap.get("position"),
-            lap.get("lap_time"), lap.get("lap_seconds"), lap.get("sector_1"), lap.get("sector_1_seconds"), lap.get("sector_2"), lap.get("sector_2_seconds"),
-            lap.get("sector_3"), lap.get("sector_3_seconds"), lap.get("pit_stops"), lap.get("relay_index"),
-        )
-        self._execute(
-            """INSERT INTO velocity_recorder_laps
-               (recording_id,row_id,lap_number,received_at_ms,team,pilot,kart,position,lap_time,lap_seconds,sector_1,sector_1_seconds,sector_2,sector_2_seconds,sector_3,sector_3_seconds,pit_stops,relay_index)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-               ON CONFLICT(recording_id,row_id,lap_number) DO UPDATE SET
-               received_at_ms=excluded.received_at_ms,team=excluded.team,pilot=excluded.pilot,kart=excluded.kart,position=excluded.position,
-               lap_time=excluded.lap_time,lap_seconds=excluded.lap_seconds,sector_1=excluded.sector_1,sector_1_seconds=excluded.sector_1_seconds,
-               sector_2=excluded.sector_2,sector_2_seconds=excluded.sector_2_seconds,sector_3=excluded.sector_3,sector_3_seconds=excluded.sector_3_seconds,
-               pit_stops=excluded.pit_stops,relay_index=excluded.relay_index""", params)
+    def upsert_lap(self, rid: str, lap: dict[str, Any], *, preserve_existing_timestamp: bool = False) -> bool:
+        """Insère/complète un tour et indique s'il était réellement nouveau.
+
+        Le backfill historique ne doit pas écraser l'horodatage d'un tour déjà capté
+        en direct, tandis qu'un vrai passage live peut naturellement rafraîchir ses
+        champs. Le verrou du store rend le test + upsert atomique entre threads.
+        """
+        with self._lock:
+            existing = self._execute(
+                "SELECT received_at_ms FROM velocity_recorder_laps WHERE recording_id=? AND row_id=? AND lap_number=?",
+                (rid, lap["row_id"], lap["lap_number"]), fetchone=True,
+            )
+            params = (
+                rid, lap["row_id"], lap["lap_number"], lap["received_at_ms"], lap.get("team"), lap.get("pilot"), lap.get("kart"), lap.get("position"),
+                lap.get("lap_time"), lap.get("lap_seconds"), lap.get("sector_1"), lap.get("sector_1_seconds"), lap.get("sector_2"), lap.get("sector_2_seconds"),
+                lap.get("sector_3"), lap.get("sector_3_seconds"), lap.get("pit_stops"), lap.get("relay_index"),
+            )
+            timestamp_update = "received_at_ms=velocity_recorder_laps.received_at_ms," if preserve_existing_timestamp else "received_at_ms=excluded.received_at_ms,"
+            self._execute(
+                f"""INSERT INTO velocity_recorder_laps
+                   (recording_id,row_id,lap_number,received_at_ms,team,pilot,kart,position,lap_time,lap_seconds,sector_1,sector_1_seconds,sector_2,sector_2_seconds,sector_3,sector_3_seconds,pit_stops,relay_index)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   ON CONFLICT(recording_id,row_id,lap_number) DO UPDATE SET
+                   {timestamp_update}team=COALESCE(NULLIF(excluded.team,''),velocity_recorder_laps.team),pilot=COALESCE(NULLIF(excluded.pilot,''),velocity_recorder_laps.pilot),kart=COALESCE(NULLIF(excluded.kart,''),velocity_recorder_laps.kart),position=COALESCE(excluded.position,velocity_recorder_laps.position),
+                   lap_time=excluded.lap_time,lap_seconds=excluded.lap_seconds,sector_1=COALESCE(excluded.sector_1,velocity_recorder_laps.sector_1),sector_1_seconds=COALESCE(excluded.sector_1_seconds,velocity_recorder_laps.sector_1_seconds),
+                   sector_2=COALESCE(excluded.sector_2,velocity_recorder_laps.sector_2),sector_2_seconds=COALESCE(excluded.sector_2_seconds,velocity_recorder_laps.sector_2_seconds),sector_3=COALESCE(excluded.sector_3,velocity_recorder_laps.sector_3),sector_3_seconds=COALESCE(excluded.sector_3_seconds,velocity_recorder_laps.sector_3_seconds),
+                   pit_stops=COALESCE(excluded.pit_stops,velocity_recorder_laps.pit_stops),relay_index=COALESCE(excluded.relay_index,velocity_recorder_laps.relay_index)""", params)
+            return existing is None
 
     def append_sector(self, rid: str, item: dict[str, Any]):
         self._execute(
             "INSERT INTO velocity_recorder_sectors(recording_id,row_id,lap_number,received_at_ms,team,kart,sector,value,seconds,kind) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (rid, item["row_id"], item.get("lap_number"), item["received_at_ms"], item.get("team"), item.get("kart"), item["sector"], item.get("value"), item.get("seconds"), item.get("kind")))
 
+    def append_historical_sector_once(self, rid: str, item: dict[str, Any]) -> bool:
+        with self._lock:
+            existing = self._execute(
+                "SELECT 1 AS ok FROM velocity_recorder_sectors WHERE recording_id=? AND row_id=? AND lap_number=? AND sector=? AND kind='history' LIMIT 1",
+                (rid, item["row_id"], item.get("lap_number"), item["sector"]), fetchone=True,
+            )
+            if existing:
+                return False
+            payload = dict(item)
+            payload["kind"] = "history"
+            self.append_sector(rid, payload)
+            return True
+
     def append_pit(self, rid: str, item: dict[str, Any]):
         self._execute(
             "INSERT INTO velocity_recorder_pits(recording_id,row_id,received_at_ms,lap_number,team,pilot,kart,event,stop_number,relay_index) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (rid, item["row_id"], item["received_at_ms"], item.get("lap_number"), item.get("team"), item.get("pilot"), item.get("kart"), item["event"], item.get("stop_number"), item.get("relay_index")))
+
+    def append_pit_once(self, rid: str, item: dict[str, Any]) -> bool:
+        with self._lock:
+            existing = self._execute(
+                "SELECT 1 AS ok FROM velocity_recorder_pits WHERE recording_id=? AND row_id=? AND event=? AND stop_number=? AND lap_number=? LIMIT 1",
+                (rid, item["row_id"], item["event"], item.get("stop_number"), item.get("lap_number")), fetchone=True,
+            )
+            if existing:
+                return False
+            self.append_pit(rid, item)
+            return True
 
     def append_score(self, rid: str, item: dict[str, Any]):
         self._execute(
@@ -825,6 +990,15 @@ class DataRecorderWorker:
         self.last_snapshot_at = 0
         self.counters = {"frames": int(recording.get("frames_count") or 0), "laps": int(recording.get("laps_count") or 0), "sectors": int(recording.get("sectors_count") or 0), "pits": int(recording.get("pits_count") or 0), "scores": int(recording.get("scores_count") or 0)}
         self.on_done = on_done
+        self.data_lock = threading.RLock()
+        self.backfill_thread = None
+        self.backfill_wakeup = threading.Event()
+        self.metadata = dict(recording.get("metadata") or {})
+        self.backfill_full_rows = {int(x) for x in (self.metadata.get("backfill_full_rows") or []) if str(x).isdigit()}
+        self.backfill_total_laps = int(self.metadata.get("backfill_laps") or 0)
+        self.backfill_total_pits = int(self.metadata.get("backfill_pits") or 0)
+        self.backfill_total_sectors = int(self.metadata.get("backfill_sectors") or 0)
+        self.backfill_syncing = False
         self._hydrate_history()
 
     def _hydrate_history(self):
@@ -869,10 +1043,14 @@ class DataRecorderWorker:
         if self.thread and self.thread.is_alive():
             return
         self.thread = threading.Thread(target=self._run, name=f"velocity-recorder-{self.id}", daemon=True)
+        self.backfill_thread = threading.Thread(target=self._backfill_loop, name=f"velocity-recorder-backfill-{self.id}", daemon=True)
         self.thread.start()
+        self.backfill_thread.start()
+        self.backfill_wakeup.set()
 
     def stop(self):
         self.stop_event.set()
+        self.backfill_wakeup.set()
         try:
             if self.ws:
                 self.ws.close()
@@ -901,6 +1079,7 @@ class DataRecorderWorker:
 
                 def on_open(ws):
                     self._update_status("recording", None)
+                    self.backfill_wakeup.set()  # réconciliation immédiate après toute reconnexion Apex
                     if request_message:
                         ws.send(request_message)
 
@@ -956,7 +1135,8 @@ class DataRecorderWorker:
         state = result["state"]
         for event in result.get("events") or []:
             self.store.append_event(self.id, at, event)
-        self._capture_drivers(state.get("drivers") or [], at)
+        with self.data_lock:
+            self._capture_drivers(state.get("drivers") or [], at)
         if at - self.last_snapshot_at >= 10_000:
             self.last_snapshot_at = at
             compact = {
@@ -964,8 +1144,196 @@ class DataRecorderWorker:
                 "drivers": [{k: d.get(k) for k in ("pos", "driver", "pilot", "apex", "laps", "pit_stops", "last", "best", "status", "apex_row")} for d in state.get("drivers") or []],
             }
             self.store.append_snapshot(self.id, at, compact)
-        self._snapshot_scores()
-        self.store.update_recording(self.id, status="recording", last_message_at_ms=at, frames_count=self.counters["frames"], laps_count=self.counters["laps"], sectors_count=self.counters["sectors"], pits_count=self.counters["pits"], scores_count=self.counters["scores"], teams_count=len(self.teams), last_error=None)
+        with self.data_lock:
+            self._snapshot_scores()
+            self._persist_counters(status="recording", last_message_at_ms=at, last_error=None)
+
+    def _persist_counters(self, **extra):
+        fields = {
+            "frames_count": self.counters["frames"], "laps_count": self.counters["laps"],
+            "sectors_count": self.counters["sectors"], "pits_count": self.counters["pits"],
+            "scores_count": self.counters["scores"], "teams_count": len(self.teams),
+        }
+        fields.update(extra)
+        self.store.update_recording(self.id, **fields)
+
+    def _save_backfill_metadata(self, status: str, error: str | None = None):
+        self.metadata.update({
+            "version": max(2, int(self.metadata.get("version") or 1)),
+            "score_engine": self.metadata.get("score_engine") or "velocity-v2-recorder",
+            "backfill_status": status,
+            "backfill_last_at_ms": _now_ms(),
+            "backfill_laps": self.backfill_total_laps,
+            "backfill_pits": self.backfill_total_pits,
+            "backfill_sectors": self.backfill_total_sectors,
+            "backfill_full_rows": sorted(self.backfill_full_rows),
+            "backfill_error": error,
+            "backfill_note": "Les tours historiques Apex n'incluent pas leur heure absolue de passage ; received_at_ms correspond à l'heure de récupération pour les lignes backfillées.",
+        })
+        self.store.update_recording(self.id, metadata_json=_safe_json(self.metadata))
+
+    def _fetch_apex_history_for_row(self, row: int, full: bool) -> tuple[dict[str, Any], bool]:
+        windows = [100, 500, 1500, 3000, 6000] if full else [150]
+        latest = {"laps": [], "pits": [], "drivers": {}, "current_driver": ""}
+        complete = False
+        for count in windows:
+            if self.stop_event.is_set():
+                break
+            command = f"D#-{count}#D{row}.L#-999#D{row}.P#2#D{row}.B#1#D{row}.INF"
+            parsed = None
+            for attempt in range(2):
+                try:
+                    parsed = _parse_apex_history(_apex_http_history(self.circuit, command), row)
+                except Exception:
+                    parsed = None
+                if parsed and (parsed.get("laps") or parsed.get("pits") or parsed.get("drivers")):
+                    break
+                if attempt == 0:
+                    self.stop_event.wait(.15)
+            if not parsed:
+                continue
+            latest = parsed
+            laps = parsed.get("laps") or []
+            if not full:
+                complete = True
+                break
+            if any(int(item.get("lap") or 0) == 1 for item in laps) or (laps and len(laps) < count):
+                complete = True
+                break
+        return latest, complete
+
+    def _historical_pilot_for_lap(self, lap_no: int, pits: list[dict[str, Any]], current_driver: str) -> str | None:
+        for pit in pits:
+            if int(pit.get("lap") or 0) >= int(lap_no):
+                name = str(pit.get("driver_name") or "").strip()
+                if name:
+                    return name
+        return str(current_driver or "").strip() or None
+
+    def _merge_apex_history(self, row: int, history: dict[str, Any], full_complete: bool) -> dict[str, int]:
+        at = _now_ms()
+        new = {"laps": 0, "pits": 0, "sectors": 0}
+        with self.data_lock:
+            bucket = self.teams.get(row)
+            if not bucket:
+                return new
+            current_driver = str(history.get("current_driver") or "").strip()
+            if current_driver:
+                bucket["pilot"] = current_driver
+            pits = sorted((history.get("pits") or []), key=lambda p: int(p.get("stop") or 0))
+            team_name, kart = bucket.get("team"), bucket.get("kart")
+
+            # Les arrêts historiques sont injectés avant les tours afin de reconstruire
+            # correctement les bornes de relais utilisées par Velocity Score.
+            for pit in pits:
+                lap_no = int(pit.get("lap") or 0)
+                stop_no = int(pit.get("stop") or 0)
+                pilot = str(pit.get("driver_name") or "").strip() or None
+                base = {
+                    "row_id": row, "received_at_ms": at, "lap_number": lap_no,
+                    "team": team_name, "pilot": pilot, "kart": kart,
+                    "stop_number": stop_no,
+                }
+                item_in = dict(base, event="IN", relay_index=max(1, stop_no))
+                if self.store.append_pit_once(self.id, item_in):
+                    self.counters["pits"] += 1; new["pits"] += 1
+                key = (lap_no, stop_no)
+                if not any((int(p.get("lap") or 0), int(p.get("stop") or 0)) == key for p in bucket["pits"]):
+                    bucket["pits"].append({"lap": lap_no, "pilot": pilot, "event": "IN", "stop": stop_no})
+                if int(pit.get("pit_out_ms") or 0) > int(pit.get("pit_in_ms") or 0):
+                    item_out = dict(base, event="OUT", relay_index=max(1, stop_no + 1))
+                    if self.store.append_pit_once(self.id, item_out):
+                        self.counters["pits"] += 1; new["pits"] += 1
+            bucket["pits"].sort(key=lambda item: int(item.get("lap") or 0))
+
+            existing_laps = {int(x.get("lap") or 0): x for x in bucket.get("laps") or []}
+            for lap in history.get("laps") or []:
+                lap_no = int(lap.get("lap") or 0)
+                lap_ms = int(lap.get("lap_time") or 0)
+                if lap_no <= 0 or lap_ms <= 0:
+                    continue
+                completed_stops = sum(1 for pit in pits if int(pit.get("lap") or 0) < lap_no)
+                pit_stops = sum(1 for pit in pits if int(pit.get("lap") or 0) <= lap_no)
+                pilot = self._historical_pilot_for_lap(lap_no, pits, current_driver) or bucket.get("pilot")
+                s1, s2, s3 = (int(lap.get(key) or 0) for key in ("sector1", "sector2", "sector3"))
+                record = {
+                    "row_id": row, "lap_number": lap_no, "received_at_ms": at,
+                    "team": team_name, "pilot": pilot, "kart": kart, "position": None,
+                    "lap_time": _format_apex_ms(lap_ms), "lap_seconds": lap_ms / 1000,
+                    "sector_1": _format_apex_ms(s1), "sector_1_seconds": s1 / 1000 if s1 > 0 else None,
+                    "sector_2": _format_apex_ms(s2), "sector_2_seconds": s2 / 1000 if s2 > 0 else None,
+                    "sector_3": _format_apex_ms(s3), "sector_3_seconds": s3 / 1000 if s3 > 0 else None,
+                    "pit_stops": pit_stops, "relay_index": completed_stops + 1,
+                }
+                if self.store.upsert_lap(self.id, record, preserve_existing_timestamp=True):
+                    self.counters["laps"] += 1; new["laps"] += 1
+                existing_laps[lap_no] = {"lap": lap_no, "seconds": lap_ms / 1000, "received_at_ms": at}
+                for sector, value in ((1, s1), (2, s2), (3, s3)):
+                    if value <= 0:
+                        continue
+                    sector_item = {
+                        "row_id": row, "lap_number": lap_no, "received_at_ms": at,
+                        "team": team_name, "kart": kart, "sector": sector,
+                        "value": _format_apex_ms(value), "seconds": value / 1000,
+                    }
+                    if self.store.append_historical_sector_once(self.id, sector_item):
+                        self.counters["sectors"] += 1; new["sectors"] += 1
+            bucket["laps"] = [existing_laps[k] for k in sorted(existing_laps) if k > 0]
+
+            if full_complete and (history.get("laps") or history.get("pits")):
+                self.backfill_full_rows.add(row)
+            self.backfill_total_laps += new["laps"]
+            self.backfill_total_pits += new["pits"]
+            self.backfill_total_sectors += new["sectors"]
+            self._persist_counters()
+        return new
+
+    def _backfill_loop(self):
+        """Rattrape l'historique au démarrage puis réconcilie les trous périodiquement."""
+        while not self.stop_event.is_set():
+            self.backfill_wakeup.clear()
+            with self.data_lock:
+                rows = sorted(int(row) for row in self.teams if int(row) > 0)
+            if not rows:
+                self._save_backfill_metadata("waiting-live", None)
+                self.backfill_wakeup.wait(3)
+                continue
+
+            self.backfill_syncing = True
+            self._save_backfill_metadata("syncing", None)
+            errors = []
+            changed = {"laps": 0, "pits": 0, "sectors": 0}
+            for row in rows:
+                if self.stop_event.is_set():
+                    break
+                full = row not in self.backfill_full_rows
+                try:
+                    history, complete = self._fetch_apex_history_for_row(row, full=full)
+                    if self.stop_event.is_set():
+                        break
+                    delta = self._merge_apex_history(row, history, full_complete=(full and complete))
+                    for key in changed:
+                        changed[key] += delta[key]
+                except Exception as exc:
+                    errors.append(f"r{row}: {exc}")
+                self.stop_event.wait(.05)
+
+            if changed["laps"] or changed["pits"] or changed["sectors"]:
+                self.store.append_event(self.id, _now_ms(), {
+                    "kind": "history_backfill", "rows": len(rows), "new_laps": changed["laps"],
+                    "new_pits": changed["pits"], "new_sectors": changed["sectors"],
+                })
+            with self.data_lock:
+                self.backfill_syncing = False
+                if changed["laps"] or changed["pits"] or changed["sectors"]:
+                    self._snapshot_scores(force=True)
+                self._persist_counters()
+            self._save_backfill_metadata("ready" if not errors else "partial", "; ".join(errors)[:500] if errors else None)
+
+            # Toutes les 5 minutes : une fenêtre courte suffit pour réparer les trous
+            # éventuels dus à une coupure WebSocket. Une reconnexion réveille aussi
+            # immédiatement la boucle via backfill_wakeup.
+            self.backfill_wakeup.wait(300)
 
     def _capture_drivers(self, drivers: list[dict[str, Any]], at: int):
         for driver in drivers:
@@ -1004,11 +1372,12 @@ class DataRecorderWorker:
                         "sector_3": (sectors.get(3) or {}).get("value"), "sector_3_seconds": (sectors.get(3) or {}).get("seconds"),
                         "pit_stops": pit_stops, "relay_index": relay_index,
                     }
-                    self.store.upsert_lap(self.id, lap)
+                    inserted = self.store.upsert_lap(self.id, lap)
                     existing = {int(x.get("lap") or 0): x for x in bucket["laps"]}
                     existing[lap_number] = {"lap": lap_number, "seconds": last_seconds, "received_at_ms": at}
                     bucket["laps"] = [existing[k] for k in sorted(existing)]
-                    self.counters["laps"] += 1
+                    if inserted:
+                        self.counters["laps"] += 1
                     prev["sectors"] = {}
                     prev["sector_values"] = {}
 
@@ -1043,12 +1412,18 @@ class DataRecorderWorker:
             return
         bucket["last_pit_marker"] = marker
         item = {"row_id": row, "received_at_ms": at, "lap_number": laps, "team": driver.get("driver"), "pilot": driver.get("pilot"), "kart": driver.get("apex"), "event": event, "stop_number": pit_stops, "relay_index": pit_stops + (0 if event == "IN" else 1)}
-        self.store.append_pit(self.id, item)
-        self.counters["pits"] += 1
+        inserted = self.store.append_pit_once(self.id, item)
+        if inserted:
+            self.counters["pits"] += 1
         if event == "IN":
-            bucket["pits"].append({"lap": laps, "pilot": driver.get("pilot"), "event": "IN", "stop": pit_stops})
+            key = (int(laps or 0), int(pit_stops or 0))
+            if not any((int(p.get("lap") or 0), int(p.get("stop") or 0)) == key for p in bucket["pits"]):
+                bucket["pits"].append({"lap": laps, "pilot": driver.get("pilot"), "event": "IN", "stop": pit_stops})
+                bucket["pits"].sort(key=lambda item: int(item.get("lap") or 0))
 
     def _snapshot_scores(self, force=False):
+        if self.backfill_syncing and not force:
+            return
         now = _now_ms()
         if not force and now - self.last_score_at < 15_000:
             return
@@ -1106,6 +1481,8 @@ class RecorderManager:
         if worker:
             worker.stop()
             worker.thread.join(timeout=3)
+            if worker.backfill_thread and worker.backfill_thread.is_alive():
+                worker.backfill_thread.join(timeout=1)
         else:
             rec = self.store.get_recording(rid)
             if not rec:

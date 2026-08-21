@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1761"
-APP_RELEASE_NAME = "VELOCITY LAB — CORRECTION HEADER"
+APP_VERSION = "7.2.1763"
+APP_RELEASE_NAME = "VELOCITY LAB — RATTRAPAGE HISTORIQUE RECORDER"
 
 
 def _circuit_sort_key(circuit):

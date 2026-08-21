@@ -1,6 +1,10 @@
-# Velocity V7.2.1761 — Refonte visuelle Velocity Lab
+# Velocity V7.2.1763 — Data Recorder avec rattrapage historique Apex
+Cette version conserve l’identité **Velocity Lab** et ajoute au Data Recorder un rattrapage automatique de l’historique de la session Apex active. Si REC est lancé après le départ, Velocity récupère en arrière-plan les tours déjà réalisés, leurs secteurs et les arrêts stands disponibles, puis poursuit l’enregistrement live côté Render.
 
-Cette version conserve le **Data Recorder autonome Render/Postgres** de la V7.2.1759 et corrige le header de Velocity Lab : le sous-titre et les onglets ne se chevauchent plus.
+Une réconciliation courte est relancée toutes les 5 minutes et après chaque reconnexion Apex. Le REC ne s’arrête jamais automatiquement sur silence ou coupure Apex : l’arrêt reste manuel depuis Velocity Lab.
+
+
+Cette version conserve le **Data Recorder autonome Render/Postgres** et finalise l’identité visuelle de Velocity Lab : wordmark **VELOCITY LAB** unifié et Erlenmeyer rouge dans la même direction artistique que les icônes de la Home.
 
 Pour un enregistrement longue durée sur Render, configurez impérativement `DATABASE_URL` vers une base **Render Postgres** et vérifiez le badge de stockage persistant dans Velocity Lab avant de lancer REC.
 
