@@ -1,4 +1,4 @@
-/* Velocity V7.2.1763 — Velocity Lab / Data Recorder + rattrapage historique Apex. */
+/* Velocity V7.2.1764 — Velocity Lab / Data Recorder : STOP durable + lease Render. */
 (function(){
 'use strict';
 

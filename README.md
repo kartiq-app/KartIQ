@@ -1,5 +1,5 @@
-# Velocity V7.2.1763 — Data Recorder avec rattrapage historique Apex
-Cette version conserve l’identité **Velocity Lab** et ajoute au Data Recorder un rattrapage automatique de l’historique de la session Apex active. Si REC est lancé après le départ, Velocity récupère en arrière-plan les tours déjà réalisés, leurs secteurs et les arrêts stands disponibles, puis poursuit l’enregistrement live côté Render.
+# Velocity V7.2.1764 — Data Recorder avec STOP durable
+Cette version sécurise le cycle **REC → ARRÊTER → EXPORTER** du Data Recorder. L’arrêt devient durable dans Render Postgres et un verrou/lease empêche deux instances Render de piloter simultanément le même Recorder pendant un déploiement. Le rattrapage historique Apex de la V7.2.1763 est conservé.
 
 Une réconciliation courte est relancée toutes les 5 minutes et après chaque reconnexion Apex. Le REC ne s’arrête jamais automatiquement sur silence ou coupure Apex : l’arrêt reste manuel depuis Velocity Lab.
 

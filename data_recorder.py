@@ -352,7 +352,9 @@ class RecorderStore:
                 last_message_at_ms BIGINT, frames_count BIGINT NOT NULL DEFAULT 0,
                 laps_count BIGINT NOT NULL DEFAULT 0, sectors_count BIGINT NOT NULL DEFAULT 0,
                 pits_count BIGINT NOT NULL DEFAULT 0, scores_count BIGINT NOT NULL DEFAULT 0,
-                teams_count BIGINT NOT NULL DEFAULT 0, last_error TEXT, metadata_json TEXT
+                teams_count BIGINT NOT NULL DEFAULT 0, last_error TEXT, metadata_json TEXT,
+                desired_status TEXT NOT NULL DEFAULT 'recording', owner_id TEXT,
+                lease_until_ms BIGINT, heartbeat_at_ms BIGINT
             )""",
             """CREATE TABLE IF NOT EXISTS velocity_recorder_frames (
                 recording_id TEXT NOT NULL, received_at_ms BIGINT NOT NULL, raw TEXT NOT NULL
@@ -394,6 +396,44 @@ class RecorderStore:
         ]
         for sql in ddl:
             self._execute(sql)
+        self._ensure_recording_control_columns()
+
+    def _ensure_recording_control_columns(self):
+        """Migration idempotente V7.2.1764 pour les bases déjà existantes.
+
+        `desired_status` est l'autorité durable : un worker ne peut plus remettre
+        un REC à l'état actif après un STOP. Le lease garantit qu'une seule
+        instance Render possède un Recorder pendant les déploiements avec overlap.
+        """
+        if self.backend == "postgres":
+            rows = self._execute(
+                """SELECT column_name FROM information_schema.columns
+                   WHERE table_schema=current_schema() AND table_name='velocity_recordings'""",
+                fetchall=True,
+            ) or []
+            columns = {str(row.get("column_name") or "") for row in rows}
+        else:
+            rows = self._execute("PRAGMA table_info(velocity_recordings)", fetchall=True) or []
+            columns = {str(row.get("name") or "") for row in rows}
+
+        additions = {
+            "desired_status": "TEXT",
+            "owner_id": "TEXT",
+            "lease_until_ms": "BIGINT",
+            "heartbeat_at_ms": "BIGINT",
+        }
+        for name, sql_type in additions.items():
+            if name not in columns:
+                self._execute(f"ALTER TABLE velocity_recordings ADD COLUMN {name} {sql_type}")
+
+        self._execute(
+            """UPDATE velocity_recordings
+               SET desired_status=CASE
+                   WHEN status IN ('starting','waiting','recording','reconnecting') THEN 'recording'
+                   ELSE 'stopped'
+               END
+               WHERE desired_status IS NULL OR desired_status=''"""
+        )
 
     def storage_info(self) -> dict[str, Any]:
         return {
@@ -408,11 +448,11 @@ class RecorderStore:
         clean_name = (str(name or "").strip() or f"Enregistrement {circuit.get('name') or circuit.get('id')}")[:120]
         self._execute(
             """INSERT INTO velocity_recordings
-               (id,name,circuit_id,circuit_name,websocket_url,live_url,session_request,status,created_at_ms,started_at_ms,metadata_json)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+               (id,name,circuit_id,circuit_name,websocket_url,live_url,session_request,status,created_at_ms,started_at_ms,metadata_json,desired_status)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, clean_name, circuit.get("id"), circuit.get("name") or circuit.get("id"), circuit.get("websocket_url") or "",
              circuit.get("live_url") or "", circuit.get("session_request") or "", "starting", now, now,
-             _safe_json({"version": 1, "score_engine": "velocity-v2-recorder"})),
+             _safe_json({"version": 1, "score_engine": "velocity-v2-recorder"}), "recording"),
         )
         return self.get_recording(rid)
 
@@ -425,7 +465,14 @@ class RecorderStore:
         return [self._public_recording(row) for row in rows]
 
     def active_recordings(self) -> list[dict[str, Any]]:
-        rows = self._execute("SELECT * FROM velocity_recordings WHERE status IN ('starting','waiting','recording','reconnecting') ORDER BY created_at_ms", fetchall=True) or []
+        rows = self._execute(
+            """SELECT * FROM velocity_recordings
+               WHERE COALESCE(desired_status,
+                   CASE WHEN status IN ('starting','waiting','recording','reconnecting') THEN 'recording' ELSE 'stopped' END
+               )='recording'
+               ORDER BY created_at_ms""",
+            fetchall=True,
+        ) or []
         return [self._public_recording(row) for row in rows]
 
     def worker_history(self, rid: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -447,6 +494,18 @@ class RecorderStore:
             item["metadata"] = json.loads(raw_meta) if raw_meta else {}
         except Exception:
             item["metadata"] = {}
+
+        raw_status = str(item.get("status") or "")
+        desired = str(item.get("desired_status") or "").strip().lower()
+        if not desired:
+            desired = "recording" if raw_status in {"starting", "waiting", "recording", "reconnecting"} else "stopped"
+        item["desired_status"] = desired
+        item["runtime_status"] = raw_status
+        if desired != "recording":
+            item["status"] = "stopped"
+        item.pop("owner_id", None)
+        item.pop("lease_until_ms", None)
+        item.pop("heartbeat_at_ms", None)
         return item
 
     def update_recording(self, rid: str, **fields):
@@ -454,8 +513,113 @@ class RecorderStore:
         clean = {k: v for k, v in fields.items() if k in allowed}
         if not clean:
             return
+        if str(clean.get("status") or "") in {"starting", "waiting", "recording", "reconnecting"}:
+            control = self._execute("SELECT desired_status FROM velocity_recordings WHERE id=?", (rid,), fetchone=True)
+            if control and str(control.get("desired_status") or "").lower() == "stopped":
+                clean.pop("status", None)
+        if not clean:
+            return
         assignments = ",".join(f"{key}=?" for key in clean)
         self._execute(f"UPDATE velocity_recordings SET {assignments} WHERE id=?", tuple(clean.values()) + (rid,))
+
+    def request_stop(self, rid: str) -> dict[str, Any] | None:
+        """STOP durable : Postgres devient l'autorité avant d'arrêter les threads."""
+        now = _now_ms()
+        self._execute(
+            """UPDATE velocity_recordings
+               SET desired_status='stopped', status='stopped', stopped_at_ms=?,
+                   owner_id=NULL, lease_until_ms=NULL, heartbeat_at_ms=?
+               WHERE id=?""",
+            (now, now, rid),
+        )
+        self.recount_recording(rid)
+        return self.get_recording(rid)
+
+    def claim_lease(self, rid: str, owner_id: str, lease_ms: int = 10_000) -> bool:
+        now = _now_ms()
+        until = now + max(5_000, int(lease_ms))
+        self._execute(
+            """UPDATE velocity_recordings
+               SET owner_id=?, lease_until_ms=?, heartbeat_at_ms=?
+               WHERE id=?
+                 AND COALESCE(desired_status,'recording')='recording'
+                 AND (owner_id IS NULL OR owner_id=? OR lease_until_ms IS NULL OR lease_until_ms<?)""",
+            (owner_id, until, now, rid, owner_id, now),
+        )
+        row = self._execute(
+            "SELECT desired_status,owner_id,lease_until_ms FROM velocity_recordings WHERE id=?",
+            (rid,), fetchone=True,
+        )
+        return bool(
+            row
+            and str(row.get("desired_status") or "recording").lower() == "recording"
+            and str(row.get("owner_id") or "") == str(owner_id)
+            and int(row.get("lease_until_ms") or 0) >= now
+        )
+
+    def renew_lease(self, rid: str, owner_id: str, lease_ms: int = 10_000) -> bool:
+        now = _now_ms()
+        until = now + max(5_000, int(lease_ms))
+        self._execute(
+            """UPDATE velocity_recordings
+               SET lease_until_ms=?, heartbeat_at_ms=?
+               WHERE id=? AND owner_id=? AND COALESCE(desired_status,'recording')='recording'""",
+            (until, now, rid, owner_id),
+        )
+        row = self._execute(
+            "SELECT desired_status,owner_id,lease_until_ms FROM velocity_recordings WHERE id=?",
+            (rid,), fetchone=True,
+        )
+        return bool(
+            row
+            and str(row.get("desired_status") or "recording").lower() == "recording"
+            and str(row.get("owner_id") or "") == str(owner_id)
+            and int(row.get("lease_until_ms") or 0) >= now
+        )
+
+    def release_lease(self, rid: str, owner_id: str):
+        self._execute(
+            """UPDATE velocity_recordings SET owner_id=NULL, lease_until_ms=NULL
+               WHERE id=? AND owner_id=?""",
+            (rid, owner_id),
+        )
+
+    def update_runtime_recording(self, rid: str, owner_id: str, **fields):
+        """Écriture réservée au worker qui détient le lease courant."""
+        allowed = {"status", "last_message_at_ms", "frames_count", "laps_count", "sectors_count", "pits_count", "scores_count", "teams_count", "last_error"}
+        clean = {k: v for k, v in fields.items() if k in allowed}
+        if not clean:
+            return
+        assignments = ",".join(f"{key}=?" for key in clean)
+        self._execute(
+            f"""UPDATE velocity_recordings SET {assignments}
+                WHERE id=? AND owner_id=? AND COALESCE(desired_status,'recording')='recording'""",
+            tuple(clean.values()) + (rid, owner_id),
+        )
+
+    def recount_recording(self, rid: str):
+        """Réaligne les compteurs affichés sur les lignes réellement stockées."""
+        counts = {}
+        for key, table in (
+            ("frames_count", "velocity_recorder_frames"),
+            ("laps_count", "velocity_recorder_laps"),
+            ("sectors_count", "velocity_recorder_sectors"),
+            ("pits_count", "velocity_recorder_pits"),
+            ("scores_count", "velocity_recorder_scores"),
+        ):
+            row = self._execute(f"SELECT COUNT(*) AS n FROM {table} WHERE recording_id=?", (rid,), fetchone=True)
+            counts[key] = int((row or {}).get("n") or 0)
+        team_row = self._execute(
+            """SELECT COUNT(*) AS n FROM (
+                   SELECT row_id FROM velocity_recorder_laps WHERE recording_id=?
+                   UNION SELECT row_id FROM velocity_recorder_sectors WHERE recording_id=?
+                   UNION SELECT row_id FROM velocity_recorder_pits WHERE recording_id=?
+                   UNION SELECT row_id FROM velocity_recorder_scores WHERE recording_id=?
+               ) AS recorder_teams""",
+            (rid, rid, rid, rid), fetchone=True,
+        )
+        counts["teams_count"] = int((team_row or {}).get("n") or 0)
+        self.update_recording(rid, **counts)
 
     def append_frame(self, rid: str, at_ms: int, raw: str):
         self._execute("INSERT INTO velocity_recorder_frames(recording_id,received_at_ms,raw) VALUES (?,?,?)", (rid, at_ms, str(raw)))
@@ -639,6 +803,7 @@ class RecorderStore:
 
     def export_zip(self, rid: str):
         """Construit l'export complet en flux, avec débordement automatique sur disque temporaire."""
+        self.recount_recording(rid)
         rec = self.get_recording(rid)
         if not rec:
             raise KeyError(rid)
@@ -973,13 +1138,15 @@ class VelocityRecorderScoreEngine:
 class DataRecorderWorker:
     ACTIVE = {"starting", "waiting", "recording", "reconnecting"}
 
-    def __init__(self, store: RecorderStore, recording: dict[str, Any], circuit: dict[str, Any], on_done: Callable[[str], None] | None = None):
+    def __init__(self, store: RecorderStore, recording: dict[str, Any], circuit: dict[str, Any], owner_id: str, on_done: Callable[[str], None] | None = None):
         self.store = store
         self.recording = recording
         self.circuit = circuit
         self.id = recording["id"]
+        self.owner_id = str(owner_id)
         self.stop_event = threading.Event()
         self.thread = None
+        self.lease_thread = None
         self.ws = None
         self.runtime = _RecorderProtocolRuntime()
         self.seen: dict[int, dict[str, Any]] = {}
@@ -1044,6 +1211,8 @@ class DataRecorderWorker:
             return
         self.thread = threading.Thread(target=self._run, name=f"velocity-recorder-{self.id}", daemon=True)
         self.backfill_thread = threading.Thread(target=self._backfill_loop, name=f"velocity-recorder-backfill-{self.id}", daemon=True)
+        self.lease_thread = threading.Thread(target=self._lease_loop, name=f"velocity-recorder-lease-{self.id}", daemon=True)
+        self.lease_thread.start()
         self.thread.start()
         self.backfill_thread.start()
         self.backfill_wakeup.set()
@@ -1057,11 +1226,22 @@ class DataRecorderWorker:
         except Exception:
             pass
 
+    def _lease_loop(self):
+        """Heartbeat Postgres : un seul processus Render peut posséder le REC."""
+        while not self.stop_event.is_set():
+            if not self.store.renew_lease(self.id, self.owner_id, lease_ms=10_000):
+                self.stop_event.set()
+                self.backfill_wakeup.set()
+                try:
+                    if self.ws:
+                        self.ws.close()
+                except Exception:
+                    pass
+                break
+            self.stop_event.wait(2)
+
     def _update_status(self, status: str, error: str | None = None):
-        fields = {"status": status, "last_error": error}
-        if status == "stopped":
-            fields["stopped_at_ms"] = _now_ms()
-        self.store.update_recording(self.id, **fields)
+        self.store.update_runtime_recording(self.id, self.owner_id, status=status, last_error=error)
 
     def _run(self):
         if websocket is None:
@@ -1112,11 +1292,11 @@ class DataRecorderWorker:
                     self.stop_event.wait(retry)
         finally:
             try:
-                self._snapshot_scores(force=True)
+                if not self.stop_event.is_set():
+                    self._snapshot_scores(force=True)
             except Exception:
                 pass
-            if self.stop_event.is_set():
-                self._update_status("stopped", None)
+            self.store.release_lease(self.id, self.owner_id)
             if self.on_done:
                 self.on_done(self.id)
 
@@ -1155,7 +1335,7 @@ class DataRecorderWorker:
             "scores_count": self.counters["scores"], "teams_count": len(self.teams),
         }
         fields.update(extra)
-        self.store.update_recording(self.id, **fields)
+        self.store.update_runtime_recording(self.id, self.owner_id, **fields)
 
     def _save_backfill_metadata(self, status: str, error: str | None = None):
         self.metadata.update({
@@ -1448,8 +1628,11 @@ class RecorderManager:
     def __init__(self, store: RecorderStore, load_circuits: Callable[[], list[dict[str, Any]]]):
         self.store = store
         self.load_circuits = load_circuits
+        self.owner_id = uuid.uuid4().hex
         self._lock = threading.RLock()
         self.workers: dict[str, DataRecorderWorker] = {}
+        self._supervisor_stop = threading.Event()
+        self._supervisor_thread = None
 
     def _circuit(self, circuit_id: str) -> dict[str, Any] | None:
         return next((c for c in self.load_circuits() if str(c.get("id")) == str(circuit_id)), None)
@@ -1465,8 +1648,14 @@ class RecorderManager:
         if any(str(item.get("circuit_id") or "") == str(circuit_id) for item in self.store.active_recordings()):
             raise ValueError("Un Recorder est déjà actif sur ce circuit Apex.")
         recording = self.store.create_recording(name, circuit)
-        worker = DataRecorderWorker(self.store, recording, circuit, self._worker_done)
         with self._lock:
+            # Le superviseur peut avoir vu la ligne entre l'INSERT et ce lock.
+            if recording["id"] in self.workers:
+                return self.store.get_recording(recording["id"])
+            if not self.store.claim_lease(recording["id"], self.owner_id):
+                self.store.request_stop(recording["id"])
+                raise RuntimeError("Impossible de prendre le contrôle exclusif du Recorder.")
+            worker = DataRecorderWorker(self.store, recording, circuit, self.owner_id, self._worker_done)
             self.workers[recording["id"]] = worker
         worker.start()
         return self.store.get_recording(recording["id"])
@@ -1476,22 +1665,29 @@ class RecorderManager:
             self.workers.pop(rid, None)
 
     def stop(self, rid: str) -> dict[str, Any]:
+        rec = self.store.get_recording(rid)
+        if not rec:
+            raise KeyError(rid)
+
+        # STOP est écrit d'abord dans Postgres : il devient irréversible pour
+        # tous les workers, y compris une autre instance Render en overlap.
+        self.store.request_stop(rid)
+
         with self._lock:
             worker = self.workers.get(rid)
         if worker:
             worker.stop()
-            worker.thread.join(timeout=3)
+            if worker.thread and worker.thread.is_alive():
+                worker.thread.join(timeout=4)
             if worker.backfill_thread and worker.backfill_thread.is_alive():
-                worker.backfill_thread.join(timeout=1)
-        else:
-            rec = self.store.get_recording(rid)
-            if not rec:
-                raise KeyError(rid)
-            if rec.get("status") in DataRecorderWorker.ACTIVE:
-                self.store.update_recording(rid, status="stopped", stopped_at_ms=_now_ms())
+                worker.backfill_thread.join(timeout=2)
+            if worker.lease_thread and worker.lease_thread.is_alive():
+                worker.lease_thread.join(timeout=2)
+
+        self.store.recount_recording(rid)
         return self.store.get_recording(rid)
 
-    def resume_active(self):
+    def _resume_active_once(self):
         for rec in self.store.active_recordings():
             circuit = self._circuit(rec.get("circuit_id"))
             if not circuit or not circuit.get("websocket_url"):
@@ -1500,9 +1696,35 @@ class RecorderManager:
             with self._lock:
                 if rec["id"] in self.workers:
                     continue
-                worker = DataRecorderWorker(self.store, rec, circuit, self._worker_done)
+                # Le claim est fait sous le même lock que l'enregistrement local du
+                # worker afin d'éviter une double adoption dans ce processus.
+                if not self.store.claim_lease(rec["id"], self.owner_id):
+                    continue
+                worker = DataRecorderWorker(self.store, rec, circuit, self.owner_id, self._worker_done)
                 self.workers[rec["id"]] = worker
             worker.start()
+
+    def _supervisor_loop(self):
+        # Lors d'un déploiement Render, la nouvelle instance peut démarrer avant
+        # l'expiration du lease de l'ancienne. On retente donc l'adoption jusqu'à
+        # ce que l'ancienne instance soit réellement arrêtée.
+        while not self._supervisor_stop.is_set():
+            try:
+                self._resume_active_once()
+            except Exception:
+                pass
+            self._supervisor_stop.wait(3)
+
+    def resume_active(self):
+        self._resume_active_once()
+        with self._lock:
+            if not self._supervisor_thread or not self._supervisor_thread.is_alive():
+                self._supervisor_thread = threading.Thread(
+                    target=self._supervisor_loop,
+                    name="velocity-recorder-supervisor",
+                    daemon=True,
+                )
+                self._supervisor_thread.start()
 
     def status(self):
         return {"storage": self.store.storage_info(), "recordings": self.store.list_recordings()}

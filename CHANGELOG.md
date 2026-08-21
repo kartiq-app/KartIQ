@@ -1,3 +1,15 @@
+# V7.2.1764 — Data Recorder : STOP durable et verrou Render
+
+- Correction du Recorder qui pouvait repasser en **REC** après un arrêt/export : l’ordre utilisateur est désormais stocké dans Postgres via `desired_status` et devient la source de vérité.
+- Ajout d’un **lease Postgres** avec propriétaire et heartbeat : pendant un déploiement Render avec chevauchement d’instances, une seule instance peut posséder le WebSocket d’un Recorder.
+- Ajout d’un superviseur de reprise : si la nouvelle instance Render démarre avant l’expiration du lease de l’ancienne, elle retente automatiquement l’adoption toutes les 3 secondes au lieu d’abandonner le Recorder.
+- `ARRÊTER` écrit d’abord l’état **stopped** dans Postgres puis ferme le worker local ; tout worker concurrent perd automatiquement son lease et se coupe.
+- Un Recorder stoppé n’est plus repris par `resume_active()` après redémarrage ou redéploiement, même si un ancien worker tente encore d’écrire un statut runtime actif.
+- L’interface se base sur l’état durable : une course terminée reste dans **COURSES ENREGISTRÉES** avec **EXPORT COMPLET ZIP** et **SUPPRIMER**.
+- Les compteurs sont réalignés sur les lignes réellement présentes en base lors du STOP et avant chaque export, notamment pour éviter l’écart entre tours tentés et tours uniques Postgres.
+- Migration Postgres/SQLite automatique : aucune manipulation de base n’est requise au déploiement.
+- Aucun changement sur le backfill historique Apex, Velocity Score, secteurs, pits ou les trois modes de Velocity Lab.
+
 # V7.2.1763 — Data Recorder : rattrapage historique Apex
 
 - Au démarrage d’un REC, le Recorder ouvre immédiatement le WebSocket live puis lance en parallèle une **synchronisation historique Apex** pour chaque équipe déjà présente sur la grille.
