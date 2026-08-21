@@ -1546,9 +1546,11 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-lab-overlay{position:fixed;inset:0;z-index:25000;display:none;background:#080a0e;color:#fff;overflow:auto}
 .velocity-lab-overlay.active{display:block}
 .velocity-lab-page{min-height:100vh;width:min(1540px,100%);margin:0 auto;padding:24px clamp(14px,2.2vw,34px) 70px;background:linear-gradient(180deg,#0b0e13 0,#080a0e 220px)}
-.velocity-lab-head{position:sticky;top:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:14px 4px 18px;margin:-10px 0 18px;background:rgba(8,10,14,.96);backdrop-filter:blur(12px);border-bottom:1px solid #2b313b}
-.velocity-lab-head h2{margin:3px 0 2px;font-family:var(--font-torque,Arial,sans-serif);font-size:clamp(28px,3vw,46px);font-weight:900;letter-spacing:.04em;color:#ff8a1f}
-.velocity-lab-head p{margin:0;color:#8c96a5;font-size:12px}
+/* V7.2.1760 — le sélecteur global `header` impose height:72px. Le header du Lab doit rester auto-dimensionné pour que le sous-titre ne chevauche pas les onglets. */
+.velocity-lab-head{position:sticky;top:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;height:auto!important;min-height:0!important;box-sizing:border-box;padding:14px 4px 18px;margin:-10px 0 18px;background:rgba(8,10,14,.96);backdrop-filter:blur(12px);border-bottom:1px solid #2b313b}
+.velocity-lab-head>div{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.velocity-lab-head h2{margin:3px 0 2px;font-family:var(--font-torque,Arial,sans-serif);font-size:clamp(28px,3vw,46px);line-height:1.05;font-weight:900;letter-spacing:.04em;color:#ff8a1f}
+.velocity-lab-head p{position:static!important;display:block;margin:3px 0 0;color:#8c96a5;font-size:12px;line-height:1.4}
 .velocity-lab-kicker{font-size:10px;font-weight:900;letter-spacing:.14em;color:#788292}.velocity-lab-kicker b{color:#fff}
 .velocity-lab-close{flex:0 0 48px;width:48px;height:48px;border:1px solid #444d59;border-radius:50%;background:#11161d;color:#fff;font-size:34px;line-height:1;cursor:pointer}.velocity-lab-close:hover{border-color:#ff7a00;color:#ff9b32}
 .velocity-lab-ranking,.velocity-lab-results{border:1px solid #2b313b;border-radius:12px;background:#10141b;box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden}

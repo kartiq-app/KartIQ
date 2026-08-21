@@ -1,3 +1,11 @@
+# V7.2.1760 — Correction CSS Velocity Lab
+
+- Correction du chevauchement entre le sous-titre de **Velocity Lab** et les onglets `COMPARAISON / SCORE SPRINT / DATA RECORDER`.
+- Le problème venait du sélecteur global `header` qui imposait une hauteur fixe de `72px` au header interne de Velocity Lab.
+- Le header du Lab utilise désormais une hauteur automatique, un line-height explicite et une structure verticale stable.
+- Renforcement de l’affichage du header Velocity Lab sur smartphone malgré la règle Analyzer qui masque le header principal.
+- Aucun changement du Data Recorder, de Postgres, d’Analyzer ou des algorithmes Velocity.
+
 # V7.2.1759 — Velocity Lab Data Recorder autonome
 
 - Home épurée : retrait du bloc de gestion **Session Velocity** et ajout d’un bouton discret **DÉCONNEXION** qui ferme la session mail Velocity sur l’ordinateur.

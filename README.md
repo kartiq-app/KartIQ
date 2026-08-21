@@ -1,6 +1,6 @@
-# Velocity V7.2.1759 — Velocity Lab Data Recorder
+# Velocity V7.2.1760 — Correction CSS Velocity Lab
 
-Cette version ajoute dans **Velocity Lab** un Data Recorder autonome côté Render : il peut suivre plusieurs lives Apex simultanément, continuer navigateur fermé, reprendre après un redémarrage et exporter la course complète en ZIP.
+Cette version conserve le **Data Recorder autonome Render/Postgres** de la V7.2.1759 et corrige le header de Velocity Lab : le sous-titre et les onglets ne se chevauchent plus.
 
 Pour un enregistrement longue durée sur Render, configurez impérativement `DATABASE_URL` vers une base **Render Postgres** et vérifiez le badge de stockage persistant dans Velocity Lab avant de lancer REC.
 
