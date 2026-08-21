@@ -1636,12 +1636,14 @@ let velocityLabSprintLoading=false;
 let velocityLabSprintAnalysis=null;
 
 function setVelocityLabMode(mode){
- velocityLabMode=mode==='sprint'?'sprint':'official';
+ velocityLabMode=mode==='sprint'?'sprint':mode==='recorder'?'recorder':'official';
  document.getElementById('velocityLabOfficialTab')?.classList.toggle('active',velocityLabMode==='official');
  document.getElementById('velocityLabSprintTab')?.classList.toggle('active',velocityLabMode==='sprint');
- const official=document.getElementById('velocityLabOfficialPanel'),sprint=document.getElementById('velocityLabSprintPanel');
- if(official)official.hidden=velocityLabMode!=='official';if(sprint)sprint.hidden=velocityLabMode!=='sprint';
+ document.getElementById('velocityLabRecorderTab')?.classList.toggle('active',velocityLabMode==='recorder');
+ const official=document.getElementById('velocityLabOfficialPanel'),sprint=document.getElementById('velocityLabSprintPanel'),recorder=document.getElementById('velocityLabRecorderPanel');
+ if(official)official.hidden=velocityLabMode!=='official';if(sprint)sprint.hidden=velocityLabMode!=='sprint';if(recorder)recorder.hidden=velocityLabMode!=='recorder';
  if(velocityLabMode==='official')analyzerRenderVelocityLab(true);
+ else if(velocityLabMode==='recorder')window.loadVelocityRecorder?.(true);
  else if(!velocityLabSprintSessions.length)loadVelocityLabSprintSessions();
  else renderVelocityLabSprintSessions();
 }
@@ -2306,7 +2308,7 @@ function openVelocityLab(){
  analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false;analyzerVelocityLabLastRender=0;
  document.getElementById('velocityLabOverlay')?.classList.add('active');document.body.classList.add('velocity-lab-open');analyzerRenderVelocityLab(true);
 }
-function closeVelocityLab(){document.getElementById('velocityLabOverlay')?.classList.remove('active');document.body.classList.remove('velocity-lab-open');analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false}
+function closeVelocityLab(){document.getElementById('velocityLabOverlay')?.classList.remove('active');document.body.classList.remove('velocity-lab-open');window.stopVelocityRecorderPolling?.();analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false}
 function toggleVelocityLabKart(name,checked,input){
  const key=String(name||'');
  if(checked&&analyzerVelocityLabSelected.size>=5&&!analyzerVelocityLabSelected.has(key)){

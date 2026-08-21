@@ -21,19 +21,12 @@
 <section id="home" class="screen home active">
   <div class="race-home-shell">
     <div class="race-home-glow"></div>
+    {% if velocity_account_email|default('') %}<a class="velocity-home-logout" href="/logout" onclick="try{localStorage.removeItem('velocity_device_id')}catch(_){}" title="Déconnecter {{ velocity_account_email }} de Velocity" aria-label="Se déconnecter de Velocity"><span>↪</span> DÉCONNEXION</a>{% endif %}
     <div class="race-home-content">
       <div class="kartiq-logo" aria-label="Velocity">
         <span class="velocity-v">V</span><span class="kartiq-kart">ELOCITY</span>
       </div>
       <div class="kartiq-tagline">PROFESSIONAL LIVE TIMING</div>
-
-      <div class="velocity-workspace-strip" id="velocityWorkspaceStrip" hidden>
-        <button type="button" class="velocity-workspace-current" onclick="openVelocityWorkspaceManager()" aria-label="Gérer la Session Velocity">
-          <span>SESSION VELOCITY</span>
-          <strong id="velocityWorkspaceName">—</strong>
-          <small id="velocityWorkspaceCode">—</small>
-        </button>
-      </div>
 
       <div class="home-circuit" id="homeCircuit">
         <select id="circuitSelect" aria-label="Sélectionnez votre circuit">
@@ -365,6 +358,7 @@
       <button type="button" onclick="openAnalyzerRules()">⚙ RÈGLEMENT</button>
       <button type="button" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
       <button type="button" class="analyzer-test-launch" onclick="openAnalyzerEnduranceTest()">🧪 MODE TEST ENDURANCE</button>
+      <button type="button" class="velocity-workspace-launch" onclick="openVelocityWorkspaceManager()">⇄ SESSIONS VELOCITY</button>
       <button type="button" class="velocity-lab-launch" onclick="openVelocityLab()">⚙ VELOCITY LAB</button>
       <button type="button" class="race-session-launch" data-race-session-launch onclick="openRaceSessionManager()"><span>CRÉER UNE SESSION</span></button>
     </footer>
@@ -411,12 +405,13 @@
   <div class="velocity-lab-overlay" id="velocityLabOverlay" role="dialog" aria-modal="true" aria-labelledby="velocityLabTitle">
     <div class="velocity-lab-page">
       <header class="velocity-lab-head">
-        <div><span class="velocity-lab-kicker">VELOCITY ENGINE <b>V2 LAB</b></span><h2 id="velocityLabTitle">VELOCITY LAB</h2><p>Auditer l’algorithme V2 relatif au plateau et le Score Sprint multi-sessions.</p></div>
+        <div><span class="velocity-lab-kicker">VELOCITY ENGINE <b>V2 LAB</b></span><h2 id="velocityLabTitle">VELOCITY LAB</h2><p>Auditer les algorithmes Velocity, collecter des datasets Apex et préparer les analyses de course.</p></div>
         <button class="velocity-lab-close" type="button" onclick="closeVelocityLab()" aria-label="Quitter Velocity Lab">×</button>
       </header>
       <div class="velocity-lab-mode-switch" role="group" aria-label="Mode Velocity Lab">
         <button id="velocityLabOfficialTab" class="active" type="button" onclick="setVelocityLabMode('official')">COMPARAISON</button>
         <button id="velocityLabSprintTab" type="button" onclick="setVelocityLabMode('sprint')">SCORE SPRINT <span>EXPÉRIMENTAL</span></button>
+        <button id="velocityLabRecorderTab" type="button" onclick="setVelocityLabMode('recorder')">DATA RECORDER</button>
       </div>
       <section id="velocityLabOfficialPanel">
       <section class="velocity-lab-ranking">
@@ -449,6 +444,30 @@
           </div>
         </div>
         <div id="velocityLabSprintResults" class="velocity-lab-sprint-results" aria-live="polite"><div class="velocity-lab-placeholder">Validez les sessions puis lancez le calcul.</div></div>
+      </section>
+      <section id="velocityLabRecorderPanel" class="velocity-lab-recorder-panel" hidden>
+        <div class="velocity-recorder-intro">
+          <div><span>COLLECTE AUTONOME APEX</span><h3>DATA RECORDER</h3><p>Render reste connecté au live même si tu fermes Velocity. Les tours, secteurs, pits, classements, trames Apex et snapshots Velocity sont conservés pour l’analyse.</p></div>
+          <div id="velocityRecorderStorage" class="velocity-recorder-storage">STOCKAGE : —</div>
+        </div>
+        <div id="velocityRecorderWarning" class="velocity-recorder-warning" hidden></div>
+        <section class="velocity-recorder-create">
+          <div class="velocity-recorder-create-head"><strong>NOUVEL ENREGISTREMENT</strong><span>Le Recorder est indépendant de la Session Velocity actuellement ouverte dans Analyzer.</span></div>
+          <div class="velocity-recorder-create-grid">
+            <label>NOM<input id="velocityRecorderName" maxlength="120" placeholder="Ex. 24H Course 1"></label>
+            <label>CIRCUIT APEX<select id="velocityRecorderCircuit"><option value="">Sélectionnez un circuit</option></select></label>
+            <button id="velocityRecorderStart" type="button" onclick="startVelocityRecorder()">● DÉMARRER L’ENREGISTREMENT</button>
+          </div>
+          <div id="velocityRecorderFeedback" class="velocity-recorder-feedback" aria-live="polite"></div>
+        </section>
+        <section class="velocity-recorder-section">
+          <div class="velocity-recorder-section-title"><strong>ENREGISTREMENTS ACTIFS</strong><span id="velocityRecorderActiveCount">0</span></div>
+          <div id="velocityRecorderActive" class="velocity-recorder-list"><div class="analyzer-empty">Aucun enregistrement actif.</div></div>
+        </section>
+        <section class="velocity-recorder-section">
+          <div class="velocity-recorder-section-title"><strong>COURSES ENREGISTRÉES</strong><span id="velocityRecorderArchiveCount">0</span></div>
+          <div id="velocityRecorderArchive" class="velocity-recorder-list"><div class="analyzer-empty">Aucune course enregistrée.</div></div>
+        </section>
       </section>
     </div>
   </div>
@@ -756,4 +775,4 @@
 <div class="overlay" id="top8PitOverlay"><div class="top8-alert-box"><div class="top8-alert-title">🚨 ALERTE</div><div class="top8-alert-team" id="top8AlertTeam">—</div><div class="top8-alert-message">vient d'entrer aux stands</div><div class="top8-alert-position-label">Position</div><div class="top8-alert-position" id="top8AlertPosition">P— / Top 8</div><button class="top8-alert-close" onclick="clearTop8Alert()">FERMER</button></div></div>
 <div id="installHelp" class="install-help" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle"><div class="install-help-card"><h2 id="installHelpTitle">Velocity en plein écran sur iPhone</h2><p>Safari ne permet pas toujours d’activer le vrai plein écran depuis une page web. Pour obtenir l’affichage sans barre d’adresse :</p><p><strong>1.</strong> Appuie sur l’icône Partager de Safari.<br><strong>2.</strong> Choisis « Sur l’écran d’accueil ».<br><strong>3.</strong> Ouvre ensuite Velocity depuis sa nouvelle icône.</p><button onclick="closeInstallHelp()">J’ai compris</button></div></div>
 <div id="raceRoleEnded" class="race-role-ended" hidden><div><span>VELOCITY</span><h1>SESSION TERMINÉE</h1><p>L’accès à cette session de course est fermé.</p></div></div>
-<script src="/static/js/core/core.js?v={{ app_version }}"></script><script src="/static/js/spotter/spotter.js?v={{ app_version }}"></script><script src="/static/js/sprint/sprint.js?v={{ app_version }}"></script><script src="/static/js/qualification/qualification.js?v={{ app_version }}"></script><script src="/static/js/ui/race-ui.js?v={{ app_version }}"></script><script src="/static/js/endurance/queues.js?v={{ app_version }}"></script><script src="/static/js/endurance/analyzer.js?v={{ app_version }}"></script><script src="/static/js/ui/session-clock-fit.js?v={{ app_version }}"></script><script src="/static/js/core/bootstrap.js?v={{ app_version }}"></script></body></html>
+<script src="/static/js/core/core.js?v={{ app_version }}"></script><script src="/static/js/spotter/spotter.js?v={{ app_version }}"></script><script src="/static/js/sprint/sprint.js?v={{ app_version }}"></script><script src="/static/js/qualification/qualification.js?v={{ app_version }}"></script><script src="/static/js/ui/race-ui.js?v={{ app_version }}"></script><script src="/static/js/endurance/queues.js?v={{ app_version }}"></script><script src="/static/js/endurance/analyzer.js?v={{ app_version }}"></script><script src="/static/js/lab-recorder.js?v={{ app_version }}"></script><script src="/static/js/ui/session-clock-fit.js?v={{ app_version }}"></script><script src="/static/js/core/bootstrap.js?v={{ app_version }}"></script></body></html>

@@ -568,9 +568,13 @@ function velocityWorkspaceRow(item,activeId){
  const title=document.createElement('strong');title.textContent=item.name||'Session Velocity';
  const meta=document.createElement('small');meta.textContent=`${item.code||'—'} · ${Number(item.members_count)||1} membre${Number(item.members_count)===1?'':'s'}${item.owner?' · propriétaire':''}`;
  main.append(title,meta);row.appendChild(main);
- const button=document.createElement('button');button.type='button';
- if(String(item.id)===String(activeId)){button.textContent='ACTIVE';button.disabled=true}else{button.textContent='OUVRIR';button.onclick=()=>selectVelocityWorkspace(item.id)}
- row.appendChild(button);return row;
+ const actions=document.createElement('div');actions.className='velocity-workspace-row-actions';
+ const open=document.createElement('button');open.type='button';
+ if(String(item.id)===String(activeId)){open.textContent='ACTIVE';open.disabled=true}else{open.textContent='OUVRIR';open.onclick=()=>selectVelocityWorkspace(item.id)}
+ actions.appendChild(open);
+ const remove=document.createElement('button');remove.type='button';remove.className='velocity-workspace-remove';remove.textContent=item.owner?'SUPPRIMER':'QUITTER';
+ remove.onclick=()=>item.owner?deleteVelocityWorkspace(item.id,item.name):leaveVelocityWorkspace(item.id,item.name);
+ actions.appendChild(remove);row.appendChild(actions);return row;
 }
 async function refreshVelocityWorkspaceManager(){
  const list=document.getElementById('velocityWorkspaceList');if(!list)return;
@@ -604,6 +608,25 @@ async function velocityWorkspaceActivate(url,body){
  }catch(error){velocityWorkspaceSwitching=false;velocityWorkspaceFeedback(error.message||String(error),true);ensureApexBrowserConnection()}
 }
 function selectVelocityWorkspace(workspaceId){return velocityWorkspaceActivate('/api/workspaces/select',{workspace_id:workspaceId})}
+async function velocityWorkspaceRemove(url,message){
+ if(velocityWorkspaceSwitching)return;
+ if(!confirm(message))return;
+ velocityWorkspaceSwitching=true;velocityWorkspaceFeedback('Mise à jour des sessions…');
+ try{
+  closeApexBrowserSocket();
+  const r=await fetch(url,{method:url.endsWith('/leave')?'POST':'DELETE'}),data=await r.json();
+  if(!r.ok||!data.ok)throw new Error(data.error||'Opération impossible');
+  location.reload();
+ }catch(error){velocityWorkspaceSwitching=false;velocityWorkspaceFeedback(error.message||String(error),true);ensureApexBrowserConnection()}
+}
+function deleteVelocityWorkspace(workspaceId,name=''){
+ const label=String(name||'cette Session Velocity');
+ return velocityWorkspaceRemove(`/api/workspaces/${encodeURIComponent(workspaceId)}`,`Supprimer définitivement « ${label} » ? Les données de cette Session Velocity seront supprimées. Cette action est irréversible.`);
+}
+function leaveVelocityWorkspace(workspaceId,name=''){
+ const label=String(name||'cette Session Velocity');
+ return velocityWorkspaceRemove(`/api/workspaces/${encodeURIComponent(workspaceId)}/leave`,`Quitter « ${label} » ? Vous n’y aurez plus accès sauf si vous rejoignez à nouveau son code.`);
+}
 function createVelocityWorkspace(){
  const input=document.getElementById('velocityWorkspaceCreateName');
  return velocityWorkspaceActivate('/api/workspaces/create',{name:String(input?.value||'').trim()});
@@ -618,6 +641,8 @@ window.renderVelocityWorkspaceSummary=renderVelocityWorkspaceSummary;
 window.openVelocityWorkspaceManager=openVelocityWorkspaceManager;
 window.closeVelocityWorkspaceManager=closeVelocityWorkspaceManager;
 window.selectVelocityWorkspace=selectVelocityWorkspace;
+window.deleteVelocityWorkspace=deleteVelocityWorkspace;
+window.leaveVelocityWorkspace=leaveVelocityWorkspace;
 window.createVelocityWorkspace=createVelocityWorkspace;
 window.joinVelocityWorkspace=joinVelocityWorkspace;
 

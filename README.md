@@ -1,3 +1,11 @@
+# Velocity V7.2.1759 — Velocity Lab Data Recorder
+
+Cette version ajoute dans **Velocity Lab** un Data Recorder autonome côté Render : il peut suivre plusieurs lives Apex simultanément, continuer navigateur fermé, reprendre après un redémarrage et exporter la course complète en ZIP.
+
+Pour un enregistrement longue durée sur Render, configurez impérativement `DATABASE_URL` vers une base **Render Postgres** et vérifiez le badge de stockage persistant dans Velocity Lab avant de lancer REC.
+
+La Home est à nouveau épurée : la gestion des Sessions Velocity est déplacée dans Analyzer et un bouton **DÉCONNEXION** retire l’accès Velocity de l’ordinateur.
+
 # Velocity V7.2.29 — Cartes Spotter dans Analyzer
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.

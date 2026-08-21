@@ -485,3 +485,13 @@ body.preview-embedded.current-qualification .qual-table-wrap{flex:1;min-height:0
 .velocity-workspace-feedback{min-height:18px;margin-top:10px;font-size:11px;color:#9de4aa}
 .velocity-workspace-feedback.error{color:#ff8b8b}
 @media(max-width:620px){.velocity-workspace-actions{grid-template-columns:1fr}.velocity-workspace-current{grid-template-columns:1fr auto}.velocity-workspace-current>span{display:none}.velocity-workspace-strip{margin-top:6px}}
+
+/* V7.2.1759 — Home épurée + gestion des Sessions Velocity dans Analyzer */
+.velocity-home-logout{position:absolute;top:max(14px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:4;display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:rgba(7,9,14,.52);color:#7f8794;text-decoration:none;font-size:9px;font-weight:850;letter-spacing:.07em;backdrop-filter:blur(8px);transition:.18s ease}
+.velocity-home-logout:hover{border-color:rgba(255,255,255,.28);color:#fff;background:rgba(14,17,24,.82)}
+.velocity-home-logout span{font-size:12px;line-height:1}
+.velocity-workspace-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.velocity-workspace-row-actions .velocity-workspace-remove{border-color:rgba(225,38,46,.4);background:transparent;color:#e8787d}
+.velocity-workspace-row.active .velocity-workspace-row-actions .velocity-workspace-remove{color:#e8787d;cursor:pointer}
+.velocity-workspace-row-actions .velocity-workspace-remove:hover{border-color:var(--red);color:#fff;background:rgba(225,38,46,.16)}
+@media(max-width:620px){.velocity-home-logout{top:max(9px,env(safe-area-inset-top));right:max(9px,env(safe-area-inset-right));font-size:0;padding:7px}.velocity-home-logout span{font-size:14px}.velocity-workspace-row{grid-template-columns:1fr}.velocity-workspace-row-actions{justify-content:stretch}.velocity-workspace-row-actions button{flex:1}}

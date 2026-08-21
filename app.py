@@ -37,8 +37,37 @@ from backend.config import APP_DIR, APP_RELEASE_NAME, APP_VERSION, load_circuits
 from backend.logging_tools import ApexLogManager
 from backend.network import local_ip
 from backend.services.race_state import RaceStateService
+from data_recorder import RecorderStore, RecorderManager
 
 app = Flask(__name__)
+
+# V7.2.1759 — Velocity Lab Data Recorder. Initialisation paresseuse : une base
+# Postgres momentanément indisponible ne doit jamais empêcher Velocity de démarrer.
+RECORDER_INIT_LOCK = threading.RLock()
+RECORDER_STORE = None
+RECORDER_MANAGER = None
+RECORDER_INIT_ERROR = None
+
+def _get_recorder_manager():
+    global RECORDER_STORE, RECORDER_MANAGER, RECORDER_INIT_ERROR
+    with RECORDER_INIT_LOCK:
+        if RECORDER_MANAGER is not None:
+            return RECORDER_MANAGER
+        try:
+            RECORDER_STORE = RecorderStore(APP_DIR)
+            RECORDER_MANAGER = RecorderManager(RECORDER_STORE, load_circuits)
+            RECORDER_INIT_ERROR = None
+            return RECORDER_MANAGER
+        except Exception as exc:
+            RECORDER_INIT_ERROR = str(exc)
+            raise
+
+def _resume_velocity_recorders():
+    try:
+        _get_recorder_manager().resume_active()
+    except Exception:
+        # L'état est exposé dans Velocity Lab ; pas de crash global de l'application.
+        pass
 
 # V7.2.1740 — Private Google Authentication
 app.secret_key = os.environ.get("VELOCITY_SESSION_SECRET") or secrets.token_hex(32)
@@ -1119,7 +1148,11 @@ def velocity_google_callback():
 @app.get("/logout")
 def velocity_logout():
     session.clear()
-    return redirect("/login")
+    response = redirect("/login")
+    # La déconnexion retire aussi l'identité d'appareil de ce navigateur :
+    # Velocity ne doit plus rester accessible sur l'ordinateur après logout.
+    response.delete_cookie("velocity_device_id")
+    return response
 
 
 def _velocity_paired_device():
@@ -1188,7 +1221,10 @@ def index():
     # Garantit qu'un compte Google autorisé possède au moins une Session Velocity.
     if _velocity_is_authorized():
         _workspace_for_authorized_email(create=True)
-    return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token="", velocity_workspace_id=_current_workspace_id(create=True))
+    return render_template(
+        "index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token="",
+        velocity_workspace_id=_current_workspace_id(create=True), velocity_account_email=str(session.get("velocity_email") or ""),
+    )
 
 
 @app.get("/api/workspaces")
@@ -1266,6 +1302,64 @@ def select_workspace():
         _save_workspace_data(WORKSPACE_DATA)
     session["velocity_workspace_id"] = wid
     return jsonify(ok=True, workspace=_workspace_public(wid))
+
+
+def _select_fallback_workspace_for_email(email: str):
+    with WORKSPACE_DATA_LOCK:
+        fallback = next((item for item in WORKSPACE_DATA.get("workspaces", []) if email in _workspace_member_emails(item)), None)
+        if fallback is None:
+            fallback = _create_workspace_unlocked(email)
+        return str(fallback.get("id") or LEGACY_WORKSPACE_ID)
+
+
+@app.delete("/api/workspaces/<workspace_id>")
+def delete_workspace(workspace_id):
+    if not _velocity_is_authorized():
+        return jsonify(ok=False, error="Compte Velocity requis."), 403
+    email = str(session.get("velocity_email") or "").strip().lower()
+    wid = str(workspace_id or "").strip()
+    with WORKSPACE_DATA_LOCK:
+        workspace = _workspace_by_id_unlocked(wid)
+        if not workspace or email not in _workspace_member_emails(workspace):
+            return jsonify(ok=False, error="Session Velocity inaccessible."), 404
+        if email != str(workspace.get("owner_email") or "").strip().lower():
+            return jsonify(ok=False, error="Seul le propriétaire peut supprimer cette Session Velocity."), 403
+        WORKSPACE_DATA["workspaces"] = [item for item in WORKSPACE_DATA.get("workspaces", []) if str(item.get("id") or "") != wid]
+        _save_workspace_data(WORKSPACE_DATA)
+    with RUNTIME_LOCK:
+        RUNTIMES.pop(wid, None)
+    # Les anciennes Sessions Course restent dans l'historique mais sont terminées
+    # pour qu'aucun appareil ne continue à pointer vers un workspace supprimé.
+    with TEAM_DATA_LOCK:
+        for race_session in TEAM_DATA.get("sessions", []):
+            if str(race_session.get("workspace_id") or LEGACY_WORKSPACE_ID) == wid and race_session.get("status") == "active":
+                race_session["status"] = "ended"
+                race_session["ended_at_ms"] = int(time.time() * 1000)
+        TEAM_DATA.setdefault("active_session_ids", {}).pop(wid, None)
+        _save_team_data(TEAM_DATA)
+    if str(session.get("velocity_workspace_id") or "") == wid:
+        session["velocity_workspace_id"] = _select_fallback_workspace_for_email(email)
+    return jsonify(ok=True, active_workspace_id=session.get("velocity_workspace_id"))
+
+
+@app.post("/api/workspaces/<workspace_id>/leave")
+def leave_workspace(workspace_id):
+    if not _velocity_is_authorized():
+        return jsonify(ok=False, error="Compte Velocity requis."), 403
+    email = str(session.get("velocity_email") or "").strip().lower()
+    wid = str(workspace_id or "").strip()
+    with WORKSPACE_DATA_LOCK:
+        workspace = _workspace_by_id_unlocked(wid)
+        if not workspace or email not in _workspace_member_emails(workspace):
+            return jsonify(ok=False, error="Session Velocity inaccessible."), 404
+        if email == str(workspace.get("owner_email") or "").strip().lower():
+            return jsonify(ok=False, error="Le propriétaire doit supprimer la session, pas la quitter."), 409
+        workspace["members"] = [member for member in workspace.get("members", []) if str(member).strip().lower() != email]
+        workspace["updated_at_ms"] = int(time.time() * 1000)
+        _save_workspace_data(WORKSPACE_DATA)
+    if str(session.get("velocity_workspace_id") or "") == wid:
+        session["velocity_workspace_id"] = _select_fallback_workspace_for_email(email)
+    return jsonify(ok=True, active_workspace_id=session.get("velocity_workspace_id"))
 
 
 @app.get("/join/<token>")
@@ -1872,6 +1966,88 @@ def apex_history():
         return jsonify(ok=False, error=str(exc)), 502
 
 
+def _recorder_authorized():
+    return _velocity_is_authorized()
+
+
+def _recorder_manager_or_response():
+    if not _recorder_authorized():
+        return None, (jsonify(ok=False, error="Velocity Lab Recorder est réservé aux comptes Velocity autorisés."), 403)
+    try:
+        return _get_recorder_manager(), None
+    except Exception as exc:
+        return None, (jsonify(ok=False, error=f"Data Recorder indisponible : {exc}", storage={"persistent": False, "label": "Base indisponible"}), 503)
+
+
+@app.get("/api/lab/recorders")
+def lab_recorders():
+    manager, error = _recorder_manager_or_response()
+    if error:
+        return error
+    payload_data = manager.status()
+    payload_data.update(ok=True, circuits=[{
+        "id": c.get("id"), "name": c.get("name"), "country": c.get("country"),
+        "websocket_ready": bool(c.get("websocket_url")),
+    } for c in load_circuits()])
+    return jsonify(payload_data)
+
+
+@app.post("/api/lab/recorders")
+def lab_recorder_create():
+    manager, error = _recorder_manager_or_response()
+    if error:
+        return error
+    body = request.get_json(force=True, silent=True) or {}
+    circuit_id = str(body.get("circuit_id") or "").strip()
+    name = str(body.get("name") or "").strip()
+    if not circuit_id:
+        return jsonify(ok=False, error="Sélectionnez un circuit Apex."), 400
+    try:
+        recording = manager.create(name, circuit_id)
+        return jsonify(ok=True, recording=recording, storage=manager.store.storage_info())
+    except Exception as exc:
+        return jsonify(ok=False, error=str(exc)), 400
+
+
+@app.post("/api/lab/recorders/<recording_id>/stop")
+def lab_recorder_stop(recording_id):
+    manager, error = _recorder_manager_or_response()
+    if error:
+        return error
+    try:
+        recording = manager.stop(recording_id)
+        return jsonify(ok=True, recording=recording)
+    except KeyError:
+        return jsonify(ok=False, error="Enregistrement introuvable."), 404
+    except Exception as exc:
+        return jsonify(ok=False, error=str(exc)), 400
+
+
+@app.delete("/api/lab/recorders/<recording_id>")
+def lab_recorder_delete(recording_id):
+    manager, error = _recorder_manager_or_response()
+    if error:
+        return error
+    try:
+        if not manager.store.delete_recording(recording_id):
+            return jsonify(ok=False, error="Enregistrement introuvable."), 404
+        return jsonify(ok=True)
+    except ValueError as exc:
+        return jsonify(ok=False, error=str(exc)), 409
+
+
+@app.get("/api/lab/recorders/<recording_id>/export")
+def lab_recorder_export(recording_id):
+    manager, error = _recorder_manager_or_response()
+    if error:
+        return error
+    try:
+        memory, filename = manager.store.export_zip(recording_id)
+    except KeyError:
+        return jsonify(ok=False, error="Enregistrement introuvable."), 404
+    return send_file(memory, mimetype="application/zip", as_attachment=True, download_name=filename, max_age=0)
+
+
 @app.get("/api/weather")
 def weather():
     circuit_id = str(request.args.get("circuit_id") or STATE.get("circuit_id") or "")
@@ -2343,6 +2519,8 @@ def clear_alert():
     STATE["generic_alert"] = None
     return jsonify(ok=True)
 
+
+threading.Timer(2.0, _resume_velocity_recorders).start()
 
 if __name__ == "__main__":
     desktop_url = "http://127.0.0.1:8200"

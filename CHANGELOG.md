@@ -1,3 +1,15 @@
+# V7.2.1759 — Velocity Lab Data Recorder autonome
+
+- Home épurée : retrait du bloc de gestion **Session Velocity** et ajout d’un bouton discret **DÉCONNEXION** qui ferme la session mail Velocity sur l’ordinateur.
+- Gestion des **Sessions Velocity** déplacée dans Analyzer avec un bouton dédié ; ajout de **SUPPRIMER** pour le propriétaire et **QUITTER** pour un membre.
+- Ajout de l’onglet **DATA RECORDER** dans Velocity Lab, indépendant de l’Analyzer et de la Session Velocity affichée.
+- Le Recorder ouvre son propre WebSocket Apex côté serveur Render : plusieurs courses peuvent être enregistrées simultanément et la collecte continue navigateur fermé.
+- Reconnexion Apex automatique et reprise des Recorders actifs après redémarrage du service ; l’historique tours/pits est rechargé pour conserver le contexte des snapshots Velocity Score.
+- Stockage persistant via **Render Postgres** lorsque `DATABASE_URL` est défini ; fallback SQLite local clairement signalé comme non persistant sur Render.
+- Collecte des trames Apex brutes, tours, secteurs, pits/relais, événements, snapshots de classement et snapshots Velocity Score.
+- Export complet ZIP depuis Velocity Lab : `01_TOURS.csv`, `02_SECTEURS.csv`, `03_VELOCITY_SCORES.csv`, `04_PITS_RELAIS.csv`, `05_CLASSEMENT_SNAPSHOTS.jsonl`, `06_EQUIPES_KARTS.csv`, `07_EVENEMENTS_APEX.csv`, `08_RAW_APEX.jsonl` et `course.json`.
+- `render.yaml` aligné sur l’instance **Starter** utilisée pour Velocity et ajout du pilote Postgres `psycopg`.
+
 # V7.2.1758 — Sessions Velocity multi-utilisateurs
 
 - Ajout d'une vraie **Session Velocity** indépendante de l'adresse mail : le mail autorise l'accès, la session isole le travail de course.
