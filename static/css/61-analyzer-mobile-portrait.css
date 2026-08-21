@@ -285,33 +285,6 @@
    padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px))!important;
  }
 
- /* Velocity Lab smartphone : croix toujours visible en haut à droite pour revenir à Analyzer. */
- body[data-app-mode="analyzer"] .velocity-lab-overlay.active .velocity-lab-head{
-   display:flex!important;
-   position:sticky!important;
-   top:0!important;
-   z-index:26010!important;
-   height:auto!important;
-   min-height:0!important;
-   box-sizing:border-box!important;
-   background:#080a0e!important;
-   padding-right:58px!important;
-   padding-top:calc(10px + env(safe-area-inset-top,0px))!important;
- }
- body[data-app-mode="analyzer"] .velocity-lab-overlay.active .velocity-lab-close{
-   display:flex!important;
-   align-items:center!important;
-   justify-content:center!important;
-   position:fixed!important;
-   top:calc(8px + env(safe-area-inset-top,0px))!important;
-   right:10px!important;
-   z-index:26020!important;
-   width:42px!important;
-   height:42px!important;
-   margin:0!important;
-   background:#11161d!important;
-   color:#fff!important;
- }
 
 }
 

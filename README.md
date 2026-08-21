@@ -1,4 +1,4 @@
-# Velocity V7.2.1760 — Correction CSS Velocity Lab
+# Velocity V7.2.1761 — Refonte visuelle Velocity Lab
 
 Cette version conserve le **Data Recorder autonome Render/Postgres** de la V7.2.1759 et corrige le header de Velocity Lab : le sous-titre et les onglets ne se chevauchent plus.
 

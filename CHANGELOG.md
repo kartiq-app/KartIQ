@@ -1,3 +1,12 @@
+# V7.2.1761 — Refonte visuelle Velocity Lab
+
+- Refonte du shell CSS de **Velocity Lab** sur une base dédiée et isolée du header global de Velocity.
+- Le header du Lab n’utilise plus la balise globale `header` : suppression définitive du conflit avec la hauteur fixe de l’application.
+- Nouvelle identité **Velocity Lab** reprenant le logo Velocity de la Home avec une éprouvette rouge stylisée.
+- Navigation des trois modes conservée : **Comparaison**, **Score Sprint — Expérimental** et **Data Recorder**.
+- Mise en page desktop/mobile reconstruite : titre, sous-titre et onglets sont désormais dans un flux vertical sans chevauchement.
+- Aucun changement sur les algorithmes Velocity, Score Sprint, Data Recorder ou le stockage Render Postgres.
+
 # V7.2.1760 — Correction CSS Velocity Lab
 
 - Correction du chevauchement entre le sous-titre de **Velocity Lab** et les onglets `COMPARAISON / SCORE SPRINT / DATA RECORDER`.

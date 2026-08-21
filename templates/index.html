@@ -404,10 +404,22 @@
 
   <div class="velocity-lab-overlay" id="velocityLabOverlay" role="dialog" aria-modal="true" aria-labelledby="velocityLabTitle">
     <div class="velocity-lab-page">
-      <header class="velocity-lab-head">
-        <div><span class="velocity-lab-kicker">VELOCITY ENGINE <b>V2 LAB</b></span><h2 id="velocityLabTitle">VELOCITY LAB</h2><p>Auditer les algorithmes Velocity, collecter des datasets Apex et préparer les analyses de course.</p></div>
+      <div class="velocity-lab-shell-header">
+        <div class="velocity-lab-brand-block">
+          <span class="velocity-lab-kicker">VELOCITY ENGINE <b>V2 LAB</b></span>
+          <h2 id="velocityLabTitle" class="velocity-lab-brand-row">
+            <span class="kartiq-logo velocity-lab-home-logo" aria-label="Velocity"><span class="velocity-v">V</span><span class="kartiq-kart">ELOCITY</span></span>
+            <span class="velocity-lab-identity" aria-hidden="true">
+              <span class="velocity-lab-tube">
+                <svg viewBox="0 0 64 64" focusable="false"><path d="M24 8h18"/><path d="M28 8v34a9 9 0 0 0 18 0V8"/><path d="M28 33h18"/><path d="M33 39h8"/><circle cx="35" cy="47" r="2"/></svg>
+              </span>
+              <span>LAB</span>
+            </span>
+          </h2>
+          <p>Auditer les algorithmes Velocity, collecter des datasets Apex et préparer les analyses de course.</p>
+        </div>
         <button class="velocity-lab-close" type="button" onclick="closeVelocityLab()" aria-label="Quitter Velocity Lab">×</button>
-      </header>
+      </div>
       <div class="velocity-lab-mode-switch" role="group" aria-label="Mode Velocity Lab">
         <button id="velocityLabOfficialTab" class="active" type="button" onclick="setVelocityLabMode('official')">COMPARAISON</button>
         <button id="velocityLabSprintTab" type="button" onclick="setVelocityLabMode('sprint')">SCORE SPRINT <span>EXPÉRIMENTAL</span></button>

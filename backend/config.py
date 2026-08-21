@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1760"
+APP_VERSION = "7.2.1761"
 APP_RELEASE_NAME = "VELOCITY LAB — CORRECTION HEADER"
 
 
