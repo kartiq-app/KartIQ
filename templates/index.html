@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png?v=7.2.1742">
 <title>Velocity V{{ app_version }} — Architecture 5 modes</title>
 <link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
-<script>window.VELOCITY_APP_VERSION={{ app_version|tojson }};window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};window.VELOCITY_INVITE_TOKEN={{ velocity_invite_token|tojson }};</script>
+<script>window.VELOCITY_APP_VERSION={{ app_version|tojson }};window.VELOCITY_WORKSPACE_ID={{ velocity_workspace_id|default('LEGACY')|tojson }};window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};window.VELOCITY_INVITE_TOKEN={{ velocity_invite_token|tojson }};</script>
 </head>
 <body>
 <header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleVelocityFullscreen()" title="Plein écran" aria-label="Afficher Velocity en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="spotter" onclick="showMode('spotter')">Spotter</button><button class="mode-btn" data-mode="analyzer" onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
@@ -26,6 +26,14 @@
         <span class="velocity-v">V</span><span class="kartiq-kart">ELOCITY</span>
       </div>
       <div class="kartiq-tagline">PROFESSIONAL LIVE TIMING</div>
+
+      <div class="velocity-workspace-strip" id="velocityWorkspaceStrip" hidden>
+        <button type="button" class="velocity-workspace-current" onclick="openVelocityWorkspaceManager()" aria-label="Gérer la Session Velocity">
+          <span>SESSION VELOCITY</span>
+          <strong id="velocityWorkspaceName">—</strong>
+          <small id="velocityWorkspaceCode">—</small>
+        </button>
+      </div>
 
       <div class="home-circuit" id="homeCircuit">
         <select id="circuitSelect" aria-label="Sélectionnez votre circuit">
@@ -627,6 +635,28 @@
       <span id="analyzerDebriefProgressPercent" class="analyzer-debrief-progress-percent">0 %</span>
     </div>
     <div id="analyzerDebriefContent" class="analyzer-debrief-content"></div>
+  </div>
+</div>
+
+<div class="velocity-workspace-modal" id="velocityWorkspaceModal" hidden role="dialog" aria-modal="true" aria-labelledby="velocityWorkspaceTitle">
+  <div class="velocity-workspace-card">
+    <div class="velocity-workspace-head">
+      <div><span>VELOCITY</span><h2 id="velocityWorkspaceTitle">SESSIONS</h2></div>
+      <button type="button" onclick="closeVelocityWorkspaceManager()" aria-label="Fermer">×</button>
+    </div>
+    <p class="velocity-workspace-intro">Chaque Session Velocity possède son propre circuit, live Apex, Analyzer, Spotter et stratégie. Partage le code pour travailler à plusieurs sur la même course.</p>
+    <div id="velocityWorkspaceList" class="velocity-workspace-list"></div>
+    <div class="velocity-workspace-actions">
+      <div class="velocity-workspace-action">
+        <label for="velocityWorkspaceCreateName">NOUVELLE SESSION</label>
+        <div><input id="velocityWorkspaceCreateName" maxlength="80" placeholder="Ex. RKC — Red Kronos"><button type="button" onclick="createVelocityWorkspace()">CRÉER</button></div>
+      </div>
+      <div class="velocity-workspace-action">
+        <label for="velocityWorkspaceJoinCode">REJOINDRE UNE SESSION</label>
+        <div><input id="velocityWorkspaceJoinCode" maxlength="12" placeholder="VK-XXXXXX" autocapitalize="characters"><button type="button" onclick="joinVelocityWorkspace()">REJOINDRE</button></div>
+      </div>
+    </div>
+    <div id="velocityWorkspaceFeedback" class="velocity-workspace-feedback"></div>
   </div>
 </div>
 

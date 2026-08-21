@@ -31,15 +31,15 @@ function analyzerUpdateRaceRemaining(){
  el.textContent=state?.time_remaining||'—';
 }
 /* Velocity V6.10.5 — titres alignés, MAP inactive visible et réglages météo */
-const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
-const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
+const ANALYZER_RULES_KEY=velocityWorkspaceStorageKey('kartiq-analyzer-rules-v1');
+const ANALYZER_LEARNING_KEY=velocityWorkspaceStorageKey('kartiq-analyzer-learning-v1');
 const ANALYZER_DEFAULT_RULES={raceHours:null,requiredStops:null,minStintMinutes:null,maxStintMinutes:null,minPitSeconds:null,pitCloseMinutes:null,safetyMarginMinutes:null,driversCount:null,driverMinimumMinutes:null};
 
-const ANALYZER_SESSIONS_INDEX_KEY='kartiq-analyzer-sessions-index-v1';
-const ANALYZER_ACTIVE_SESSION_KEY='kartiq-analyzer-active-session-v1';
-const ANALYZER_SESSION_PREFIX='kartiq-analyzer-session-v1:';
+const ANALYZER_SESSIONS_INDEX_KEY=velocityWorkspaceStorageKey('kartiq-analyzer-sessions-index-v1');
+const ANALYZER_ACTIVE_SESSION_KEY=velocityWorkspaceStorageKey('kartiq-analyzer-active-session-v1');
+const ANALYZER_SESSION_PREFIX=velocityWorkspaceStorageKey('kartiq-analyzer-session-v1')+':';
 const ANALYZER_AUTOSAVE_MS=15000;
-const ANALYZER_STORAGE_CLEANUP_KEY='velocity-analyzer-storage-cleanup-v3';
+const ANALYZER_STORAGE_CLEANUP_KEY=velocityWorkspaceStorageKey('velocity-analyzer-storage-cleanup-v3');
 const ANALYZER_MAX_SESSION_INDEX=10;
 let analyzerKartSort='none';
 let analyzerVelocityView='velocity';
@@ -4637,11 +4637,11 @@ function velocityTeamBackupRead(){
   const raw=localStorage.getItem(VELOCITY_TEAM_BACKUP_KEY);
   if(!raw)return null;
   const data=JSON.parse(raw);
-  return data&&Array.isArray(data.teams)&&data.teams.length?data:null;
+  return data&&((Array.isArray(data.teams)&&data.teams.length)||(Array.isArray(data.workspaces)&&data.workspaces.length))?data:null;
  }catch(_){return null}
 }
 function velocityTeamBackupWrite(snapshot){
- if(!snapshot||!Array.isArray(snapshot.teams)||!snapshot.teams.length)return false;
+ if(!snapshot||(!Array.isArray(snapshot.teams)&&!Array.isArray(snapshot.workspaces)))return false;if(!(snapshot.teams?.length||snapshot.workspaces?.length))return false;
  try{
   localStorage.setItem(VELOCITY_TEAM_BACKUP_KEY,JSON.stringify(snapshot));
   return true;
@@ -4651,7 +4651,7 @@ async function velocityTeamBackupRefresh(){
  try{
   const r=await fetch('/api/team-management/snapshot',{cache:'no-store'});
   const data=await r.json();
-  if(r.ok&&data.ok&&data.snapshot?.teams?.length)velocityTeamBackupWrite(data.snapshot);
+  if(r.ok&&data.ok&&(data.snapshot?.teams?.length||data.snapshot?.workspaces?.length))velocityTeamBackupWrite(data.snapshot);
  }catch(_){}
 }
 async function velocityTeamRestoreIfNeeded(serverTeams){

@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1757"
-APP_RELEASE_NAME = "SPOTTER / ANALYZER — SYNCHRONISATION"
+APP_VERSION = "7.2.1758"
+APP_RELEASE_NAME = "SESSIONS VELOCITY — MULTI-UTILISATEURS"
 
 
 def _circuit_sort_key(circuit):

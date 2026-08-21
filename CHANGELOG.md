@@ -1,3 +1,17 @@
+# V7.2.1758 — Sessions Velocity multi-utilisateurs
+
+- Ajout d'une vraie **Session Velocity** indépendante de l'adresse mail : le mail autorise l'accès, la session isole le travail de course.
+- Un compte autorisé reçoit automatiquement une première session personnelle afin de préserver un démarrage immédiat après connexion.
+- Depuis la Home, ajout d'un gestionnaire permettant de **créer**, **ouvrir** ou **rejoindre** une session grâce à un code `VK-XXXXXX`.
+- Deux mails connectés peuvent désormais travailler sur **deux circuits / deux courses différents** sans mélanger circuit, live Apex, équipe suivie, Analyzer, Spotter, stratégie, messages ou secteurs.
+- Deux mails peuvent au contraire rejoindre le **même code de session** et partager le même état Velocity.
+- Isolation serveur par session de `STATE`, `RaceStateService`, `ApexTable`, `ProtocolEngine` et `ApexEventStore`.
+- Déduplication courte des trames Apex identiques lorsqu'au moins deux appareils sont connectés à la même session, afin de ne pas comptabiliser deux fois le même événement.
+- Les Sessions Course / rôles Team Management sont désormais rattachés à la Session Velocity courante : plusieurs Sessions Course peuvent exister simultanément dans des espaces Velocity différents.
+- Un appareil Pilote / Spotter associé à une Session Course rejoint automatiquement la même Session Velocity que son Team Manager.
+- Changement de circuit verrouillé uniquement par la Session Course du même espace Velocity ; une autre session peut utiliser un autre circuit simultanément.
+- Aucun changement de calcul dans Analyzer, Velocity Score, secteurs ou Spotter.
+
 # V7.2.1757 — Synchronisation Spotter ↔ Analyzer
 
 - Correction du canal de synchronisation entre le **mode Spotter** et la carte **Spotter dans Analyzer** sur plusieurs appareils / onglets.

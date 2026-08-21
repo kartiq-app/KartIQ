@@ -27,11 +27,21 @@ function unlockFocusOrientationForAndroid(){
   try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(error){console.warn('Déverrouillage orientation Android',error)}
 }
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
+// V7.2.1758 — toutes les sauvegardes de course du navigateur sont isolées
+// par Session Velocity. Un changement de session ne doit jamais réinjecter
+// le Spotter / Analyzer / files d'une autre course.
+function velocityWorkspaceStorageScope(){
+ const raw=String(window.VELOCITY_WORKSPACE_ID||state?.workspace?.id||'LEGACY').trim()||'LEGACY';
+ return raw.replace(/[^A-Za-z0-9_-]+/g,'-');
+}
+function velocityWorkspaceStorageKey(base){return `${String(base||'velocity')}:${velocityWorkspaceStorageScope()}`}
+window.velocityWorkspaceStorageKey=velocityWorkspaceStorageKey;
 // Pont explicite pour les modules isolés : `state` est un binding global `let`
 // et n'est donc pas automatiquement disponible sous `window.state`.
 try{Object.defineProperty(window,'velocityState',{configurable:true,get:()=>state})}catch(_){window.velocityState=state}
 let circuitChangeInProgress=false,pendingCircuitId='';
 let stateLoadInFlight=false;
+let velocityWorkspaceSwitching=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
 let elapsedCountMs=null,elapsedCountPerfAt=0,elapsedCountDirectSyncAt=0;
@@ -304,7 +314,7 @@ function updateRemainingDisplay(){
 window.addEventListener('orientationchange',()=>setTimeout(updateRemainingDisplay,80));
 window.addEventListener('resize',()=>updateRemainingDisplay());
 async function load(){
- if(window.velocityEnduranceTest?.active)return;
+ if(window.velocityEnduranceTest?.active||velocityWorkspaceSwitching)return;
  // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle
  // requête tant que la précédente n'est pas terminée, afin d'éviter une
  // file d'attente et un retard progressif de l'affichage.
@@ -514,7 +524,7 @@ function connectApexBrowser(force=false){
  });
 }
 function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer','current-spotter');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
-const VELOCITY_FOCUS_SESSION_KEY='velocity_active_focus_v1';
+const VELOCITY_FOCUS_SESSION_KEY=velocityWorkspaceStorageKey('velocity_active_focus_v1');
 let velocityFocusRestoreInFlight=false;
 function rememberVelocityFocus(mode){try{sessionStorage.setItem(VELOCITY_FOCUS_SESSION_KEY,String(mode||''))}catch(_){}}
 function clearVelocityFocusMemory(mode=''){try{const active=sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'';if(!mode||active===mode)sessionStorage.removeItem(VELOCITY_FOCUS_SESSION_KEY)}catch(_){}}
@@ -537,6 +547,80 @@ function velocityFocusWatchdogStart(){
  window.addEventListener('pageshow',()=>setTimeout(()=>velocityRestoreFocusIfNeeded(),80));
 }
 velocityFocusWatchdogStart();
+function renderVelocityWorkspaceSummary(){
+ const ws=state?.workspace||{};
+ const strip=document.getElementById('velocityWorkspaceStrip');
+ if(!strip)return;
+ const visible=Boolean(ws.can_manage);
+ strip.hidden=!visible;
+ if(!visible)return;
+ const name=document.getElementById('velocityWorkspaceName'),code=document.getElementById('velocityWorkspaceCode');
+ if(name)name.textContent=ws.name||'Session Velocity';
+ if(code)code.textContent=ws.code||'—';
+}
+function velocityWorkspaceFeedback(message='',error=false){
+ const el=document.getElementById('velocityWorkspaceFeedback');if(!el)return;
+ el.textContent=message||'';el.classList.toggle('error',Boolean(error));
+}
+function velocityWorkspaceRow(item,activeId){
+ const row=document.createElement('div');row.className='velocity-workspace-row'+(String(item.id)===String(activeId)?' active':'');
+ const main=document.createElement('div');main.className='velocity-workspace-row-main';
+ const title=document.createElement('strong');title.textContent=item.name||'Session Velocity';
+ const meta=document.createElement('small');meta.textContent=`${item.code||'—'} · ${Number(item.members_count)||1} membre${Number(item.members_count)===1?'':'s'}${item.owner?' · propriétaire':''}`;
+ main.append(title,meta);row.appendChild(main);
+ const button=document.createElement('button');button.type='button';
+ if(String(item.id)===String(activeId)){button.textContent='ACTIVE';button.disabled=true}else{button.textContent='OUVRIR';button.onclick=()=>selectVelocityWorkspace(item.id)}
+ row.appendChild(button);return row;
+}
+async function refreshVelocityWorkspaceManager(){
+ const list=document.getElementById('velocityWorkspaceList');if(!list)return;
+ list.replaceChildren();velocityWorkspaceFeedback('Chargement…');
+ try{
+  const r=await fetch('/api/workspaces',{cache:'no-store'}),data=await r.json();
+  if(!r.ok||!data.ok)throw new Error(data.error||'Sessions indisponibles');
+  const items=Array.isArray(data.workspaces)?data.workspaces:[];
+  if(!items.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Aucune session.';list.appendChild(empty)}
+  else items.forEach(item=>list.appendChild(velocityWorkspaceRow(item,data.active_workspace_id)));
+  velocityWorkspaceFeedback('');
+ }catch(error){velocityWorkspaceFeedback(error.message||String(error),true)}
+}
+function openVelocityWorkspaceManager(){
+ if(!state?.workspace?.can_manage)return;
+ const modal=document.getElementById('velocityWorkspaceModal');if(!modal)return;
+ modal.hidden=false;document.body.classList.add('velocity-workspace-open');void refreshVelocityWorkspaceManager();
+}
+function closeVelocityWorkspaceManager(){
+ const modal=document.getElementById('velocityWorkspaceModal');if(modal)modal.hidden=true;
+ document.body.classList.remove('velocity-workspace-open');velocityWorkspaceFeedback('');
+}
+async function velocityWorkspaceActivate(url,body){
+ if(velocityWorkspaceSwitching)return;
+ velocityWorkspaceSwitching=true;velocityWorkspaceFeedback('Ouverture de la session…');
+ try{
+  closeApexBrowserSocket();
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Opération impossible');
+  location.reload();
+ }catch(error){velocityWorkspaceSwitching=false;velocityWorkspaceFeedback(error.message||String(error),true);ensureApexBrowserConnection()}
+}
+function selectVelocityWorkspace(workspaceId){return velocityWorkspaceActivate('/api/workspaces/select',{workspace_id:workspaceId})}
+function createVelocityWorkspace(){
+ const input=document.getElementById('velocityWorkspaceCreateName');
+ return velocityWorkspaceActivate('/api/workspaces/create',{name:String(input?.value||'').trim()});
+}
+function joinVelocityWorkspace(){
+ const input=document.getElementById('velocityWorkspaceJoinCode');
+ const code=String(input?.value||'').trim().toUpperCase();
+ if(!code)return velocityWorkspaceFeedback('Saisissez le code de la session.',true);
+ return velocityWorkspaceActivate('/api/workspaces/join',{code});
+}
+window.renderVelocityWorkspaceSummary=renderVelocityWorkspaceSummary;
+window.openVelocityWorkspaceManager=openVelocityWorkspaceManager;
+window.closeVelocityWorkspaceManager=closeVelocityWorkspaceManager;
+window.selectVelocityWorkspace=selectVelocityWorkspace;
+window.createVelocityWorkspace=createVelocityWorkspace;
+window.joinVelocityWorkspace=joinVelocityWorkspace;
+
 function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}
 function showMode(mode){
  if(mode!=='home'&&!state?.circuit_id){
