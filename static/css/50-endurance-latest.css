@@ -965,13 +965,27 @@ body.iphone-focus-virtual-landscape #driverMessageOverlay{
 }
 /* Le titre est légèrement repoussé vers la droite dans le paysage visible.
    Le padding droit garantit aussi une séparation nette avec le filet coloré. */
-body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header,
-body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header,
+/* V7.2.1767 — le header Focus reste dans le flux normal, comme en Endurance.
+   Seul l'overlay d'animation pit Endurance couvre tout l'écran. */
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-overlay{
   position:absolute!important;
   inset:0!important;
   width:100%!important;
   height:100%!important;
+}
+body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header,
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header{
+  position:relative!important;
+  inset:auto!important;
+  width:100%!important;
+  height:54px!important;
+  min-height:54px!important;
+  flex:0 0 54px!important;
+  box-sizing:border-box!important;
+  padding-left:clamp(28px,8vw,42px)!important;
+  padding-right:14px!important;
+  column-gap:14px!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-in-time{
   bottom:clamp(10px,2.2dvw,28px)!important;
@@ -995,12 +1009,6 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-out-time{
   font-size:clamp(48px,15dvw,104px)!important;
 }
 
-body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header{
-  box-sizing:border-box!important;
-  padding-left:clamp(28px,8vw,42px)!important;
-  padding-right:14px!important;
-  column-gap:14px!important;
-}
 body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header>span,
 body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header>span,
 body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>span{

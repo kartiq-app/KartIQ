@@ -1,4 +1,9 @@
-# Velocity V7.2.1766 — Focus Sprint & Focus Qualification
+# Velocity V7.2.1767 — Correction header Focus Sprint & Qualification
+
+## Correction V7.2.1767
+
+Sur iPhone en paysage virtuel, les barres de titre **Sprint** et **Qualifications** restent désormais en haut de l'écran, comme le Focus Endurance. La règle qui étirait par erreur ces headers sur toute la hauteur a été supprimée.
+
 
 ## Évolution V7.2.1766
 

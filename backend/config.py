@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1766"
+APP_VERSION = "7.2.1767"
 APP_RELEASE_NAME = "CLASSEMENT LIVE — PURGE GRID APEX"
 
 

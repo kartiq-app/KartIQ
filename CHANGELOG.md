@@ -1,3 +1,9 @@
+# V7.2.1767 — Focus Sprint / Qualification : header en haut
+
+- Correction ciblée du paysage virtuel iPhone : les headers **Sprint** et **Qualifications** ne sont plus étirés sur toute la surface du Focus.
+- Le titre, le filet coloré et le bouton de fermeture restent désormais dans une barre fixe en haut, avec le même positionnement que **Focus Endurance**.
+- Aucun changement métier sur Sprint, Qualification, Endurance, pénalités, chronos ou Analyzer.
+
 # V7.2.1766 — Focus Sprint & Focus Qualification
 
 - Focus Sprint aligné sur la structure du Focus Endurance.
