@@ -2424,7 +2424,17 @@ def apex_frame():
         STATE["apex_session_title"] = incoming_session_title
     grid = parse_grid_frame(frame)
     initial_updates = grid.updates if grid else []
+    grid_removed_rows = []
     if grid:
+        # Un `grid||` Apex est un snapshot complet du classement live. Les
+        # lignes absentes de ce nouveau GRID ne doivent donc plus subsister
+        # dans Analyzer / Qualification / Sprint / Endurance. On purge
+        # uniquement l'état live en mémoire : historiques et Recorder restent
+        # intacts.
+        active_grid_rows = set(grid.rows)
+        table_removed = APEX_TABLE.retain_rows(active_grid_rows)
+        protocol_removed = PROTOCOL_ENGINE.retain_rows(active_grid_rows)
+        grid_removed_rows = sorted(set(table_removed) | set(protocol_removed.get("protocol", [])) | set(protocol_removed.get("interpreter", [])))
         PROTOCOL_ENGINE.interpreter.set_schema(grid.schema, grid.labels)
     updates, unknown = decode_frame(frame)
     PROTOCOL_ENGINE.observe_frame(frame, grid, initial_updates + updates)
@@ -2440,6 +2450,11 @@ def apex_frame():
         interpreted_events.extend(PROTOCOL_ENGINE.apply(update, change.previous_value))
 
     snapshot = PROTOCOL_ENGINE.snapshot()
+    # Indique à RaceState qu'un GRID complet vient d'être reçu. Même un GRID
+    # sans concurrent doit pouvoir vider le classement live précédent.
+    snapshot["grid_authoritative"] = bool(grid is not None)
+    snapshot["grid_rows"] = sorted(grid.rows) if grid else []
+    snapshot["grid_removed_rows"] = grid_removed_rows
     sync_state_from_race(snapshot, interpreted_events)
     now = datetime.now().isoformat(timespec="seconds")
     with LIVE_LOCK:

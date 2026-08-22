@@ -443,7 +443,10 @@ class RaceStateService:
                 ),
             })
         live_drivers.sort(key=lambda d: (d["pos"] == 999, d["pos"]))
-        if live_drivers:
+        if live_drivers or snapshot.get("grid_authoritative"):
+            # Lorsqu'un GRID complet Apex vient d'être reçu, il est autoritaire
+            # pour le classement live. Cela permet aussi de vider proprement un
+            # ancien classement si le nouveau GRID ne contient plus de concurrent.
             self.state["drivers"] = live_drivers
 
             # Pénalités Apex : logique stable de la V4.3.3.

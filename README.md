@@ -1,4 +1,12 @@
-# Velocity V7.2.1764 — Data Recorder avec STOP durable
+# Velocity V7.2.1765 — Classement Live synchronisé au GRID Apex
+
+## Correction V7.2.1765
+
+- Le `grid||` HTML complet reçu d'Apex devient la source de vérité pour les concurrents actuellement affichés dans le **classement général live**.
+- Les anciennes rows Apex absentes du nouveau GRID sont purgées de l'état live afin d'éviter les karts fantômes et les doublons.
+- La correction s'applique aux vues **Analyzer, Qualification, Sprint et Endurance** qui consomment `state.drivers`.
+- Aucun historique, tour enregistré, Data Recorder, Velocity Score, classement virtuel, classement secteurs ou Spotter n'est supprimé/modifié.
+
 Cette version sécurise le cycle **REC → ARRÊTER → EXPORTER** du Data Recorder. L’arrêt devient durable dans Render Postgres et un verrou/lease empêche deux instances Render de piloter simultanément le même Recorder pendant un déploiement. Le rattrapage historique Apex de la V7.2.1763 est conservé.
 
 Une réconciliation courte est relancée toutes les 5 minutes et après chaque reconnexion Apex. Le REC ne s’arrête jamais automatiquement sur silence ou coupure Apex : l’arrêt reste manuel depuis Velocity Lab.

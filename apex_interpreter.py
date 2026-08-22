@@ -82,6 +82,15 @@ class ApexInterpreter:
         self.rows.clear(); self.events.clear(); self.fastest_lap = None
         self.schema.clear(); self.labels.clear(); self._initialized_rows.clear()
 
+    def retain_rows(self, active_rows: set[int]) -> list[int]:
+        """Aligne les concurrents live sur le dernier GRID HTML Apex complet."""
+        keep = {int(row) for row in active_rows if int(row) > 0}
+        removed = [row for row in self.rows if row not in keep]
+        for row in removed:
+            self.rows.pop(row, None)
+            self._initialized_rows.discard(row)
+        return sorted(removed)
+
     def set_schema(self, schema: dict[int, str], labels: dict[int, str] | None = None) -> None:
         if schema:
             self.schema = dict(schema)

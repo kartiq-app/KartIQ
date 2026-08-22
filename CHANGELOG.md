@@ -1,3 +1,11 @@
+# V7.2.1765 — Classement Live : purge des rows Apex obsolètes
+
+- Un nouveau `grid||` Apex complet devient la liste autoritaire des concurrents actuellement présents dans le classement général live.
+- Purge ciblée des rows absentes du nouveau GRID dans `ApexTable`, `ApexInterpreter` et `ProtocolEngine`.
+- Analyzer, Qualification, Sprint et Endurance ne conservent plus les anciens karts sortis de la grille et ne dupliquent plus un kart réapparu avec une nouvelle row Apex.
+- Un GRID vide peut désormais vider le classement live précédent.
+- Historique, Recorder/Postgres, Velocity Score, classement virtuel, classement secteurs et Spotter restent inchangés.
+
 # V7.2.1764 — Data Recorder : STOP durable et verrou Render
 
 - Correction du Recorder qui pouvait repasser en **REC** après un arrêt/export : l’ordre utilisateur est désormais stocké dans Postgres via `desired_status` et devient la source de vérité.
