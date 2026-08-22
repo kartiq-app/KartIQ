@@ -1,6 +1,6 @@
-# Velocity V7.2.1765 — Classement Live synchronisé au GRID Apex
+# Velocity V7.2.1766 — Focus Sprint & Focus Qualification
 
-## Correction V7.2.1765
+## Évolution V7.2.1766
 
 - Le `grid||` HTML complet reçu d'Apex devient la source de vérité pour les concurrents actuellement affichés dans le **classement général live**.
 - Les anciennes rows Apex absentes du nouveau GRID sont purgées de l'état live afin d'éviter les karts fantômes et les doublons.

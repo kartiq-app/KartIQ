@@ -699,15 +699,39 @@
 <div class="device-preview" id="iphonePreview" role="dialog" aria-modal="true" aria-label="Aperçu iPhone SE"><div class="device-preview-stage" id="iphoneStage"><div class="device-preview-toolbar"><span class="device-preview-title" id="iphonePreviewTitle">iPhone SE — 375 × 667 px</span><div class="device-preview-actions"><button id="portraitBtn" class="orientation-btn active" onclick="setIphoneOrientation('portrait')">Portrait</button><button id="landscapeBtn" class="orientation-btn" onclick="setIphoneOrientation('landscape')">Paysage</button><button class="device-preview-close" onclick="toggleIphonePreview(false)">✕ Fermer</button></div></div><div class="device-frame"><iframe id="iphoneFrame" title="Aperçu Velocity sur iPhone SE"></iframe></div></div></div>
 <div class="sprint-focus-overlay" id="sprintFocus" role="dialog" aria-modal="true" aria-label="Mode Focus Sprint">
   <div class="sprint-focus-header"><span>Sprint</span><i></i><button class="sprint-focus-close" type="button" onclick="closeSprintFocus()" aria-label="Fermer le mode Focus Sprint">×</button></div>
-  <div class="sprint-focus-main">
+  <div class="sprint-focus-main sprint-focus-main-v1766">
     <div class="sprint-focus-row sprint-focus-row-one">
-      <div class="sprint-focus-cell"><div class="sprint-focus-driver sprint-followed-driver"><div class="sprint-focus-position" id="sprintFocusPosition">—</div><div class="sprint-focus-name" id="sprintFocusName">—</div><div class="sprint-focus-last-rank sprint-followed-last-rank" id="sprintFocusLastRank">—</div></div></div>
-      <div class="sprint-focus-cell sprint-focus-deltas"><div class="sprint-focus-delta ahead" id="sprintFocusAhead">—</div><div class="sprint-focus-divider"></div><div class="sprint-focus-delta behind" id="sprintFocusBehind">—</div></div>
+      <div class="sprint-focus-cell">
+        <div class="sprint-focus-driver sprint-followed-driver">
+          <div class="sprint-focus-position" id="sprintFocusPosition">—</div>
+          <div class="sprint-focus-name" id="sprintFocusName">—</div>
+          <div class="sprint-focus-last-rank sprint-followed-last-rank" id="sprintFocusLastRank">—</div>
+        </div>
+      </div>
+      <div class="sprint-focus-cell sprint-focus-deltas sprint-focus-deltas-v1766">
+        <div class="sprint-focus-neighbour-name" id="sprintFocusAheadName">—</div>
+        <div class="sprint-focus-delta ahead" id="sprintFocusAhead">—</div>
+        <div class="sprint-focus-divider"></div>
+        <div class="sprint-focus-delta behind" id="sprintFocusBehind">—</div>
+        <div class="sprint-focus-neighbour-name" id="sprintFocusBehindName">—</div>
+      </div>
     </div>
     <div class="sprint-focus-row sprint-focus-row-two">
-      <div class="sprint-focus-cell"><div class="sprint-focus-session"><div class="sprint-focus-time" id="sprintFocusTime">—</div><div class="sprint-focus-laps" id="sprintFocusLaps">—</div></div></div>
-      <div class="sprint-focus-cell sprint-focus-penalty-cell"><div class="sprint-focus-fastest-last"><span id="sprintFocusFastestLast">🔥 — —</span></div><div class="sprint-focus-penalty-box"><div class="sprint-focus-penalties" id="sprintFocusPenalties" aria-label="Pénalités, de la plus récente à la plus ancienne"></div></div></div>
+      <div class="sprint-focus-cell">
+        <div class="sprint-focus-session sprint-focus-remaining-session">
+          <div class="sprint-focus-session-label">TEMPS RESTANT</div>
+          <div class="sprint-focus-time" id="sprintFocusTime">—</div>
+          <div class="sprint-focus-laps" id="sprintFocusLaps">—</div>
+        </div>
+      </div>
+      <div class="sprint-focus-cell sprint-focus-last-lap-cell">
+        <div class="sprint-focus-last-lap" id="sprintFocusLastLap">—</div>
+      </div>
     </div>
+  </div>
+  <div class="sprint-penalty-banner" id="sprintPenaltyBanner" aria-live="assertive" aria-atomic="true">
+    <div class="sprint-penalty-banner-name" id="sprintPenaltyBannerName">—</div>
+    <div class="sprint-penalty-banner-text" id="sprintPenaltyBannerText">—</div>
   </div>
 </div>
 <div class="sprint-focus-overlay endurance-focus-overlay" id="enduranceFocus" role="dialog" aria-modal="true" aria-label="Mode Focus Endurance">

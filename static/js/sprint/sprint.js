@@ -1,6 +1,6 @@
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);renderSprintFocus();
+ overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);sprintFocusPenaltyInitialized=false;sprintFocusPenaltySeen.clear();sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;renderSprintFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)sprintFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
@@ -87,28 +87,54 @@ let sprintFocusPenaltyInitialized=false;
 let sprintFocusPenaltySeen=new Set();
 let sprintFocusPenaltyAlertUntil=0;
 let sprintFocusPenaltyAlert=null;
+let sprintFocusPenaltyHideTimer=null;
 
-function sprintFocusPenaltyKey(p){return String(p?.id||`${p?.time||''}|${p?.driver||''}|${p?.penalty||p?.comment||''}`)}
-function sprintFocusPenaltyListMarkup(list){
- return list.length?list.map(p=>`<div class="sprint-focus-penalty-row sprint-focus-penalty-row-compact" title="${escapePenaltyHtml(fullPenaltyText(p))}"><span class="sprint-focus-penalty-one-line">${escapePenaltyHtml(compactPenaltyText(p))}</span></div>`).join(''):'<div class="sprint-focus-empty">Aucune pénalité</div>';
+function sprintFocusPenaltyKey(p){return String(p?.id||`${p?.time||''}|${p?.flag||p?.kind||''}|${p?.kart||''}|${p?.driver||''}|${p?.penalty||p?.comment||''}`)}
+function sprintFocusPenaltyItems(){
+ // Même source que la carte « PÉNALITÉS ET INFORMATIONS » d'Analyzer.
+ if(typeof analyzerPenaltyItems==='function')return analyzerPenaltyItems();
+ const events=Array.isArray(state?.comment_events)?state.comment_events:[];
+ if(events.length)return events;
+ return Array.isArray(state?.comment_penalties)?state.comment_penalties:[];
 }
-function renderSprintFocusPenalties(list){
- const cell=document.querySelector('#sprintFocus .sprint-focus-penalty-cell');
- const now=Date.now();
- if(!sprintFocusPenaltyInitialized){list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));sprintFocusPenaltyInitialized=true}
- const newest=list.find(p=>!sprintFocusPenaltySeen.has(sprintFocusPenaltyKey(p)));
+function sprintFocusIsPenalty(p){return String(p?.kind||'').toLowerCase()==='penalty'||String(p?.flag||'').toLowerCase()==='penalty'||Boolean(String(p?.penalty||'').trim())}
+function sprintFocusPenaltyTargetsFollowed(p,f){
+ if(typeof samePenaltyTarget==='function'&&samePenaltyTarget(p,f))return true;
+ const pd=String(p?.driver||'').trim().toLowerCase(),fd=String(f?.driver||state.followed_driver||'').trim().toLowerCase();
+ if(pd&&fd&&pd===fd)return true;
+ const pk=String(p?.kart||'').replace(/\D/g,''),fk=String(f?.apex||f?.kart||'').replace(/\D/g,'');
+ return Boolean(pk&&fk&&pk===fk);
+}
+function hideSprintPenaltyBanner(){
+ const banner=document.getElementById('sprintPenaltyBanner');
+ if(banner)banner.classList.remove('show');
+ sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;
+}
+function renderSprintFocusPenaltyAlert(f){
+ const banner=document.getElementById('sprintPenaltyBanner');
+ const name=document.getElementById('sprintPenaltyBannerName');
+ const text=document.getElementById('sprintPenaltyBannerText');
+ if(!banner)return;
+ const list=sprintFocusPenaltyItems().filter(sprintFocusIsPenalty);
+ if(!sprintFocusPenaltyInitialized){list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));sprintFocusPenaltyInitialized=true;banner.classList.remove('show');return}
+ const newest=list.find(p=>!sprintFocusPenaltySeen.has(sprintFocusPenaltyKey(p))&&sprintFocusPenaltyTargetsFollowed(p,f));
+ list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));
  if(newest){
-  list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));
-  sprintFocusPenaltyAlert=newest;sprintFocusPenaltyAlertUntil=now+7000;
+  sprintFocusPenaltyAlert=newest;sprintFocusPenaltyAlertUntil=Date.now()+4000;
+  if(name)name.textContent=String(newest?.driver||f?.driver||state.followed_driver||'—').trim()||'—';
+  if(text)text.textContent=String(newest?.penalty||newest?.comment||'PÉNALITÉ').trim()||'PÉNALITÉ';
+  banner.classList.add('show');
+  if(sprintFocusPenaltyHideTimer)clearTimeout(sprintFocusPenaltyHideTimer);
+  sprintFocusPenaltyHideTimer=setTimeout(hideSprintPenaltyBanner,4000);
+  return;
  }
- const alertActive=sprintFocusPenaltyAlert&&now<sprintFocusPenaltyAlertUntil;
- cell?.classList.toggle('penalty-alert-active',Boolean(alertActive));
- if(alertActive){
-  sprintFocusPenalties.innerHTML=`<div class="sprint-focus-penalty-alert"><span class="sprint-focus-penalty-alert-one-line">${escapePenaltyHtml(compactPenaltyText(sprintFocusPenaltyAlert))}</span></div>`;
- }else{
-  sprintFocusPenaltyAlert=null;
-  sprintFocusPenalties.innerHTML=sprintFocusPenaltyListMarkup(list);
- }
+ if(!sprintFocusPenaltyAlert||Date.now()>=sprintFocusPenaltyAlertUntil)banner.classList.remove('show');
+}
+
+function sprintFocusLastLapClass(f){
+ const seconds=lapSeconds(f?.last),absoluteBest=absoluteSessionBestSeconds();
+ if(Number.isFinite(seconds)&&Number.isFinite(absoluteBest)&&Math.abs(seconds-absoluteBest)<0.0005)return 'fastest-session-best';
+ return f?.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange';
 }
 
 function applyAnalyzerDeltaColors(f,aheadEl,behindEl){
@@ -122,21 +148,28 @@ function applyAnalyzerDeltaColors(f,aheadEl,behindEl){
 
 function renderSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay?.classList.contains('show'))return;
- const f=state.followed||{};sprintFocusPosition.textContent=f.pos?'P'+f.pos:'—';sprintFocusName.textContent=f.driver||state.followed_driver||'—';
- const lastRank=sprintLastLapRanking(f);sprintFocusLastRank.innerHTML=lastRank?sprintFocusRankMarkup(lastRank.rank):'—';
- const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';const fastestLapSeconds=lapSeconds(fastestLap);const sessionBestSeconds=absoluteSessionBestSeconds();const isAbsoluteSessionBest=Number.isFinite(fastestLapSeconds)&&Number.isFinite(sessionBestSeconds)&&Math.abs(fastestLapSeconds-sessionBestSeconds)<0.0005;const fastestColorClass=isAbsoluteSessionBest?'fastest-session-best':(fastest.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange');sprintFocusFastestLast.innerHTML=`<span class="sprint-focus-fastest-last-icon">🔥</span><span class="sprint-focus-fastest-last-name" title="${fastestDriver}">${fastestDriver}</span><span class="sprint-focus-fastest-last-time ${fastestColorClass}">${fastestLap}</span>`;
- const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(sprintDriverBehind(f));
- sprintFocusAhead.textContent=focusAhead;sprintFocusBehind.textContent=focusBehind;applyAnalyzerDeltaColors(f,sprintFocusAhead,sprintFocusBehind);
- const sprintFocusDeltas=overlay.querySelector('.sprint-focus-deltas');
- if(sprintFocusDeltas)sprintFocusDeltas.classList.toggle('leader-only',isLeader);
- // P1 : uniquement l'écart vert avec P2, centré. Dernier : uniquement l'écart orange avec le pilote devant.
- sprintFocusAhead.style.display=isLeader?'none':'';
- sprintFocusBehind.style.display=(!isLeader&&!hasDriverBehind)?'none':'';
- const sprintFocusDivider=overlay.querySelector('.sprint-focus-divider');if(sprintFocusDivider)sprintFocusDivider.style.display=(isLeader||!hasDriverBehind)?'none':'';
- const lapMode=raceUsesLapTarget();const ms=lapMode?null:liveRemainingMilliseconds();sprintFocusTime.textContent=lapMode?formatRaceLapProgress():(ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms));sprintFocusTime.classList.toggle('time-critical',!lapMode&&Number.isFinite(ms)&&ms<=120000);
- const laps=String(state.apex_laps_remaining||'—');sprintFocusLaps.textContent=lapMode?'':((laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'—');
- const list=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));
- renderSprintFocusPenalties(list);
+ const f=state.followed||{};
+ const position=document.getElementById('sprintFocusPosition'),name=document.getElementById('sprintFocusName'),lastRankEl=document.getElementById('sprintFocusLastRank');
+ const aheadEl=document.getElementById('sprintFocusAhead'),behindEl=document.getElementById('sprintFocusBehind');
+ const aheadNameEl=document.getElementById('sprintFocusAheadName'),behindNameEl=document.getElementById('sprintFocusBehindName');
+ const timeEl=document.getElementById('sprintFocusTime'),lapsEl=document.getElementById('sprintFocusLaps'),lastLapEl=document.getElementById('sprintFocusLastLap');
+ if(position)position.textContent=f.pos?'P'+f.pos:'—';if(name)name.textContent=f.driver||state.followed_driver||'—';
+ const lastRank=sprintLastLapRanking(f);if(lastRankEl)lastRankEl.innerHTML=lastRank?sprintFocusRankMarkup(lastRank.rank):'—';
+ const aheadDriver=sprintDriverAhead(f),behindDriver=sprintDriverBehind(f);
+ const focusAhead=sprintGapAhead(f),focusBehind=sprintGapBehind(f),isLeader=Number(f.pos)===1,hasDriverBehind=Boolean(behindDriver);
+ if(aheadNameEl){aheadNameEl.textContent=aheadDriver?.driver||'—';aheadNameEl.style.display=isLeader?'none':''}
+ if(aheadEl){aheadEl.textContent=focusAhead;aheadEl.style.display=isLeader?'none':''}
+ if(behindEl){behindEl.textContent=focusBehind;behindEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
+ if(behindNameEl){behindNameEl.textContent=behindDriver?.driver||'—';behindNameEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
+ applyAnalyzerDeltaColors(f,aheadEl,behindEl);
+ const deltas=overlay.querySelector('.sprint-focus-deltas');if(deltas)deltas.classList.toggle('leader-only',isLeader);
+ const divider=overlay.querySelector('.sprint-focus-divider');if(divider)divider.style.display=(isLeader||!hasDriverBehind)?'none':'';
+ // Focus Sprint : le bloc bas-gauche affiche le temps restant de la session.
+ const lapMode=raceUsesLapTarget(),ms=lapMode?null:liveRemainingMilliseconds();
+ if(timeEl){timeEl.textContent=lapMode?formatRaceLapProgress():(ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms));timeEl.classList.toggle('time-critical',!lapMode&&Number.isFinite(ms)&&ms<=120000)}
+ const laps=String(state.apex_laps_remaining||'').trim();if(lapsEl){lapsEl.textContent=lapMode?'':((laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'');lapsEl.style.display=lapsEl.textContent?'':'none'}
+ if(lastLapEl){lastLapEl.textContent=f.last||'—';lastLapEl.classList.remove('fastest-session-best','fastest-lap-green','fastest-lap-orange');if(f.last&&f.last!=='—')lastLapEl.classList.add(sprintFocusLastLapClass(f))}
+ renderSprintFocusPenaltyAlert(f);
 }
 
 

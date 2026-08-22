@@ -1,3 +1,14 @@
+# V7.2.1766 — Focus Sprint & Focus Qualification
+
+- Focus Sprint aligné sur la structure du Focus Endurance.
+- Bas gauche Sprint : temps restant de la session (ou progression en tours).
+- En-tête Sprint avec filet bleu.
+- Nouvelle pénalité du pilote/équipe suivi : plein écran noir 4 secondes, nom puis pénalité, depuis la même source PÉNALITÉS ET INFORMATIONS qu’Analyzer.
+- Focus Qualification : titre Qualifications + filet rouge.
+- Bloc temps restant réduit de 50 % en largeur (25 %), bloc meilleur temps porté à 75 %.
+- Correction du nom du détenteur du meilleur temps : calcul direct depuis le GRID live au lieu de dépendre de l’identifiant DOM Apex.
+- Chrono du meilleur temps fortement agrandi pour exploiter toute la case.
+
 # V7.2.1765 — Classement Live : purge des rows Apex obsolètes
 
 - Un nouveau `grid||` Apex complet devient la liste autoritaire des concurrents actuellement présents dans le classement général live.
