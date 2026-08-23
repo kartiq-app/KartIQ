@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1767"
-APP_RELEASE_NAME = "CLASSEMENT LIVE — PURGE GRID APEX"
+APP_VERSION = "7.2.1768"
+APP_RELEASE_NAME = "FOCUS SPRINT — DELTA ALIGNÉ ENDURANCE"
 
 
 def _circuit_sort_key(circuit):

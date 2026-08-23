@@ -1,3 +1,10 @@
+# V7.2.1768 — Focus Sprint : delta identique au Focus Endurance
+
+- Le delta avant/arrière du **Focus Sprint** utilise désormais exactement les mêmes dimensions que le **Focus Endurance**.
+- Même comportement responsive sur smartphone.
+- Même taille dédiée sur iPhone en paysage virtuel.
+- Aucun changement sur les calculs de delta, les couleurs, les chronos, les pénalités ou les autres modes Focus.
+
 # V7.2.1767 — Focus Sprint / Qualification : header en haut
 
 - Correction ciblée du paysage virtuel iPhone : les headers **Sprint** et **Qualifications** ne sont plus étirés sur toute la surface du Focus.

@@ -1,4 +1,10 @@
-# Velocity V7.2.1767 — Correction header Focus Sprint & Qualification
+# Velocity V7.2.1768 — Delta Focus Sprint aligné sur Focus Endurance
+
+## Correction V7.2.1768
+
+Le **delta du Focus Sprint** reprend désormais exactement les mêmes tailles que le **Focus Endurance**, y compris sur smartphone et sur iPhone en paysage virtuel. Aucun autre élément du layout Sprint, Qualification ou Endurance n'est modifié.
+
+## Version précédente V7.2.1767 — Correction header Focus Sprint & Qualification
 
 ## Correction V7.2.1767
 

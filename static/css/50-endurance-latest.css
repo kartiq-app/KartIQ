@@ -1039,7 +1039,8 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 /* Velocity V7.2.1740N — Focus Endurance smartphone : lisibilité maximale.
    Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
 @media (max-width: 900px), (pointer: coarse){
-  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta,
+  #sprintFocus .sprint-focus-deltas-v1766 .sprint-focus-delta{
     font-size:clamp(66.3px,16.575vh,187.85px)!important;
   }
   #enduranceFocus .endurance-focus-driver .sprint-focus-name{
@@ -1066,7 +1067,8 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 
 /* Le mode iPhone paysage virtuel a un viewport OS portrait : on force ici
    les proportions adaptées au paysage visible sans toucher à Android. */
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-deltas-v1766 .sprint-focus-delta{
   font-size:clamp(69.7px,17dvw,187px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
@@ -1113,6 +1115,9 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
   overflow:hidden!important;
 }
 
+/* V7.2.1768 — Focus Sprint : delta strictement aligné sur Focus Endurance.
+   Les deux modes partagent désormais exactement les mêmes tailles responsive,
+   y compris sur iPhone en paysage virtuel. */
 /* V7.2.1766 — Focus Sprint aligné sur Focus Endurance + Focus Qualification élargi. */
 #sprintFocus .sprint-focus-header i{background:#1687ff!important}
 #sprintFocus .sprint-focus-main-v1766 .sprint-focus-row-two .sprint-focus-cell{height:100%}
