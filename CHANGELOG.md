@@ -1,3 +1,28 @@
+# V7.2.1776 — SCORE RELAIS : cache incrémental 24H
+
+- Base : V7.2.1775.
+- Aucun changement de l'algorithme Velocity / Score Relais.
+- Nouveau cache serveur persistant par circuit + session + ensemble de lignes Apex.
+- Première reconstruction : fonctionnement identique à V7.2.1775.
+- Reconnexion avec le même nombre d'arrêts :
+  - résultat Score Relais complet servi directement depuis le cache ;
+  - aucune nouvelle récupération des milliers de tours Apex ;
+  - aucun nouveau calcul global nécessaire.
+- Pendant une course Live :
+  - une équipe dont le nombre d'arrêts n'a pas changé réutilise son historique déjà reconstruit ;
+  - seules les équipes ayant effectué un nouvel arrêt retournent dans STATS Apex ;
+  - le calcul Velocity global est ensuite recalculé avec la population complète cache + données fraîches, afin de conserver exactement la même formule.
+- Le relais courant continue d'être calculé en Live côté Analyzer et n'est pas figé par le cache.
+- Cache final indexé par signature `row Apex : nombre d'arrêts`.
+- Cache disque borné aux 12 sessions les plus récentes.
+- Changement de circuit/session : namespace de cache distinct, aucune contamination.
+- `force=true` permet au moteur de reconstruire intégralement si nécessaire.
+- Statut final indique désormais :
+  - `cache instantané`, ou
+  - nombre d'équipes réutilisées / actualisées.
+- UI stable V7.2.1775 conservée.
+- Velocity Lab / Data Recorder inchangés.
+
 # V7.2.1775 — SCORE RELAIS : UI stable sans clignotement
 
 - Base : V7.2.1774.

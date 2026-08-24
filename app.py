@@ -1881,6 +1881,74 @@ RELAY_SCORE_JOB_LOCK = threading.RLock()
 RELAY_SCORE_JOBS = {}
 RELAY_SCORE_JOB_TTL_S = 1800
 
+RELAY_SCORE_CACHE_LOCK = threading.RLock()
+RELAY_SCORE_CACHE_PATH = APP_DIR / "relay_score_cache.json"
+RELAY_SCORE_CACHE_VERSION = 1
+RELAY_SCORE_CACHE_MAX_ENTRIES = 12
+
+
+def _relay_score_cache_default():
+    return {"version": RELAY_SCORE_CACHE_VERSION, "entries": {}}
+
+
+def _relay_score_cache_load():
+    try:
+        if RELAY_SCORE_CACHE_PATH.exists():
+            data = json.loads(RELAY_SCORE_CACHE_PATH.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and isinstance(data.get("entries"), dict):
+                return data
+    except Exception:
+        pass
+    return _relay_score_cache_default()
+
+
+def _relay_score_cache_save(data):
+    try:
+        entries = data.get("entries") if isinstance(data, dict) else {}
+        if isinstance(entries, dict) and len(entries) > RELAY_SCORE_CACHE_MAX_ENTRIES:
+            ordered = sorted(
+                entries.items(),
+                key=lambda pair: float((pair[1] or {}).get("updated_at") or 0),
+                reverse=True,
+            )[:RELAY_SCORE_CACHE_MAX_ENTRIES]
+            data["entries"] = dict(ordered)
+        tmp = RELAY_SCORE_CACHE_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        tmp.replace(RELAY_SCORE_CACHE_PATH)
+    except Exception as exc:
+        write_live_log(f"SCORE RELAIS CACHE SAVE ERREUR {exc}")
+
+
+def _relay_score_cache_key(circuit_id, context_key, drivers):
+    rows = ",".join(str(int(d.get("apex_row") or 0)) for d in sorted(drivers, key=lambda x: int(x.get("apex_row") or 0)))
+    raw = f"{circuit_id}|{context_key}|{rows}".encode("utf-8", errors="ignore")
+    return hashlib.sha256(raw).hexdigest()[:32]
+
+
+def _relay_score_stop_signature(drivers):
+    parts = []
+    for d in sorted(drivers, key=lambda x: int(x.get("apex_row") or 0)):
+        row = int(d.get("apex_row") or 0)
+        try:
+            stops = int(float(d.get("pit_stops") or 0))
+        except Exception:
+            stops = 0
+        parts.append(f"{row}:{stops}")
+    return "|".join(parts)
+
+
+def _relay_score_cache_get(cache_key):
+    with RELAY_SCORE_CACHE_LOCK:
+        data = _relay_score_cache_load()
+        return deepcopy((data.get("entries") or {}).get(cache_key) or {})
+
+
+def _relay_score_cache_put(cache_key, entry):
+    with RELAY_SCORE_CACHE_LOCK:
+        data = _relay_score_cache_load()
+        data.setdefault("entries", {})[cache_key] = deepcopy(entry)
+        _relay_score_cache_save(data)
+
 
 def _relay_score_job_cleanup():
     now = time.time()
@@ -1903,6 +1971,7 @@ def _relay_score_job_public(item):
         "result": deepcopy(item.get("result")) if item.get("status") == "done" else None,
         "created_at": item.get("created_at"),
         "updated_at": item.get("updated_at"),
+        "cache": deepcopy(item.get("cache") or {}),
     }
 
 
@@ -1913,6 +1982,9 @@ def _relay_score_run_job(job_id):
             return
         circuit_id = item["circuit_id"]
         drivers = deepcopy(item["drivers"])
+        cache_key = str(item.get("cache_key") or "")
+        stop_signature = str(item.get("stop_signature") or "")
+        force = bool(item.get("force"))
         item["status"] = "running"
         item["updated_at"] = time.time()
 
@@ -1922,6 +1994,31 @@ def _relay_score_run_job(job_id):
             item = RELAY_SCORE_JOBS.get(job_id)
             if item:
                 item.update(status="error", error="Circuit inconnu", updated_at=time.time())
+        return
+
+    cache_entry = _relay_score_cache_get(cache_key) if cache_key else {}
+    if (not force and cache_entry and
+            str(cache_entry.get("stop_signature") or "") == stop_signature and
+            isinstance(cache_entry.get("result"), dict)):
+        cached_result = deepcopy(cache_entry["result"])
+        cached_result["source"] = "server-result-cache"
+        cached_result["durationMs"] = 0
+        cached_result["cache"] = {
+            "hit": True,
+            "reusedTeams": len(drivers),
+            "fetchedTeams": 0,
+            "totalTeams": len(drivers),
+        }
+        with RELAY_SCORE_JOB_LOCK:
+            current = RELAY_SCORE_JOBS.get(job_id)
+            if current and not current.get("cancelled"):
+                current.update(
+                    status="done",
+                    result=cached_result,
+                    cache=deepcopy(cached_result["cache"]),
+                    progress={"phase": "done", "done": len(drivers), "total": len(drivers), "team": ""},
+                    updated_at=time.time(),
+                )
         return
 
     def progress(payload):
@@ -1937,7 +2034,22 @@ def _relay_score_run_job(job_id):
             with RELAY_SCORE_JOB_LOCK:
                 current = RELAY_SCORE_JOBS.get(job_id)
                 return not current or bool(current.get("cancelled"))
-        result = fetch_and_compute(circuit, drivers, _apex_http_request, progress=progress, max_workers=4, cancelled=cancelled)
+        result = fetch_and_compute(
+            circuit, drivers, _apex_http_request,
+            progress=progress, max_workers=4, cancelled=cancelled,
+            cached_teams=deepcopy(cache_entry.get("teams") or {}),
+        )
+        team_cache = result.pop("_team_cache", {})
+        result_cache_info = deepcopy(result.get("cache") or {})
+        if cache_key:
+            _relay_score_cache_put(cache_key, {
+                "circuit_id": circuit_id,
+                "context_key": item.get("context_key"),
+                "stop_signature": stop_signature,
+                "teams": team_cache,
+                "result": deepcopy(result),
+                "updated_at": time.time(),
+            })
         with RELAY_SCORE_JOB_LOCK:
             current = RELAY_SCORE_JOBS.get(job_id)
             if current:
@@ -1947,6 +2059,7 @@ def _relay_score_run_job(job_id):
                     current.update(
                         status="done",
                         result=result,
+                        cache=result_cache_info,
                         progress={"phase": "done", "done": len(drivers), "total": len(drivers), "team": ""},
                         updated_at=time.time(),
                     )
@@ -1967,6 +2080,8 @@ def apex_relay_scores_start():
     _relay_score_job_cleanup()
     body = request.get_json(force=True, silent=True) or {}
     circuit_id = str(body.get("circuit_id") or STATE.get("circuit_id") or "")
+    context_key = str(body.get("context_key") or "")[:300]
+    force = bool(body.get("force"))
     drivers = body.get("drivers") or []
     circuit = next((c for c in load_circuits() if c["id"] == circuit_id), None)
     if not circuit:
@@ -1993,10 +2108,13 @@ def apex_relay_scores_start():
         return jsonify(ok=False, error="Aucune ligne Apex valide"), 400
     job_id = secrets.token_urlsafe(12)
     now = time.time()
+    cache_key = _relay_score_cache_key(circuit_id, context_key, safe)
+    stop_signature = _relay_score_stop_signature(safe)
     item = {
         "id": job_id, "status": "queued", "circuit_id": circuit_id, "drivers": safe,
+        "context_key": context_key, "cache_key": cache_key, "stop_signature": stop_signature, "force": force,
         "progress": {"phase": "queued", "done": 0, "total": len(safe), "team": ""},
-        "result": None, "error": None, "cancelled": False,
+        "result": None, "error": None, "cancelled": False, "cache": {},
         "created_at": now, "updated_at": now,
     }
     with RELAY_SCORE_JOB_LOCK:

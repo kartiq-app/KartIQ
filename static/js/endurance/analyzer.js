@@ -1517,7 +1517,7 @@ function analyzerRelayScoreStatusHtml(){
  const detail=live
   ? (computing?`${total||done} équipes récupérées · calcul serveur en cours`:`${done}/${total||'—'} équipes${p.team?` · ${p.team}`:''}`)
   : p.state==='done'
-    ? `${total||done} équipes · ${p.durationMs?`${(Number(p.durationMs)/1000).toFixed(1)} s`:'terminé'}`
+    ? (()=>{const c=p.cache||{};if(c.hit)return `${total||done} équipes · cache instantané`;if(Number(c.reusedTeams)>0)return `${total||done} équipes · ${c.reusedTeams} en cache · ${c.fetchedTeams||0} actualisée${Number(c.fetchedTeams)===1?'':'s'} · ${p.durationMs?`${(Number(p.durationMs)/1000).toFixed(1)} s`:'terminé'}`;return `${total||done} équipes · ${p.durationMs?`${(Number(p.durationMs)/1000).toFixed(1)} s`:'terminé'}`})()
     : (p.error||'Erreur serveur');
  const close=(!live&&p.state==='done')
   ? '<button type="button" class="relay-score-job-close" aria-label="Masquer le statut" title="Masquer" onclick="event.stopPropagation();analyzerRelayScoreDismissStatus()">×</button>'
@@ -1623,7 +1623,7 @@ async function analyzerLoadRelayScores({force=false,background=false,structuralS
  try{
   const startResponse=await fetch('/api/apex/relay-scores',{
    method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({circuit_id:apexHistoryCircuitId(),drivers})
+   body:JSON.stringify({circuit_id:apexHistoryCircuitId(),context_key:context,drivers,force:Boolean(force)})
   });
   const startData=await startResponse.json();
   if(!startResponse.ok||!startData.ok)throw new Error(startData.error||`HTTP ${startResponse.status}`);
@@ -1640,13 +1640,14 @@ async function analyzerLoadRelayScores({force=false,background=false,structuralS
    const job=data.job||{},progress=job.progress||{};
    analyzerRelayScoreProgress={
     done:Number(progress.done)||0,total:Number(progress.total)||drivers.length,
-    team:String(progress.team||''),phase:String(progress.phase||'server')
+    team:String(progress.team||''),phase:String(progress.phase||'server'),
+    reused:Number(progress.reused)||0,fetched:Number(progress.fetched)||0,toFetch:Number(progress.to_fetch)||0
    };
    analyzerRelayScoreLastStatus={state:'running',...analyzerRelayScoreProgress,updatedAt:Date.now(),durationMs:0,error:''};
    analyzerRelayScoreUpdateStatus();
    if(job.status==='done'){
     analyzerRelayApplyServerResult(job.result||{},context,signature);
-    analyzerRelayScoreLastStatus={state:'done',done:drivers.length,total:drivers.length,team:'',phase:'done',updatedAt:Date.now(),durationMs:Number(job.result?.durationMs)||0,error:''};
+    analyzerRelayScoreLastStatus={state:'done',done:drivers.length,total:drivers.length,team:'',phase:'done',updatedAt:Date.now(),durationMs:Number(job.result?.durationMs)||0,error:'',cache:{...(job.result?.cache||job.cache||{})}};
     console.info('[Velocity][SCORE RELAIS] moteur serveur terminé',{context,durationMs:job.result?.durationMs,maxRelay:job.result?.maxRelay});
     break;
    }

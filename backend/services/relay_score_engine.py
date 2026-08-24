@@ -553,9 +553,17 @@ def choose_window(driver):
     return 1500
 
 
-def fetch_and_compute(circuit, drivers, apex_http_request, progress=None, max_workers=4, cancelled=None):
-    """Fetch all team histories from Apex and compute compact relay scores."""
+def fetch_and_compute(circuit, drivers, apex_http_request, progress=None, max_workers=4, cancelled=None, cached_teams=None):
+    """Reconstruit SCORE RELAIS avec cache incrémental par équipe.
+
+    Une équipe dont le nombre d'arrêts terminés n'a pas changé est réutilisée
+    directement depuis le cache. Si au moins une équipe a changé, la formule
+    Velocity complète est recalculée sur l'ensemble de la population
+    (équipes en cache + équipes rafraîchies) : l'algorithme de score reste donc
+    strictement identique.
+    """
     started = time.time()
+    cached_teams = cached_teams if isinstance(cached_teams, dict) else {}
     clean_drivers = []
     for d in drivers or []:
         try:
@@ -569,10 +577,44 @@ def fetch_and_compute(circuit, drivers, apex_http_request, progress=None, max_wo
                 "pilot": str(d.get("pilot") or ""),
                 "kart": str(d.get("kart") or d.get("apex") or ""),
                 "laps": d.get("laps"),
-                "pit_stops": d.get("pit_stops"),
+                "pit_stops": int(float(d.get("pit_stops") or 0)),
             })
+
     total = len(clean_drivers)
     teams = [None] * total
+    fetch_pairs = []
+    reused = 0
+
+    # Le nombre d'arrêts est notre frontière sûre : tant qu'il n'a pas changé,
+    # aucun nouveau relais TERMINÉ n'a été créé. Le relais courant continue,
+    # lui, d'être calculé en Live côté navigateur.
+    for index, driver in enumerate(clean_drivers):
+        row_key = str(driver["apex_row"])
+        cached = cached_teams.get(row_key)
+        cached_stops = None
+        cached_team = None
+        if isinstance(cached, dict):
+            try:
+                cached_stops = int(cached.get("pit_stops") or 0)
+            except Exception:
+                cached_stops = None
+            cached_team = cached.get("team")
+        if cached_team and cached_stops == driver["pit_stops"]:
+            # Rafraîchir uniquement l'identité Live ; les relais historiques
+            # restent ceux qui ont déjà été reconstruits.
+            cached_team = dict(cached_team)
+            cached_team["driver"] = driver
+            teams[index] = cached_team
+            reused += 1
+        else:
+            fetch_pairs.append((index, driver))
+
+    if progress:
+        progress({
+            "phase": "cache",
+            "done": reused, "total": total, "team": "",
+            "reused": reused, "to_fetch": len(fetch_pairs),
+        })
 
     def one(index_driver):
         if cancelled and cancelled():
@@ -585,7 +627,8 @@ def fetch_and_compute(circuit, drivers, apex_http_request, progress=None, max_wo
         if cancelled and cancelled():
             raise RuntimeError("SCORE_RELAIS_JOB_CANCELLED")
         team = build_team_from_raw(driver, raw)
-        # Only if 1500 really proves truncation.
+
+        # 3000 uniquement si 1500 prouve réellement que l'historique est tronqué.
         lap_numbers = [p["lap"] for r in team["relays"] for p in r.get("lapPoints", [])]
         if window < 3000 and lap_numbers and min(lap_numbers) > 2:
             command = f"D#-3000#D{row}.L#-999#D{row}.P#2#D{row}.B#1#D{row}.INF"
@@ -596,28 +639,49 @@ def fetch_and_compute(circuit, drivers, apex_http_request, progress=None, max_wo
             window = 3000
         return index, team, window
 
-    done = 0
-    with ThreadPoolExecutor(max_workers=max(1, min(int(max_workers or 4), 6))) as pool:
-        futures = [pool.submit(one, pair) for pair in enumerate(clean_drivers)]
-        for future in as_completed(futures):
-            index, team, window = future.result()
-            teams[index] = team
-            done += 1
-            if progress:
-                progress({
-                    "phase": "fetch",
-                    "done": done, "total": total,
-                    "team": team["driver"]["driver"],
-                    "laps": team["_lap_count"], "pits": team["_pit_count"], "window": window,
-                })
+    done = reused
+    if fetch_pairs:
+        with ThreadPoolExecutor(max_workers=max(1, min(int(max_workers or 4), 6))) as pool:
+            futures = [pool.submit(one, pair) for pair in fetch_pairs]
+            for future in as_completed(futures):
+                index, team, window = future.result()
+                teams[index] = team
+                done += 1
+                if progress:
+                    progress({
+                        "phase": "fetch",
+                        "done": done, "total": total,
+                        "team": team["driver"]["driver"],
+                        "laps": team["_lap_count"], "pits": team["_pit_count"], "window": window,
+                        "reused": reused, "fetched": done - reused,
+                    })
 
     teams = [t for t in teams if t]
     if progress:
-        progress({"phase": "compute", "done": total, "total": total, "team": ""})
+        progress({
+            "phase": "compute", "done": total, "total": total, "team": "",
+            "reused": reused, "fetched": len(fetch_pairs),
+        })
     if cancelled and cancelled():
         raise RuntimeError("SCORE_RELAIS_JOB_CANCELLED")
+
     computed = score_compute(teams)
     computed["durationMs"] = int((time.time() - started) * 1000)
-    computed["source"] = "server"
+    computed["source"] = "server-incremental"
     computed["qualification"] = None
+    computed["cache"] = {
+        "reusedTeams": reused,
+        "fetchedTeams": len(fetch_pairs),
+        "totalTeams": total,
+    }
+
+    # Cache compact pour le prochain passage. Les lapPoints restent nécessaires
+    # au calcul global exact ; la réponse Apex brute n'est jamais conservée.
+    computed["_team_cache"] = {
+        str(team["driver"]["apex_row"]): {
+            "pit_stops": int(team["driver"].get("pit_stops") or 0),
+            "team": team,
+        }
+        for team in teams
+    }
     return computed
