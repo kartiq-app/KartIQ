@@ -1,3 +1,17 @@
+# V7.2.1772 — SCORE RELAIS : fenêtre STATS 1500 par défaut
+
+- Base : V7.2.1771.
+- Aucun changement de l'algorithme Velocity / Score Relais.
+- Suppression de l'heuristique qui choisissait 3000 tours à partir du nombre d'arrêts.
+- Une endurance sans nombre de tours Live connu démarre désormais directement avec une fenêtre de 1500 tours.
+- La fenêtre 3000 n'est utilisée que si une réponse 1500 valide prouve réellement que l'historique est tronqué (`oldestLap > 1`).
+- Une requête STATS qui timeout/échoue n'est plus répétée une seconde fois avec la même grosse fenêtre.
+- Timeout standard du moteur SCORE RELAIS réduit à 8 secondes par équipe.
+- Les logs indiquent maintenant `oldestLap`, `newestLap`, fenêtre, taille de réponse et durée.
+- La qualification reste optionnelle/non bloquante comme en V7.2.1771.
+- L'annulation au changement de circuit/session reste inchangée.
+- Le calcul Live du relais courant et la formule Velocity restent inchangés.
+
 # V7.2.1771 — Qualification non bloquante pour SCORE RELAIS
 
 - Base : V7.2.1770 Clean Engine.

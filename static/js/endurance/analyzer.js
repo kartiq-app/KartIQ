@@ -4226,62 +4226,94 @@ function analyzerRelayStatsCacheKey(driver,context=analyzerRelayEnsureContext())
 }
 function analyzerRelayExpectedLaps(driver){return Math.max(0,analyzerNumeric(driver?.laps,0))}
 function analyzerRelayExpectedPits(driver){return Math.max(0,analyzerNumeric(driver?.pit_stops,analyzerNumeric(driver?.stops,analyzerNumeric(driver?.pits,0))))}
-function analyzerRelayCleanLapWindow({expectedLaps=0,expectedPits=0,hint=0}={}){
- const laps=Math.max(0,Number(expectedLaps)||0),pits=Math.max(0,Number(expectedPits)||0),forced=Math.max(0,Number(hint)||0);
- const target=forced||laps||(pits>=35?3000:pits>=8?1500:750);
+function analyzerRelayCleanLapWindow({expectedLaps=0,hint=0}={}){
+ const laps=Math.max(0,Number(expectedLaps)||0),forced=Math.max(0,Number(hint)||0);
+ // V7.2.1772 : le nombre de PITS ne détermine plus la taille de l'historique.
+ // Sur une endurance sans colonne Tours, 1500 est la fenêtre sûre par défaut.
+ // 3000 n'est utilisé que si Apex prouve ensuite que 1500 est réellement tronqué.
+ const target=forced||laps||1500;
  if(target<=300)return 300;
  if(target<=750)return 750;
  if(target<=1500)return 1500;
  return 3000;
 }
 function analyzerRelayNextLapWindow(current){
- if(current<750)return 750;
  if(current<1500)return 1500;
  if(current<3000)return 3000;
  return 3000;
 }
-async function analyzerRelayFetchTeamStatsClean(driver,{force=false,sessionId='',lapWindowHint=0,contextKey=null,requestTimeoutMs=20000}={}){
+async function analyzerRelayFetchTeamStatsClean(driver,{force=false,sessionId='',lapWindowHint=0,contextKey=null,requestTimeoutMs=8000}={}){
  const rowId=Number(driver?.apex_row||driver?.rowId||0);
  if(!rowId)return {laps:[],pits:[],cached:false,window:0};
  const context=contextKey||analyzerRelayEnsureContext();
  const expectedLaps=analyzerRelayExpectedLaps(driver),expectedPits=analyzerRelayExpectedPits(driver);
  const cacheKey=`${context}:${sessionId||'live'}:${rowId}`,cached=analyzerRelayStatsCache.get(cacheKey);
  if(!force&&cached&&cached.pitsExpected===expectedPits&&cached.sessionId===(sessionId||''))return {...cached,cached:true};
- let windowSize=analyzerRelayCleanLapWindow({expectedLaps,expectedPits,hint:lapWindowHint});
+
+ let windowSize=analyzerRelayCleanLapWindow({expectedLaps,hint:lapWindowHint});
  const prefix=sessionId?`S#${sessionId}#`:'';
  let last={laps:[],pits:[],rawLength:0};
- // Moteur propre : UNE requête combinée .L + .P + .INF par équipe.
- // On ne monte de fenêtre qu'une seule fois si Apex prouve que l'historique est tronqué.
+
+ // Moteur simple :
+ // 1. UNE requête dans la fenêtre adaptée (1500 par défaut pour les longues endurances).
+ // 2. On ne monte à 3000 QUE si la réponse 1500 est valide mais prouve que l'historique est tronqué.
+ // 3. Une erreur/timeout n'est jamais suivie d'une seconde grosse requête identique.
  for(let pass=1;pass<=2;pass++){
   if(context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
   const command=`${prefix}D#-${windowSize}#D${rowId}.L#-999#D${rowId}.P#2#D${rowId}.B#1#D${rowId}.INF`;
   const started=performance.now();
   let raw='';
-  try{raw=await apexHistoryRequest(command,{timeoutMs:requestTimeoutMs})}catch(error){
-   console.warn('[Velocity][SCORE RELAIS][STATS] requête combinée en échec',{context,rowId,team:driver?.driver||driver?.name||'',sessionId:sessionId||'live',windowSize,error});
-   if(pass===1){await apexHistorySleep(120);continue}
+  try{
+   raw=await apexHistoryRequest(command,{timeoutMs:requestTimeoutMs});
+  }catch(error){
+   console.warn('[Velocity][SCORE RELAIS][STATS] requête combinée abandonnée',{
+    context,rowId,team:driver?.driver||driver?.name||'',sessionId:sessionId||'live',
+    windowSize,timeoutMs:requestTimeoutMs,error:String(error?.message||error)
+   });
    throw error;
   }
+
   if(context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+
   const laps=parseApexTeamData(raw,rowId).laps;
   const pits=parseApexPitData(raw,rowId);
   last={laps,pits,rawLength:String(raw||'').length};
-  const oldest=laps.length?Math.min(...laps.map(l=>Number(l.lap)).filter(Number.isFinite)):null;
+  const lapNumbers=laps.map(l=>Number(l.lap)).filter(Number.isFinite);
+  const oldest=lapNumbers.length?Math.min(...lapNumbers):null;
+  const newest=lapNumbers.length?Math.max(...lapNumbers):null;
+
   console.info('[Velocity][SCORE RELAIS][STATS]',{
    context,rowId,team:driver?.driver||driver?.name||'',sessionId:sessionId||'live',
-   windowSize,laps:laps.length,pits:pits.length,oldestLap:oldest,rawLength:last.rawLength,
-   durationMs:Math.round(performance.now()-started)
+   windowSize,laps:laps.length,pits:pits.length,oldestLap:oldest,newestLap:newest,
+   rawLength:last.rawLength,durationMs:Math.round(performance.now()-started)
   });
-  if(laps.length&&(!Number.isFinite(oldest)||oldest<=1||windowSize>=3000))break;
-  const next=analyzerRelayNextLapWindow(windowSize);
-  if(next===windowSize)break;
-  windowSize=next;
-  await apexHistorySleep(40);
+
+  // Réponse complète : on s'arrête immédiatement.
+  if(laps.length&&(!Number.isFinite(oldest)||oldest<=1))break;
+
+  // Aucune donnée exploitable : inutile de demander encore plus gros.
+  if(!laps.length)break;
+
+  // Historique valide mais tronqué : 1500 -> 3000 une seule fois.
+  if(windowSize<3000){
+   windowSize=3000;
+   console.info('[Velocity][SCORE RELAIS][STATS] historique tronqué confirmé : extension unique à 3000',{
+    context,rowId,team:driver?.driver||driver?.name||'',oldestLap:oldest,newestLap:newest
+   });
+   await apexHistorySleep(30);
+   continue;
+  }
+  break;
  }
- const item={...last,lapsExpected:expectedLaps,pitsExpected:expectedPits,sessionId:sessionId||'',window:windowSize,updatedAt:Date.now(),cached:false};
+
+ const item={
+  ...last,lapsExpected:expectedLaps,pitsExpected:expectedPits,
+  sessionId:sessionId||'',window:windowSize,updatedAt:Date.now(),cached:false
+ };
  analyzerRelayStatsCache.set(cacheKey,item);
  return item;
 }
+
 function analyzerRelayStructuralSignature(){
  const context=analyzerRelayEnsureContext();
  const rows=(state.drivers||[]).filter(d=>Number(d.apex_row)>0).map(d=>`${Number(d.apex_row)}:${analyzerNumeric(d.pit_stops,0)}`).sort();
