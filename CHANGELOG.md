@@ -1,3 +1,23 @@
+# V7.2.1774 — SCORE RELAIS : progression visible + flèches de navigation
+
+- Base : V7.2.1773 Server Relay Engine.
+- Aucun changement du moteur serveur ni de l'algorithme Velocity.
+- Indicateur visuel permanent du traitement SCORE RELAIS :
+  - TRAITEMENT STATS EN COURS ;
+  - progression X / N équipes ;
+  - équipe en cours ;
+  - barre et pourcentage ;
+  - CALCUL DES SCORES RELAIS ;
+  - TRAITEMENT TERMINÉ + durée du job ;
+  - état d'erreur visible si le serveur échoue.
+- Navigation horizontale R1 → dernier relais :
+  - boutons ← / → placés à droite de ÉQUIPE / PILOTE ;
+  - déplacement de 3 relais par clic ;
+  - colonnes TOP / POS / KART / ÉQUIPE-PILOTE restent fixes ;
+  - boutons désactivés automatiquement au début / à la fin ;
+  - trackpad / tactile restent disponibles.
+- Velocity Lab / Data Recorder inchangés.
+
 # V7.2.1773 — SCORE RELAIS serveur pour longues endurances
 
 - Base : V7.2.1772.
