@@ -1542,15 +1542,6 @@ body.spotter-drag-active #analyzerSpotterFiles{
 /* Velocity V7.2.69 — Velocity Lab compact comparison */
 .analyzer-footer .velocity-lab-launch{border:1px solid #694018!important;border-radius:7px!important;background:#201408!important;color:#ff9b32!important;padding:7px 10px!important}
 .analyzer-footer .velocity-lab-launch:hover{background:#2c1a09!important;color:#ffc078!important}
-body.velocity-lab-open{overflow:hidden!important}
-.velocity-lab-overlay{position:fixed;inset:0;z-index:25000;display:none;background:#080a0e;color:#fff;overflow:auto}
-.velocity-lab-overlay.active{display:block}
-.velocity-lab-page{min-height:100vh;width:min(1540px,100%);margin:0 auto;padding:24px clamp(14px,2.2vw,34px) 70px;background:linear-gradient(180deg,#0b0e13 0,#080a0e 220px)}
-.velocity-lab-head{position:sticky;top:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:14px 4px 18px;margin:-10px 0 18px;background:rgba(8,10,14,.96);backdrop-filter:blur(12px);border-bottom:1px solid #2b313b}
-.velocity-lab-head h2{margin:3px 0 2px;font-family:var(--font-torque,Arial,sans-serif);font-size:clamp(28px,3vw,46px);font-weight:900;letter-spacing:.04em;color:#ff8a1f}
-.velocity-lab-head p{margin:0;color:#8c96a5;font-size:12px}
-.velocity-lab-kicker{font-size:10px;font-weight:900;letter-spacing:.14em;color:#788292}.velocity-lab-kicker b{color:#fff}
-.velocity-lab-close{flex:0 0 48px;width:48px;height:48px;border:1px solid #444d59;border-radius:50%;background:#11161d;color:#fff;font-size:34px;line-height:1;cursor:pointer}.velocity-lab-close:hover{border-color:#ff7a00;color:#ff9b32}
 .velocity-lab-ranking,.velocity-lab-results{border:1px solid #2b313b;border-radius:12px;background:#10141b;box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden}
 .velocity-lab-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;border-bottom:1px solid #2b313b;background:#151a23}
 .velocity-lab-toolbar>div{display:grid;gap:4px}.velocity-lab-toolbar strong{font-family:var(--font-torque,Arial,sans-serif);color:#ff9b32;font-size:14px;letter-spacing:.04em}.velocity-lab-toolbar span{font-size:11px;color:#8993a1}.velocity-lab-toolbar span.warning{color:#ff646c}
@@ -1561,7 +1552,7 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-lab-result-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:18px;border-bottom:1px solid #2b313b;background:#151a23}.velocity-lab-result-head span{font-size:9px;font-weight:900;letter-spacing:.12em;color:#798392}.velocity-lab-result-head h3{margin:4px 0 0;color:#fff;font-size:17px}.velocity-lab-result-head>small{color:#8993a1;font-size:10px;text-align:right}
 .velocity-lab-score-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;padding:12px;background:#0d1117}.velocity-lab-score-summary article{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;padding:12px 14px;border:1px solid #2d3540;border-radius:8px;background:#131922}.velocity-lab-score-summary span{font-size:10px;font-weight:900;color:#929dab}.velocity-lab-score-summary strong{grid-row:1/3;grid-column:2;font:900 28px/1 var(--font-time,Arial);color:#ff9b32}.velocity-lab-score-summary small{font-size:9px;color:#6f7b89}
 .velocity-lab-matrix-wrap{overflow:auto;max-height:68vh}.velocity-lab-matrix{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}.velocity-lab-matrix thead th{position:sticky;top:0;z-index:4;background:#11161d;border-bottom:1px solid #3a424e;padding:6px 4px;color:#778291;font-size:24px;line-height:1.02;letter-spacing:.02em}.velocity-lab-matrix thead th:first-child{width:150px;min-width:150px;max-width:150px}.velocity-lab-matrix thead th:not(:first-child){text-align:center;width:158px;min-width:158px;max-width:158px}.velocity-lab-matrix thead th strong{display:block;color:#fff;font-size:30px;line-height:1}.velocity-lab-matrix thead th small{display:block;width:150px;max-width:150px;margin:4px auto;color:#8993a1;font-size:21px;line-height:1.05;white-space:normal;overflow-wrap:anywhere}.velocity-lab-matrix thead th b{display:block;color:#ff9b32;font-size:42px;line-height:1;margin-top:4px}.velocity-lab-matrix tbody th{position:sticky;left:0;z-index:2;width:150px;min-width:150px;max-width:150px;padding:5px 5px;background:#11161d;border-right:1px solid #2d3540;border-bottom:1px solid #222833;text-align:left;color:#8f99a7;font-size:24px;line-height:1.02;letter-spacing:0;white-space:normal;overflow-wrap:anywhere}.velocity-lab-matrix td{width:158px;min-width:158px;max-width:158px;padding:5px 4px;border-bottom:1px solid #222833;border-right:1px solid #1e242d;text-align:center;color:#cdd4dc;font-size:30px;line-height:1.02;white-space:nowrap;letter-spacing:-.02em}.velocity-lab-matrix td b{color:#fff}.velocity-lab-matrix td.velocity-lab-best{background:#17261d;color:#74e592;box-shadow:inset 0 -2px #2eb969}.velocity-lab-section-row th{position:static!important;background:#2a1a0b!important;color:#ff9b32!important;border-top:3px solid #0b0e13!important;border-right:0!important;font-size:26px!important;line-height:1!important;padding:7px 6px!important}.velocity-lab-section-row th span{margin-left:7px;color:#b18a66;font-size:21px}.velocity-lab-raw-row th{font-size:21px!important;color:#9da7b4}.velocity-lab-raw-row td{font-size:24px!important;color:#9da7b4}.velocity-lab-note{padding:14px 18px;border-top:1px solid #2b313b;color:#747f8d;font-size:10px;line-height:1.45;background:#0d1117}
-@media(max-width:700px){.velocity-lab-page{padding:10px 8px 50px}.velocity-lab-head{padding-top:10px}.velocity-lab-head p{display:none}.velocity-lab-close{width:42px;height:42px;flex-basis:42px}.velocity-lab-toolbar{align-items:stretch;flex-direction:column}.velocity-lab-toolbar button{width:100%}.velocity-lab-matrix-wrap{max-height:none}.velocity-lab-result-head{align-items:flex-start;flex-direction:column}.velocity-lab-result-head>small{text-align:left}}
+@media(max-width:700px){.velocity-lab-toolbar{align-items:stretch;flex-direction:column}.velocity-lab-toolbar button{width:100%}.velocity-lab-matrix-wrap{max-height:none}.velocity-lab-result-head{align-items:flex-start;flex-direction:column}.velocity-lab-result-head>small{text-align:left}}
 
 /* V7.2.69 — Velocity Lab : ne pas laisser le rafraîchissement live reprendre le scroll utilisateur. */
 .velocity-lab-matrix-wrap{overflow-anchor:none;overscroll-behavior:contain}
@@ -2245,10 +2236,6 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 @media(max-width:700px){.analyzer-event-notice{margin-left:auto;max-width:calc(100vw - 78px);min-height:32px;padding:6px 8px;font-size:9px;gap:6px}.analyzer-event-notice-icon{font-size:13px}.analyzer-event-notice-badge{min-width:18px;height:18px;font-size:10px;padding:0 5px}}
 
 /* Velocity V7.2.132 — Velocity Lab / Score Sprint expérimental */
-.velocity-lab-mode-switch{display:flex;gap:8px;margin:10px 0 16px;padding:6px;border:1px solid #2b313b;border-radius:10px;background:#0d1117}
-.velocity-lab-mode-switch button{flex:1;border:1px solid transparent;border-radius:8px;background:#151a23;color:#8f99a7;padding:11px 14px;font-size:11px;font-weight:900;letter-spacing:.05em;cursor:pointer}
-.velocity-lab-mode-switch button.active{border-color:#ff9b32;background:#2a1a0b;color:#ffad58;box-shadow:0 0 16px rgba(255,155,50,.12)}
-.velocity-lab-mode-switch button span{margin-left:6px;padding:2px 5px;border-radius:4px;background:#4a2d0d;color:#ffc27f;font-size:8px}
 .velocity-lab-sprint-panel{display:block}.velocity-lab-sprint-panel[hidden]{display:none!important}
 .velocity-lab-sprint-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px;border:1px solid #313844;border-radius:10px;background:#11161d}
 .velocity-lab-sprint-intro span,.velocity-lab-sprint-result-head span{font-size:9px;font-weight:900;letter-spacing:.12em;color:#ff9b32}.velocity-lab-sprint-intro h3,.velocity-lab-sprint-result-head h3{margin:4px 0;color:#fff;font-size:20px}.velocity-lab-sprint-intro p{max-width:850px;margin:0;color:#929cab;font-size:11px;line-height:1.5}
@@ -2257,7 +2244,7 @@ html.velocity-member-shared-mode .testbar{display:none!important}
 .velocity-lab-sprint-sessions{max-height:310px;overflow:auto;padding:7px}.velocity-lab-sprint-session{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:5px 0;padding:8px 9px;border:1px solid #252c36;border-radius:8px;background:#11161d}.velocity-lab-sprint-session.selected{border-color:#70451b;background:#1c160f}.velocity-lab-sprint-session.live{border-color:#3b6f50;background:#102018}.velocity-lab-sprint-session label{display:grid;grid-template-columns:auto 62px minmax(150px,1fr) auto;align-items:center;gap:8px;min-width:0;flex:1;cursor:pointer}.velocity-lab-sprint-session label b{color:#ff9b32;font-size:9px}.velocity-lab-sprint-session.live label b{color:#65df8a}.velocity-lab-sprint-session label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d7dde5;font-size:10px;font-weight:800}.velocity-lab-sprint-session label small{color:#697482;font-size:8px}.velocity-lab-sprint-session>div{display:flex;gap:4px}.velocity-lab-sprint-session>div button{width:28px;height:26px;border:1px solid #39424f;border-radius:5px;background:#171d25;color:#c5ccd5;cursor:pointer}.velocity-lab-sprint-session>div button:disabled{opacity:.25}
 .velocity-lab-sprint-actions{display:flex;align-items:center;gap:14px;padding:12px 14px;border-top:1px solid #272e38}.velocity-lab-sprint-actions small{color:#717c89;font-size:9px;line-height:1.4}
 .velocity-lab-sprint-results{margin-top:16px}.velocity-lab-sprint-result-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid #2c333d;border-bottom:0;border-radius:10px 10px 0 0;background:#151a23}.velocity-lab-sprint-result-head small{color:#808b99;font-size:9px;text-align:right}.velocity-lab-sprint-table-wrap{overflow:auto;border:1px solid #2c333d}.velocity-lab-sprint-ranking{min-width:980px}.velocity-lab-sprint-details{margin-top:12px;border:1px solid #2d3540;border-radius:8px;background:#0d1117}.velocity-lab-sprint-details summary{padding:11px 13px;color:#ff9b32;font-size:10px;font-weight:900;cursor:pointer}.velocity-lab-sprint-details .velocity-lab-sprint-table-wrap{border:0;border-top:1px solid #2d3540}.velocity-lab-sprint-table-wrap .velocity-lab-table{min-width:1100px}.velocity-lab-sprint-table-wrap .velocity-lab-table th,.velocity-lab-sprint-table-wrap .velocity-lab-table td{white-space:nowrap}.velocity-lab-table .sprint-delta.good{color:#62df86;font-weight:900}.velocity-lab-table .sprint-delta.bad{color:#ff9b32;font-weight:900}.velocity-lab-table .sprint-delta.neutral{color:#aab3bf}
-@media(max-width:700px){.velocity-lab-mode-switch{flex-direction:column}.velocity-lab-sprint-intro,.velocity-lab-sprint-config-head,.velocity-lab-sprint-actions{align-items:stretch;flex-direction:column}.velocity-lab-sprint-intro button,.velocity-lab-sprint-actions button{width:100%}.velocity-lab-sprint-session label{grid-template-columns:auto 54px minmax(110px,1fr)}.velocity-lab-sprint-session label small{display:none}.velocity-lab-sprint-result-head{align-items:flex-start;flex-direction:column}.velocity-lab-sprint-result-head small{text-align:left}}
+@media(max-width:700px){.velocity-lab-sprint-intro,.velocity-lab-sprint-config-head,.velocity-lab-sprint-actions{align-items:stretch;flex-direction:column}.velocity-lab-sprint-intro button,.velocity-lab-sprint-actions button{width:100%}.velocity-lab-sprint-session label{grid-template-columns:auto 54px minmax(110px,1fr)}.velocity-lab-sprint-session label small{display:none}.velocity-lab-sprint-result-head{align-items:flex-start;flex-direction:column}.velocity-lab-sprint-result-head small{text-align:left}}
 
 /* Velocity V7.2.135 — matrices de validation Score Sprint + export PDF */
 .velocity-lab-sprint-result-tools{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;justify-content:flex-end}
@@ -2759,3 +2746,131 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 #raceSessionSelectedTeamCard > .race-team-title b{
   color:#111!important;
 }
+
+/* V7.2.1753 — Analyzer : secteurs Apex dans ÉQUIPE SUIVIE, sans agrandir la carte. */
+#analyzerFollowedCard .analyzer-followed-sectors{margin-top:7px;padding-top:6px;border-top:1px solid #303744;min-width:0}
+#analyzerFollowedCard .analyzer-sector-table{display:grid;gap:2px;min-width:0}
+#analyzerFollowedCard .analyzer-sector-row{display:grid;grid-template-columns:minmax(118px,1.55fr) repeat(3,minmax(46px,.55fr));gap:8px;align-items:center;min-height:17px}
+#analyzerFollowedSectors[data-sector-count="2"] .analyzer-sector-row{grid-template-columns:minmax(118px,1.55fr) repeat(2,minmax(46px,.55fr))}
+#analyzerFollowedSectors[data-sector-count="2"] .analyzer-sector-row>:nth-child(4){display:none}
+#analyzerFollowedSectors[data-sector-count="1"] .analyzer-sector-row{grid-template-columns:minmax(118px,1.55fr) minmax(46px,.55fr)}
+#analyzerFollowedSectors[data-sector-count="1"] .analyzer-sector-row>:nth-child(3),#analyzerFollowedSectors[data-sector-count="1"] .analyzer-sector-row>:nth-child(4){display:none}
+#analyzerFollowedCard .analyzer-sector-row>span{min-width:0;color:#818b99;font-size:8px;font-weight:900;letter-spacing:.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#analyzerFollowedCard .analyzer-sector-row>b{font-family:var(--font-time,monospace);font-size:11px;line-height:1;text-align:right;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+#analyzerFollowedCard .analyzer-sector-head{padding-bottom:3px;border-bottom:1px solid #202733}
+#analyzerFollowedCard .analyzer-sector-head>span{color:#a0a9b7;font-size:8.5px;letter-spacing:.09em}
+#analyzerFollowedCard .analyzer-sector-head>b{font-family:var(--font-ui,Arial,sans-serif);font-size:8.5px;color:#a0a9b7;font-weight:900}
+#analyzerFollowedCard .analyzer-sector-summary{display:grid;gap:2px;margin-top:5px;padding-top:4px;border-top:1px solid #202733}
+#analyzerFollowedCard .analyzer-sector-summary>div{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:17px}
+#analyzerFollowedCard .analyzer-sector-summary span{color:#818b99;font-size:8px;font-weight:900;letter-spacing:.035em;white-space:nowrap}
+#analyzerFollowedCard .analyzer-sector-summary b{font-family:var(--font-time,monospace);font-size:11px;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+#analyzerFollowedCard .analyzer-sector-row>b.sector-purple{color:#c96cff!important}
+#analyzerFollowedCard .analyzer-sector-row>b.sector-green{color:#38d878!important}
+#analyzerFollowedCard .analyzer-sector-row>b.sector-orange{color:#ff8a1f!important}
+/* La place du bloc Secteurs est récupérée sur les espaces verticaux existants : TRAFIC reste collé en bas. */
+#analyzerFollowedCard .analyzer-followed-name-row{margin-top:5px!important;margin-bottom:7px!important}
+#analyzerFollowedCard .analyzer-followed-list{gap:5px!important}
+#analyzerFollowedCard .analyzer-followed-list>div{padding-bottom:4px!important}
+#analyzerFollowedCard .analyzer-traffic{margin-top:7px!important;padding-top:6px!important}
+#analyzerFollowedCard .analyzer-traffic-head{margin-bottom:4px!important}
+@media(min-width:1051px){
+ #analyzerFollowedCard{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+ #analyzerFollowedCard .analyzer-traffic{margin-top:auto!important;flex:0 0 auto}
+}
+@media(max-width:1050px){
+ #analyzerFollowedCard .analyzer-sector-row{grid-template-columns:minmax(105px,1.45fr) repeat(3,minmax(44px,.55fr));gap:6px}
+}
+
+
+/* V7.2.1756 — CLASSEMENT SECTEURS : relais en cours + record équipe en petit. */
+.analyzer-ranking-table.sector-ranking-mode{
+  min-width:820px;
+  table-layout:fixed;
+}
+.analyzer-ranking-table.sector-ranking-mode th,
+.analyzer-ranking-table.sector-ranking-mode td{
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-pos{width:54px!important}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-team{width:28%!important;text-align:left}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-kart{width:72px!important;font-family:var(--font-torque,Arial,sans-serif);font-size:14px;font-weight:900}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-relay{width:72px!important;font-family:var(--font-torque,Arial,sans-serif);font-weight:900}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-time,
+.analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell{width:118px!important}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-delta{width:78px!important;font-variant-numeric:tabular-nums;font-weight:900}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-theoretical{width:142px!important}
+.analyzer-ranking-table.sector-ranking-mode th.selected{color:#ff9b32;border-bottom-color:#ff7a00}
+.analyzer-ranking-table.sector-ranking-mode td.selected strong{color:#ff9b32}
+.analyzer-ranking-table.sector-ranking-mode tbody tr{
+  height:54px!important;
+  min-height:54px!important;
+}
+.analyzer-ranking-table.sector-ranking-mode tbody td{
+  height:54px!important;
+  min-height:54px!important;
+  padding-top:5px!important;
+  padding-bottom:5px!important;
+  line-height:1.05!important;
+  vertical-align:middle!important;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell strong{
+  display:block;
+  font-family:var(--font-torque,Arial,sans-serif);
+  font-size:16px;
+  line-height:1.05;
+  color:#fff;
+  font-variant-numeric:tabular-nums;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell small{
+  display:block;
+  margin-top:4px;
+  color:#737e8f;
+  font-size:9px;
+  line-height:1;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-rank-theoretical strong{
+  font-family:var(--font-torque,Arial,sans-serif);
+  font-size:14px;
+  font-variant-numeric:tabular-nums;
+}
+.analyzer-ranking-table.sector-ranking-mode .sector-ranking-empty td{
+  text-align:center!important;
+  color:#7f8998;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.03em;
+}
+.analyzer-ranking-table.sector-ranking-mode tr.followed .sector-rank-team{color:#38dc88!important}
+
+@media(max-width:700px){
+  .analyzer-ranking-table.sector-ranking-mode{min-width:720px;font-size:9px}
+  .analyzer-ranking-table.sector-ranking-mode .sector-rank-team{width:24%!important}
+  .analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell strong{font-size:13px}
+  .analyzer-ranking-table.sector-ranking-mode .sector-ranking-cell small{font-size:8px}
+  .analyzer-ranking-table.sector-ranking-mode .sector-rank-theoretical strong{font-size:12px}
+}
+
+/* V7.2.1759 — Sessions Velocity + Data Recorder dans Velocity Lab */
+.analyzer-footer .velocity-workspace-launch{border-color:#4b586d;color:#d7dee8;background:#151a22}
+.analyzer-footer .velocity-workspace-launch:hover{border-color:#79889f;color:#fff}
+.velocity-lab-recorder-panel{display:block}.velocity-lab-recorder-panel[hidden]{display:none!important}
+.velocity-recorder-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px;border:1px solid #313844;border-radius:10px;background:#11161d}
+.velocity-recorder-intro>div:first-child{min-width:0}.velocity-recorder-intro span{font-size:9px;font-weight:900;letter-spacing:.12em;color:#ff9b32}.velocity-recorder-intro h3{margin:4px 0;color:#fff;font-size:20px}.velocity-recorder-intro p{max-width:820px;margin:0;color:#929cab;font-size:11px;line-height:1.5}
+.velocity-recorder-storage{flex:0 0 auto;border:1px solid #39424f;border-radius:999px;padding:7px 10px;color:#aeb7c4;background:#0c1016;font-size:9px;font-weight:900;letter-spacing:.06em;white-space:nowrap}.velocity-recorder-storage.persistent{border-color:#376d4b;color:#78df95;background:#102019}.velocity-recorder-storage.temporary{border-color:#805129;color:#ffad58;background:#24180e}
+.velocity-recorder-warning{margin-top:10px;padding:10px 12px;border:1px solid #805129;border-radius:8px;background:#24180e;color:#ffbd78;font-size:10px;line-height:1.45;font-weight:800}
+.velocity-recorder-create,.velocity-recorder-section{margin-top:12px;border:1px solid #2d3540;border-radius:10px;background:#0d1117;overflow:hidden}
+.velocity-recorder-create-head,.velocity-recorder-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #272e38;background:#121821}.velocity-recorder-create-head strong,.velocity-recorder-section-title strong{color:#fff;font-size:11px}.velocity-recorder-create-head span{color:#7f8997;font-size:9px}.velocity-recorder-section-title span{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 7px;border-radius:999px;background:#1f2630;color:#aeb7c4;font-size:9px;font-weight:900}
+.velocity-recorder-create-grid{display:grid;grid-template-columns:minmax(190px,1fr) minmax(250px,1.5fr) auto;gap:10px;align-items:end;padding:14px}.velocity-recorder-create-grid label{display:grid;gap:5px;color:#858f9e;font-size:8px;font-weight:900;letter-spacing:.07em}.velocity-recorder-create-grid input,.velocity-recorder-create-grid select{width:100%;min-width:0;height:38px;border:1px solid #343d49;border-radius:7px;background:#090c11;color:#fff;padding:0 10px;font:800 11px/1 Arial,sans-serif}.velocity-recorder-create-grid button{height:38px;border:1px solid #d71f27;border-radius:7px;background:#d71f27;color:#fff;padding:0 14px;font-size:9px;font-weight:950;letter-spacing:.04em;white-space:nowrap;cursor:pointer}.velocity-recorder-create-grid button:disabled{opacity:.45;cursor:not-allowed}
+.velocity-recorder-feedback{min-height:28px;padding:0 14px 10px;color:#78df95;font-size:9px;line-height:1.35}.velocity-recorder-feedback.error{color:#ff8589}
+.velocity-recorder-list{display:grid;gap:9px;padding:10px}.velocity-recorder-card{border:1px solid #2b333e;border-radius:9px;background:#11161d;overflow:hidden}.velocity-recorder-card.recording{border-color:#643036;box-shadow:inset 3px 0 #d71f27}.velocity-recorder-card.reconnecting,.velocity-recorder-card.waiting{border-color:#69491f}.velocity-recorder-card.error{border-color:#7b282e}
+.velocity-recorder-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:12px 14px;border-bottom:1px solid #252c35}.velocity-recorder-card-head h4{margin:4px 0 2px;color:#fff;font-size:15px}.velocity-recorder-card-head small{color:#7f8997;font-size:9px}.velocity-recorder-duration{color:#f3f5f8;font-size:20px;font-variant-numeric:tabular-nums;letter-spacing:.02em;white-space:nowrap}
+.velocity-recorder-status{font-size:9px;font-weight:950;letter-spacing:.1em}.velocity-recorder-status.recording{color:#ff5b62}.velocity-recorder-status.waiting,.velocity-recorder-status.reconnecting{color:#ffad58}.velocity-recorder-status.stopped{color:#7e8998}.velocity-recorder-status.error{color:#ff7379}
+.velocity-recorder-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:#252c35}.velocity-recorder-metrics>div{min-width:0;padding:10px 11px;background:#0d1117}.velocity-recorder-metrics span{display:block;color:#677381;font-size:7px;font-weight:900;letter-spacing:.07em}.velocity-recorder-metrics b{display:block;margin-top:4px;color:#d9dfe7;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.velocity-recorder-error{padding:8px 12px;border-top:1px solid #5f282c;background:#231114;color:#ff8a8f;font-size:9px;line-height:1.4}
+.velocity-recorder-card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px}.velocity-recorder-card-foot>small{color:#66717e;font-size:8px}.velocity-recorder-card-foot>div{display:flex;gap:6px;align-items:center}.velocity-recorder-btn{display:inline-flex;align-items:center;justify-content:center;min-height:31px;border:1px solid #424c59;border-radius:6px;background:#171d25;color:#dce2e9;padding:0 10px;text-decoration:none;font-size:8px;font-weight:950;letter-spacing:.04em;cursor:pointer}.velocity-recorder-btn.primary{border-color:#ff9b32;background:#ff9b32;color:#111}.velocity-recorder-btn.danger{border-color:#b9252c;background:#b9252c;color:#fff}.velocity-recorder-btn.danger.ghost{background:transparent;color:#e2777c}
+@media(max-width:900px){.velocity-recorder-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.velocity-recorder-create-grid{grid-template-columns:1fr 1fr}.velocity-recorder-create-grid button{grid-column:1/-1}}
+@media(max-width:700px){.velocity-recorder-intro,.velocity-recorder-create-head,.velocity-recorder-card-head,.velocity-recorder-card-foot{align-items:stretch;flex-direction:column}.velocity-recorder-storage{align-self:flex-start;white-space:normal}.velocity-recorder-create-grid{grid-template-columns:1fr}.velocity-recorder-create-grid button{grid-column:auto}.velocity-recorder-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.velocity-recorder-card-foot>div{width:100%}.velocity-recorder-btn{flex:1}.velocity-recorder-duration{font-size:18px}.velocity-recorder-section-title{position:sticky;top:0;z-index:2}}

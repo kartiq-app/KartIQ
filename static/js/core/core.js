@@ -27,11 +27,21 @@ function unlockFocusOrientationForAndroid(){
   try{if(screen.orientation?.unlock)screen.orientation.unlock()}catch(error){console.warn('Déverrouillage orientation Android',error)}
 }
 let state={},currentMode='home',lastCrossEvent=null,lastGenericEvent=null,crossTimer=null,circuitSignature='';
+// V7.2.1758 — toutes les sauvegardes de course du navigateur sont isolées
+// par Session Velocity. Un changement de session ne doit jamais réinjecter
+// le Spotter / Analyzer / files d'une autre course.
+function velocityWorkspaceStorageScope(){
+ const raw=String(window.VELOCITY_WORKSPACE_ID||state?.workspace?.id||'LEGACY').trim()||'LEGACY';
+ return raw.replace(/[^A-Za-z0-9_-]+/g,'-');
+}
+function velocityWorkspaceStorageKey(base){return `${String(base||'velocity')}:${velocityWorkspaceStorageScope()}`}
+window.velocityWorkspaceStorageKey=velocityWorkspaceStorageKey;
 // Pont explicite pour les modules isolés : `state` est un binding global `let`
 // et n'est donc pas automatiquement disponible sous `window.state`.
 try{Object.defineProperty(window,'velocityState',{configurable:true,get:()=>state})}catch(_){window.velocityState=state}
 let circuitChangeInProgress=false,pendingCircuitId='';
 let stateLoadInFlight=false;
+let velocityWorkspaceSwitching=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
 let elapsedCountMs=null,elapsedCountPerfAt=0,elapsedCountDirectSyncAt=0;
@@ -304,7 +314,7 @@ function updateRemainingDisplay(){
 window.addEventListener('orientationchange',()=>setTimeout(updateRemainingDisplay,80));
 window.addEventListener('resize',()=>updateRemainingDisplay());
 async function load(){
- if(window.velocityEnduranceTest?.active)return;
+ if(window.velocityEnduranceTest?.active||velocityWorkspaceSwitching)return;
  // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle
  // requête tant que la précédente n'est pas terminée, afin d'éviter une
  // file d'attente et un retard progressif de l'affichage.
@@ -401,26 +411,42 @@ function ingestApexMapEvents(frame,circuitId){
   const value=Number(fields[0]);
   const extra=Number(fields[1]);
   const now=Date.now();
-  const previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},lastPhase:0,sectorMode:false};
+  const previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},currentSectors:{s1:null,s2:null,s3:null},lastPhase:0,sectorMode:false};
+  previous.sectors=previous.sectors||{s1:null,s2:null,s3:null};
+  previous.currentSectors=previous.currentSectors||{s1:null,s2:null,s3:null};
   previous.lastPhase=velocityApexMapEntryPhase(previous,now);
 
   if(code==='*'){
+   // Protocole Apex officiel : * porte S1 dans le 4e champ (t[3]).
+   // C'est également notre marqueur de nouveau tour secteur : S2/S3 du tour
+   // précédent sont effacés pour que « TOUR EN COURS » soit réellement live.
+   const s1=Number.isFinite(extra)&&extra>0?extra:null;
+   previous.currentSectors={s1,s2:null,s3:null};
+   previous.currentSectorSequence=(Number(previous.currentSectorSequence)||0)+1;
+   previous.currentSectorStartedAt=now;
+   previous.currentSectorUpdatedAt=now;
    if(Number.isFinite(value)&&value>0)previous.lapDurationMs=value;
-   if(Number.isFinite(extra)&&extra>0){previous.sectors.s1=extra;previous.sectorMode=true}
-   // Sans durée S1 explicite, Apex anime le tour complet : aucun secteur
-   // intermédiaire n'est requis pour faire apparaître le kart.
-   previous.segment=previous.sectorMode&&Number.isFinite(extra)&&extra>0?'s1':'track';
-   previous.durationMs=previous.segment==='s1'?extra:value;
+   if(Number.isFinite(s1)&&s1>0){previous.sectors.s1=s1;previous.sectorMode=true}
+   // `sectors` reste volontairement un modèle roulant pour TRAFIC/Heat Map :
+   // on ne supprime donc pas ici les anciens S2/S3 nécessaires à l'interpolation.
+   previous.segment=previous.sectorMode&&Number.isFinite(s1)&&s1>0?'s1':'track';
+   previous.durationMs=previous.segment==='s1'?s1:value;
    previous.inPit=false;
   }else if(code==='*i1'){
-   if(Number.isFinite(value)&&value>0)previous.sectors.s2=value;
+   // Protocole Apex officiel : *i1 porte S2 dans t[2].
+   if(Number.isFinite(value)&&value>0){previous.sectors.s2=value;previous.currentSectors.s2=value}
+   previous.currentSectorUpdatedAt=now;
    previous.sectorMode=true;previous.segment='s2';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*i2'){
-   if(Number.isFinite(value)&&value>0)previous.sectors.s3=value;
+   // Protocole Apex officiel : *i2 porte S3 dans t[2].
+   if(Number.isFinite(value)&&value>0){previous.sectors.s3=value;previous.currentSectors.s3=value}
+   previous.currentSectorUpdatedAt=now;
    previous.sectorMode=true;previous.segment='s3';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*in'){
+   previous.currentSectors={s1:null,s2:null,s3:null};previous.currentSectorUpdatedAt=now;
    previous.segment='in';previous.durationMs=8000;previous.inPit=true;previous.pitEnteredAt=previous.pitEnteredAt||now;
   }else if(code==='*out'){
+   previous.currentSectors={s1:null,s2:null,s3:null};previous.currentSectorUpdatedAt=now;
    previous.segment='out';previous.durationMs=Number.isFinite(value)&&value>0?value:5000;previous.inPit=false;previous.pitEnteredAt=null;
   }
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
@@ -498,7 +524,7 @@ function connectApexBrowser(force=false){
  });
 }
 function setModeClass(mode){document.body.classList.remove('current-home','current-qualification','current-sprint','current-endurance','current-analyzer','current-spotter');const visualMode=mode==='endurance'?'qualification':mode==='analyzer'?'endurance':mode;document.body.classList.add('current-'+visualMode);document.body.dataset.appMode=mode}
-const VELOCITY_FOCUS_SESSION_KEY='velocity_active_focus_v1';
+const VELOCITY_FOCUS_SESSION_KEY=velocityWorkspaceStorageKey('velocity_active_focus_v1');
 let velocityFocusRestoreInFlight=false;
 function rememberVelocityFocus(mode){try{sessionStorage.setItem(VELOCITY_FOCUS_SESSION_KEY,String(mode||''))}catch(_){}}
 function clearVelocityFocusMemory(mode=''){try{const active=sessionStorage.getItem(VELOCITY_FOCUS_SESSION_KEY)||'';if(!mode||active===mode)sessionStorage.removeItem(VELOCITY_FOCUS_SESSION_KEY)}catch(_){}}
@@ -521,6 +547,105 @@ function velocityFocusWatchdogStart(){
  window.addEventListener('pageshow',()=>setTimeout(()=>velocityRestoreFocusIfNeeded(),80));
 }
 velocityFocusWatchdogStart();
+function renderVelocityWorkspaceSummary(){
+ const ws=state?.workspace||{};
+ const strip=document.getElementById('velocityWorkspaceStrip');
+ if(!strip)return;
+ const visible=Boolean(ws.can_manage);
+ strip.hidden=!visible;
+ if(!visible)return;
+ const name=document.getElementById('velocityWorkspaceName'),code=document.getElementById('velocityWorkspaceCode');
+ if(name)name.textContent=ws.name||'Session Velocity';
+ if(code)code.textContent=ws.code||'—';
+}
+function velocityWorkspaceFeedback(message='',error=false){
+ const el=document.getElementById('velocityWorkspaceFeedback');if(!el)return;
+ el.textContent=message||'';el.classList.toggle('error',Boolean(error));
+}
+function velocityWorkspaceRow(item,activeId){
+ const row=document.createElement('div');row.className='velocity-workspace-row'+(String(item.id)===String(activeId)?' active':'');
+ const main=document.createElement('div');main.className='velocity-workspace-row-main';
+ const title=document.createElement('strong');title.textContent=item.name||'Session Velocity';
+ const meta=document.createElement('small');meta.textContent=`${item.code||'—'} · ${Number(item.members_count)||1} membre${Number(item.members_count)===1?'':'s'}${item.owner?' · propriétaire':''}`;
+ main.append(title,meta);row.appendChild(main);
+ const actions=document.createElement('div');actions.className='velocity-workspace-row-actions';
+ const open=document.createElement('button');open.type='button';
+ if(String(item.id)===String(activeId)){open.textContent='ACTIVE';open.disabled=true}else{open.textContent='OUVRIR';open.onclick=()=>selectVelocityWorkspace(item.id)}
+ actions.appendChild(open);
+ const remove=document.createElement('button');remove.type='button';remove.className='velocity-workspace-remove';remove.textContent=item.owner?'SUPPRIMER':'QUITTER';
+ remove.onclick=()=>item.owner?deleteVelocityWorkspace(item.id,item.name):leaveVelocityWorkspace(item.id,item.name);
+ actions.appendChild(remove);row.appendChild(actions);return row;
+}
+async function refreshVelocityWorkspaceManager(){
+ const list=document.getElementById('velocityWorkspaceList');if(!list)return;
+ list.replaceChildren();velocityWorkspaceFeedback('Chargement…');
+ try{
+  const r=await fetch('/api/workspaces',{cache:'no-store'}),data=await r.json();
+  if(!r.ok||!data.ok)throw new Error(data.error||'Sessions indisponibles');
+  const items=Array.isArray(data.workspaces)?data.workspaces:[];
+  if(!items.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Aucune session.';list.appendChild(empty)}
+  else items.forEach(item=>list.appendChild(velocityWorkspaceRow(item,data.active_workspace_id)));
+  velocityWorkspaceFeedback('');
+ }catch(error){velocityWorkspaceFeedback(error.message||String(error),true)}
+}
+function openVelocityWorkspaceManager(){
+ if(!state?.workspace?.can_manage)return;
+ const modal=document.getElementById('velocityWorkspaceModal');if(!modal)return;
+ modal.hidden=false;document.body.classList.add('velocity-workspace-open');void refreshVelocityWorkspaceManager();
+}
+function closeVelocityWorkspaceManager(){
+ const modal=document.getElementById('velocityWorkspaceModal');if(modal)modal.hidden=true;
+ document.body.classList.remove('velocity-workspace-open');velocityWorkspaceFeedback('');
+}
+async function velocityWorkspaceActivate(url,body){
+ if(velocityWorkspaceSwitching)return;
+ velocityWorkspaceSwitching=true;velocityWorkspaceFeedback('Ouverture de la session…');
+ try{
+  closeApexBrowserSocket();
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Opération impossible');
+  location.reload();
+ }catch(error){velocityWorkspaceSwitching=false;velocityWorkspaceFeedback(error.message||String(error),true);ensureApexBrowserConnection()}
+}
+function selectVelocityWorkspace(workspaceId){return velocityWorkspaceActivate('/api/workspaces/select',{workspace_id:workspaceId})}
+async function velocityWorkspaceRemove(url,message){
+ if(velocityWorkspaceSwitching)return;
+ if(!confirm(message))return;
+ velocityWorkspaceSwitching=true;velocityWorkspaceFeedback('Mise à jour des sessions…');
+ try{
+  closeApexBrowserSocket();
+  const r=await fetch(url,{method:url.endsWith('/leave')?'POST':'DELETE'}),data=await r.json();
+  if(!r.ok||!data.ok)throw new Error(data.error||'Opération impossible');
+  location.reload();
+ }catch(error){velocityWorkspaceSwitching=false;velocityWorkspaceFeedback(error.message||String(error),true);ensureApexBrowserConnection()}
+}
+function deleteVelocityWorkspace(workspaceId,name=''){
+ const label=String(name||'cette Session Velocity');
+ return velocityWorkspaceRemove(`/api/workspaces/${encodeURIComponent(workspaceId)}`,`Supprimer définitivement « ${label} » ? Les données de cette Session Velocity seront supprimées. Cette action est irréversible.`);
+}
+function leaveVelocityWorkspace(workspaceId,name=''){
+ const label=String(name||'cette Session Velocity');
+ return velocityWorkspaceRemove(`/api/workspaces/${encodeURIComponent(workspaceId)}/leave`,`Quitter « ${label} » ? Vous n’y aurez plus accès sauf si vous rejoignez à nouveau son code.`);
+}
+function createVelocityWorkspace(){
+ const input=document.getElementById('velocityWorkspaceCreateName');
+ return velocityWorkspaceActivate('/api/workspaces/create',{name:String(input?.value||'').trim()});
+}
+function joinVelocityWorkspace(){
+ const input=document.getElementById('velocityWorkspaceJoinCode');
+ const code=String(input?.value||'').trim().toUpperCase();
+ if(!code)return velocityWorkspaceFeedback('Saisissez le code de la session.',true);
+ return velocityWorkspaceActivate('/api/workspaces/join',{code});
+}
+window.renderVelocityWorkspaceSummary=renderVelocityWorkspaceSummary;
+window.openVelocityWorkspaceManager=openVelocityWorkspaceManager;
+window.closeVelocityWorkspaceManager=closeVelocityWorkspaceManager;
+window.selectVelocityWorkspace=selectVelocityWorkspace;
+window.deleteVelocityWorkspace=deleteVelocityWorkspace;
+window.leaveVelocityWorkspace=leaveVelocityWorkspace;
+window.createVelocityWorkspace=createVelocityWorkspace;
+window.joinVelocityWorkspace=joinVelocityWorkspace;
+
 function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}
 function showMode(mode){
  if(mode!=='home'&&!state?.circuit_id){

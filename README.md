@@ -1,3 +1,34 @@
+# Velocity V7.2.1768 — Delta Focus Sprint aligné sur Focus Endurance
+
+## Correction V7.2.1768
+
+Le **delta du Focus Sprint** reprend désormais exactement les mêmes tailles que le **Focus Endurance**, y compris sur smartphone et sur iPhone en paysage virtuel. Aucun autre élément du layout Sprint, Qualification ou Endurance n'est modifié.
+
+## Version précédente V7.2.1767 — Correction header Focus Sprint & Qualification
+
+## Correction V7.2.1767
+
+Sur iPhone en paysage virtuel, les barres de titre **Sprint** et **Qualifications** restent désormais en haut de l'écran, comme le Focus Endurance. La règle qui étirait par erreur ces headers sur toute la hauteur a été supprimée.
+
+
+## Évolution V7.2.1766
+
+- Le `grid||` HTML complet reçu d'Apex devient la source de vérité pour les concurrents actuellement affichés dans le **classement général live**.
+- Les anciennes rows Apex absentes du nouveau GRID sont purgées de l'état live afin d'éviter les karts fantômes et les doublons.
+- La correction s'applique aux vues **Analyzer, Qualification, Sprint et Endurance** qui consomment `state.drivers`.
+- Aucun historique, tour enregistré, Data Recorder, Velocity Score, classement virtuel, classement secteurs ou Spotter n'est supprimé/modifié.
+
+Cette version sécurise le cycle **REC → ARRÊTER → EXPORTER** du Data Recorder. L’arrêt devient durable dans Render Postgres et un verrou/lease empêche deux instances Render de piloter simultanément le même Recorder pendant un déploiement. Le rattrapage historique Apex de la V7.2.1763 est conservé.
+
+Une réconciliation courte est relancée toutes les 5 minutes et après chaque reconnexion Apex. Le REC ne s’arrête jamais automatiquement sur silence ou coupure Apex : l’arrêt reste manuel depuis Velocity Lab.
+
+
+Cette version conserve le **Data Recorder autonome Render/Postgres** et finalise l’identité visuelle de Velocity Lab : wordmark **VELOCITY LAB** unifié et Erlenmeyer rouge dans la même direction artistique que les icônes de la Home.
+
+Pour un enregistrement longue durée sur Render, configurez impérativement `DATABASE_URL` vers une base **Render Postgres** et vérifiez le badge de stockage persistant dans Velocity Lab avant de lancer REC.
+
+La Home est à nouveau épurée : la gestion des Sessions Velocity est déplacée dans Analyzer et un bouton **DÉCONNEXION** retire l’accès Velocity de l’ordinateur.
+
 # Velocity V7.2.29 — Cartes Spotter dans Analyzer
 
 Cette version corrige le décodage des courses Apex au nombre de tours à partir de `dyn1|text|Giro X/Y`.

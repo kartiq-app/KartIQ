@@ -43,6 +43,17 @@ class ProtocolEngine:
         self.comments_updated_at_ms: int | None = None
         self.instant_messages: list[dict[str, Any]] = []
 
+    def retain_rows(self, active_rows: set[int]) -> dict[str, list[int]]:
+        """Purge les lignes live obsolètes quand Apex republie un GRID complet."""
+        keep = {int(row) for row in active_rows if int(row) > 0}
+        protocol_removed = sorted(row for row in self._rows if row not in keep)
+        self._rows.intersection_update(keep)
+        interpreter_removed = self.interpreter.retain_rows(keep)
+        return {
+            "protocol": protocol_removed,
+            "interpreter": interpreter_removed,
+        }
+
     def observe_frame(self, frame: str, grid: Any | None, updates: list[Any]) -> None:
         self.frames += 1
         received_at_ms = int(time.time() * 1000)

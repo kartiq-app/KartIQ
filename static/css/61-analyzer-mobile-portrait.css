@@ -285,28 +285,29 @@
    padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px))!important;
  }
 
- /* Velocity Lab smartphone : croix toujours visible en haut à droite pour revenir à Analyzer. */
- body[data-app-mode="analyzer"] .velocity-lab-overlay.active .velocity-lab-head{
-   position:sticky!important;
-   top:0!important;
-   z-index:26010!important;
-   background:#080a0e!important;
-   padding-right:58px!important;
-   padding-top:calc(10px + env(safe-area-inset-top,0px))!important;
- }
- body[data-app-mode="analyzer"] .velocity-lab-overlay.active .velocity-lab-close{
-   display:flex!important;
-   align-items:center!important;
-   justify-content:center!important;
-   position:fixed!important;
-   top:calc(8px + env(safe-area-inset-top,0px))!important;
-   right:10px!important;
-   z-index:26020!important;
-   width:42px!important;
-   height:42px!important;
-   margin:0!important;
-   background:#11161d!important;
-   color:#fff!important;
- }
 
+}
+
+/* V7.2.1753 — Secteurs ÉQUIPE SUIVIE en portrait : bloc compact, TRAFIC conservé en bas. */
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-followed-sectors{margin-top:5px!important;padding-top:5px!important}
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-row{grid-template-columns:minmax(108px,1.5fr) repeat(3,minmax(42px,.52fr))!important;gap:5px!important;min-height:16px!important}
+body[data-app-mode="analyzer"] #analyzerFollowedSectors[data-sector-count="2"] .analyzer-sector-row{grid-template-columns:minmax(108px,1.5fr) repeat(2,minmax(42px,.52fr))!important}
+body[data-app-mode="analyzer"] #analyzerFollowedSectors[data-sector-count="1"] .analyzer-sector-row{grid-template-columns:minmax(108px,1.5fr) minmax(42px,.52fr)!important}
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-row>span,
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-summary span{font-size:7.5px!important}
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-row>b,
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-summary b{font-size:10.5px!important}
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-summary{margin-top:4px!important;padding-top:3px!important;gap:1px!important}
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-sector-summary>div{min-height:16px!important}
+body[data-app-mode="analyzer"] #analyzerFollowedCard .analyzer-traffic{margin-top:6px!important;padding-top:5px!important}
+
+
+/* V7.2.1756 — le masquage de colonnes du classement LIVE ne doit pas
+   supprimer les colonnes du CLASSEMENT SECTEURS en portrait. */
+body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-table.sector-ranking-mode th,
+body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-table.sector-ranking-mode td{
+  display:table-cell!important;
+}
+body[data-app-mode="analyzer"] #analyzerRankingPanel .analyzer-ranking-table.sector-ranking-mode{
+  min-width:690px!important;
 }

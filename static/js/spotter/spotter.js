@@ -1,6 +1,19 @@
-/* Velocity V7.2.8 — Cartes carrées à demi-kart latéral */
-const SPOTTER_STORAGE_KEY='velocity_spotter_v7_foundation';
-const SPOTTER_APP_RELEASE='7.2.1749';
+/* Velocity V7.2.1757 — Synchronisation Spotter / Analyzer sur la release courante */
+const SPOTTER_STORAGE_KEY=velocityWorkspaceStorageKey('velocity_spotter_v7_foundation');
+function spotterResolveAppRelease(){
+ const explicit=String(window.VELOCITY_APP_VERSION||'').trim();
+ if(explicit)return explicit;
+ // Secours : le template versionne aussi spotter.js avec ?v=<release>.
+ // Cela évite tout numéro de version Spotter codé en dur dans ce fichier.
+ try{
+  const script=[...document.scripts].find(node=>String(node.src||'').includes('/static/js/spotter/spotter.js'));
+  const version=script?new URL(script.src,window.location.href).searchParams.get('v'):'';
+  if(version)return String(version).trim();
+ }catch(_){ }
+ return '';
+}
+const SPOTTER_APP_RELEASE=spotterResolveAppRelease();
+if(!SPOTTER_APP_RELEASE)console.warn('[Spotter] Version Velocity introuvable : synchronisation serveur suspendue jusqu’au prochain chargement complet.');
 const spotterState={
  version:6,mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],configured:false,
  assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,
@@ -52,8 +65,9 @@ function spotterEnsureSetupDefaults(){
  spotterState.nextKvNumber=Math.max(Number(spotterState.nextKvNumber)||1,max+1);
 }
 
-const SPOTTER_CLIENT_ID=sessionStorage.getItem('velocity_spotter_client_id')||`spotter-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-sessionStorage.setItem('velocity_spotter_client_id',SPOTTER_CLIENT_ID);
+const SPOTTER_CLIENT_STORAGE_KEY=velocityWorkspaceStorageKey('velocity_spotter_client_id');
+const SPOTTER_CLIENT_ID=sessionStorage.getItem(SPOTTER_CLIENT_STORAGE_KEY)||`spotter-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+sessionStorage.setItem(SPOTTER_CLIENT_STORAGE_KEY,SPOTTER_CLIENT_ID);
 let spotterApplyingRemote=false;
 let spotterLastRemoteUpdate=0;
 let spotterUiStep=null;
