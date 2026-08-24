@@ -52,6 +52,9 @@ const analyzerRelayStatsCache=new Map();
 let analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
 let analyzerRelayBackgroundScheduled=null;
 let analyzerRelayBackgroundLastSignature='';
+let analyzerRelayEngineContext='';
+let analyzerRelayCleanLastCompletedContext='';
+
 
 let analyzerActiveSessionId=null;
 let analyzerSessionCircuitId=null;
@@ -1240,11 +1243,14 @@ async function analyzerRelayScoreQualificationContext(drivers){
   const match=historical.find(team=>normalizeApexTeamName(team.name)===liveName)||historical.find(team=>livePilot&&normalizeApexTeamName(team.name)===livePilot)||historical.find(team=>liveKart&&String(team.kart||'').trim()===liveKart);
   if(!match)continue;
   try{
-   const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(match.rowId,session.id,null),fetchAllApexTeamPits(match.rowId,session.id,null).catch(()=>[])]);
+   const historicalDriver={...driver,apex_row:match.rowId,laps:0,pit_stops:0};
+   const {laps,pits}=await analyzerRelayFetchTeamStatsClean(historicalDriver,{sessionId:session.id,lapWindowHint:300,contextKey:analyzerRelayEnsureContext()});
    const average=analyzerRelayScoreQualificationAverage(laps,pits);
    if(Number.isFinite(average)){byRow.set(Number(driver.apex_row),average);averages.push(average)}
-  }catch(_){ }
-  await apexHistorySleep(20);
+  }catch(error){
+   if(String(error?.message||error)!=='SCORE_RELAIS_CONTEXT_CHANGED')console.warn('[Velocity][SCORE RELAIS][QUALIF]',driver?.driver,error);
+  }
+  await apexHistorySleep(15);
  }
  return {session,grid:analyzerMedian(averages),byRow};
 }
@@ -1427,62 +1433,81 @@ function analyzerRelayScoreCompute(teams,qualification){
  return {maxRelay,matrix,gridByRelay,pilotBaselines};
 }
 
-async function analyzerLoadRelayScores({force=false,background=false,structuralSignature=null}={}){
+async function analyzerLoadRelayScores({force=false,background=false,structuralSignature=null,contextKey=null}={}){
+ const context=contextKey||analyzerRelayEnsureContext();
  if(analyzerRelayScoreLoading)return;
  const signature=structuralSignature||analyzerRelayStructuralSignature();
  if(!force&&analyzerRelayScoreData&&signature===analyzerRelayBackgroundLastSignature){
   if(analyzerVelocityView==='relays')analyzerRenderRelayScoreTable();
   return;
  }
- const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);if(!drivers.length)return;
- analyzerRelayScoreLoading=true;const token=++analyzerRelayScoreLoadToken;
+ const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);
+ if(!drivers.length)return;
+ analyzerRelayScoreLoading=true;
+ const token=++analyzerRelayScoreLoadToken;
  analyzerRelayScoreProgress={done:0,total:drivers.length,team:'',phase:'stats'};
  const teams=[];
- for(let i=0;i<drivers.length;i++){
-  if(token!==analyzerRelayScoreLoadToken)break;
-  const driver=drivers[i],rowId=Number(driver.apex_row);
-  analyzerRelayScoreProgress={done:i,total:drivers.length,team:driver.driver||'',phase:'stats'};
-  if(analyzerVelocityView==='relays'&&!analyzerRelayScoreData){
-   const host=document.getElementById('analyzerKartMarket');
-   if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(analyzerRelayProgressText())}</div>`;
+ console.info('[Velocity][SCORE RELAIS] reconstruction démarrée',{context,teams:drivers.length,signature});
+ try{
+  for(let i=0;i<drivers.length;i++){
+   if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+   const driver=drivers[i],rowId=Number(driver.apex_row);
+   analyzerRelayScoreProgress={done:i,total:drivers.length,team:driver.driver||'',phase:'stats'};
+   if(analyzerVelocityView==='relays'&&!analyzerRelayScoreData){
+    const host=document.getElementById('analyzerKartMarket');
+    if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(analyzerRelayProgressText())}</div>`;
+   }
+   try{
+    const {laps,pits,cached,window}=await analyzerRelayFetchTeamStatsClean(driver,{force,contextKey:context});
+    if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+    const relays=analyzerRelayScoreSlices(laps,pits,driver);
+    teams.push({driver,relays});
+    // La même réponse STATS sert au relais courant : aucune seconde hydratation/récupération.
+    analyzerApplyHydratedRelay(driver,laps,pits);
+    analyzerRelayHydrationCache.set(analyzerRelayHydrationKey(driver),{
+     laps:analyzerNumeric(driver.laps,0),stops:analyzerNumeric(driver.pit_stops,0),updatedAt:Date.now()
+    });
+    console.info('[Velocity][SCORE RELAIS] équipe prête',{index:i+1,total:drivers.length,context,rowId,team:driver.driver,laps:laps.length,pits:pits.length,relays:relays.length,window,cached});
+   }catch(error){
+    if(String(error?.message||error)==='SCORE_RELAIS_CONTEXT_CHANGED')throw error;
+    console.warn('[Velocity][SCORE RELAIS] équipe ignorée après erreur STATS',{context,rowId,team:driver.driver,error});
+    teams.push({driver,relays:[]});
+   }
+   analyzerRelayScoreProgress={done:i+1,total:drivers.length,team:driver.driver||'',phase:'stats'};
+   // L'analyse Live reste prioritaire pendant la reconstruction.
+   await apexHistorySleep(background?35:20);
   }
-  try{
-   const {laps,pits,cached}=await analyzerRelayFetchStats(driver,{force});
-   const relays=analyzerRelayScoreSlices(laps,pits,driver);
-   teams.push({driver,relays});
-   // Une seule récupération STATS sert aussi à hydrater l'historique local.
-   analyzerApplyHydratedRelay(driver,laps,pits);
-   analyzerRelayHydrationCache.set(analyzerRelayHydrationKey(driver),{
-    laps:analyzerNumeric(driver.laps,0),stops:analyzerNumeric(driver.pit_stops,0),updatedAt:Date.now()
-   });
-   console.info('[Velocity][SCORE RELAIS] équipe reconstruite',{index:i+1,total:drivers.length,rowId,team:driver.driver,laps:laps.length,pits:pits.length,relays:relays.length,cached});
-  }catch(error){
-   console.warn('[Velocity][SCORE RELAIS] reconstruction STATS impossible',{rowId,team:driver.driver,error});
-   teams.push({driver,relays:[]});
-  }
-  analyzerRelayScoreProgress={done:i+1,total:drivers.length,team:driver.driver||'',phase:'stats'};
-  // Important : le Live Apex et le rendu Analyzer récupèrent le thread entre deux équipes.
-  await apexHistorySleep(background?55:35);
- }
- if(token===analyzerRelayScoreLoadToken){
+  if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
   analyzerRelayScoreProgress={done:drivers.length,total:drivers.length,team:'',phase:'qualification'};
-  await apexHistorySleep(60);
+  await apexHistorySleep(30);
   const qualification=await analyzerRelayScoreQualificationContext(drivers);
+  if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
   analyzerRelayScoreProgress={done:drivers.length,total:drivers.length,team:'',phase:'compute'};
-  await apexHistorySleep(80);
+  await apexHistorySleep(40);
   const started=performance.now();
+  // ALGORITHME VELOCITY INCHANGÉ : seul le moteur de collecte STATS a été remplacé.
   const computed=analyzerRelayScoreCompute(teams,qualification);
-  analyzerRelayScoreData={teams,qualification,...computed,updatedAt:Date.now()};
+  if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+  analyzerRelayScoreData={teams,qualification,...computed,updatedAt:Date.now(),context};
   analyzerRelayBackgroundLastSignature=signature;
-  console.info('[Velocity][SCORE RELAIS] calcul terminé',{teams:teams.length,maxRelay:computed.maxRelay,durationMs:Math.round(performance.now()-started)});
-  analyzerSaveLearning();analyzerSaveSession('relay-background-rebuild');
+  analyzerRelayCleanLastCompletedContext=context;
+  console.info('[Velocity][SCORE RELAIS] reconstruction terminée',{context,teams:teams.length,maxRelay:computed.maxRelay,durationMs:Math.round(performance.now()-started)});
+  analyzerSaveLearning();
+  analyzerSaveSession('relay-clean-rebuild');
+ }catch(error){
+  if(String(error?.message||error)==='SCORE_RELAIS_CONTEXT_CHANGED'){
+   console.info('[Velocity][SCORE RELAIS] reconstruction annulée : circuit/session changé',{from:context,to:analyzerRelayContextKey()});
+  }else console.warn('[Velocity][SCORE RELAIS] reconstruction interrompue',{context,error});
+ }finally{
+  if(token===analyzerRelayScoreLoadToken){
+   analyzerRelayScoreLoading=false;
+   analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
+  }
  }
- analyzerRelayScoreLoading=false;
- analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
- if(token!==analyzerRelayScoreLoadToken)return;
+ if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())return;
  if(analyzerVelocityView==='relays')analyzerRenderRelayScoreTable();
  else analyzerRefreshVelocityDeltaCells();
- if(analyzerRelayStructuralSignature()!==analyzerRelayBackgroundLastSignature)analyzerScheduleRelayBackgroundRebuild({delay:1200});
+ if(analyzerRelayStructuralSignature()!==analyzerRelayBackgroundLastSignature)analyzerScheduleRelayBackgroundRebuild({delay:1000});
 }
 
 function analyzerRelayScoreLatestCell(driver){
@@ -1590,11 +1615,12 @@ function setAnalyzerVelocityView(view){
    if(xscroll)xscroll.scrollLeft=enteringRelays?0:Math.min(analyzerRelayScoreScrollLeft,Math.max(0,xscroll.scrollWidth-xscroll.clientWidth));
   });
   if(analyzerRelayBackgroundScheduled){clearTimeout(analyzerRelayBackgroundScheduled);analyzerRelayBackgroundScheduled=null}
-  analyzerLoadRelayScores({background:false,structuralSignature:analyzerRelayStructuralSignature()});
+  analyzerLoadRelayScores({background:false,structuralSignature:analyzerRelayStructuralSignature(),contextKey:analyzerRelayEnsureContext()});
  }
 }
 function analyzerRenderRelayScoreTable(marketByScore){
  const host=document.getElementById('analyzerKartMarket');if(!host)return;
+ analyzerRelayEnsureContext();
  const ordered=(state.drivers||[]).map(driver=>({driver,relayMetrics:analyzerVelocityUnifiedMetrics(driver)})).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score||analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999)).map((item,index)=>({...item,kartiqTop:index+1}));
  if(analyzerRelayScoreLoading&&!analyzerRelayScoreData){host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(analyzerRelayProgressText())}</div>`;return}
  const data=analyzerRelayScoreData;if(!data){host.innerHTML='<div class="analyzer-empty">Cliquez sur SCORE RELAIS pour reconstruire les relais depuis STATS.</div>';return}
@@ -3472,7 +3498,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerOpportunityScore').textContent=opportunity.score;document.getElementById('analyzerAdvice').textContent=opportunity.advice;document.getElementById('analyzerAdviceDetail').textContent=opportunity.detail;
  const forecastRows=all.filter(x=>x.driver.status==='pit'||(Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=900)).sort((a,b)=>(a.forecast.seconds??999999)-(b.forecast.seconds??999999)).slice(0,10);
  const analyzerForecastEl=document.getElementById('analyzerForecast');if(analyzerForecastEl)analyzerForecastEl.innerHTML=forecastRows.length?forecastRows.map(x=>`<div class="analyzer-forecast-row"><span class="analyzer-forecast-time">${x.driver.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</span><span><span class="analyzer-forecast-team">${analyzerEscape(x.driver.driver)}</span><span class="analyzer-forecast-meta">Kart virtuel ${analyzerEscape(x.history.virtualKart)}</span></span><span class="analyzer-score-pill ${analyzerScoreClass(x.score)}">${x.score}/100</span><span class="analyzer-confidence">${x.forecast.confidence}%</span></div>`).join(''):'<div class="analyzer-empty">Aucun arrêt attendu dans les 15 prochaines minutes.</div>';
- if(!analyzerRelayScoreData&&!analyzerRelayScoreLoading)setTimeout(()=>analyzerLoadRelayScores(),0);
+ // SCORE RELAIS : un seul scheduler propre est lancé en début de renderAnalyzer().
  const marketByScore=all.map(x=>({...x,relayMetrics:analyzerVelocityUnifiedMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).map((x,index)=>({...x,kartiqTop:index+1,relayRemaining:analyzerKartRelayRemaining(x.driver)}));
  const mobileVelocity=document.getElementById('analyzerMobileVelocityScore');
  if(mobileVelocity){const ownVelocity=marketByScore.find(x=>x.driver?.driver===(followed?.driver||state.followed_driver));mobileVelocity.textContent=ownVelocity?.relayMetrics?.score??'—';mobileVelocity.className=ownVelocity?analyzerScoreClass(ownVelocity.relayMetrics.score):'';}
@@ -4100,34 +4126,93 @@ async function fetchAllApexTeamPits(rowId,sessionId,status,expectedPitCount=0){
  return latest;
 }
 
-function analyzerRelayStatsCacheKey(driver){
- return `${analyzerSessionCircuit()}:${Number(driver?.apex_row)||0}`;
+function analyzerRelayContextKey(){
+ const circuit=String(analyzerSessionCircuit()||'').trim();
+ const liveSession=String(state?.session_name||'').trim();
+ return `${circuit}|${liveSession}`;
+}
+function analyzerRelayResetEngine(reason='context-change'){
+ analyzerRelayScoreLoadToken++;
+ if(analyzerRelayBackgroundScheduled){clearTimeout(analyzerRelayBackgroundScheduled);analyzerRelayBackgroundScheduled=null}
+ analyzerRelayScoreLoading=false;
+ analyzerRelayScoreData=null;
+ analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
+ analyzerRelayStatsCache.clear();
+ analyzerRelayBackgroundLastSignature='';
+ analyzerRelayCleanLastCompletedContext='';
+ analyzerRelayEngineContext=analyzerRelayContextKey();
+ console.info('[Velocity][SCORE RELAIS] moteur réinitialisé',{reason,context:analyzerRelayEngineContext});
+}
+function analyzerRelayEnsureContext(){
+ const current=analyzerRelayContextKey();
+ if(current!==analyzerRelayEngineContext)analyzerRelayResetEngine('circuit/session changed');
+ return current;
+}
+function analyzerRelayStatsCacheKey(driver,context=analyzerRelayEnsureContext()){
+ return `${context}:${Number(driver?.apex_row)||0}`;
 }
 function analyzerRelayExpectedLaps(driver){return Math.max(0,analyzerNumeric(driver?.laps,0))}
 function analyzerRelayExpectedPits(driver){return Math.max(0,analyzerNumeric(driver?.pit_stops,analyzerNumeric(driver?.stops,analyzerNumeric(driver?.pits,0))))}
-async function analyzerRelayFetchStats(driver,{force=false}={}){
- const rowId=Number(driver?.apex_row),lapsExpected=analyzerRelayExpectedLaps(driver),pitsExpected=analyzerRelayExpectedPits(driver);
- if(!rowId)return {laps:[],pits:[],cached:false};
- const key=analyzerRelayStatsCacheKey(driver),cached=analyzerRelayStatsCache.get(key);
- // Les relais historiques ne changent qu'au prochain arrêt.
- // Les tours du relais ACTUEL restent analysés en Live par analyzerLearnFromState().
- if(!force&&cached&&cached.pitsExpected===pitsExpected)return {laps:cached.laps,pits:cached.pits,cached:true};
- const started=performance.now();
- const [laps,pits]=await Promise.all([
-  fetchAllApexTeamLaps(rowId,'',null,lapsExpected),
-  fetchAllApexTeamPits(rowId,'',null,pitsExpected)
- ]);
- analyzerRelayStatsCache.set(key,{laps,pits,lapsExpected,pitsExpected,updatedAt:Date.now()});
- console.info('[Velocity][SCORE RELAIS][STATS]',{
-  rowId,team:driver?.driver||'',lapsExpected,pitsExpected,lapsLoaded:laps.length,pitsLoaded:pits.length,
-  durationMs:Math.round(performance.now()-started)
- });
- return {laps,pits,cached:false};
+function analyzerRelayCleanLapWindow({expectedLaps=0,expectedPits=0,hint=0}={}){
+ const laps=Math.max(0,Number(expectedLaps)||0),pits=Math.max(0,Number(expectedPits)||0),forced=Math.max(0,Number(hint)||0);
+ const target=forced||laps||(pits>=35?3000:pits>=8?1500:750);
+ if(target<=300)return 300;
+ if(target<=750)return 750;
+ if(target<=1500)return 1500;
+ return 3000;
+}
+function analyzerRelayNextLapWindow(current){
+ if(current<750)return 750;
+ if(current<1500)return 1500;
+ if(current<3000)return 3000;
+ return 3000;
+}
+async function analyzerRelayFetchTeamStatsClean(driver,{force=false,sessionId='',lapWindowHint=0,contextKey=null}={}){
+ const rowId=Number(driver?.apex_row||driver?.rowId||0);
+ if(!rowId)return {laps:[],pits:[],cached:false,window:0};
+ const context=contextKey||analyzerRelayEnsureContext();
+ const expectedLaps=analyzerRelayExpectedLaps(driver),expectedPits=analyzerRelayExpectedPits(driver);
+ const cacheKey=`${context}:${sessionId||'live'}:${rowId}`,cached=analyzerRelayStatsCache.get(cacheKey);
+ if(!force&&cached&&cached.pitsExpected===expectedPits&&cached.sessionId===(sessionId||''))return {...cached,cached:true};
+ let windowSize=analyzerRelayCleanLapWindow({expectedLaps,expectedPits,hint:lapWindowHint});
+ const prefix=sessionId?`S#${sessionId}#`:'';
+ let last={laps:[],pits:[],rawLength:0};
+ // Moteur propre : UNE requête combinée .L + .P + .INF par équipe.
+ // On ne monte de fenêtre qu'une seule fois si Apex prouve que l'historique est tronqué.
+ for(let pass=1;pass<=2;pass++){
+  if(context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+  const command=`${prefix}D#-${windowSize}#D${rowId}.L#-999#D${rowId}.P#2#D${rowId}.B#1#D${rowId}.INF`;
+  const started=performance.now();
+  let raw='';
+  try{raw=await apexHistoryRequest(command)}catch(error){
+   console.warn('[Velocity][SCORE RELAIS][STATS] requête combinée en échec',{context,rowId,team:driver?.driver||driver?.name||'',sessionId:sessionId||'live',windowSize,error});
+   if(pass===1){await apexHistorySleep(120);continue}
+   throw error;
+  }
+  if(context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+  const laps=parseApexTeamData(raw,rowId).laps;
+  const pits=parseApexPitData(raw,rowId);
+  last={laps,pits,rawLength:String(raw||'').length};
+  const oldest=laps.length?Math.min(...laps.map(l=>Number(l.lap)).filter(Number.isFinite)):null;
+  console.info('[Velocity][SCORE RELAIS][STATS]',{
+   context,rowId,team:driver?.driver||driver?.name||'',sessionId:sessionId||'live',
+   windowSize,laps:laps.length,pits:pits.length,oldestLap:oldest,rawLength:last.rawLength,
+   durationMs:Math.round(performance.now()-started)
+  });
+  if(laps.length&&(!Number.isFinite(oldest)||oldest<=1||windowSize>=3000))break;
+  const next=analyzerRelayNextLapWindow(windowSize);
+  if(next===windowSize)break;
+  windowSize=next;
+  await apexHistorySleep(40);
+ }
+ const item={...last,lapsExpected:expectedLaps,pitsExpected:expectedPits,sessionId:sessionId||'',window:windowSize,updatedAt:Date.now(),cached:false};
+ analyzerRelayStatsCache.set(cacheKey,item);
+ return item;
 }
 function analyzerRelayStructuralSignature(){
- const circuit=analyzerSessionCircuit();
+ const context=analyzerRelayEnsureContext();
  const rows=(state.drivers||[]).filter(d=>Number(d.apex_row)>0).map(d=>`${Number(d.apex_row)}:${analyzerNumeric(d.pit_stops,0)}`).sort();
- return `${circuit}|${rows.join(',')}`;
+ return `${context}|${rows.join(',')}`;
 }
 function analyzerRelayProgressText(){
  const p=analyzerRelayScoreProgress;
@@ -4136,16 +4221,20 @@ function analyzerRelayProgressText(){
  if(p.total>0)return `Reconstruction SCORE RELAIS depuis STATS… ${p.done}/${p.total}${p.team?` · ${p.team}`:''}`;
  return 'Reconstruction SCORE RELAIS depuis STATS…';
 }
-function analyzerScheduleRelayBackgroundRebuild({delay=1400}={}){
- if(analyzerRelayScoreLoading||analyzerRelayBackgroundScheduled)return;
+function analyzerScheduleRelayBackgroundRebuild({delay=1200}={}){
+ const context=analyzerRelayEnsureContext();
+ if(!context.split('|')[0]||analyzerRelayScoreLoading||analyzerRelayBackgroundScheduled)return;
  const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);if(!drivers.length)return;
  const signature=analyzerRelayStructuralSignature();
  if(analyzerRelayScoreData&&signature===analyzerRelayBackgroundLastSignature)return;
  analyzerRelayBackgroundScheduled=setTimeout(()=>{
   analyzerRelayBackgroundScheduled=null;
-  if(!analyzerRelayScoreLoading)analyzerLoadRelayScores({background:true,structuralSignature:analyzerRelayStructuralSignature()});
+  const current=analyzerRelayEnsureContext();
+  if(current!==context||analyzerRelayScoreLoading)return;
+  analyzerLoadRelayScores({background:true,structuralSignature:analyzerRelayStructuralSignature(),contextKey:current});
  },delay);
 }
+
 function analyzerRelayHydrationKey(driver){
  return `${analyzerSessionCircuit()}:${Number(driver?.apex_row)||0}`;
 }

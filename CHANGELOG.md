@@ -1,3 +1,32 @@
+# V7.2.1770 — SCORE RELAIS : moteur STATS propre
+
+- Base : V7.2.1769.
+- Algorithme Velocity / notation des karts et relais STRICTEMENT inchangé.
+- Suppression de la plomberie accumulée autour de SCORE RELAIS :
+  - plus de double lancement caché dans `renderAnalyzer`;
+  - plus de second pipeline STATS pour hydrater le relais ;
+  - plus de cascade systématique 30 → 100 → 300 → 750 → 1500 → 3000.
+- Nouvelle collecte simple par équipe :
+  1. `row Apex`;
+  2. UNE requête combinée STATS `.L + .P + .INF`;
+  3. parsing des tours et des passages aux stands depuis la même réponse;
+  4. découpage R1 / R2 / R3... avec la logique existante;
+  5. passage dans `analyzerRelayScoreCompute()` inchangé.
+- Fenêtre choisie directement selon la profondeur de la course :
+  - petite course : 750 tours;
+  - endurance normale : 1500;
+  - longue endurance / beaucoup de PITS : 3000.
+- Une seule montée de fenêtre possible uniquement si Apex prouve que l'historique retourné est tronqué.
+- Reconstruction séquentielle équipe par équipe pour préserver le Live.
+- Isolation stricte par circuit/session :
+  - changement de circuit/session = annulation immédiate du job précédent;
+  - vidage du cache et des résultats SCORE RELAIS de l'ancien circuit;
+  - toute réponse STATS tardive de l'ancien circuit est rejetée.
+- Correction du bug observé : Kartland ne peut plus continuer la reconstruction `3/44 · BSE RACING` d'Alain Prost A.
+- La qualification R1 utilise elle aussi la nouvelle requête combinée propre.
+- Le Score du relais en cours reste calculé en Live tour après tour.
+- Velocity Lab / Data Recorder non modifiés.
+
 # V7.2.1769 — Score Relais : retour au Live progressif + historique STATS en arrière-plan
 
 - Base STRICTE : V7.2.1768. Velocity Lab / Data Recorder / design Lab conservés.
