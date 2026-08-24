@@ -2927,3 +2927,30 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
  .relay-score-fixed-table thead .relay-fixed-team{padding-right:54px!important}
  .relay-score-nav{right:3px;gap:3px}.relay-score-nav button{width:22px;height:22px;font-size:14px}
 }
+
+
+/* Velocity V7.2.1775 — UI SCORE RELAIS stable : aucun clignotement du polling */
+.relay-score-job-status.computing .relay-score-job-progress span{
+ position:relative;overflow:hidden;background:#ff8a1f
+}
+.relay-score-job-status.computing .relay-score-job-progress span::after{
+ content:"";position:absolute;inset:0;width:40%;
+ background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+ animation:relayScoreComputeSweep 1.15s linear infinite
+}
+.relay-score-job-status.computing .relay-score-job-percent{color:#ffb15c}
+@keyframes relayScoreComputeSweep{from{transform:translateX(-120%)}to{transform:translateX(300%)}}
+
+.relay-score-job-close{
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+ width:22px;height:22px;padding:0;margin-left:1px;border:1px solid #46505d;border-radius:6px;
+ background:#111821;color:#cbd2dc;font:700 16px/1 Arial,sans-serif;cursor:pointer;
+ transition:color .15s ease,border-color .15s ease,background .15s ease
+}
+.relay-score-job-close:hover{color:#fff;border-color:#35e594;background:#15221d}
+.relay-score-job-status.done{grid-template-columns:auto minmax(150px,auto) minmax(120px,1fr) auto auto}
+@media(max-width:700px){
+ .relay-score-job-status.done{grid-template-columns:auto minmax(100px,1fr) auto auto}
+ .relay-score-job-status.done .relay-score-job-progress{grid-column:2/5}
+ .relay-score-job-close{width:20px;height:20px;font-size:14px}
+}

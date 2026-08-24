@@ -55,6 +55,9 @@ let analyzerRelayBackgroundLastSignature='';
 let analyzerRelayServerJobId=null;
 let analyzerRelayServerPollTimer=null;
 let analyzerRelayScoreLastStatus={state:'idle',done:0,total:0,team:'',phase:'idle',updatedAt:0,durationMs:0,error:''};
+let analyzerRelayScoreStatusDismissed=false;
+let analyzerRelayScoreRenderSignature='';
+
 
 let analyzerRelayEngineContext='';
 let analyzerRelayCleanLastCompletedContext='';
@@ -1499,26 +1502,53 @@ function analyzerRelayScoreCompute(teams,qualification){
 function analyzerRelayScoreStatusHtml(){
  const live=analyzerRelayScoreLoading;
  const p=live?analyzerRelayScoreProgress:analyzerRelayScoreLastStatus;
- if(!p||(!live&&p.state==='idle'))return '';
+ if(!p||(!live&&p.state==='idle')||(!live&&p.state==='done'&&analyzerRelayScoreStatusDismissed))return '';
  const done=Math.max(0,Number(p.done)||0),total=Math.max(0,Number(p.total)||0);
- const pct=total?Math.max(0,Math.min(100,Math.round(done/total*100))):(p.state==='done'?100:0);
+ const computing=live&&p.phase==='compute';
+ let pct=0,pctLabel='0%';
+ if(p.state==='done'){pct=100;pctLabel='100%'}
+ else if(computing){pct=90;pctLabel='…'}
+ else if(total){pct=Math.max(0,Math.min(90,Math.round(done/total*90)));pctLabel=`${pct}%`}
  let label='PRÉPARATION';
  if(live){
-  if(p.phase==='compute')label='CALCUL DES SCORES RELAIS';
-  else label='TRAITEMENT STATS EN COURS';
+  label=computing?'CALCUL DES SCORES RELAIS':'TRAITEMENT STATS EN COURS';
  }else if(p.state==='done')label='TRAITEMENT TERMINÉ';
  else if(p.state==='error')label='TRAITEMENT INTERROMPU';
  const detail=live
-  ? `${done}/${total||'—'} équipes${p.team?` · ${p.team}`:''}`
+  ? (computing?`${total||done} équipes récupérées · calcul serveur en cours`:`${done}/${total||'—'} équipes${p.team?` · ${p.team}`:''}`)
   : p.state==='done'
     ? `${total||done} équipes · ${p.durationMs?`${(Number(p.durationMs)/1000).toFixed(1)} s`:'terminé'}`
     : (p.error||'Erreur serveur');
- return `<div class="relay-score-job-status ${analyzerEscape(p.state||'running')}">
+ const close=(!live&&p.state==='done')
+  ? '<button type="button" class="relay-score-job-close" aria-label="Masquer le statut" title="Masquer" onclick="event.stopPropagation();analyzerRelayScoreDismissStatus()">×</button>'
+  : '';
+ return `<div id="analyzerRelayScoreJobStatus" class="relay-score-job-status ${analyzerEscape(p.state||'running')}${computing?' computing':''}">
    <span class="relay-score-job-dot" aria-hidden="true"></span>
    <div class="relay-score-job-copy"><strong>${label}</strong><small>${analyzerEscape(detail)}</small></div>
-   <div class="relay-score-job-progress" aria-label="${pct}%"><span style="width:${pct}%"></span></div>
-   <b class="relay-score-job-percent">${pct}%</b>
+   <div class="relay-score-job-progress" aria-label="${analyzerEscape(pctLabel)}"><span style="width:${pct}%"></span></div>
+   <b class="relay-score-job-percent">${analyzerEscape(pctLabel)}</b>${close}
   </div>`;
+}
+function analyzerRelayScoreDismissStatus(){
+ analyzerRelayScoreStatusDismissed=true;
+ document.getElementById('analyzerRelayScoreJobStatus')?.remove();
+ analyzerRelayScoreRenderSignature='';
+}
+function analyzerRelayScoreUpdateStatus(){
+ if(analyzerVelocityView!=='relays')return;
+ const host=document.getElementById('analyzerKartMarket');if(!host)return;
+ const existing=document.getElementById('analyzerRelayScoreJobStatus');
+ const html=analyzerRelayScoreStatusHtml();
+ if(existing){
+  if(!html){existing.remove();return}
+  const temp=document.createElement('div');temp.innerHTML=html;
+  const fresh=temp.firstElementChild;
+  if(fresh)existing.replaceWith(fresh);
+  return;
+ }
+ if(!html)return;
+ const temp=document.createElement('div');temp.innerHTML=html;
+ const fresh=temp.firstElementChild;if(fresh)host.prepend(fresh);
 }
 function analyzerRelayScoreScroll(direction){
  const scroller=document.getElementById('analyzerRelayScoreXScroll');if(!scroller)return;
@@ -1534,6 +1564,7 @@ function analyzerRelayScoreUpdateNavButtons(){
  if(left)left.disabled=x<=2;
  if(right)right.disabled=x>=max-2;
 }
+
 function analyzerRelayServerDrivers(){
  return (state.drivers||[]).filter(d=>Number(d.apex_row)>0).map(d=>({
   apex_row:Number(d.apex_row),
@@ -1583,6 +1614,8 @@ async function analyzerLoadRelayScores({force=false,background=false,structuralS
  }
  const drivers=analyzerRelayServerDrivers();if(!drivers.length)return;
  analyzerRelayScoreLoading=true;
+ analyzerRelayScoreStatusDismissed=false;
+ analyzerRelayScoreRenderSignature='';
  const token=++analyzerRelayScoreLoadToken;
  analyzerRelayScoreProgress={done:0,total:drivers.length,team:'',phase:'server'};
  analyzerRelayScoreLastStatus={state:'running',done:0,total:drivers.length,team:'',phase:'server',updatedAt:Date.now(),durationMs:0,error:''};
@@ -1610,10 +1643,7 @@ async function analyzerLoadRelayScores({force=false,background=false,structuralS
     team:String(progress.team||''),phase:String(progress.phase||'server')
    };
    analyzerRelayScoreLastStatus={state:'running',...analyzerRelayScoreProgress,updatedAt:Date.now(),durationMs:0,error:''};
-   if(analyzerVelocityView==='relays'&&!analyzerRelayScoreData){
-    const host=document.getElementById('analyzerKartMarket');
-    if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(analyzerRelayProgressText())}</div>`;
-   }
+   analyzerRelayScoreUpdateStatus();
    if(job.status==='done'){
     analyzerRelayApplyServerResult(job.result||{},context,signature);
     analyzerRelayScoreLastStatus={state:'done',done:drivers.length,total:drivers.length,team:'',phase:'done',updatedAt:Date.now(),durationMs:Number(job.result?.durationMs)||0,error:''};
@@ -1756,8 +1786,27 @@ function analyzerRenderRelayScoreTable(marketByScore){
  const host=document.getElementById('analyzerKartMarket');if(!host)return;
  analyzerRelayEnsureContext();
  const ordered=(state.drivers||[]).map(driver=>({driver,relayMetrics:analyzerVelocityUnifiedMetrics(driver)})).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score||analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999)).map((item,index)=>({...item,kartiqTop:index+1}));
- if(analyzerRelayScoreLoading&&!analyzerRelayScoreData){host.innerHTML=`${analyzerRelayScoreStatusHtml()}<div class="analyzer-empty relay-score-loading-copy">${analyzerEscape(analyzerRelayProgressText())}</div>`;return}
- const data=analyzerRelayScoreData;if(!data){host.innerHTML='<div class="analyzer-empty">Cliquez sur SCORE RELAIS pour reconstruire les relais depuis STATS.</div>';return}
+ if(analyzerRelayScoreLoading&&!analyzerRelayScoreData){
+  const signature=`loading:${analyzerRelayContextKey()}`;
+  if(analyzerRelayScoreRenderSignature!==signature||!host.querySelector('.relay-score-loading-copy')){
+   host.innerHTML=`${analyzerRelayScoreStatusHtml()}<div class="analyzer-empty relay-score-loading-copy">${analyzerEscape(analyzerRelayProgressText())}</div>`;
+   analyzerRelayScoreRenderSignature=signature;
+  }else analyzerRelayScoreUpdateStatus();
+  return;
+ }
+ const data=analyzerRelayScoreData;
+ if(!data){
+  const signature=`empty:${analyzerRelayContextKey()}`;
+  if(analyzerRelayScoreRenderSignature!==signature){host.innerHTML='<div class="analyzer-empty">Cliquez sur SCORE RELAIS pour reconstruire les relais depuis STATS.</div>';analyzerRelayScoreRenderSignature=signature}
+  return;
+ }
+ const rowSignature=(state.drivers||[]).map(d=>`${Number(d.apex_row)||0}:${String(d.driver||'')}:${String(d.pos||'')}`).join('|');
+ const renderSignature=`data:${data.context||analyzerRelayContextKey()}:${Number(data.updatedAt)||0}:${Number(data.maxRelay)||0}:${rowSignature}`;
+ if(analyzerRelayScoreRenderSignature===renderSignature&&host.querySelector('.relay-score-grid')){
+  analyzerRelayScoreUpdateStatus();
+  analyzerRelayScoreUpdateNavButtons();
+  return;
+ }
  // Rafraîchissement historique piloté par les nouveaux arrêts, pas par un timer lourd.
  const maxRelay=Math.max(1,data.maxRelay||0),relayColWidth=56,relayTableWidth=maxRelay*relayColWidth,relayColgroup=`<colgroup>${Array.from({length:maxRelay},()=>`<col class="relay-score-width-col" style="width:${relayColWidth}px;min-width:${relayColWidth}px;max-width:${relayColWidth}px">`).join('')}</colgroup>`,relayHeaders=Array.from({length:maxRelay},(_,i)=>`<th class="relay-score-col">R${i+1}</th>`).join('');
  const byRow=new Map(data.teams.map(team=>[Number(team.driver.apex_row),team]));
@@ -1772,6 +1821,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
  const qualLabel=data.qualification?.session?.name?`R1 référencé sur ${analyzerEscape(data.qualification.session.name)}`:'R1 sans qualification reconnue : transition neutralisée';
  host.innerHTML=`${analyzerRelayScoreStatusHtml()}<div class="relay-score-meta">${qualLabel} · Scores alimentés par les tours, arrêts et pilotes natifs STATS Apex.</div><div class="relay-score-grid"><div class="relay-score-fixed"><table class="analyzer-kartiq-table relay-score-fixed-table"><thead><tr><th class="relay-fixed-top">TOP</th><th class="relay-fixed-pos">POS</th><th class="relay-fixed-kart">KART</th><th class="relay-fixed-team"><span>ÉQUIPE / PILOTE</span><span class="relay-score-nav"><button id="analyzerRelayScorePrev" type="button" aria-label="Relais précédents" title="Relais précédents" onclick="event.stopPropagation();analyzerRelayScoreScroll(-1)">←</button><button id="analyzerRelayScoreNext" type="button" aria-label="Relais suivants" title="Relais suivants" onclick="event.stopPropagation();analyzerRelayScoreScroll(1)">→</button></span></th></tr></thead><tbody>${fixedRows.join('')}</tbody></table></div><div class="relay-score-xscroll" id="analyzerRelayScoreXScroll"><table class="analyzer-kartiq-table relay-score-table" style="width:${relayTableWidth}px;min-width:${relayTableWidth}px;max-width:${relayTableWidth}px">${relayColgroup}<thead><tr>${relayHeaders}</tr></thead><tbody>${relayRows.join('')}</tbody></table></div></div>`;
  host.classList.add('relay-score-scroll-host');
+ analyzerRelayScoreRenderSignature=renderSignature;
  const xscroll=document.getElementById('analyzerRelayScoreXScroll');
  if(xscroll){
   xscroll.addEventListener('scroll',()=>{if(analyzerVelocityView==='relays')analyzerRelayScoreScrollLeft=xscroll.scrollLeft;analyzerRelayScoreUpdateNavButtons()},{passive:true});

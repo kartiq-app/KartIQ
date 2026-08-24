@@ -1,3 +1,26 @@
+# V7.2.1775 — SCORE RELAIS : UI stable sans clignotement
+
+- Base : V7.2.1774.
+- Aucun changement du moteur serveur ni de l'algorithme Velocity.
+- Correction du clignotement de la progression :
+  - le polling serveur ne remplace plus le contenu de la carte SCORE RELAIS ;
+  - la barre de statut est mise à jour indépendamment du tableau ;
+  - `renderAnalyzer()` ne reconstruit plus la structure SCORE RELAIS à chaque rafraîchissement Live.
+- Correction des flèches ← / → :
+  - l'en-tête et les boutons restent dans le DOM ;
+  - plus de disparition/recréation sous la souris ;
+  - clics et hover stabilisés ;
+  - déplacement toujours de 3 relais par clic.
+- Progression corrigée :
+  - récupération STATS = 0 à 90 % ;
+  - phase calcul = barre animée à 90 % avec `…`, jamais un faux 100 % ;
+  - 100 % uniquement lorsque le backend retourne réellement `done`.
+- Après traitement terminé, une croix `×` apparaît à droite de 100 %.
+  - clic = masque uniquement le bandeau de statut ;
+  - scores et tableau restent affichés.
+- Un nouveau traitement réaffiche automatiquement le bandeau.
+- Velocity Lab / Data Recorder inchangés.
+
 # V7.2.1774 — SCORE RELAIS : progression visible + flèches de navigation
 
 - Base : V7.2.1773 Server Relay Engine.
