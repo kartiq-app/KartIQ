@@ -23,15 +23,17 @@ async function closeQualificationFocus(){
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 function qualificationPurpleBest(){
- // Source de vérité : meilleur chrono numérique parmi les concurrents du GRID live.
- // On ne dépend plus de data-driver du DOM (qui contient souvent apex_row), ce qui
- // corrige le nom manquant dans le Focus Qualification.
- const candidates=(state.drivers||[]).map(driver=>({driver,seconds:parseLapTime(driver?.best)})).filter(item=>Number.isFinite(item.seconds));
- if(candidates.length){
-  candidates.sort((a,b)=>a.seconds-b.seconds);
-  const best=candidates[0].driver;
-  return {driver:best?.driver||'—',lap:best?.best||'—'};
+ // La cellule violette du tableau Qualification est la source de vérité visuelle :
+ // elle correspond au meilleur temps absolu affiché par Velocity/Apex pour la séance.
+ const tableId=qualificationFocusSourceMode==='endurance'?'enduranceQualifTable':'qualifTable';
+ const purpleCell=document.querySelector('#'+tableId+' tr td.purple');
+ if(purpleCell){
+  const row=purpleCell.closest('tr');
+  const driverKey=row?.dataset?.driver||'';
+  const driver=(state.drivers||[]).find(d=>(d.driver||String(d.pos))===driverKey);
+  return {driver:driver?.driver||driverKey||'—',lap:purpleCell.textContent.trim()||driver?.best||'—'};
  }
+ // Repli de sécurité si le tableau n'est pas encore peint au premier rendu.
  const ranking=qualificationRanking();
  const leader=ranking[0];
  return {driver:leader?.driver||'—',lap:leader?.best||'—'};

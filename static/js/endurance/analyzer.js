@@ -31,15 +31,15 @@ function analyzerUpdateRaceRemaining(){
  el.textContent=state?.time_remaining||'—';
 }
 /* Velocity V6.10.5 — titres alignés, MAP inactive visible et réglages météo */
-const ANALYZER_RULES_KEY=velocityWorkspaceStorageKey('kartiq-analyzer-rules-v1');
-const ANALYZER_LEARNING_KEY=velocityWorkspaceStorageKey('kartiq-analyzer-learning-v1');
+const ANALYZER_RULES_KEY='kartiq-analyzer-rules-v1';
+const ANALYZER_LEARNING_KEY='kartiq-analyzer-learning-v1';
 const ANALYZER_DEFAULT_RULES={raceHours:null,requiredStops:null,minStintMinutes:null,maxStintMinutes:null,minPitSeconds:null,pitCloseMinutes:null,safetyMarginMinutes:null,driversCount:null,driverMinimumMinutes:null};
 
-const ANALYZER_SESSIONS_INDEX_KEY=velocityWorkspaceStorageKey('kartiq-analyzer-sessions-index-v1');
-const ANALYZER_ACTIVE_SESSION_KEY=velocityWorkspaceStorageKey('kartiq-analyzer-active-session-v1');
-const ANALYZER_SESSION_PREFIX=velocityWorkspaceStorageKey('kartiq-analyzer-session-v1')+':';
+const ANALYZER_SESSIONS_INDEX_KEY='kartiq-analyzer-sessions-index-v1';
+const ANALYZER_ACTIVE_SESSION_KEY='kartiq-analyzer-active-session-v1';
+const ANALYZER_SESSION_PREFIX='kartiq-analyzer-session-v1:';
 const ANALYZER_AUTOSAVE_MS=15000;
-const ANALYZER_STORAGE_CLEANUP_KEY=velocityWorkspaceStorageKey('velocity-analyzer-storage-cleanup-v3');
+const ANALYZER_STORAGE_CLEANUP_KEY='velocity-analyzer-storage-cleanup-v3';
 const ANALYZER_MAX_SESSION_INDEX=10;
 let analyzerKartSort='none';
 let analyzerVelocityView='velocity';
@@ -313,7 +313,6 @@ function analyzerSessionSnapshot(reason='autosave'){
   queues:{count:kartQueueState?.count||1,queues:(kartQueueState?.queues||[[]]).map(queue=>[...queue])},
   followedDriver:state?.followed_driver||'',
   analyzerSort,
-  analyzerSectorSort,
   raceSummary:{timeRemaining:state?.time_remaining||'—',lapsRemaining:state?.apex_laps_remaining||'—',driverCount:(state?.drivers||[]).length}
  };
 }
@@ -340,7 +339,6 @@ function analyzerApplySession(session,{notify=true}={}){
  analyzerSessionCircuitId=session.circuitId;
  analyzerRules={...ANALYZER_DEFAULT_RULES,...(session.rules||{})};
  analyzerSort=session.analyzerSort||'position';
- analyzerSectorSort=['s1','s2','s3','theoretical'].includes(session.analyzerSectorSort)?session.analyzerSectorSort:'s1';
  if(session.queues&&typeof normalizeKartQueueState==='function'){
   kartQueueState=normalizeKartQueueState(session.queues);
   saveKartQueues();renderKartQueues();
@@ -357,7 +355,7 @@ function analyzerCreateSession({name=null,circuitId=null,reset=true}={}){
  if(analyzerActiveSessionId)analyzerSaveSession('before-new-session');
  const id=`${analyzerSessionSafeId(cid)}-${Date.now().toString(36)}`;
  const now=Date.now();
- const session={version:3,appVersion:'7.2.106',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position',analyzerSectorSort:'s1'};
+ const session={version:3,appVersion:'7.2.106',id,name:name||analyzerSessionDefaultName(cid),circuitId:cid,circuitName:analyzerSessionCircuitName(cid),createdAt:now,updatedAt:now,status:'active',rules:reset?{...ANALYZER_DEFAULT_RULES}:{...analyzerRules},queues:reset?{count:1,queues:[[]]}:{count:kartQueueState.count,queues:kartQueueState.queues.map(q=>[...q])},followedDriver:'',analyzerSort:'position'};
  if(!analyzerStorageSafeSet(ANALYZER_SESSION_PREFIX+id,JSON.stringify(session)))return null;analyzerSessionUpdateIndex(session);analyzerApplySession(session,{notify:false});analyzerSaveSession('new-session');return session;
 }
 function analyzerEnsureSession(){
@@ -397,7 +395,6 @@ async function importAnalyzerSession(event){
 }
 let analyzerRules={...ANALYZER_DEFAULT_RULES};
 let analyzerSort='position';
-let analyzerSectorSort='s1';
 let analyzerRankingMode='general';
 const analyzerVirtualPitCache=new Map();
 let analyzerVirtualLoading=false;
@@ -1071,10 +1068,9 @@ async function analyzerLoadVirtualPitData(){
  analyzerVirtualLoading=false;renderAnalyzer();
 }
 function setAnalyzerRankingMode(mode){
- analyzerRankingMode=mode==='virtual'?'virtual':mode==='sectors'?'sectors':'general';
+ analyzerRankingMode=mode==='virtual'?'virtual':'general';
  document.getElementById('analyzerGeneralRankingBtn')?.classList.toggle('active',analyzerRankingMode==='general');
  document.getElementById('analyzerVirtualRankingBtn')?.classList.toggle('active',analyzerRankingMode==='virtual');
- document.getElementById('analyzerSectorRankingBtn')?.classList.toggle('active',analyzerRankingMode==='sectors');
  renderAnalyzer();
  if(analyzerRankingMode==='virtual')analyzerLoadVirtualPitData();
 }
@@ -1421,7 +1417,15 @@ async function analyzerLoadRelayScores({force=false}={}){
  for(let i=0;i<drivers.length;i++){
   if(token!==analyzerRelayScoreLoadToken)break;
   const driver=drivers[i];
-  try{const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(Number(driver.apex_row),'',null),fetchAllApexTeamPits(Number(driver.apex_row),'',null).catch(()=>[])]);teams.push({driver,relays:analyzerRelayScoreSlices(laps,pits,driver)})}catch(_){teams.push({driver,relays:[]})}
+  try{
+   const rowId=Number(driver.apex_row);
+   const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(rowId,'',null),fetchAllApexTeamPits(rowId,'',null)]);
+   if(!pits.length&&Number(driver.stops||driver.pits||0)>0)console.warn('[Velocity][SCORE RELAIS] STATS PITS vide malgré des arrêts Live',{rowId,team:driver.driver,liveStops:Number(driver.stops||driver.pits||0)});
+   teams.push({driver,relays:analyzerRelayScoreSlices(laps,pits,driver)});
+  }catch(error){
+   console.warn('[Velocity][SCORE RELAIS] reconstruction STATS impossible',{rowId:Number(driver.apex_row),team:driver.driver,error});
+   teams.push({driver,relays:[]});
+  }
  }
  if(token===analyzerRelayScoreLoadToken){
   const qualification=await analyzerRelayScoreQualificationContext(drivers);
@@ -1636,14 +1640,12 @@ let velocityLabSprintLoading=false;
 let velocityLabSprintAnalysis=null;
 
 function setVelocityLabMode(mode){
- velocityLabMode=mode==='sprint'?'sprint':mode==='recorder'?'recorder':'official';
+ velocityLabMode=mode==='sprint'?'sprint':'official';
  document.getElementById('velocityLabOfficialTab')?.classList.toggle('active',velocityLabMode==='official');
  document.getElementById('velocityLabSprintTab')?.classList.toggle('active',velocityLabMode==='sprint');
- document.getElementById('velocityLabRecorderTab')?.classList.toggle('active',velocityLabMode==='recorder');
- const official=document.getElementById('velocityLabOfficialPanel'),sprint=document.getElementById('velocityLabSprintPanel'),recorder=document.getElementById('velocityLabRecorderPanel');
- if(official)official.hidden=velocityLabMode!=='official';if(sprint)sprint.hidden=velocityLabMode!=='sprint';if(recorder)recorder.hidden=velocityLabMode!=='recorder';
+ const official=document.getElementById('velocityLabOfficialPanel'),sprint=document.getElementById('velocityLabSprintPanel');
+ if(official)official.hidden=velocityLabMode!=='official';if(sprint)sprint.hidden=velocityLabMode!=='sprint';
  if(velocityLabMode==='official')analyzerRenderVelocityLab(true);
- else if(velocityLabMode==='recorder')window.loadVelocityRecorder?.(true);
  else if(!velocityLabSprintSessions.length)loadVelocityLabSprintSessions();
  else renderVelocityLabSprintSessions();
 }
@@ -2308,7 +2310,7 @@ function openVelocityLab(){
  analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false;analyzerVelocityLabLastRender=0;
  document.getElementById('velocityLabOverlay')?.classList.add('active');document.body.classList.add('velocity-lab-open');analyzerRenderVelocityLab(true);
 }
-function closeVelocityLab(){document.getElementById('velocityLabOverlay')?.classList.remove('active');document.body.classList.remove('velocity-lab-open');window.stopVelocityRecorderPolling?.();analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false}
+function closeVelocityLab(){document.getElementById('velocityLabOverlay')?.classList.remove('active');document.body.classList.remove('velocity-lab-open');analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false}
 function toggleVelocityLabKart(name,checked,input){
  const key=String(name||'');
  if(checked&&analyzerVelocityLabSelected.size>=5&&!analyzerVelocityLabSelected.has(key)){
@@ -2885,210 +2887,6 @@ function analyzerRenderFollowedPerformance(followed){
  const lapText=followed?.last||'—';
  chronoEl.textContent=`${rankText} | ${lapText}`;
 }
-function analyzerSectorGridBest(){
- const best={s1:null,s2:null,s3:null};
- const include=values=>{for(const key of ['s1','s2','s3']){const value=Number(values?.[key]);if(Number.isFinite(value)&&value>0&&(!Number.isFinite(best[key])||value<best[key]))best[key]=value;}};
- // Références historiques .L déjà apprises par Velocity.
- for(const item of Object.values(analyzerLearning?.teams||{}))include(item?.sectorBestTeam||{});
- // Et impulsions du tour actuellement reçues : permet au violet de réagir dès
- // qu'un nouveau meilleur absolu connu apparaît, sans attendre la fin du tour.
- for(const entry of analyzerApexMapRegistry().rows.values())include(entry?.currentSectors||{});
- return best;
-}
-function analyzerSectorValueClass(value,gridBest,{kind='',current=false,relayBest=null}={}){
- const ms=Number(value);if(!Number.isFinite(ms)||ms<=0)return '';
- if(kind==='fastest')return 'sector-purple';
- const absolute=Number(gridBest);if(Number.isFinite(absolute)&&Math.abs(ms-absolute)<=1)return 'sector-purple';
- if(!current)return 'sector-green';
- // TOUR EN COURS : vert si ce secteur améliore (ou crée) le meilleur du relais,
- // orange sinon. Le violet reste prioritaire lorsqu'Apex/Velocity connaît le
- // meilleur absolu de la grille.
- const personal=Number(relayBest);
- if(!Number.isFinite(personal)||personal<=0||ms<=personal+1)return 'sector-green';
- return 'sector-orange';
-}
-function analyzerSetSectorCell(id,value,gridBest,options={}){
- const el=document.getElementById(id);if(!el)return;
- const ms=Number(value);el.textContent=analyzerFormatSectorMilliseconds(ms);
- el.className=analyzerSectorValueClass(ms,gridBest,options);
-}
-function analyzerRenderFollowedSectors(followed){
- const block=document.getElementById('analyzerFollowedSectors');if(!block)return;
- if(!followed){block.hidden=true;return}
- const history=analyzerTeamHistory(followed),relay=history?.currentRelay||null,relayBest=relay?.sectorBest||{},teamBest=history?.sectorBestTeam||{};
- // V7.2.1754 — source live conforme au JavaScript Apex Timing :
- //   *   -> S1 dans t[3]
- //   *i1 -> S2 dans t[2]
- //   *i2 -> S3 dans t[2]
- // core.js conserve ces impulsions dans velocityApexMap.currentSectors.
- // On ne dépend donc plus de l'affichage éventuel des colonnes S1/S2/S3 de la grille.
- const apexEntry=analyzerApexMapEntry(followed),rawLive=!apexEntry?.inPit&&analyzerApexRaceIsActive()?(apexEntry?.currentSectors||{}):{};
- const live={
-  s1:analyzerSectorRawToMilliseconds(rawLive?.s1),
-  s2:analyzerSectorRawToMilliseconds(rawLive?.s2),
-  s3:analyzerSectorRawToMilliseconds(rawLive?.s3)
- };
- const available=[...Object.values(live),...Object.values(relayBest||{}),...Object.values(teamBest||{})].some(v=>Number.isFinite(Number(v))&&Number(v)>0);
- block.hidden=!available;if(!available)return;
- // Tant qu'aucun tour terminé n'a confirmé la configuration, on laisse les
- // trois colonnes visibles : S3 peut simplement ne pas être encore arrivé.
- // Dès que l'historique prouve une piste à 2 secteurs, S3 est masqué.
- const sectorCount=[1,2,3].includes(Number(history?.sectorCount))?Number(history.sectorCount):null;
- block.dataset.sectorCount=String(sectorCount||3);
- const gridBest=analyzerSectorGridBest();
- analyzerSetSectorCell('analyzerSectorCurrentS1',live.s1,gridBest.s1,{current:true,relayBest:relayBest?.s1});
- analyzerSetSectorCell('analyzerSectorCurrentS2',live.s2,gridBest.s2,{current:true,relayBest:relayBest?.s2});
- analyzerSetSectorCell('analyzerSectorCurrentS3',live.s3,gridBest.s3,{current:true,relayBest:relayBest?.s3});
- analyzerSetSectorCell('analyzerSectorRelayS1',relayBest?.s1,gridBest.s1);
- analyzerSetSectorCell('analyzerSectorRelayS2',relayBest?.s2,gridBest.s2);
- analyzerSetSectorCell('analyzerSectorRelayS3',relayBest?.s3,gridBest.s3);
- analyzerSetSectorCell('analyzerSectorTeamS1',teamBest?.s1,gridBest.s1);
- analyzerSetSectorCell('analyzerSectorTeamS2',teamBest?.s2,gridBest.s2);
- analyzerSetSectorCell('analyzerSectorTeamS3',teamBest?.s3,gridBest.s3);
- const relayLaps=(relay?.bestLaps||[]).map(Number).filter(v=>Number.isFinite(v)&&v>0);
- const currentBestMs=relayLaps.length?Math.round(Math.min(...relayLaps)*1000):null;
- // THÉORIQUE RELAIS = addition des meilleurs secteurs du relais courant.
- // 3 secteurs : S1+S2+S3. 2 secteurs confirmés : S1+S2. Avec un seul secteur
- // (ou tant que la configuration n'est pas confirmée), on n'invente pas de
- // théorique.
- const theoreticalKeys=sectorCount===3?['s1','s2','s3']:sectorCount===2?['s1','s2']:[];
- const theoreticalValues=theoreticalKeys.map(key=>Number(relayBest?.[key]));
- const theoreticalMs=theoreticalKeys.length>=2&&theoreticalValues.every(v=>Number.isFinite(v)&&v>0)?theoreticalValues.reduce((a,b)=>a+b,0):null;
- const teamBestMs=Number(history?.bestLapTeamMs)||Math.round((typeof parseLap==='function'?parseLap(followed?.best):NaN)*1000);
- const currentBest=document.getElementById('analyzerSectorCurrentBest'),theoretical=document.getElementById('analyzerSectorRelayTheoretical'),teamBestLap=document.getElementById('analyzerSectorTeamBest');
- if(currentBest)currentBest.textContent=formatApexMilliseconds(currentBestMs);
- if(theoretical)theoretical.textContent=formatApexMilliseconds(theoreticalMs);
- if(teamBestLap)teamBestLap.textContent=formatApexMilliseconds(teamBestMs);
-}
-
-
-
-// V7.2.1756 — classement secteurs : une ligne par équipe, basée uniquement
-// sur le relais EN COURS. Aucun nouvel historique de relais n'est créé pour
-// cette vue ; les petits chronos de référence viennent de sectorBestTeam,
-// déjà reconstruit depuis le début de la course par les historiques Apex .L.
-function analyzerSectorRankingSessionCount(rows=[]){
- const counts=[];
- for(const row of rows||[]){
-  const count=Number(row?.history?.sectorCount);
-  if([1,2,3].includes(count))counts.push(count);
- }
- if(!counts.length)return 0;
- // Une session Apex utilise la même découpe pour toutes les équipes. Si une
- // équipe a déjà confirmé 3 secteurs, cette information est prioritaire ;
- // sinon 2, puis 1.
- if(counts.includes(3))return 3;
- if(counts.includes(2))return 2;
- // Un unique secteur n'apporte aucune découpe exploitable : pour le classement
- // secteurs, Velocity le traite comme une session sans secteurs.
- return 0;
-}
-function analyzerSectorRankingKeys(count){
- return count===3?['s1','s2','s3']:count===2?['s1','s2']:count===1?['s1']:[];
-}
-function analyzerSectorRankingMetrics(row,sectorCount){
- const driver=row?.driver||{},history=row?.history||analyzerTeamHistory(driver),relay=history?.currentRelay||null;
- const relayBest=relay?.sectorBest||{},teamBest=history?.sectorBestTeam||{};
- const keys=analyzerSectorRankingKeys(sectorCount);
- const clean=value=>{const n=Number(value);return Number.isFinite(n)&&n>0?n:null};
- const current={s1:clean(relayBest?.s1),s2:clean(relayBest?.s2),s3:clean(relayBest?.s3)};
- const team={s1:clean(teamBest?.s1),s2:clean(teamBest?.s2),s3:clean(teamBest?.s3)};
- const theoreticalValues=keys.map(key=>current[key]);
- const theoretical=keys.length>=2&&theoreticalValues.every(Number.isFinite)?theoreticalValues.reduce((a,b)=>a+b,0):null;
- return {
-  row,driver,history,relay,current,team,theoretical,
-  kart:relay?.kart||analyzerRelayKart(driver)||validKartNumber(driver)||driver?.apex||'—',
-  relayIndex:Number(relay?.index)||null
- };
-}
-function analyzerSectorRankingSortValue(metric,sort=analyzerSectorSort){
- if(sort==='theoretical')return Number.isFinite(metric?.theoretical)?metric.theoretical:Number.POSITIVE_INFINITY;
- const value=Number(metric?.current?.[sort]);
- return Number.isFinite(value)&&value>0?value:Number.POSITIVE_INFINITY;
-}
-function analyzerSectorRankingSorted(rows,sectorCount){
- return (rows||[]).map(row=>analyzerSectorRankingMetrics(row,sectorCount)).sort((a,b)=>{
-  const av=analyzerSectorRankingSortValue(a),bv=analyzerSectorRankingSortValue(b);
-  if(av!==bv)return av-bv;
-  return analyzerNumeric(a?.driver?.pos,999)-analyzerNumeric(b?.driver?.pos,999);
- });
-}
-function analyzerSectorRankingDelta(ms,{theoretical=false}={}){
- const value=Number(ms);if(!Number.isFinite(value)||value<0)return '—';
- if(value<=1)return '—';
- return `+${(value/1000).toFixed(theoretical?3:2)}`;
-}
-function analyzerSectorRankingCell(metric,key,selected){
- const current=Number(metric?.current?.[key]),team=Number(metric?.team?.[key]);
- const currentText=analyzerFormatSectorMilliseconds(current),teamText=analyzerFormatSectorMilliseconds(team);
- return `<td class="sector-ranking-cell${selected?' selected':''}"><strong>${analyzerEscape(currentText)}</strong><small>${analyzerEscape(teamText)}</small></td>`;
-}
-function analyzerSectorRankingHeader(sectorCount){
- const keys=analyzerSectorRankingKeys(sectorCount),selected=analyzerSectorSort;
- const labels={s1:'S1 BEST',s2:'S2 BEST',s3:'S3 BEST'};
- const cells=['<th class="sector-rank-pos">POS</th>','<th class="sector-rank-team">ÉQUIPE</th>','<th class="sector-rank-kart">KART</th>','<th class="sector-rank-relay">RELAIS</th>'];
- for(const key of keys){
-  cells.push(`<th class="sector-rank-time${selected===key?' selected':''}">${labels[key]}</th>`);
-  if(selected===key)cells.push(`<th class="sector-rank-delta">Δ ${key.toUpperCase()}</th>`);
- }
- cells.push(`<th class="sector-rank-theoretical${selected==='theoretical'?' selected':''}">THÉORIQUE RELAIS</th>`);
- if(selected==='theoretical')cells.push('<th class="sector-rank-delta">Δ TH.</th>');
- return cells.join('');
-}
-function analyzerGeneralRankingHeader(){
- return '<th>POS</th><th>IN</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>CHRONOS</th><th>TOURS</th><th>EN PISTE</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>T.MOYEN</th><th>ÉCART</th><th>PÉNA.</th><th>ARRÊT PRÉVU</th><th>KART V.</th><th>NOTE</th>';
-}
-function analyzerSyncRankingSortControl(rows=[]){
- const select=document.getElementById('analyzerSort');if(!select)return;
- if(analyzerRankingMode!=='sectors'){
-  const options=[['position','Position'],['average','T.MOYEN'],['track_desc','Temps en piste'],['forecast','Arrêt prévu'],['score','Note du kart'],['stops','Passages']];
-  const signature='general';
-  if(select.dataset.mode!==signature){select.innerHTML=options.map(([value,label])=>`<option value="${value}">${label}</option>`).join('');select.dataset.mode=signature;}
-  select.disabled=false;select.value=analyzerSort;
-  return;
- }
- const sectorCount=analyzerSectorRankingSessionCount(rows),keys=analyzerSectorRankingKeys(sectorCount);
- const validSorts=[...keys,...(sectorCount>=2?['theoretical']:[])];
- if(!validSorts.includes(analyzerSectorSort))analyzerSectorSort=keys[0]||'s1';
- const signature=`sectors-${sectorCount}`;
- if(select.dataset.mode!==signature){
-  const labels={s1:'S1',s2:'S2',s3:'S3',theoretical:'Théorique relais'};
-  select.innerHTML=validSorts.length?validSorts.map(value=>`<option value="${value}">${labels[value]}</option>`).join(''):'<option value="none">Aucun secteur</option>';
-  select.dataset.mode=signature;
- }
- select.disabled=!validSorts.length;
- if(validSorts.length)select.value=analyzerSectorSort;
-}
-function analyzerRenderSectorRanking(rows,sectorCount){
- const tbody=document.getElementById('analyzerTable'),head=document.getElementById('analyzerRankingHead');if(!tbody||!head)return;
- head.innerHTML=analyzerSectorRankingHeader(sectorCount);
- if(!sectorCount){
-  tbody.innerHTML='<tr class="sector-ranking-empty"><td colspan="8">Aucun secteur chronométré détecté pour cette session Apex.</td></tr>';
-  return;
- }
- const metrics=analyzerSectorRankingSorted(rows,sectorCount),keys=analyzerSectorRankingKeys(sectorCount);
- const validValues=metrics.map(metric=>analyzerSectorRankingSortValue(metric)).filter(Number.isFinite);
- const reference=validValues.length?Math.min(...validValues):null;
- let rank=0;
- tbody.innerHTML=metrics.map(metric=>{
-  const sortValue=analyzerSectorRankingSortValue(metric),hasRank=Number.isFinite(sortValue);if(hasRank)rank++;
-  const followed=metric.driver?.driver===state.followed_driver;
-  const cells=[`<td class="a-pos sector-rank-pos">${hasRank?rank:'—'}</td>`,`<td class="a-team sector-rank-team" title="${analyzerEscape(metric.driver?.driver||'')}">${analyzerEscape(metric.driver?.driver||'—')}</td>`,`<td class="sector-rank-kart">${analyzerEscape(metric.kart||'—')}</td>`,`<td class="sector-rank-relay">${metric.relayIndex?`R${metric.relayIndex}`:'—'}</td>`];
-  for(const key of keys){
-   cells.push(analyzerSectorRankingCell(metric,key,analyzerSectorSort===key));
-   if(analyzerSectorSort===key){
-    const delta=hasRank&&Number.isFinite(reference)?sortValue-reference:null;
-    cells.push(`<td class="sector-rank-delta">${analyzerEscape(analyzerSectorRankingDelta(delta))}</td>`);
-   }
-  }
-  cells.push(`<td class="sector-rank-theoretical${analyzerSectorSort==='theoretical'?' selected':''}"><strong>${analyzerEscape(formatApexMilliseconds(metric.theoretical))}</strong></td>`);
-  if(analyzerSectorSort==='theoretical'){
-   const delta=hasRank&&Number.isFinite(reference)?sortValue-reference:null;
-   cells.push(`<td class="sector-rank-delta">${analyzerEscape(analyzerSectorRankingDelta(delta,{theoretical:true}))}</td>`);
-  }
-  return `<tr data-driver="${analyzerEscape(metric.driver?.driver||'')}" class="${followed?'followed':''}" onclick="followDriver(${JSON.stringify(metric.driver?.driver||'').replace(/"/g,'&quot;')})">${cells.join('')}</tr>`;
- }).join('');
-}
 
 function analyzerTrafficLapSeconds(driver){
  const candidates=[driver?.last,driver?.best,driver?.avg5,driver?.average];
@@ -3325,7 +3123,6 @@ function analyzerPenaltyItems(){
 }
 
 function analyzerSyncPenaltyColumns(){
- if(analyzerRankingMode==='sectors')return;
  const ranking=document.querySelector('.analyzer-ranking-table');
  const head=document.querySelector('.analyzer-penalties-head');
  const list=document.getElementById('analyzerPenaltiesList');
@@ -3373,15 +3170,11 @@ function renderAnalyzer(){
  analyzerApplySharedRulesFromState();
  analyzerLearnFromState();
  analyzerScheduleRelayHydration();
- const all=analyzerRows();
- analyzerSyncRankingSortControl(all);
- const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sectorCount=analyzerSectorRankingSessionCount(all);
- const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
- const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),sectorBtn=document.getElementById('analyzerSectorRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
- if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');if(sectorBtn)sectorBtn.classList.toggle('active',analyzerRankingMode==='sectors');
- const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');rankingTable.classList.toggle('sector-ranking-mode',analyzerRankingMode==='sectors');}
- const rankingHead=document.getElementById('analyzerRankingHead');if(rankingHead&&analyzerRankingMode!=='sectors')rankingHead.innerHTML=analyzerGeneralRankingHeader();
- if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(analyzerVirtualLoading?'Calcul des temps d’arrêts virtuels en cours…':'Même nombre d’arrêts pour toutes les équipes — moyenne des 3 meilleurs arrêts propres à chaque équipe'):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity';
+ const all=analyzerRows();const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
+ const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
+ if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');
+ const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');}
+ if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(analyzerVirtualLoading?'Calcul des temps d’arrêts virtuels en cours…':'Même nombre d’arrêts pour toutes les équipes — moyenne des 3 meilleurs arrêts propres à chaque équipe'):'Colonnes Apex Timing enrichies par Velocity';
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver)||state.followed||(state.drivers||[])[0]||null;
  const ownForecast=followed?analyzerForecastFor(followed):{};const stops=analyzerStopsInfo(followed);
  document.getElementById('analyzerFollowedName').textContent=followed?.driver||'—';
@@ -3394,7 +3187,6 @@ function renderAnalyzer(){
  document.getElementById('analyzerFollowedLimit').textContent=Number.isFinite(ownForecast.maxRemaining)?analyzerFormatDuration(ownForecast.maxRemaining):'—';
  document.getElementById('analyzerFollowedStops').textContent=`${stops.done} / ${analyzerRules.requiredStops}`;
  analyzerRenderFollowedPerformance(followed);
- analyzerRenderFollowedSectors(followed);
  analyzerRenderFollowedDeltas(followed);
  analyzerRenderTrafficAhead(followed);
  {const r=analyzerStrategyRulesConfig();document.getElementById('analyzerRuleRelay').textContent=r.ready?`${analyzerFormatDuration(r.minStintMinutes*60,{compact:true})} → ${analyzerFormatDuration(r.maxStintMinutes*60,{compact:true})}`:'—'};
@@ -3446,24 +3238,19 @@ function renderAnalyzer(){
 
  const wave=all.filter(x=>Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=600&&x.driver.status!=='pit');
  const analyzerRankingBody=document.getElementById('analyzerTable');
- if(analyzerRankingMode==='sectors'){
-  analyzerRenderSectorRanking(all,sectorCount);
-  analyzerRenderRankingProgressLines([]);
- }else{
-  const analyzerPreviousRows=typeof rankingCaptureRows==='function'?rankingCaptureRows(analyzerRankingBody):new Map();
-  analyzerRankingBody.innerHTML=sorted.map(x=>{
-   const d=x.driver;const isFollowed=d.driver===state.followed_driver;const penalty=d.penalty||'—';const isVirtual=analyzerRankingMode==='virtual';
-   const relayTimer=analyzerRelayTimer(d),stintAverage=analyzerCurrentStintAverage(d),virtual=x.virtual;
-   const displayPos=isVirtual?virtual.position:d.pos;
-   const stopsValue=isVirtual?`${analyzerEscape(d.pit_stops??0)}${virtual.missing?`<small class="virtual-stop-add">+${virtual.missing} virtuel${virtual.missing>1?'s':''}</small>`:''}`:analyzerEscape(d.pit_stops??'—');
-   const gapValue=isVirtual?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):analyzerEscape(d.gap);
-   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Moyenne ${virtual.pitAverage.samples||0} arrêt(s)">+${analyzerFormatDuration(virtual.extra)}${virtual.pitAverage.estimated?' estimé':''}</small>`:'';
-   const rankingFlash=typeof rankingFlashMeta==='function'?rankingFlashMeta(d):{className:'',style:''};
-   return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerSpotterStatusLabel(analyzerSpotterAssignmentForTeam(d.driver)))}">${analyzerEscape(analyzerSpotterKvLabel(d.driver,x.history.virtualKart))}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
-  }).join('');
-  if(typeof rankingAnimateRows==='function'&&analyzerRankingMode==='general')rankingAnimateRows(analyzerRankingBody,analyzerPreviousRows);
-  analyzerRenderRankingProgressLines(sorted);
- }
+ const analyzerPreviousRows=typeof rankingCaptureRows==='function'?rankingCaptureRows(analyzerRankingBody):new Map();
+ analyzerRankingBody.innerHTML=sorted.map(x=>{
+  const d=x.driver;const isFollowed=d.driver===state.followed_driver;const penalty=d.penalty||'—';const isVirtual=analyzerRankingMode==='virtual';
+  const relayTimer=analyzerRelayTimer(d),stintAverage=analyzerCurrentStintAverage(d),virtual=x.virtual;
+  const displayPos=isVirtual?virtual.position:d.pos;
+  const stopsValue=isVirtual?`${analyzerEscape(d.pit_stops??0)}${virtual.missing?`<small class="virtual-stop-add">+${virtual.missing} virtuel${virtual.missing>1?'s':''}</small>`:''}`:analyzerEscape(d.pit_stops??'—');
+  const gapValue=isVirtual?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):analyzerEscape(d.gap);
+  const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Moyenne ${virtual.pitAverage.samples||0} arrêt(s)">+${analyzerFormatDuration(virtual.extra)}${virtual.pitAverage.estimated?' estimé':''}</small>`:'';
+  const rankingFlash=typeof rankingFlashMeta==='function'?rankingFlashMeta(d):{className:'',style:''};
+  return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerSpotterStatusLabel(analyzerSpotterAssignmentForTeam(d.driver)))}">${analyzerEscape(analyzerSpotterKvLabel(d.driver,x.history.virtualKart))}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
+ }).join('');
+ if(typeof rankingAnimateRows==='function'&&analyzerRankingMode==='general')rankingAnimateRows(analyzerRankingBody,analyzerPreviousRows);
+ analyzerRenderRankingProgressLines(sorted);
  renderAnalyzerPenalties();
  analyzerRenderPitSimulator();
  renderAnalyzerQueueAdvice();
@@ -3623,7 +3410,7 @@ function renderAnalyzerRulesPilots(driver){
   return `<div class="rules-pilot-card${ok?' complete':''}"><span class="rules-pilot-name">${analyzerEscape(String(p.name||'Pilote').trim())}</span><strong>${analyzerEscape(time)}${minLabel?` <small>/ ${analyzerEscape(minLabel)}</small>`:''}</strong></div>`;
  }).join('');
 }
-function setAnalyzerSort(value){if(analyzerRankingMode==='sectors'){if(['s1','s2','s3','theoretical'].includes(value))analyzerSectorSort=value}else analyzerSort=value||'position';renderAnalyzer()}
+function setAnalyzerSort(value){analyzerSort=value||'position';renderAnalyzer()}
 function openAnalyzerRules(){
  const modal=document.getElementById('analyzerRulesModal');if(!modal)return;
  const map={ruleRaceHours:'raceHours',ruleRequiredStops:'requiredStops',ruleMinStint:'minStintMinutes',ruleMaxStint:'maxStintMinutes',ruleMinPit:'minPitSeconds',rulePitClose:'pitCloseMinutes',ruleSafetyMargin:'safetyMarginMinutes',ruleDriversCount:'driversCount',ruleDriverMinimum:'driverMinimumMinutes'};
@@ -3807,62 +3594,6 @@ function formatApexMilliseconds(ms){
  const minutes=Math.floor(value/60000),seconds=Math.floor((value%60000)/1000),millis=Math.floor(value%1000);
  return minutes?`${minutes}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`:`${seconds}.${String(millis).padStart(3,'0')}`;
 }
-function analyzerSectorMinimum(laps,key){
- const values=(laps||[]).map(l=>Number(l?.[key])).filter(v=>Number.isFinite(v)&&v>0);
- return values.length?Math.min(...values):null;
-}
-function analyzerSectorBestFromLaps(laps){
- return {
-  s1:analyzerSectorMinimum(laps,'sector1'),
-  s2:analyzerSectorMinimum(laps,'sector2'),
-  s3:analyzerSectorMinimum(laps,'sector3')
- };
-}
-// V7.2.1755 — Apex peut déclarer S1/S2/S3 dans la grille tout en ne
-// chronométrant réellement que deux secteurs. On déduit donc le nombre de
-// secteurs sur des TOURS TERMINÉS, en vérifiant que leur somme reconstitue le
-// temps au tour. Cela évite de confondre un S3 pas encore reçu avec une piste à
-// deux secteurs.
-function analyzerSectorCountForCompletedLap(lap){
- const lapTime=Number(lap?.lapTime),s1=Number(lap?.sector1),s2=Number(lap?.sector2),s3=Number(lap?.sector3);
- if(!Number.isFinite(lapTime)||lapTime<=0||!Number.isFinite(s1)||s1<=0)return null;
- // Tolérance volontairement serrée : les valeurs historiques du protocole Apex
- // sont des entiers en millisecondes. On accepte au maximum 50 ms d'écart.
- const tolerance=50;
- const matches=sum=>Number.isFinite(sum)&&Math.abs(sum-lapTime)<=tolerance;
- if(Number.isFinite(s2)&&s2>0&&Number.isFinite(s3)&&s3>0&&matches(s1+s2+s3))return 3;
- if(Number.isFinite(s2)&&s2>0&&(!Number.isFinite(s3)||s3<=0)&&matches(s1+s2))return 2;
- if((!Number.isFinite(s2)||s2<=0)&&(!Number.isFinite(s3)||s3<=0)&&matches(s1))return 1;
- return null;
-}
-function analyzerDetectSectorCountFromLaps(laps){
- const votes={1:0,2:0,3:0};
- for(const lap of laps||[]){const count=analyzerSectorCountForCompletedLap(lap);if(count)votes[count]++}
- const ranked=[3,2,1].map(count=>({count,votes:votes[count]})).sort((a,b)=>b.votes-a.votes||b.count-a.count);
- return ranked[0].votes>0?ranked[0].count:null;
-}
-function analyzerSectorRawToMilliseconds(value){
- if(value===null||value===undefined)return null;
- if(typeof value==='number'&&Number.isFinite(value))return value>=1000?Math.round(value):Math.round(value*1000);
- const text=String(value||'').trim().replace(',','.');if(!text||text==='—'||text==='-')return null;
- // Le live Apex peut fournir soit une valeur déjà formatée (ex. 21.42),
- // soit un entier protocolaire en millisecondes (ex. 21420).
- if(/^\d+$/.test(text)){
-  const numeric=Number(text);
-  return Number.isFinite(numeric)&&numeric>0?(numeric>=1000?Math.round(numeric):Math.round(numeric*1000)):null;
- }
- const parts=text.split(':').map(part=>part.trim());
- let seconds=null;
- if(parts.length===1)seconds=Number(parts[0]);
- else if(parts.length===2)seconds=Number(parts[0])*60+Number(parts[1]);
- else if(parts.length===3)seconds=Number(parts[0])*3600+Number(parts[1])*60+Number(parts[2]);
- return Number.isFinite(seconds)&&seconds>0?Math.round(seconds*1000):null;
-}
-function analyzerFormatSectorMilliseconds(ms){
- const value=Number(ms);if(!Number.isFinite(value)||value<=0)return '—';
- const totalSeconds=value/1000,minutes=Math.floor(totalSeconds/60),seconds=totalSeconds-minutes*60;
- return minutes?`${minutes}:${seconds.toFixed(2).padStart(5,'0')}`:seconds.toFixed(2);
-}
 function apexHistorySleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function fetchAllApexTeamLaps(rowId,sessionId,status){
  const prefix=sessionId?`S#${sessionId}#`:'';
@@ -4009,13 +3740,30 @@ function parseApexPitData(raw,rowId){
 }
 async function fetchAllApexTeamPits(rowId,sessionId,status){
  const prefix=sessionId?`S#${sessionId}#`:'';
+ // Apex peut répondre ponctuellement vide alors que l'historique PITS existe.
+ // Même protection que fetchAllApexTeamLaps : ne jamais conclure "0 arrêt"
+ // à partir de la première réponse vide.
  const windows=[30,100,300,750];let latest=[];
- for(const count of windows){
+ for(let wi=0;wi<windows.length;wi++){
+  const count=windows[wi],maxAttempts=wi===0?3:2;
   if(status)status.textContent=`Chargement des arrêts Apex… fenêtre ${count}`;
   const command=`${prefix}D#-${count}#D${rowId}.P#-${count}#D${rowId}.INF`;
-  const parsed=parseApexPitData(await apexHistoryRequest(command),rowId);if(parsed.length)latest=parsed;
+  let parsed=[];
+  for(let attempt=1;attempt<=maxAttempts;attempt++){
+   try{parsed=parseApexPitData(await apexHistoryRequest(command),rowId)}
+   catch(error){
+    parsed=[];
+    console.warn('[Velocity][Apex STATS PITS] requête en échec',{rowId,sessionId:sessionId||'live',count,attempt,error});
+   }
+   if(parsed.length)break;
+   console.warn('[Velocity][Apex STATS PITS] réponse vide, nouvel essai',{rowId,sessionId:sessionId||'live',count,attempt,maxAttempts});
+   if(attempt<maxAttempts)await apexHistorySleep(120*attempt);
+  }
+  if(!parsed.length)continue;
+  latest=parsed;
   if(parsed.some(p=>p.stop===1)||parsed.length<count)return parsed;
  }
+ if(!latest.length)console.warn('[Velocity][Apex STATS PITS] aucun arrêt récupéré après retries',{rowId,sessionId:sessionId||'live'});
  return latest;
 }
 
@@ -4042,7 +3790,6 @@ function analyzerBuildHydratedRelay(driver,laps,pits){
   laps:values.slice(-60),
   lapNumbers:lapNumbers.slice(-60),
   bestLaps:values.slice().sort((a,b)=>a-b).slice(0,3),
-  sectorBest:analyzerSectorBestFromLaps(current),
   warmupSkipped:true,
   gridStartPace:gridReference,
   gridEndPace:gridReference,
@@ -4059,16 +3806,6 @@ function analyzerApplyHydratedRelay(driver,laps,pits){
  const key=analyzerTeamKey(driver),now=Date.now();
  const item=analyzerLearning.teams[key]||{name:driver.driver,stints:[],relays:[],lastStatus:null,lastTrackSeconds:null,lastStops:null,lastLapCount:null,currentStintLapSum:0,currentStintLapCount:0,virtualKart:`V-${String(driver.apex||driver.pos||key).replace(/\D/g,'').padStart(2,'0')}`,updatedAt:now};
  item.relays=Array.isArray(item.relays)?item.relays:[];
- const pitInLaps=new Set((pits||[]).map(p=>Number(p?.lap)).filter(Number.isFinite));
- const validTeamLaps=(laps||[]).filter(l=>Number(l?.lap)>0&&Number(l?.lapTime)>0&&!pitInLaps.has(Number(l.lap)));
- item.sectorBestTeam=analyzerSectorBestFromLaps(validTeamLaps);
- // Le header Apex n'est pas une preuve du nombre de secteurs réellement
- // chronométrés. Ex.: une piste peut exposer S1/S2/S3 mais ses tours terminés
- // vérifient S1 + S2 = temps au tour, avec S3 vide.
- item.sectorCount=analyzerDetectSectorCountFromLaps(validTeamLaps)||null;
- const teamLapTimes=validTeamLaps.map(l=>Number(l.lapTime)).filter(v=>Number.isFinite(v)&&v>0);
- item.bestLapTeamMs=teamLapTimes.length?Math.min(...teamLapTimes):null;
- item.sectorDataAvailable=Object.values(item.sectorBestTeam||{}).some(v=>Number.isFinite(Number(v))&&Number(v)>0);
  if(driver.status==='pit'){
   item.currentRelay=null;item.currentStintLapSum=0;item.currentStintLapCount=0;
  }else{
@@ -4639,11 +4376,11 @@ function velocityTeamBackupRead(){
   const raw=localStorage.getItem(VELOCITY_TEAM_BACKUP_KEY);
   if(!raw)return null;
   const data=JSON.parse(raw);
-  return data&&((Array.isArray(data.teams)&&data.teams.length)||(Array.isArray(data.workspaces)&&data.workspaces.length))?data:null;
+  return data&&Array.isArray(data.teams)&&data.teams.length?data:null;
  }catch(_){return null}
 }
 function velocityTeamBackupWrite(snapshot){
- if(!snapshot||(!Array.isArray(snapshot.teams)&&!Array.isArray(snapshot.workspaces)))return false;if(!(snapshot.teams?.length||snapshot.workspaces?.length))return false;
+ if(!snapshot||!Array.isArray(snapshot.teams)||!snapshot.teams.length)return false;
  try{
   localStorage.setItem(VELOCITY_TEAM_BACKUP_KEY,JSON.stringify(snapshot));
   return true;
@@ -4653,7 +4390,7 @@ async function velocityTeamBackupRefresh(){
  try{
   const r=await fetch('/api/team-management/snapshot',{cache:'no-store'});
   const data=await r.json();
-  if(r.ok&&data.ok&&(data.snapshot?.teams?.length||data.snapshot?.workspaces?.length))velocityTeamBackupWrite(data.snapshot);
+  if(r.ok&&data.ok&&data.snapshot?.teams?.length)velocityTeamBackupWrite(data.snapshot);
  }catch(_){}
 }
 async function velocityTeamRestoreIfNeeded(serverTeams){

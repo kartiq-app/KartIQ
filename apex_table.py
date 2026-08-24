@@ -38,22 +38,6 @@ class ApexTable:
             self._rows.clear()
             self._version += 1
 
-    def retain_rows(self, active_rows: set[int]) -> list[int]:
-        """Supprime de l'état live les lignes absentes du dernier GRID Apex complet.
-
-        Le GRID HTML est un snapshot autoritaire du classement actuellement
-        publié par Apex. Cette purge ne touche qu'à l'état courant en mémoire :
-        aucun historique de tours ou Recorder n'est supprimé.
-        """
-        keep = {int(row) for row in active_rows if int(row) > 0}
-        with self._lock:
-            removed = [row for row in self._rows if row not in keep]
-            for row in removed:
-                self._rows.pop(row, None)
-            if removed:
-                self._version += 1
-            return sorted(removed)
-
     def apply(self, update) -> CellState:
         now = datetime.now().isoformat(timespec="milliseconds")
         with self._lock:

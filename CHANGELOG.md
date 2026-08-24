@@ -1,189 +1,22 @@
-# V7.2.1768 — Focus Sprint : delta identique au Focus Endurance
+# V7.2.1751 — SCORE RELAIS : fiabilisation STATS Apex PITS
 
-- Le delta avant/arrière du **Focus Sprint** utilise désormais exactement les mêmes dimensions que le **Focus Endurance**.
-- Même comportement responsive sur smartphone.
-- Même taille dédiée sur iPhone en paysage virtuel.
-- Aucun changement sur les calculs de delta, les couleurs, les chronos, les pénalités ou les autres modes Focus.
+- STATS Apex reste la source de vérité pour reconstruire les relais.
+- Requêtes `.P` protégées contre les réponses vides temporaires, comme les tours `.L`.
+- Fenêtre 30 : jusqu'à 3 tentatives ; fenêtres 100 / 300 / 750 : jusqu'à 2.
+- Une réponse vide ne provoque plus un retour immédiat `[]`.
+- Diagnostics ajoutés dans la Console Chrome pour les PITS et SCORE RELAIS.
+- Formule Score Relais inchangée ; aucun fallback Live ajouté.
 
-# V7.2.1767 — Focus Sprint / Qualification : header en haut
+# V7.2.1750 — Focus Endurance : chronométrage stands + pénalités
 
-- Correction ciblée du paysage virtuel iPhone : les headers **Sprint** et **Qualifications** ne sont plus étirés sur toute la surface du Focus.
-- Le titre, le filet coloré et le bouton de fermeture restent désormais dans une barre fixe en haut, avec le même positionnement que **Focus Endurance**.
-- Aucun changement métier sur Sprint, Qualification, Endurance, pénalités, chronos ou Analyzer.
-
-# V7.2.1766 — Focus Sprint & Focus Qualification
-
-- Focus Sprint aligné sur la structure du Focus Endurance.
-- Bas gauche Sprint : temps restant de la session (ou progression en tours).
-- En-tête Sprint avec filet bleu.
-- Nouvelle pénalité du pilote/équipe suivi : plein écran noir 4 secondes, nom puis pénalité, depuis la même source PÉNALITÉS ET INFORMATIONS qu’Analyzer.
-- Focus Qualification : titre Qualifications + filet rouge.
-- Bloc temps restant réduit de 50 % en largeur (25 %), bloc meilleur temps porté à 75 %.
-- Correction du nom du détenteur du meilleur temps : calcul direct depuis le GRID live au lieu de dépendre de l’identifiant DOM Apex.
-- Chrono du meilleur temps fortement agrandi pour exploiter toute la case.
-
-# V7.2.1765 — Classement Live : purge des rows Apex obsolètes
-
-- Un nouveau `grid||` Apex complet devient la liste autoritaire des concurrents actuellement présents dans le classement général live.
-- Purge ciblée des rows absentes du nouveau GRID dans `ApexTable`, `ApexInterpreter` et `ProtocolEngine`.
-- Analyzer, Qualification, Sprint et Endurance ne conservent plus les anciens karts sortis de la grille et ne dupliquent plus un kart réapparu avec une nouvelle row Apex.
-- Un GRID vide peut désormais vider le classement live précédent.
-- Historique, Recorder/Postgres, Velocity Score, classement virtuel, classement secteurs et Spotter restent inchangés.
-
-# V7.2.1764 — Data Recorder : STOP durable et verrou Render
-
-- Correction du Recorder qui pouvait repasser en **REC** après un arrêt/export : l’ordre utilisateur est désormais stocké dans Postgres via `desired_status` et devient la source de vérité.
-- Ajout d’un **lease Postgres** avec propriétaire et heartbeat : pendant un déploiement Render avec chevauchement d’instances, une seule instance peut posséder le WebSocket d’un Recorder.
-- Ajout d’un superviseur de reprise : si la nouvelle instance Render démarre avant l’expiration du lease de l’ancienne, elle retente automatiquement l’adoption toutes les 3 secondes au lieu d’abandonner le Recorder.
-- `ARRÊTER` écrit d’abord l’état **stopped** dans Postgres puis ferme le worker local ; tout worker concurrent perd automatiquement son lease et se coupe.
-- Un Recorder stoppé n’est plus repris par `resume_active()` après redémarrage ou redéploiement, même si un ancien worker tente encore d’écrire un statut runtime actif.
-- L’interface se base sur l’état durable : une course terminée reste dans **COURSES ENREGISTRÉES** avec **EXPORT COMPLET ZIP** et **SUPPRIMER**.
-- Les compteurs sont réalignés sur les lignes réellement présentes en base lors du STOP et avant chaque export, notamment pour éviter l’écart entre tours tentés et tours uniques Postgres.
-- Migration Postgres/SQLite automatique : aucune manipulation de base n’est requise au déploiement.
-- Aucun changement sur le backfill historique Apex, Velocity Score, secteurs, pits ou les trois modes de Velocity Lab.
-
-# V7.2.1763 — Data Recorder : rattrapage historique Apex
-
-- Au démarrage d’un REC, le Recorder ouvre immédiatement le WebSocket live puis lance en parallèle une **synchronisation historique Apex** pour chaque équipe déjà présente sur la grille.
-- Récupération rétroactive des **tours depuis le début de la session active**, avec S1/S2/S3 et arrêts stands disponibles via l’historique Apex, même si le REC est lancé plusieurs heures après le départ.
-- Fenêtres historiques adaptatives jusqu’à 3000 tours par équipe afin de retrouver le tour 1 sans charger inutilement Apex sur les sessions courtes.
-- Déduplication : un tour/pit/secteur déjà capté en live n’est pas compté deux fois lorsque le backfill le retrouve.
-- Réconciliation automatique toutes les 5 minutes et immédiatement après une reconnexion WebSocket afin de réparer les éventuels trous de collecte.
-- Le calcul Velocity Score est suspendu pendant la synchronisation initiale puis recalculé sur l’ensemble des tours récupérés avant de reprendre les snapshots live habituels.
-- Le Data Recorder affiche désormais l’état **HISTORIQUE APEX** et le nombre d’anciens tours/événements stands récupérés.
-- Le Recorder reste volontairement **manuel à l’arrêt** : une absence de données Apex ne termine jamais automatiquement un REC.
-- Les trames WebSocket brutes antérieures au démarrage du REC ne peuvent pas être reconstituées ; seuls les historiques structurés qu’Apex expose encore sont rattrapés.
-
-# V7.2.1762 — Identité Velocity Lab : Erlenmeyer
-
-- Remplacement de l’éprouvette du header Velocity Lab par un **Erlenmeyer rouge** en SVG, dessiné dans la même direction artistique que les icônes rouges de la Home.
-- Suppression du filet vertical entre **VELOCITY** et **LAB**.
-- **LAB** utilise désormais le même wordmark, la même taille et le même poids visuel que **VELOCITY**.
-- L’Erlenmeyer est dimensionné à la hauteur du wordmark et reste aligné sur la même ligne.
-- Les trois modes **Comparaison**, **Score Sprint — Expérimental** et **Data Recorder** restent inchangés et opérationnels.
-- Aucun changement sur les algorithmes, le Data Recorder ou Render Postgres.
-
-# V7.2.1761 — Refonte visuelle Velocity Lab
-
-- Refonte du shell CSS de **Velocity Lab** sur une base dédiée et isolée du header global de Velocity.
-- Le header du Lab n’utilise plus la balise globale `header` : suppression définitive du conflit avec la hauteur fixe de l’application.
-- Nouvelle identité **Velocity Lab** reprenant le logo Velocity de la Home avec une éprouvette rouge stylisée.
-- Navigation des trois modes conservée : **Comparaison**, **Score Sprint — Expérimental** et **Data Recorder**.
-- Mise en page desktop/mobile reconstruite : titre, sous-titre et onglets sont désormais dans un flux vertical sans chevauchement.
-- Aucun changement sur les algorithmes Velocity, Score Sprint, Data Recorder ou le stockage Render Postgres.
-
-# V7.2.1760 — Correction CSS Velocity Lab
-
-- Correction du chevauchement entre le sous-titre de **Velocity Lab** et les onglets `COMPARAISON / SCORE SPRINT / DATA RECORDER`.
-- Le problème venait du sélecteur global `header` qui imposait une hauteur fixe de `72px` au header interne de Velocity Lab.
-- Le header du Lab utilise désormais une hauteur automatique, un line-height explicite et une structure verticale stable.
-- Renforcement de l’affichage du header Velocity Lab sur smartphone malgré la règle Analyzer qui masque le header principal.
-- Aucun changement du Data Recorder, de Postgres, d’Analyzer ou des algorithmes Velocity.
-
-# V7.2.1759 — Velocity Lab Data Recorder autonome
-
-- Home épurée : retrait du bloc de gestion **Session Velocity** et ajout d’un bouton discret **DÉCONNEXION** qui ferme la session mail Velocity sur l’ordinateur.
-- Gestion des **Sessions Velocity** déplacée dans Analyzer avec un bouton dédié ; ajout de **SUPPRIMER** pour le propriétaire et **QUITTER** pour un membre.
-- Ajout de l’onglet **DATA RECORDER** dans Velocity Lab, indépendant de l’Analyzer et de la Session Velocity affichée.
-- Le Recorder ouvre son propre WebSocket Apex côté serveur Render : plusieurs courses peuvent être enregistrées simultanément et la collecte continue navigateur fermé.
-- Reconnexion Apex automatique et reprise des Recorders actifs après redémarrage du service ; l’historique tours/pits est rechargé pour conserver le contexte des snapshots Velocity Score.
-- Stockage persistant via **Render Postgres** lorsque `DATABASE_URL` est défini ; fallback SQLite local clairement signalé comme non persistant sur Render.
-- Collecte des trames Apex brutes, tours, secteurs, pits/relais, événements, snapshots de classement et snapshots Velocity Score.
-- Export complet ZIP depuis Velocity Lab : `01_TOURS.csv`, `02_SECTEURS.csv`, `03_VELOCITY_SCORES.csv`, `04_PITS_RELAIS.csv`, `05_CLASSEMENT_SNAPSHOTS.jsonl`, `06_EQUIPES_KARTS.csv`, `07_EVENEMENTS_APEX.csv`, `08_RAW_APEX.jsonl` et `course.json`.
-- `render.yaml` aligné sur l’instance **Starter** utilisée pour Velocity et ajout du pilote Postgres `psycopg`.
-
-# V7.2.1758 — Sessions Velocity multi-utilisateurs
-
-- Ajout d'une vraie **Session Velocity** indépendante de l'adresse mail : le mail autorise l'accès, la session isole le travail de course.
-- Un compte autorisé reçoit automatiquement une première session personnelle afin de préserver un démarrage immédiat après connexion.
-- Depuis la Home, ajout d'un gestionnaire permettant de **créer**, **ouvrir** ou **rejoindre** une session grâce à un code `VK-XXXXXX`.
-- Deux mails connectés peuvent désormais travailler sur **deux circuits / deux courses différents** sans mélanger circuit, live Apex, équipe suivie, Analyzer, Spotter, stratégie, messages ou secteurs.
-- Deux mails peuvent au contraire rejoindre le **même code de session** et partager le même état Velocity.
-- Isolation serveur par session de `STATE`, `RaceStateService`, `ApexTable`, `ProtocolEngine` et `ApexEventStore`.
-- Déduplication courte des trames Apex identiques lorsqu'au moins deux appareils sont connectés à la même session, afin de ne pas comptabiliser deux fois le même événement.
-- Les Sessions Course / rôles Team Management sont désormais rattachés à la Session Velocity courante : plusieurs Sessions Course peuvent exister simultanément dans des espaces Velocity différents.
-- Un appareil Pilote / Spotter associé à une Session Course rejoint automatiquement la même Session Velocity que son Team Manager.
-- Changement de circuit verrouillé uniquement par la Session Course du même espace Velocity ; une autre session peut utiliser un autre circuit simultanément.
-- Aucun changement de calcul dans Analyzer, Velocity Score, secteurs ou Spotter.
-
-# V7.2.1757 — Synchronisation Spotter ↔ Analyzer
-
-- Correction du canal de synchronisation entre le **mode Spotter** et la carte **Spotter dans Analyzer** sur plusieurs appareils / onglets.
-- Suppression du numéro Spotter obsolète `7.2.1749` codé en dur dans `spotter.js`.
-- Spotter utilise désormais automatiquement la **même release que Velocity**, injectée par le template (`window.VELOCITY_APP_VERSION`).
-- Secours automatique : si la variable globale n'est pas disponible, Spotter récupère la release depuis le paramètre `?v=` de son propre script.
-- Les POST `/api/spotter-state` portent donc la release attendue par le backend et ne sont plus rejetés en `409 Version Spotter obsolète`.
-- Les snapshots distants de même version sont de nouveau acceptés puis publiés via `velocitySharedSpotterState` / `velocity:spotter-state`, ce qui rafraîchit Analyzer en temps réel.
-- Aucun changement sur la logique FIFO, les files, les karts entrants, la maintenance, Auto ou les scores Velocity.
-
-# V7.2.1756 — Analyzer : classement secteurs
-
-- Ajout de **CLASSEMENT SECTEURS** à côté de CLASSEMENT LIVE et CLASSEMENT VIRTUEL.
-- Une ligne par équipe, basée uniquement sur le **relais en cours** : kart actuel, numéro de relais, meilleurs S1/S2/S3 et théorique relais.
-- Sous chaque meilleur secteur du relais, affichage en plus petit du **meilleur secteur de l’équipe depuis le début de la course**.
-- Tri par **S1**, **S2**, **S3** ou **Théorique relais** ; le classement va du plus rapide au moins rapide.
-- La colonne Δ suit le critère de tri sélectionné et affiche l’écart avec la meilleure valeur du plateau.
-- Gestion dynamique Apex : **aucun secteur**, **2 secteurs** ou **3 secteurs**. S3 et son tri disparaissent automatiquement lorsqu’une session est confirmée à 2 secteurs.
-- Aucun nouvel archivage des anciens relais n’est ajouté pour cette vue ; elle réutilise les données déjà apprises par Analyzer.
-- Les équipes sans valeur sur le critère choisi restent visibles en bas du tableau avec un rang « — ».
-
-# V7.2.1755 — Analyzer : nombre de secteurs Apex dynamique
-
-- Détection du nombre de secteurs sur les tours TERMINÉS, et non depuis le header S1/S2/S3 de la grille Apex.
-- Validation par cohérence : la somme des secteurs disponibles doit reconstituer le temps au tour (tolérance protocolaire serrée).
-- Piste à 2 secteurs : `THÉORIQUE RELAIS = meilleur S1 + meilleur S2`, même si les deux meilleurs secteurs viennent de tours différents.
-- Piste à 3 secteurs : logique inchangée, `S1 + S2 + S3`.
-- Un seul secteur exploitable : pas de temps théorique affiché.
-- La colonne S3 est automatiquement masquée lorsqu'un tour terminé confirme une configuration à 2 secteurs.
-- Avant cette confirmation, les trois colonnes restent visibles afin de ne pas confondre un S3 encore à venir avec une piste à 2 secteurs.
-- `TOUR EN COURS` reste alimenté en direct par les impulsions Apex `*`, `*i1`, `*i2`.
-
-# V7.2.1754 — Analyzer : TOUR EN COURS sur les impulsions secteurs Apex
-- Correction de la source de **TOUR EN COURS** : Analyzer lit désormais directement les impulsions de tracking déjà décodées dans `window.velocityApexMap`, conformément au JavaScript Apex Timing.
-- Protocole live utilisé : `*` → **S1** via le 4e champ `t[3]`, `*i1` → **S2** via `t[2]`, `*i2` → **S3** via `t[2]`.
-- À chaque nouvelle impulsion `*`, Velocity réinitialise le tour secteur courant : S1 est affiché immédiatement, S2/S3 repassent à `—`, puis se remplissent au fur et à mesure de `*i1` et `*i2`.
-- Les secteurs utilisés pour l'animation **TRAFIC / Heat Map** restent conservés séparément afin de ne pas dégrader l'interpolation déjà en place.
-- Entrée/sortie des stands (`*in` / `*out`) : remise à zéro des secteurs du **TOUR EN COURS**.
-- Couleur du **TOUR EN COURS** : violet si meilleur absolu de grille connu, vert si nouveau meilleur du relais, orange sinon.
-- Les calculs historiques **MEILLEUR DU RELAIS**, **MEILLEUR ÉQUIPE**, **MEILLEUR EN COURS** et **THÉORIQUE RELAIS** restent alimentés par l'historique Apex `.L`.
-- Aucun changement dans **Focus Endurance**.
-
-# V7.2.1753 — Analyzer : secteurs Apex en direct
-- Carte **ÉQUIPE SUIVIE** : ajout du bloc **SECTEURS** entre « Position du chrono » et **TRAFIC**, sans modifier le gabarit desktop de la carte.
-- **TOUR EN COURS** : S1 / S2 / S3 sont remis à zéro à chaque nouveau tour puis affichés au fur et à mesure des cellules live Apex `s1`, `s2`, `s3`.
-- **MEILLEUR DU RELAIS** : meilleurs secteurs du relais actif, même s’ils proviennent de tours différents.
-- **MEILLEUR ÉQUIPE** : meilleurs secteurs de l’équipe depuis le début de la course.
-- **MEILLEUR EN COURS** : meilleur tour complet du relais actif.
-- **THÉORIQUE RELAIS** : somme des meilleurs S1 + S2 + S3 du relais actif.
-- **MEILLEUR ÉQUIPE** (chrono) : meilleur tour complet de l’équipe.
-- Les historiques `.L` Apex déjà utilisés par Analyzer alimentent les meilleurs secteurs ; le module reste masqué si aucune donnée secteur n’est disponible.
-- Couleurs secteurs : violet = meilleur absolu de la grille connu par Velocity, vert = meilleur équipe/relais, orange = secteur live normal.
-- **Focus Endurance inchangé** : cette première intégration concerne uniquement Analyzer.
-
-# V7.2.1752 — Focus Endurance : violet = meilleur absolu de la grille
-
-- Restauration de la règle automobile du violet en Focus Endurance.
-- Violet : dernier tour égal au meilleur temps absolu de toute la grille.
-- Vert / orange inchangés : comparaison avec le meilleur du pilote sur le relais courant.
-- Réinitialisation vert / orange toujours effectuée à chaque sortie des stands.
-
-# V7.2.1751 — Focus Endurance : couleur du dernier tour par pilote/relais
-
-- À chaque sortie des stands, le traitement vert/orange du dernier tour est réinitialisé pour le nouveau relais.
-- Vert : le pilote actuellement en relais vient d'améliorer son meilleur chrono de ce relais.
-- Orange : le pilote actuellement en relais n'améliore pas son meilleur chrono de ce relais.
-- Le premier nouveau tour chronométré du relais devient la référence et s'affiche en vert, sauf s'il est violet.
-- Violet : le pilote bat ou égale le meilleur temps historique de son équipe depuis le début de la course.
-- Le violet n'est plus comparé au meilleur temps absolu de toute la grille en Focus Endurance.
-- Aucun changement sur les couleurs Sprint / Qualification.
-
-# V7.2.1750 — Focus Endurance : messages automatiques stands
-
-- Sortie des stands : durée affichée au format `MM:SS.mmm` (ex. `02:34.295`).
-- Entrée aux stands : chrono en bas à droite au même format `MM:SS.mmm`.
-- Entrée aux stands : taille du chrono augmentée de 50 %, y compris sur l’affichage iPhone Focus.
-- Messages automatiques de pénalité désactivés uniquement en Focus Endurance.
-- Les pénalités restent disponibles dans les autres vues de Velocity.
+- Sortie des stands : durée affichée au format milliseconde `00:00.000`.
+  - Exemple : `02:34.295`.
+  - Le libellé `1er passage aux stands / Durée de l'arrêt` reste inchangé.
+- Entrée aux stands : compteur en bas à droite au même format `00:00.000`.
+- Entrée aux stands : taille du compteur augmentée de 50 %, y compris sur smartphone / iPhone Focus paysage virtuel.
+- Notifications automatiques de pénalité désactivées dans Focus Endurance.
+- Les données de pénalité restent disponibles dans Analyzer et les autres vues.
+- Aucun changement aux messages manuels du Team Manager, FIFO Spotter, Quick Change ou synchronisation Spotter.
 
 # V7.2.1749 — Synchronisation Spotter Desktop / Smartphone / Analyzer
 

@@ -10,7 +10,6 @@ from apex_decoder import ApexCellUpdate, CODE_MEANINGS
 GRID_RE = re.compile(r"(?:^|\n)grid\|\|(.*)", re.DOTALL)
 CELL_ID_RE = re.compile(r"^r(\d+)c(\d+)$")
 COL_ID_RE = re.compile(r"^c(\d+)$")
-ROW_ID_RE = re.compile(r"^r(\d+)$")
 TAG_RE = re.compile(r"<[^>]+>")
 
 
@@ -19,7 +18,6 @@ class GridParseResult:
     schema: dict[int, str]
     labels: dict[int, str]
     updates: list[ApexCellUpdate]
-    rows: set[int]
 
 
 class _GridHTMLParser(HTMLParser):
@@ -29,7 +27,6 @@ class _GridHTMLParser(HTMLParser):
         self.schema: dict[int, str] = {}
         self.labels: dict[int, str] = {}
         self.cells: list[tuple[int, int, str, str]] = []
-        self.rows: set[int] = set()
 
     def handle_starttag(self, tag: str, attrs) -> None:
         data = dict(attrs)
@@ -40,12 +37,6 @@ class _GridHTMLParser(HTMLParser):
             "class": data.get("class", ""),
             "text": [],
         }
-        row_match = ROW_ID_RE.match(item["id"])
-        if row_match:
-            row = int(row_match.group(1))
-            # r0 est la ligne d'en-tête Apex, pas un concurrent.
-            if row > 0:
-                self.rows.add(row)
         self.stack.append(item)
 
     def handle_data(self, data: str) -> None:
@@ -108,4 +99,4 @@ def parse_grid_frame(frame: str) -> GridParseResult | None:
         )
         for (row, col), (code, value) in sorted(dedup.items())
     ]
-    return GridParseResult(parser.schema, parser.labels, updates, parser.rows)
+    return GridParseResult(parser.schema, parser.labels, updates)

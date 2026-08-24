@@ -1,6 +1,6 @@
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);sprintFocusPenaltyInitialized=false;sprintFocusPenaltySeen.clear();sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;renderSprintFocus();
+ overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);renderSprintFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)sprintFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
@@ -87,54 +87,28 @@ let sprintFocusPenaltyInitialized=false;
 let sprintFocusPenaltySeen=new Set();
 let sprintFocusPenaltyAlertUntil=0;
 let sprintFocusPenaltyAlert=null;
-let sprintFocusPenaltyHideTimer=null;
 
-function sprintFocusPenaltyKey(p){return String(p?.id||`${p?.time||''}|${p?.flag||p?.kind||''}|${p?.kart||''}|${p?.driver||''}|${p?.penalty||p?.comment||''}`)}
-function sprintFocusPenaltyItems(){
- // Même source que la carte « PÉNALITÉS ET INFORMATIONS » d'Analyzer.
- if(typeof analyzerPenaltyItems==='function')return analyzerPenaltyItems();
- const events=Array.isArray(state?.comment_events)?state.comment_events:[];
- if(events.length)return events;
- return Array.isArray(state?.comment_penalties)?state.comment_penalties:[];
+function sprintFocusPenaltyKey(p){return String(p?.id||`${p?.time||''}|${p?.driver||''}|${p?.penalty||p?.comment||''}`)}
+function sprintFocusPenaltyListMarkup(list){
+ return list.length?list.map(p=>`<div class="sprint-focus-penalty-row sprint-focus-penalty-row-compact" title="${escapePenaltyHtml(fullPenaltyText(p))}"><span class="sprint-focus-penalty-one-line">${escapePenaltyHtml(compactPenaltyText(p))}</span></div>`).join(''):'<div class="sprint-focus-empty">Aucune pénalité</div>';
 }
-function sprintFocusIsPenalty(p){return String(p?.kind||'').toLowerCase()==='penalty'||String(p?.flag||'').toLowerCase()==='penalty'||Boolean(String(p?.penalty||'').trim())}
-function sprintFocusPenaltyTargetsFollowed(p,f){
- if(typeof samePenaltyTarget==='function'&&samePenaltyTarget(p,f))return true;
- const pd=String(p?.driver||'').trim().toLowerCase(),fd=String(f?.driver||state.followed_driver||'').trim().toLowerCase();
- if(pd&&fd&&pd===fd)return true;
- const pk=String(p?.kart||'').replace(/\D/g,''),fk=String(f?.apex||f?.kart||'').replace(/\D/g,'');
- return Boolean(pk&&fk&&pk===fk);
-}
-function hideSprintPenaltyBanner(){
- const banner=document.getElementById('sprintPenaltyBanner');
- if(banner)banner.classList.remove('show');
- sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;
-}
-function renderSprintFocusPenaltyAlert(f){
- const banner=document.getElementById('sprintPenaltyBanner');
- const name=document.getElementById('sprintPenaltyBannerName');
- const text=document.getElementById('sprintPenaltyBannerText');
- if(!banner)return;
- const list=sprintFocusPenaltyItems().filter(sprintFocusIsPenalty);
- if(!sprintFocusPenaltyInitialized){list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));sprintFocusPenaltyInitialized=true;banner.classList.remove('show');return}
- const newest=list.find(p=>!sprintFocusPenaltySeen.has(sprintFocusPenaltyKey(p))&&sprintFocusPenaltyTargetsFollowed(p,f));
- list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));
+function renderSprintFocusPenalties(list){
+ const cell=document.querySelector('#sprintFocus .sprint-focus-penalty-cell');
+ const now=Date.now();
+ if(!sprintFocusPenaltyInitialized){list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));sprintFocusPenaltyInitialized=true}
+ const newest=list.find(p=>!sprintFocusPenaltySeen.has(sprintFocusPenaltyKey(p)));
  if(newest){
-  sprintFocusPenaltyAlert=newest;sprintFocusPenaltyAlertUntil=Date.now()+4000;
-  if(name)name.textContent=String(newest?.driver||f?.driver||state.followed_driver||'—').trim()||'—';
-  if(text)text.textContent=String(newest?.penalty||newest?.comment||'PÉNALITÉ').trim()||'PÉNALITÉ';
-  banner.classList.add('show');
-  if(sprintFocusPenaltyHideTimer)clearTimeout(sprintFocusPenaltyHideTimer);
-  sprintFocusPenaltyHideTimer=setTimeout(hideSprintPenaltyBanner,4000);
-  return;
+  list.forEach(p=>sprintFocusPenaltySeen.add(sprintFocusPenaltyKey(p)));
+  sprintFocusPenaltyAlert=newest;sprintFocusPenaltyAlertUntil=now+7000;
  }
- if(!sprintFocusPenaltyAlert||Date.now()>=sprintFocusPenaltyAlertUntil)banner.classList.remove('show');
-}
-
-function sprintFocusLastLapClass(f){
- const seconds=lapSeconds(f?.last),absoluteBest=absoluteSessionBestSeconds();
- if(Number.isFinite(seconds)&&Number.isFinite(absoluteBest)&&Math.abs(seconds-absoluteBest)<0.0005)return 'fastest-session-best';
- return f?.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange';
+ const alertActive=sprintFocusPenaltyAlert&&now<sprintFocusPenaltyAlertUntil;
+ cell?.classList.toggle('penalty-alert-active',Boolean(alertActive));
+ if(alertActive){
+  sprintFocusPenalties.innerHTML=`<div class="sprint-focus-penalty-alert"><span class="sprint-focus-penalty-alert-one-line">${escapePenaltyHtml(compactPenaltyText(sprintFocusPenaltyAlert))}</span></div>`;
+ }else{
+  sprintFocusPenaltyAlert=null;
+  sprintFocusPenalties.innerHTML=sprintFocusPenaltyListMarkup(list);
+ }
 }
 
 function applyAnalyzerDeltaColors(f,aheadEl,behindEl){
@@ -148,28 +122,21 @@ function applyAnalyzerDeltaColors(f,aheadEl,behindEl){
 
 function renderSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay?.classList.contains('show'))return;
- const f=state.followed||{};
- const position=document.getElementById('sprintFocusPosition'),name=document.getElementById('sprintFocusName'),lastRankEl=document.getElementById('sprintFocusLastRank');
- const aheadEl=document.getElementById('sprintFocusAhead'),behindEl=document.getElementById('sprintFocusBehind');
- const aheadNameEl=document.getElementById('sprintFocusAheadName'),behindNameEl=document.getElementById('sprintFocusBehindName');
- const timeEl=document.getElementById('sprintFocusTime'),lapsEl=document.getElementById('sprintFocusLaps'),lastLapEl=document.getElementById('sprintFocusLastLap');
- if(position)position.textContent=f.pos?'P'+f.pos:'—';if(name)name.textContent=f.driver||state.followed_driver||'—';
- const lastRank=sprintLastLapRanking(f);if(lastRankEl)lastRankEl.innerHTML=lastRank?sprintFocusRankMarkup(lastRank.rank):'—';
- const aheadDriver=sprintDriverAhead(f),behindDriver=sprintDriverBehind(f);
- const focusAhead=sprintGapAhead(f),focusBehind=sprintGapBehind(f),isLeader=Number(f.pos)===1,hasDriverBehind=Boolean(behindDriver);
- if(aheadNameEl){aheadNameEl.textContent=aheadDriver?.driver||'—';aheadNameEl.style.display=isLeader?'none':''}
- if(aheadEl){aheadEl.textContent=focusAhead;aheadEl.style.display=isLeader?'none':''}
- if(behindEl){behindEl.textContent=focusBehind;behindEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
- if(behindNameEl){behindNameEl.textContent=behindDriver?.driver||'—';behindNameEl.style.display=(!isLeader&&!hasDriverBehind)?'none':''}
- applyAnalyzerDeltaColors(f,aheadEl,behindEl);
- const deltas=overlay.querySelector('.sprint-focus-deltas');if(deltas)deltas.classList.toggle('leader-only',isLeader);
- const divider=overlay.querySelector('.sprint-focus-divider');if(divider)divider.style.display=(isLeader||!hasDriverBehind)?'none':'';
- // Focus Sprint : le bloc bas-gauche affiche le temps restant de la session.
- const lapMode=raceUsesLapTarget(),ms=lapMode?null:liveRemainingMilliseconds();
- if(timeEl){timeEl.textContent=lapMode?formatRaceLapProgress():(ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms));timeEl.classList.toggle('time-critical',!lapMode&&Number.isFinite(ms)&&ms<=120000)}
- const laps=String(state.apex_laps_remaining||'').trim();if(lapsEl){lapsEl.textContent=lapMode?'':((laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'');lapsEl.style.display=lapsEl.textContent?'':'none'}
- if(lastLapEl){lastLapEl.textContent=f.last||'—';lastLapEl.classList.remove('fastest-session-best','fastest-lap-green','fastest-lap-orange');if(f.last&&f.last!=='—')lastLapEl.classList.add(sprintFocusLastLapClass(f))}
- renderSprintFocusPenaltyAlert(f);
+ const f=state.followed||{};sprintFocusPosition.textContent=f.pos?'P'+f.pos:'—';sprintFocusName.textContent=f.driver||state.followed_driver||'—';
+ const lastRank=sprintLastLapRanking(f);sprintFocusLastRank.innerHTML=lastRank?sprintFocusRankMarkup(lastRank.rank):'—';
+ const fastest=sprintFastestLastLapForFollowed(f)||{};const fastestDriver=fastest.driver||'—';const fastestLap=fastest.last||'—';const fastestLapSeconds=lapSeconds(fastestLap);const sessionBestSeconds=absoluteSessionBestSeconds();const isAbsoluteSessionBest=Number.isFinite(fastestLapSeconds)&&Number.isFinite(sessionBestSeconds)&&Math.abs(fastestLapSeconds-sessionBestSeconds)<0.0005;const fastestColorClass=isAbsoluteSessionBest?'fastest-session-best':(fastest.last_improved_personal_best?'fastest-lap-green':'fastest-lap-orange');sprintFocusFastestLast.innerHTML=`<span class="sprint-focus-fastest-last-icon">🔥</span><span class="sprint-focus-fastest-last-name" title="${fastestDriver}">${fastestDriver}</span><span class="sprint-focus-fastest-last-time ${fastestColorClass}">${fastestLap}</span>`;
+ const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(sprintDriverBehind(f));
+ sprintFocusAhead.textContent=focusAhead;sprintFocusBehind.textContent=focusBehind;applyAnalyzerDeltaColors(f,sprintFocusAhead,sprintFocusBehind);
+ const sprintFocusDeltas=overlay.querySelector('.sprint-focus-deltas');
+ if(sprintFocusDeltas)sprintFocusDeltas.classList.toggle('leader-only',isLeader);
+ // P1 : uniquement l'écart vert avec P2, centré. Dernier : uniquement l'écart orange avec le pilote devant.
+ sprintFocusAhead.style.display=isLeader?'none':'';
+ sprintFocusBehind.style.display=(!isLeader&&!hasDriverBehind)?'none':'';
+ const sprintFocusDivider=overlay.querySelector('.sprint-focus-divider');if(sprintFocusDivider)sprintFocusDivider.style.display=(isLeader||!hasDriverBehind)?'none':'';
+ const lapMode=raceUsesLapTarget();const ms=lapMode?null:liveRemainingMilliseconds();sprintFocusTime.textContent=lapMode?formatRaceLapProgress():(ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms));sprintFocusTime.classList.toggle('time-critical',!lapMode&&Number.isFinite(ms)&&ms<=120000);
+ const laps=String(state.apex_laps_remaining||'—');sprintFocusLaps.textContent=lapMode?'':((laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'—');
+ const list=[...(state.comment_penalties||[])].sort((a,b)=>String(b.time||b.at||'').localeCompare(String(a.time||a.at||'')));
+ renderSprintFocusPenalties(list);
 }
 
 
@@ -187,78 +154,48 @@ let endurancePitSimulation=null;
 let enduranceTrackStartedAt=0;
 let endurancePitPassageCount=0;
 
-// V7.2.1751 — Focus Endurance : la couleur vert/orange est propre au pilote
-// du relais en cours. Elle est réinitialisée à chaque sortie des stands.
-let enduranceRelayLapColorState={teamKey:'',pilotKey:'',lastMarker:'',bestSeconds:null,lastImproved:false};
-function enduranceRelayTeamKey(f){return String(f?.apex_row??f?.driver??'').trim()}
-function enduranceRelayPilotKey(f){return String(f?.pilot||f?.driver||'').trim().toLowerCase()}
-function enduranceRelayLapMarker(f){return `${String(f?.laps??'')}|${String(f?.last??'')}`}
-function resetEnduranceRelayLapColor(f){
- enduranceRelayLapColorState={
-  teamKey:enduranceRelayTeamKey(f),
-  pilotKey:enduranceRelayPilotKey(f),
-  // On mémorise le tour encore affiché au PIT OUT pour ne pas le prendre comme
-  // premier tour du nouveau relais. Le prochain nouveau marker sera la référence.
-  lastMarker:enduranceRelayLapMarker(f),
-  bestSeconds:null,
-  lastImproved:false
- };
-}
-function enduranceRelayLapImproved(f){
- const teamKey=enduranceRelayTeamKey(f),pilotKey=enduranceRelayPilotKey(f),marker=enduranceRelayLapMarker(f);
- const ctx=enduranceRelayLapColorState;
- if(ctx.teamKey!==teamKey||ctx.pilotKey!==pilotKey){
-  resetEnduranceRelayLapColor(f);
-  return false;
- }
- if(!marker||marker==='|')return false;
- if(marker===ctx.lastMarker)return Boolean(ctx.lastImproved);
- const seconds=lapSeconds(f?.last);
- ctx.lastMarker=marker;
- if(!Number.isFinite(seconds)){ctx.lastImproved=false;return false}
- const previousBest=ctx.bestSeconds;
- const improved=!Number.isFinite(previousBest)||seconds<previousBest-0.0005;
- ctx.lastImproved=improved;
- if(!Number.isFinite(previousBest)||seconds<previousBest)ctx.bestSeconds=seconds;
- return improved;
-}
-
 function formatEndurancePitElapsed(ms){
- const total=Math.max(0,Math.floor(Number(ms||0)/1000));
- const hours=Math.floor(total/3600);
- const minutes=Math.floor((total%3600)/60);
- const seconds=total%60;
- const pad=n=>String(n).padStart(2,'0');
- return hours?`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`:`${pad(minutes)}:${pad(seconds)}`;
-}
-function formatEndurancePitDuration(ms){
  const totalMs=Math.max(0,Math.floor(Number(ms||0)));
- const minutes=Math.floor(totalMs/60000);
+ const hours=Math.floor(totalMs/3600000);
+ const minutes=Math.floor((totalMs%3600000)/60000);
  const seconds=Math.floor((totalMs%60000)/1000);
  const millis=totalMs%1000;
- return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`;
+ const pad=n=>String(n).padStart(2,'0');
+ const padMs=n=>String(n).padStart(3,'0');
+ return hours?`${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${padMs(millis)}`:`${pad(minutes)}:${pad(seconds)}.${padMs(millis)}`;
 }
 function formatEndurancePitClock(value){
  const raw=String(value??'').trim();
  if(!raw||raw==='—')return '00:00.000';
- const clean=raw.replace(/,$/,'.').replace(/\.$/,'');
- let totalMs=NaN;
- if(/^\d+(?:[.,]\d+)?$/.test(clean)){
-  totalMs=Math.round(Number(clean.replace(',','.'))*1000);
- }else{
-  const parts=clean.split(':');
-  if(parts.length===2){
-   const minutes=Number(parts[0]);
-   const seconds=Number(parts[1].replace(',','.'));
-   if(Number.isFinite(minutes)&&Number.isFinite(seconds))totalMs=Math.round((minutes*60+seconds)*1000);
-  }else if(parts.length===3){
-   const hours=Number(parts[0]);
-   const minutes=Number(parts[1]);
-   const seconds=Number(parts[2].replace(',','.'));
-   if(Number.isFinite(hours)&&Number.isFinite(minutes)&&Number.isFinite(seconds))totalMs=Math.round((hours*3600+minutes*60+seconds)*1000);
+ const clean=raw.replace(/\s+/g,'').replace(/,$/,'.').replace(/,(?=\d{1,3}$)/,'.');
+ const pad2=n=>String(Math.max(0,Math.floor(Number(n)||0))).padStart(2,'0');
+ const pad3=n=>String(Math.max(0,Math.floor(Number(n)||0))).padStart(3,'0').slice(0,3);
+
+ // Valeur numérique seule : interprétée comme secondes, y compris décimales.
+ if(/^\d+(?:\.\d+)?$/.test(clean)){
+  const totalSeconds=Math.max(0,Number(clean));
+  const totalMs=Math.round(totalSeconds*1000);
+  return formatEndurancePitElapsed(totalMs);
+ }
+
+ // MM:SS[.mmm] ou HH:MM:SS[.mmm].
+ const parts=clean.split(':');
+ if(parts.length===2||parts.length===3){
+  const last=parts[parts.length-1];
+  const match=String(last).match(/^(\d+)(?:\.(\d{1,3}))?$/);
+  const lead=parts.slice(0,-1).map(v=>Number(v));
+  if(match&&lead.every(Number.isFinite)){
+   const seconds=Number(match[1]);
+   const millis=Number(String(match[2]||'').padEnd(3,'0')||0);
+   if(parts.length===2){
+    const minutes=Number(parts[0]);
+    return `${pad2(minutes)}:${pad2(seconds)}.${pad3(millis)}`;
+   }
+   const hours=Number(parts[0]),minutes=Number(parts[1]);
+   return `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}.${pad3(millis)}`;
   }
  }
- return Number.isFinite(totalMs)?formatEndurancePitDuration(totalMs):clean;
+ return clean;
 }
 function endurancePitPassageLabel(count){
  const value=Math.max(1,Number(count)||1);
@@ -288,11 +225,10 @@ function simulateEndurancePitIn(){
 function simulateEndurancePitOut(){
  const now=Date.now();
  let duration=endurancePitLastTime;
- if(endurancePitSimulation?.mode==='in')duration=formatEndurancePitDuration(now-endurancePitSimulation.startedAt);
+ if(endurancePitSimulation?.mode==='in')duration=formatEndurancePitElapsed(now-endurancePitSimulation.startedAt);
  endurancePitLastTime=duration||'—';
  endurancePitPassageCount=Math.max(1,endurancePitPassageCount+1);
  endurancePitSimulation={mode:'out',startedAt:now,duration:endurancePitLastTime,passageCount:endurancePitPassageCount};
- resetEnduranceRelayLapColor(enduranceFocusSelectedDriver());
  enduranceTrackStartedAt=now;
  endurancePitOutUntil=now+5000;
  renderEnduranceFocus();
@@ -307,7 +243,7 @@ function resetEndurancePitSimulation(){
 function renderEndurancePitState(f){
  const now=Date.now();
  if(endurancePitSimulation?.mode==='in'){
-  const value=formatEndurancePitDuration(now-endurancePitSimulation.startedAt);
+  const value=formatEndurancePitElapsed(now-endurancePitSimulation.startedAt);
   endurancePitLastTime=value;
   setEndurancePitOverlay('in',value);
   return true;
@@ -328,7 +264,7 @@ function renderEndurancePitState(f){
   if(endurancePitPreviousStatus!=='pit')endurancePitEnteredAt=now;
   enduranceTrackStartedAt=0;
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
-  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitDuration(now-endurancePitEnteredAt);
+  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
   endurancePitPreviousStatus='pit';
   endurancePitOutUntil=0;
   setEndurancePitOverlay('in',endurancePitLastTime);
@@ -341,9 +277,8 @@ function renderEndurancePitState(f){
   const apexPassages=Number(f?.pit_stops);
   if(Number.isFinite(apexPassages)&&apexPassages>0)endurancePitPassageCount=apexPassages;
   if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
-  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitDuration(now-endurancePitEnteredAt);
+  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitElapsed(now-endurancePitEnteredAt);
   endurancePitOutUntil=now+5000;
-  resetEnduranceRelayLapColor(f);
   enduranceTrackStartedAt=now;
  }
  endurancePitPreviousStatus=status;
@@ -375,17 +310,9 @@ function enduranceTrackTimeValue(f){
 
 function enduranceLastLapColorClass(f){
  const lastSec=lapSeconds(f?.last);
- // On met toujours à jour la référence du relais, même lorsque le tour sera
- // affiché en violet : le tour suivant doit bien être comparé à ce chrono.
- const relayImproved=enduranceRelayLapImproved(f);
- // Violet : meilleur temps absolu de toute la grille, conformément à la
- // convention automobile. La référence vert/orange reste, elle, propre au
- // pilote et au relais courant.
- const sessionBest=absoluteSessionBestSeconds();
- if(Number.isFinite(lastSec)&&Number.isFinite(sessionBest)&&Math.abs(lastSec-sessionBest)<0.0005)return 'endurance-last-purple';
- // Vert / orange : comparaison uniquement avec le meilleur du pilote sur le
- // relais courant, remis à zéro lors de chaque PIT OUT.
- if(relayImproved)return 'endurance-last-green';
+ const absoluteBest=absoluteSessionBestSeconds();
+ if(Number.isFinite(lastSec)&&Number.isFinite(absoluteBest)&&Math.abs(lastSec-absoluteBest)<0.0005)return 'endurance-last-purple';
+ if(f?.last_improved_personal_best)return 'endurance-last-green';
  return 'endurance-last-orange';
 }
 
@@ -402,12 +329,18 @@ function samePenaltyTarget(p,f){
  return Boolean(pk&&fk&&pk===fk);
 }
 function renderEndurancePenaltyAlert(list,f){
- // V7.2.1750 — messages automatiques de pénalité désactivés en Focus Endurance.
- // Les données de pénalité restent disponibles dans les autres écrans de Velocity.
+ // V7.2.1750 : désactivation volontaire des notifications automatiques
+ // de pénalité dans Focus Endurance. Les données de pénalité restent disponibles
+ // dans Analyzer et dans les autres écrans ; seul le bandeau automatique pilote
+ // est désactivé.
  const banner=document.getElementById('endurancePenaltyBanner');
  if(banner)banner.classList.remove('show');
  endurancePenaltyAlert=null;
  endurancePenaltyAlertUntil=0;
+ if(!endurancePenaltyInitialized){
+  (list||[]).filter(p=>samePenaltyTarget(p,f)).forEach(p=>endurancePenaltySeen.add(sprintFocusPenaltyKey(p)));
+  endurancePenaltyInitialized=true;
+ }
 }
 
 

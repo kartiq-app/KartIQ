@@ -965,27 +965,13 @@ body.iphone-focus-virtual-landscape #driverMessageOverlay{
 }
 /* Le titre est légèrement repoussé vers la droite dans le paysage visible.
    Le padding droit garantit aussi une séparation nette avec le filet coloré. */
-/* V7.2.1767 — le header Focus reste dans le flux normal, comme en Endurance.
-   Seul l'overlay d'animation pit Endurance couvre tout l'écran. */
+body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header,
+body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header,
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-overlay{
   position:absolute!important;
   inset:0!important;
   width:100%!important;
   height:100%!important;
-}
-body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header,
-body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header,
-body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header{
-  position:relative!important;
-  inset:auto!important;
-  width:100%!important;
-  height:54px!important;
-  min-height:54px!important;
-  flex:0 0 54px!important;
-  box-sizing:border-box!important;
-  padding-left:clamp(28px,8vw,42px)!important;
-  padding-right:14px!important;
-  column-gap:14px!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-in-time{
   bottom:clamp(10px,2.2dvw,28px)!important;
@@ -1009,6 +995,12 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-pit-out-time{
   font-size:clamp(48px,15dvw,104px)!important;
 }
 
+body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header{
+  box-sizing:border-box!important;
+  padding-left:clamp(28px,8vw,42px)!important;
+  padding-right:14px!important;
+  column-gap:14px!important;
+}
 body.iphone-focus-virtual-landscape #qualificationFocus .qual-focus-header>span,
 body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-header>span,
 body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>span{
@@ -1039,8 +1031,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 /* Velocity V7.2.1740N — Focus Endurance smartphone : lisibilité maximale.
    Delta +30 %, noms équipe/pilote +10 %, dernier temps auto-fit via JS. */
 @media (max-width: 900px), (pointer: coarse){
-  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta,
-  #sprintFocus .sprint-focus-deltas-v1766 .sprint-focus-delta{
+  #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
     font-size:clamp(66.3px,16.575vh,187.85px)!important;
   }
   #enduranceFocus .endurance-focus-driver .sprint-focus-name{
@@ -1067,8 +1058,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
 
 /* Le mode iPhone paysage virtuel a un viewport OS portrait : on force ici
    les proportions adaptées au paysage visible sans toucher à Android. */
-body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta,
-body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-deltas-v1766 .sprint-focus-delta{
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-deltas .sprint-focus-delta{
   font-size:clamp(69.7px,17dvw,187px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
@@ -1113,117 +1103,4 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
   text-align:center!important;
   white-space:nowrap!important;
   overflow:hidden!important;
-}
-
-/* V7.2.1768 — Focus Sprint : delta strictement aligné sur Focus Endurance.
-   Les deux modes partagent désormais exactement les mêmes tailles responsive,
-   y compris sur iPhone en paysage virtuel. */
-/* V7.2.1766 — Focus Sprint aligné sur Focus Endurance + Focus Qualification élargi. */
-#sprintFocus .sprint-focus-header i{background:#1687ff!important}
-#sprintFocus .sprint-focus-main-v1766 .sprint-focus-row-two .sprint-focus-cell{height:100%}
-#sprintFocus .sprint-focus-deltas-v1766{
-  display:grid!important;
-  grid-template-rows:auto minmax(0,1fr) 1px minmax(0,1fr) auto!important;
-  align-items:center!important;
-  justify-items:center!important;
-  padding-top:clamp(8px,1.5vw,24px)!important;
-  padding-bottom:clamp(8px,1.5vw,24px)!important;
-}
-#sprintFocus .sprint-focus-neighbour-name{
-  max-width:94%;
-  font-family:var(--font-driver);
-  font-size:clamp(18px,3.6vh,46px);
-  font-weight:850;
-  line-height:1;
-  text-transform:uppercase;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  color:#fff;
-}
-#sprintFocus .sprint-focus-remaining-session{height:100%;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
-#sprintFocus .sprint-focus-session-label{
-  margin-bottom:clamp(8px,1.5vh,18px);
-  font-family:var(--font-main);
-  font-size:clamp(14px,2.2vh,28px);
-  font-weight:950;
-  letter-spacing:.1em;
-  color:var(--muted);
-  text-transform:uppercase;
-}
-#sprintFocus .sprint-focus-last-lap-cell{padding:clamp(10px,2vw,28px)!important}
-#sprintFocus .sprint-focus-last-lap{
-  width:100%;
-  max-width:100%;
-  font-family:var(--font-time);
-  font-size:clamp(58px,14vh,180px);
-  font-weight:700;
-  line-height:.9;
-  white-space:nowrap;
-  text-align:center;
-}
-#sprintFocus .sprint-focus-last-lap.fastest-lap-orange{color:var(--orange)!important}
-#sprintFocus .sprint-focus-last-lap.fastest-lap-green{color:var(--green)!important}
-#sprintFocus .sprint-focus-last-lap.fastest-session-best{color:var(--purple)!important}
-#sprintFocus .sprint-penalty-banner{
-  position:absolute;
-  inset:0;
-  z-index:140;
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:clamp(18px,5vh,56px);
-  padding:clamp(24px,5vw,72px);
-  background:#000;
-  color:#fff;
-  text-align:center;
-  overflow:hidden;
-}
-#sprintFocus .sprint-penalty-banner.show{display:flex}
-#sprintFocus .sprint-penalty-banner-name{
-  width:100%;
-  font-family:var(--font-driver);
-  font-size:clamp(36px,9vh,112px);
-  font-weight:850;
-  line-height:1;
-  text-transform:uppercase;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-#sprintFocus .sprint-penalty-banner-text{
-  width:100%;
-  font-family:var(--font-driver);
-  font-size:clamp(40px,11vh,138px);
-  font-weight:900;
-  line-height:1.02;
-  text-transform:uppercase;
-  overflow-wrap:anywhere;
-}
-
-/* Qualification : temps restant réduit de moitié (50% -> 25%) et meilleur temps à 75%. */
-#qualificationFocus .qual-focus-header i{background:var(--red)!important}
-#qualificationFocus .qual-focus-row-two{grid-template-columns:25% 75%!important}
-#qualificationFocus .qual-focus-best-block{width:100%;height:100%;padding:0 clamp(8px,1.5vw,22px)}
-#qualificationFocus .qual-focus-fastest{
-  max-width:100%;
-  font-size:clamp(30px,6.5vh,82px)!important;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-#qualificationFocus .qual-focus-best-time{
-  width:100%;
-  margin-top:clamp(8px,1.6vh,18px);
-  font-size:clamp(64px,16vh,205px)!important;
-  line-height:.84!important;
-  text-align:center;
-}
-#qualificationFocus .qual-focus-remaining{font-size:clamp(40px,9vh,108px)!important}
-@media(max-width:680px) and (orientation:portrait){
-  #qualificationFocus .qual-focus-row-two{grid-template-columns:25% 75%!important}
-  #qualificationFocus .qual-focus-best-time{font-size:clamp(42px,12vw,82px)!important}
-  #qualificationFocus .qual-focus-fastest{font-size:clamp(18px,4.2vw,34px)!important}
-  #qualificationFocus .qual-focus-remaining{font-size:clamp(28px,7vw,52px)!important}
 }
