@@ -1,3 +1,25 @@
+# V7.2.1773 — SCORE RELAIS serveur pour longues endurances
+
+- Base : V7.2.1772.
+- Aucun changement de la formule Velocity / Score Relais.
+- Nouvelle architecture pour les 12H / 24H :
+  - le navigateur ne récupère plus et ne calcule plus 40 000 à 70 000 tours ;
+  - le backend Python récupère les STATS Apex ;
+  - le backend découpe les tours avec les PITS ;
+  - le backend applique la logique Score Relais ;
+  - Chrome reçoit uniquement une matrice compacte R1 / R2 / R3...
+- Reconstruction lancée comme job serveur en arrière-plan avec progression pollée par Analyzer.
+- Jusqu'à 4 équipes Apex récupérées en parallèle côté serveur.
+- 1500 tours par équipe par défaut ; passage à 3000 uniquement si Apex prouve que l'historique est tronqué.
+- Qualification historique non recherchée automatiquement : R1 fonctionne sans qualification et cette donnée facultative ne peut plus bloquer une 24H.
+- Changement de circuit/session :
+  - annulation immédiate du job côté navigateur ;
+  - demande d'annulation envoyée au serveur ;
+  - une réponse d'un ancien circuit ne peut pas contaminer le circuit courant.
+- Le relais courant reste calculé en Live dans le navigateur, tour après tour.
+- Aucun fallback vers le calcul massif navigateur si le serveur échoue : priorité à la stabilité de la page.
+- Velocity Lab / Data Recorder inchangés.
+
 # V7.2.1772 — SCORE RELAIS : fenêtre STATS 1500 par défaut
 
 - Base : V7.2.1771.

@@ -52,6 +52,8 @@ const analyzerRelayStatsCache=new Map();
 let analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
 let analyzerRelayBackgroundScheduled=null;
 let analyzerRelayBackgroundLastSignature='';
+let analyzerRelayServerJobId=null;
+let analyzerRelayServerPollTimer=null;
 let analyzerRelayEngineContext='';
 let analyzerRelayCleanLastCompletedContext='';
 
@@ -1492,6 +1494,45 @@ function analyzerRelayScoreCompute(teams,qualification){
  return {maxRelay,matrix,gridByRelay,pilotBaselines};
 }
 
+function analyzerRelayServerDrivers(){
+ return (state.drivers||[]).filter(d=>Number(d.apex_row)>0).map(d=>({
+  apex_row:Number(d.apex_row),
+  driver:String(d.driver||''),
+  pilot:String(analyzerOfficialCurrentPilot(d)||analyzerDriverPilot(d)||''),
+  kart:String(validKartNumber(d)||d.apex||''),
+  laps:analyzerNullableNumeric(d.laps),
+  pit_stops:analyzerNumeric(d.pit_stops,analyzerNumeric(d.stops,analyzerNumeric(d.pits,0)))
+ }));
+}
+function analyzerRelayApplyServerResult(result,context,signature){
+ const currentByRow=new Map((state.drivers||[]).map(d=>[Number(d.apex_row),d]));
+ const matrix=new Map(),teams=[];
+ for(const serverTeam of (result?.teams||[])){
+  const rowId=Number(serverTeam.apex_row),driver=currentByRow.get(rowId);
+  if(!driver)continue;
+  const row=new Map(),relays=[];
+  for(const item of (serverTeam.relays||[])){
+   const index=Number(item.relay_index)||Number(item?.relay?.index)||0;
+   if(!index)continue;
+   const relayObj=(item&&typeof item.relay==='object')?item.relay:{index};
+   const finalRelay={...relayObj,index:Number(relayObj.index)||index,values:[]};
+   const cell={...item,relay:finalRelay};
+   row.set(index,cell);relays.push(finalRelay);
+  }
+  matrix.set(rowId,row);
+  relays.sort((a,b)=>Number(a.index)-Number(b.index));
+  teams.push({driver,relays});
+ }
+ analyzerRelayScoreData={
+  teams,matrix,maxRelay:Number(result?.maxRelay)||0,
+  gridByRelay:new Map(),pilotBaselines:new Map(),
+  qualification:{session:null,grid:null,byRow:new Map()},
+  updatedAt:Date.now(),context,source:'server',durationMs:Number(result?.durationMs)||0
+ };
+ analyzerRelayBackgroundLastSignature=signature;
+ analyzerRelayCleanLastCompletedContext=context;
+ analyzerSaveSession('relay-server-rebuild');
+}
 async function analyzerLoadRelayScores({force=false,background=false,structuralSignature=null,contextKey=null}={}){
  const context=contextKey||analyzerRelayEnsureContext();
  if(analyzerRelayScoreLoading)return;
@@ -1500,73 +1541,63 @@ async function analyzerLoadRelayScores({force=false,background=false,structuralS
   if(analyzerVelocityView==='relays')analyzerRenderRelayScoreTable();
   return;
  }
- const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);
- if(!drivers.length)return;
+ const drivers=analyzerRelayServerDrivers();if(!drivers.length)return;
  analyzerRelayScoreLoading=true;
  const token=++analyzerRelayScoreLoadToken;
- analyzerRelayScoreProgress={done:0,total:drivers.length,team:'',phase:'stats'};
- const teams=[];
- console.info('[Velocity][SCORE RELAIS] reconstruction démarrée',{context,teams:drivers.length,signature});
+ analyzerRelayScoreProgress={done:0,total:drivers.length,team:'',phase:'server'};
+ console.info('[Velocity][SCORE RELAIS] moteur serveur démarré',{context,teams:drivers.length});
  try{
-  for(let i=0;i<drivers.length;i++){
+  const startResponse=await fetch('/api/apex/relay-scores',{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({circuit_id:apexHistoryCircuitId(),drivers})
+  });
+  const startData=await startResponse.json();
+  if(!startResponse.ok||!startData.ok)throw new Error(startData.error||`HTTP ${startResponse.status}`);
+  if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+  analyzerRelayServerJobId=String(startData.job?.id||'');
+  if(!analyzerRelayServerJobId)throw new Error('Job serveur SCORE RELAIS invalide');
+
+  while(true){
+   await apexHistorySleep(350);
    if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
-   const driver=drivers[i],rowId=Number(driver.apex_row);
-   analyzerRelayScoreProgress={done:i,total:drivers.length,team:driver.driver||'',phase:'stats'};
+   const response=await fetch(`/api/apex/relay-scores/${encodeURIComponent(analyzerRelayServerJobId)}`,{cache:'no-store'});
+   const data=await response.json();
+   if(!response.ok||!data.ok)throw new Error(data.error||`HTTP ${response.status}`);
+   const job=data.job||{},progress=job.progress||{};
+   analyzerRelayScoreProgress={
+    done:Number(progress.done)||0,total:Number(progress.total)||drivers.length,
+    team:String(progress.team||''),phase:String(progress.phase||'server')
+   };
    if(analyzerVelocityView==='relays'&&!analyzerRelayScoreData){
     const host=document.getElementById('analyzerKartMarket');
     if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(analyzerRelayProgressText())}</div>`;
    }
-   try{
-    const {laps,pits,cached,window}=await analyzerRelayFetchTeamStatsClean(driver,{force,contextKey:context});
-    if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
-    const relays=analyzerRelayScoreSlices(laps,pits,driver);
-    teams.push({driver,relays});
-    // La même réponse STATS sert au relais courant : aucune seconde hydratation/récupération.
-    analyzerApplyHydratedRelay(driver,laps,pits);
-    analyzerRelayHydrationCache.set(analyzerRelayHydrationKey(driver),{
-     laps:analyzerNumeric(driver.laps,0),stops:analyzerNumeric(driver.pit_stops,0),updatedAt:Date.now()
-    });
-    console.info('[Velocity][SCORE RELAIS] équipe prête',{index:i+1,total:drivers.length,context,rowId,team:driver.driver,laps:laps.length,pits:pits.length,relays:relays.length,window,cached});
-   }catch(error){
-    if(String(error?.message||error)==='SCORE_RELAIS_CONTEXT_CHANGED')throw error;
-    console.warn('[Velocity][SCORE RELAIS] équipe ignorée après erreur STATS',{context,rowId,team:driver.driver,error});
-    teams.push({driver,relays:[]});
+   if(job.status==='done'){
+    analyzerRelayApplyServerResult(job.result||{},context,signature);
+    console.info('[Velocity][SCORE RELAIS] moteur serveur terminé',{context,durationMs:job.result?.durationMs,maxRelay:job.result?.maxRelay});
+    break;
    }
-   analyzerRelayScoreProgress={done:i+1,total:drivers.length,team:driver.driver||'',phase:'stats'};
-   // L'analyse Live reste prioritaire pendant la reconstruction.
-   await apexHistorySleep(background?35:20);
+   if(job.status==='error')throw new Error(job.error||'Calcul serveur SCORE RELAIS impossible');
+   if(job.status==='cancelled')throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
   }
-  if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
-  analyzerRelayScoreProgress={done:drivers.length,total:drivers.length,team:'',phase:'qualification'};
-  await apexHistorySleep(30);
-  const qualification=await analyzerRelayScoreQualificationContext(drivers);
-  if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
-  analyzerRelayScoreProgress={done:drivers.length,total:drivers.length,team:'',phase:'compute'};
-  await apexHistorySleep(40);
-  const started=performance.now();
-  // ALGORITHME VELOCITY INCHANGÉ : seul le moteur de collecte STATS a été remplacé.
-  const computed=analyzerRelayScoreCompute(teams,qualification);
-  if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
-  analyzerRelayScoreData={teams,qualification,...computed,updatedAt:Date.now(),context};
-  analyzerRelayBackgroundLastSignature=signature;
-  analyzerRelayCleanLastCompletedContext=context;
-  console.info('[Velocity][SCORE RELAIS] reconstruction terminée',{context,teams:teams.length,maxRelay:computed.maxRelay,durationMs:Math.round(performance.now()-started)});
-  analyzerSaveLearning();
-  analyzerSaveSession('relay-clean-rebuild');
  }catch(error){
   if(String(error?.message||error)==='SCORE_RELAIS_CONTEXT_CHANGED'){
-   console.info('[Velocity][SCORE RELAIS] reconstruction annulée : circuit/session changé',{from:context,to:analyzerRelayContextKey()});
-  }else console.warn('[Velocity][SCORE RELAIS] reconstruction interrompue',{context,error});
+   console.info('[Velocity][SCORE RELAIS] job serveur abandonné : circuit/session changé',{from:context,to:analyzerRelayContextKey()});
+  }else{
+   console.warn('[Velocity][SCORE RELAIS] moteur serveur en échec',{context,error});
+   // Pas de fallback navigateur lourd sur une longue endurance : on garde la page vivante.
+   analyzerRelayScoreData=null;
+  }
  }finally{
   if(token===analyzerRelayScoreLoadToken){
    analyzerRelayScoreLoading=false;
    analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
+   analyzerRelayServerJobId=null;
   }
  }
  if(token!==analyzerRelayScoreLoadToken||context!==analyzerRelayContextKey())return;
  if(analyzerVelocityView==='relays')analyzerRenderRelayScoreTable();
  else analyzerRefreshVelocityDeltaCells();
- if(analyzerRelayStructuralSignature()!==analyzerRelayBackgroundLastSignature)analyzerScheduleRelayBackgroundRebuild({delay:1000});
 }
 
 function analyzerRelayScoreLatestCell(driver){
@@ -4207,6 +4238,11 @@ function analyzerRelayContextKey(){
 function analyzerRelayResetEngine(reason='context-change'){
  analyzerRelayScoreLoadToken++;
  if(analyzerRelayBackgroundScheduled){clearTimeout(analyzerRelayBackgroundScheduled);analyzerRelayBackgroundScheduled=null}
+ if(analyzerRelayServerPollTimer){clearTimeout(analyzerRelayServerPollTimer);analyzerRelayServerPollTimer=null}
+ if(analyzerRelayServerJobId){
+  const oldJob=analyzerRelayServerJobId;analyzerRelayServerJobId=null;
+  fetch(`/api/apex/relay-scores/${encodeURIComponent(oldJob)}/cancel`,{method:'POST'}).catch(()=>{});
+ }
  analyzerRelayScoreLoading=false;
  analyzerRelayScoreData=null;
  analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
@@ -4321,10 +4357,10 @@ function analyzerRelayStructuralSignature(){
 }
 function analyzerRelayProgressText(){
  const p=analyzerRelayScoreProgress;
- if(p.phase==='qualification')return 'Référence qualification (optionnelle)…';
- if(p.phase==='compute')return 'Calcul final des Scores Relais…';
- if(p.total>0)return `Reconstruction SCORE RELAIS depuis STATS… ${p.done}/${p.total}${p.team?` · ${p.team}`:''}`;
- return 'Reconstruction SCORE RELAIS depuis STATS…';
+ if(p.phase==='compute')return 'Calcul serveur des Scores Relais…';
+ if(p.phase==='done')return 'Scores Relais prêts';
+ if(p.total>0)return `Serveur SCORE RELAIS · STATS ${p.done}/${p.total}${p.team?` · ${p.team}`:''}`;
+ return 'Préparation SCORE RELAIS côté serveur…';
 }
 function analyzerScheduleRelayBackgroundRebuild({delay=1200}={}){
  const context=analyzerRelayEnsureContext();

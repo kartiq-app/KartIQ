@@ -37,6 +37,7 @@ from backend.config import APP_DIR, APP_RELEASE_NAME, APP_VERSION, load_circuits
 from backend.logging_tools import ApexLogManager
 from backend.network import local_ip
 from backend.services.race_state import RaceStateService
+from backend.services.relay_score_engine import fetch_and_compute
 from data_recorder import RecorderStore, RecorderManager
 
 app = Flask(__name__)
@@ -1871,6 +1872,160 @@ def get_race_access(token):
     if not access:return jsonify(ok=False,ended=True),410
     return jsonify(ok=True,role=access["role"],session=access["session"])
 
+
+
+
+# V7.2.1773 — longues endurances : reconstruction SCORE RELAIS côté serveur.
+# Le navigateur ne transporte/calcul plus des dizaines de milliers de tours.
+RELAY_SCORE_JOB_LOCK = threading.RLock()
+RELAY_SCORE_JOBS = {}
+RELAY_SCORE_JOB_TTL_S = 1800
+
+
+def _relay_score_job_cleanup():
+    now = time.time()
+    with RELAY_SCORE_JOB_LOCK:
+        expired = [
+            job_id for job_id, item in RELAY_SCORE_JOBS.items()
+            if now - float(item.get("updated_at") or item.get("created_at") or now) > RELAY_SCORE_JOB_TTL_S
+        ]
+        for job_id in expired:
+            RELAY_SCORE_JOBS.pop(job_id, None)
+
+
+def _relay_score_job_public(item):
+    return {
+        "id": item.get("id"),
+        "status": item.get("status"),
+        "circuit_id": item.get("circuit_id"),
+        "progress": deepcopy(item.get("progress") or {}),
+        "error": item.get("error"),
+        "result": deepcopy(item.get("result")) if item.get("status") == "done" else None,
+        "created_at": item.get("created_at"),
+        "updated_at": item.get("updated_at"),
+    }
+
+
+def _relay_score_run_job(job_id):
+    with RELAY_SCORE_JOB_LOCK:
+        item = RELAY_SCORE_JOBS.get(job_id)
+        if not item:
+            return
+        circuit_id = item["circuit_id"]
+        drivers = deepcopy(item["drivers"])
+        item["status"] = "running"
+        item["updated_at"] = time.time()
+
+    circuit = next((c for c in load_circuits() if c["id"] == circuit_id), None)
+    if not circuit:
+        with RELAY_SCORE_JOB_LOCK:
+            item = RELAY_SCORE_JOBS.get(job_id)
+            if item:
+                item.update(status="error", error="Circuit inconnu", updated_at=time.time())
+        return
+
+    def progress(payload):
+        with RELAY_SCORE_JOB_LOCK:
+            current = RELAY_SCORE_JOBS.get(job_id)
+            if not current or current.get("cancelled"):
+                raise RuntimeError("SCORE_RELAIS_JOB_CANCELLED")
+            current["progress"] = dict(payload or {})
+            current["updated_at"] = time.time()
+
+    try:
+        def cancelled():
+            with RELAY_SCORE_JOB_LOCK:
+                current = RELAY_SCORE_JOBS.get(job_id)
+                return not current or bool(current.get("cancelled"))
+        result = fetch_and_compute(circuit, drivers, _apex_http_request, progress=progress, max_workers=4, cancelled=cancelled)
+        with RELAY_SCORE_JOB_LOCK:
+            current = RELAY_SCORE_JOBS.get(job_id)
+            if current:
+                if current.get("cancelled"):
+                    current.update(status="cancelled", result=None, updated_at=time.time())
+                else:
+                    current.update(
+                        status="done",
+                        result=result,
+                        progress={"phase": "done", "done": len(drivers), "total": len(drivers), "team": ""},
+                        updated_at=time.time(),
+                    )
+    except Exception as exc:
+        with RELAY_SCORE_JOB_LOCK:
+            current = RELAY_SCORE_JOBS.get(job_id)
+            if current:
+                if current.get("cancelled") or str(exc) == "SCORE_RELAIS_JOB_CANCELLED":
+                    current.update(status="cancelled", error=None, updated_at=time.time())
+                else:
+                    current.update(status="error", error=str(exc), updated_at=time.time())
+                    write_live_log(f"SCORE RELAIS SERVEUR ERREUR {exc}")
+
+
+@app.post("/api/apex/relay-scores")
+def apex_relay_scores_start():
+    """Lance une reconstruction SCORE RELAIS serveur, adaptée aux 12H/24H."""
+    _relay_score_job_cleanup()
+    body = request.get_json(force=True, silent=True) or {}
+    circuit_id = str(body.get("circuit_id") or STATE.get("circuit_id") or "")
+    drivers = body.get("drivers") or []
+    circuit = next((c for c in load_circuits() if c["id"] == circuit_id), None)
+    if not circuit:
+        return jsonify(ok=False, error="Circuit inconnu"), 400
+    if not isinstance(drivers, list) or not drivers:
+        return jsonify(ok=False, error="Aucune équipe à reconstruire"), 400
+    safe = []
+    for driver in drivers[:100]:
+        try:
+            row_id = int(driver.get("apex_row") or 0)
+        except Exception:
+            row_id = 0
+        if not row_id:
+            continue
+        safe.append({
+            "apex_row": row_id,
+            "driver": str(driver.get("driver") or "")[:160],
+            "pilot": str(driver.get("pilot") or "")[:160],
+            "kart": str(driver.get("kart") or driver.get("apex") or "")[:40],
+            "laps": driver.get("laps"),
+            "pit_stops": driver.get("pit_stops"),
+        })
+    if not safe:
+        return jsonify(ok=False, error="Aucune ligne Apex valide"), 400
+    job_id = secrets.token_urlsafe(12)
+    now = time.time()
+    item = {
+        "id": job_id, "status": "queued", "circuit_id": circuit_id, "drivers": safe,
+        "progress": {"phase": "queued", "done": 0, "total": len(safe), "team": ""},
+        "result": None, "error": None, "cancelled": False,
+        "created_at": now, "updated_at": now,
+    }
+    with RELAY_SCORE_JOB_LOCK:
+        RELAY_SCORE_JOBS[job_id] = item
+    threading.Thread(target=_relay_score_run_job, args=(job_id,), daemon=True, name=f"relay-score-{job_id[:6]}").start()
+    return jsonify(ok=True, job=_relay_score_job_public(item))
+
+
+@app.get("/api/apex/relay-scores/<job_id>")
+def apex_relay_scores_status(job_id):
+    _relay_score_job_cleanup()
+    with RELAY_SCORE_JOB_LOCK:
+        item = RELAY_SCORE_JOBS.get(str(job_id))
+        if not item:
+            return jsonify(ok=False, error="Job SCORE RELAIS introuvable"), 404
+        return jsonify(ok=True, job=_relay_score_job_public(item))
+
+
+@app.post("/api/apex/relay-scores/<job_id>/cancel")
+def apex_relay_scores_cancel(job_id):
+    with RELAY_SCORE_JOB_LOCK:
+        item = RELAY_SCORE_JOBS.get(str(job_id))
+        if not item:
+            return jsonify(ok=False, error="Job SCORE RELAIS introuvable"), 404
+        item["cancelled"] = True
+        if item.get("status") in ("queued", "running"):
+            item["status"] = "cancelled"
+        item["updated_at"] = time.time()
+        return jsonify(ok=True, job=_relay_score_job_public(item))
 
 
 def _apex_request_port(circuit):
