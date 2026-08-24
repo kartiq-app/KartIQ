@@ -48,6 +48,11 @@ let analyzerRelayScoreLoading=false;
 let analyzerRelayScoreLoadToken=0;
 let analyzerRelayScoreScrollLeft=0;
 let analyzerRelayScoreScrollBound=false;
+let analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
+let analyzerRelayBackgroundScheduled=null;
+let analyzerRelayBackgroundLastSignature='';
+let analyzerRelayBackgroundRunningSignature='';
+
 const analyzerRelayStatsCache=new Map();
 const ANALYZER_RELAY_STATS_CACHE_MS=300000;
 
@@ -1238,6 +1243,7 @@ async function analyzerRelayScoreQualificationContext(drivers){
    const average=analyzerRelayScoreQualificationAverage(laps,pits);
    if(Number.isFinite(average)){byRow.set(Number(driver.apex_row),average);averages.push(average)}
   }catch(_){ }
+  await apexHistorySleep(20);
  }
  return {session,grid:analyzerMedian(averages),byRow};
 }
@@ -1253,22 +1259,41 @@ function analyzerRelayWindowValues(team,from,to){
    progressive), chaque tour est replacé par rapport à une référence temporelle locale de
    la grille. Cela évite de confondre +15 s de pluie avec un kart soudainement mauvais. */
 function analyzerRelayAllLapPoints(teams){
- const points=[];
- for(const team of (teams||[]))for(const relay of (team?.relays||[]))for(const point of (relay?.lapPoints||[])){
-  const lap=Number(point?.lap),seconds=Number(point?.seconds);
-  if(Number.isFinite(lap)&&Number.isFinite(seconds)&&seconds>0)points.push({team,relay,lap,seconds});
+ const points=[],byLap=new Map();
+ for(const team of (teams||[])){
+  const teamIndex=new Map();
+  Object.defineProperty(team,'__relayLapIndex',{value:teamIndex,writable:true,configurable:true,enumerable:false});
+  for(const relay of (team?.relays||[]))for(const point of (relay?.lapPoints||[])){
+   const lap=Number(point?.lap),seconds=Number(point?.seconds);
+   if(!Number.isFinite(lap)||!Number.isFinite(seconds)||seconds<=0)continue;
+   const item={team,relay,lap,seconds};points.push(item);
+   if(!byLap.has(lap))byLap.set(lap,[]);byLap.get(lap).push(item);
+   if(!teamIndex.has(lap))teamIndex.set(lap,[]);teamIndex.get(lap).push({relay,point});
+  }
  }
+ // Index non énumérable : même tableau et mêmes valeurs, mais la référence
+ // temporelle n'a plus à rescanner 30 000+ tours pour chaque tour.
+ Object.defineProperty(points,'__byLap',{value:byLap,configurable:true,enumerable:false});
  return points;
 }
 function analyzerRelayTemporalReference(points,lap,{radius=1}={}){
  const target=Number(lap);if(!Number.isFinite(target))return null;
- let cohort=(points||[]).filter(p=>Math.abs(Number(p.lap)-target)<=radius).map(p=>Number(p.seconds)).filter(Number.isFinite);
- if(cohort.length<6)cohort=(points||[]).filter(p=>Math.abs(Number(p.lap)-target)<=2).map(p=>Number(p.seconds)).filter(Number.isFinite);
+ const byLap=points?.__byLap;
+ const collect=range=>{
+  if(!byLap)return (points||[]).filter(p=>Math.abs(Number(p.lap)-target)<=range).map(p=>Number(p.seconds)).filter(Number.isFinite);
+  const cohort=[];
+  const from=Math.floor(target-range),to=Math.ceil(target+range);
+  for(let current=from;current<=to;current++)for(const item of (byLap.get(current)||[])){
+   if(Math.abs(Number(item.lap)-target)<=range&&Number.isFinite(Number(item.seconds)))cohort.push(Number(item.seconds));
+  }
+  return cohort;
+ };
+ let cohort=collect(radius);
+ if(cohort.length<6)cohort=collect(2);
  if(cohort.length<4)return null;
  const dist=analyzerRobustDistribution(cohort),median=dist.median;
  if(!Number.isFinite(median))return null;
- // Coupe uniquement les valeurs réellement aberrantes autour du plateau local. Sous la pluie,
- // une dispersion de plusieurs secondes reste donc parfaitement autorisée.
+ // Formule inchangée : même tolérance, même médiane, même dispersion.
  const tolerance=Math.max(5,Number.isFinite(dist.sigma)?4*dist.sigma:5);
  const clean=cohort.filter(v=>Math.abs(v-median)<=tolerance);
  const reference=analyzerMedian(clean.length>=4?clean:cohort);
@@ -1321,13 +1346,18 @@ function analyzerRelayWindowPeerMetrics(teams,relay,context=null){
  const from=Number(relay?.from),to=Number(relay?.to);if(!Number.isFinite(from)||!Number.isFinite(to))return [];
  const allPoints=context?.allPoints||analyzerRelayAllLapPoints(teams),pilotBaselines=context?.pilotBaselines||null;
  return (teams||[]).map(team=>{
-  const windowPoints=[];
-  for(const teamRelay of (team?.relays||[]))for(const point of (teamRelay?.lapPoints||[])){
-   const lap=Number(point?.lap),seconds=Number(point?.seconds);if(lap<from||lap>to||!Number.isFinite(seconds))continue;
-   const ref=analyzerRelayTemporalReference(allPoints,lap);if(!ref)continue;
+  const windowPoints=[],indexed=team?.__relayLapIndex;
+  const visit=(teamRelay,point)=>{
+   const lap=Number(point?.lap),seconds=Number(point?.seconds);if(lap<from||lap>to||!Number.isFinite(seconds))return;
+   const ref=analyzerRelayTemporalReference(allPoints,lap);if(!ref)return;
    const pilotKey=analyzerRelayPilotKey(teamRelay),pilotBaseline=pilotBaselines?.get?.(pilotKey);
    const usePilot=pilotKey&&pilotBaseline&&pilotBaseline.samples>=12&&pilotBaseline.relays>=2&&Number.isFinite(pilotBaseline.median);
    windowPoints.push({lap,seconds,reference:ref.reference,spread:ref.spread,delta:seconds-ref.reference-(usePilot?pilotBaseline.median:0),pilotBaselineApplied:Boolean(usePilot)});
+  };
+  if(indexed){
+   for(let lap=Math.floor(from);lap<=Math.ceil(to);lap++)for(const entry of (indexed.get(lap)||[]))visit(entry.relay,entry.point);
+  }else{
+   for(const teamRelay of (team?.relays||[]))for(const point of (teamRelay?.lapPoints||[]))visit(teamRelay,point);
   }
   if(windowPoints.length<3)return null;
   const rawValues=windowPoints.map(p=>p.seconds),rawMedian=analyzerMedian(rawValues),stableValues=rawValues.filter(v=>!Number.isFinite(rawMedian)||v<=rawMedian+5),rawScored=stableValues.length>=3?stableValues:rawValues;
@@ -1400,52 +1430,94 @@ function analyzerRelayScoreCompute(teams,qualification){
  return {maxRelay,matrix,gridByRelay,pilotBaselines};
 }
 
-async function analyzerLoadRelayScores({force=false}={}){
+async function analyzerLoadRelayScores({force=false,background=false,structuralSignature=null}={}){
  if(analyzerRelayScoreLoading)return;
- if(!force&&analyzerRelayScoreData&&Date.now()-analyzerRelayScoreData.updatedAt<60000){
+ const signature=structuralSignature||analyzerRelayStructuralSignature();
+ const structuralChanged=signature!==analyzerRelayBackgroundLastSignature;
+ if(!force&&!structuralChanged&&analyzerRelayScoreData){
   if(analyzerVelocityView==='relays')analyzerRenderRelayScoreTable();
   else analyzerRefreshVelocityDeltaCells();
   return;
  }
  const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);if(!drivers.length)return;
- analyzerRelayScoreLoading=true;const token=++analyzerRelayScoreLoadToken;
- // V7.2.107 : la reconstruction STATS est un travail de données en arrière-plan.
- // Ne jamais relancer renderAnalyzer() ici : cela reconstruisait Velocity + Heat Map
- // et provoquait un flash visible à chaque rafraîchissement de SCORE RELAIS.
- if(analyzerVelocityView==='relays'&&!analyzerRelayScoreData){
+ analyzerRelayScoreLoading=true;
+ analyzerRelayBackgroundRunningSignature=signature;
+ const token=++analyzerRelayScoreLoadToken;
+ analyzerRelayScoreProgress={done:0,total:drivers.length,team:'',phase:'stats'};
+ if(analyzerVelocityView==='relays'){
   const host=document.getElementById('analyzerKartMarket');
-  if(host)host.innerHTML='<div class="analyzer-empty">Reconstruction des relais depuis STATS…</div>';
+  if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerRelayProgressText()}</div>`;
  }
  const teams=[];
- const host=document.getElementById('analyzerKartMarket');
  for(let i=0;i<drivers.length;i++){
   if(token!==analyzerRelayScoreLoadToken)break;
   const driver=drivers[i],rowId=Number(driver.apex_row);
-  if(analyzerVelocityView==='relays'&&host)host.innerHTML=`<div class="analyzer-empty">Reconstruction SCORE RELAIS depuis STATS… ${i+1}/${drivers.length}<br><small>${analyzerEscape(driver.driver||'')}</small></div>`;
+  analyzerRelayScoreProgress={done:i,total:drivers.length,team:driver.driver||'',phase:'stats'};
+  if(analyzerVelocityView==='relays'){
+   const host=document.getElementById('analyzerKartMarket');
+   if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(analyzerRelayProgressText())}</div>`;
+  }
   try{
    const {laps,pits,cached}=await analyzerRelayFetchStats(driver,{force});
    const expectedPits=analyzerRelayExpectedPits(driver);
    if(!pits.length&&expectedPits>0)console.warn('[Velocity][SCORE RELAIS] STATS PITS vide malgré des arrêts Live',{rowId,team:driver.driver,liveStops:expectedPits});
-   teams.push({driver,relays:analyzerRelayScoreSlices(laps,pits,driver)});
-   console.info('[Velocity][SCORE RELAIS] équipe reconstruite',{index:i+1,total:drivers.length,rowId,team:driver.driver,laps:laps.length,pits:pits.length,cached});
+   const relays=analyzerRelayScoreSlices(laps,pits,driver);
+   teams.push({driver,relays});
+   // Les mêmes données STATS alimentent aussi l'état relais courant. Aucun
+   // second téléchargement n'est déclenché en parallèle.
+   analyzerApplyHydratedRelay(driver,laps,pits);
+   analyzerRelayHydrationCache.set(analyzerRelayHydrationKey(driver),{
+    laps:analyzerNumeric(driver.laps,0),
+    stops:analyzerNumeric(driver.pit_stops,0),
+    updatedAt:Date.now()
+   });
+   console.info('[Velocity][SCORE RELAIS] équipe reconstruite',{index:i+1,total:drivers.length,rowId,team:driver.driver,laps:laps.length,pits:pits.length,relays:relays.length,cached});
   }catch(error){
    console.warn('[Velocity][SCORE RELAIS] reconstruction STATS impossible',{rowId,team:driver.driver,error});
    teams.push({driver,relays:[]});
   }
-  // Rend la main au navigateur entre deux équipes : essentiel sur 24 h / 28+ équipes.
-  await apexHistorySleep(30);
+  analyzerRelayScoreProgress={done:i+1,total:drivers.length,team:driver.driver||'',phase:'stats'};
+  // Fenêtre de respiration : le WebSocket Live, le classement et les interactions
+  // continuent de tourner pendant le rattrapage historique.
+  await apexHistorySleep(background?45:30);
  }
  if(token===analyzerRelayScoreLoadToken){
-  await apexHistorySleep(50);
+  analyzerRelayScoreProgress={done:drivers.length,total:drivers.length,team:'',phase:'qualification'};
+  if(analyzerVelocityView==='relays'){
+   const host=document.getElementById('analyzerKartMarket');
+   if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerRelayProgressText()}</div>`;
+  }
+  await apexHistorySleep(60);
   const qualification=await analyzerRelayScoreQualificationContext(drivers);
+  analyzerRelayScoreProgress={done:drivers.length,total:drivers.length,team:'',phase:'compute'};
+  if(analyzerVelocityView==='relays'){
+   const host=document.getElementById('analyzerKartMarket');
+   if(host)host.innerHTML=`<div class="analyzer-empty">${analyzerRelayProgressText()}</div>`;
+  }
+  // Le calcul conserve exactement la formule Score Relais. Les index créés en
+  // V7.2.1753 suppriment uniquement les rescans quadratiques des mêmes tours.
+  await apexHistorySleep(80);
+  const computeStarted=performance.now();
   const computed=analyzerRelayScoreCompute(teams,qualification);
+  console.info('[Velocity][SCORE RELAIS] calcul terminé',{teams:teams.length,maxRelay:computed.maxRelay,durationMs:Math.round(performance.now()-computeStarted)});
   analyzerRelayScoreData={teams,qualification,...computed,updatedAt:Date.now()};
+  analyzerRelayBackgroundLastSignature=signature;
+  analyzerSaveLearning();
+  analyzerSaveSession('relay-background-rebuild');
  }
  analyzerRelayScoreLoading=false;
+ analyzerRelayBackgroundRunningSignature='';
+ analyzerRelayScoreProgress={done:0,total:0,team:'',phase:'idle'};
  if(token!==analyzerRelayScoreLoadToken)return;
  if(analyzerVelocityView==='relays')analyzerRenderRelayScoreTable();
  else analyzerRefreshVelocityDeltaCells();
+ // Si un arrêt est intervenu pendant le rattrapage, un second passage léger
+ // sera planifié ; grâce au cache, seules les équipes structurellement modifiées
+ // retourneront dans STATS.
+ const currentSignature=analyzerRelayStructuralSignature();
+ if(currentSignature!==analyzerRelayBackgroundLastSignature)analyzerScheduleRelayBackgroundRebuild({delay:1200});
 }
+
 function analyzerRelayScoreLatestCell(driver){
  const rowId=Number(driver?.apex_row);
  const rowScores=analyzerRelayScoreData?.matrix?.get(rowId);
@@ -1546,15 +1618,16 @@ function setAnalyzerVelocityView(view){
    const xscroll=document.getElementById('analyzerRelayScoreXScroll');
    if(xscroll)xscroll.scrollLeft=enteringRelays?0:Math.min(analyzerRelayScoreScrollLeft,Math.max(0,xscroll.scrollWidth-xscroll.clientWidth));
   });
-  analyzerLoadRelayScores();
+  if(analyzerRelayBackgroundScheduled){clearTimeout(analyzerRelayBackgroundScheduled);analyzerRelayBackgroundScheduled=null}
+  analyzerLoadRelayScores({background:false,structuralSignature:analyzerRelayStructuralSignature()});
  }
 }
 function analyzerRenderRelayScoreTable(marketByScore){
  const host=document.getElementById('analyzerKartMarket');if(!host)return;
  const ordered=(state.drivers||[]).map(driver=>({driver,relayMetrics:analyzerVelocityUnifiedMetrics(driver)})).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score||analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999)).map((item,index)=>({...item,kartiqTop:index+1}));
- if(analyzerRelayScoreLoading&&!analyzerRelayScoreData){host.innerHTML='<div class="analyzer-empty">Reconstruction des relais depuis STATS…</div>';return}
+ if(analyzerRelayScoreLoading&&!analyzerRelayScoreData){host.innerHTML=`<div class="analyzer-empty">${analyzerEscape(analyzerRelayProgressText())}</div>`;return}
  const data=analyzerRelayScoreData;if(!data){host.innerHTML='<div class="analyzer-empty">Cliquez sur SCORE RELAIS pour reconstruire les relais depuis STATS.</div>';return}
- if(Date.now()-data.updatedAt>300000&&!analyzerRelayScoreLoading)setTimeout(()=>analyzerLoadRelayScores({force:true}),0);
+ // Les mises à jour sont déclenchées par la signature structurelle des arrêts, pas par un timer lourd.
  const maxRelay=Math.max(1,data.maxRelay||0),relayColWidth=56,relayTableWidth=maxRelay*relayColWidth,relayColgroup=`<colgroup>${Array.from({length:maxRelay},()=>`<col class="relay-score-width-col" style="width:${relayColWidth}px;min-width:${relayColWidth}px;max-width:${relayColWidth}px">`).join('')}</colgroup>`,relayHeaders=Array.from({length:maxRelay},(_,i)=>`<th class="relay-score-col">R${i+1}</th>`).join('');
  const byRow=new Map(data.teams.map(team=>[Number(team.driver.apex_row),team]));
  const fixedRows=[],relayRows=[];
@@ -3178,7 +3251,7 @@ function renderAnalyzer(){
  // « Règlement » puis ENREGISTRER pour synchroniser le smartphone.
  analyzerApplySharedRulesFromState();
  analyzerLearnFromState();
- analyzerScheduleRelayHydration();
+ analyzerScheduleRelayBackgroundRebuild();
  const all=analyzerRows();const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
  const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
  if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');
@@ -3798,7 +3871,10 @@ async function analyzerRelayFetchStats(driver,{force=false}={}){
  const rowId=Number(driver?.apex_row),lapsExpected=analyzerRelayExpectedLaps(driver),pitsExpected=analyzerRelayExpectedPits(driver);
  if(!rowId)return {laps:[],pits:[],cached:false};
  const key=analyzerRelayStatsCacheKey(driver),cached=analyzerRelayStatsCache.get(key),now=Date.now();
- if(!force&&cached&&now-cached.updatedAt<ANALYZER_RELAY_STATS_CACHE_MS&&cached.lapsExpected===lapsExpected&&cached.pitsExpected===pitsExpected){
+ if(!force&&cached&&cached.pitsExpected===pitsExpected){
+  // Pour les relais HISTORIQUES, aucun nouveau relais n'est finalisé tant que
+  // le nombre d'arrêts ne change pas. Les tours du relais courant continuent
+  // d'être suivis par le moteur Live.
   return {laps:cached.laps,pits:cached.pits,cached:true};
  }
  const started=performance.now();
@@ -3875,6 +3951,30 @@ function analyzerApplyHydratedRelay(driver,laps,pits){
  item.name=driver.driver;item.updatedAt=now;item.hydratedAt=now;
  analyzerLearning.teams[key]=item;
 }
+function analyzerRelayStructuralSignature(){
+ const circuit=analyzerSessionCircuit();
+ const rows=(state.drivers||[]).filter(d=>Number(d.apex_row)>0).map(d=>`${Number(d.apex_row)}:${analyzerNumeric(d.pit_stops,0)}`).sort();
+ return `${circuit}|${rows.join(',')}`;
+}
+function analyzerRelayProgressText(){
+ const p=analyzerRelayScoreProgress;
+ if(p.phase==='compute')return 'Calcul des Scores Relais…';
+ if(p.phase==='qualification')return 'Référence qualification…';
+ if(p.total>0)return `Reconstruction SCORE RELAIS depuis STATS… ${p.done}/${p.total}${p.team?` · ${p.team}`:''}`;
+ return 'Reconstruction SCORE RELAIS depuis STATS…';
+}
+function analyzerScheduleRelayBackgroundRebuild({delay=1200}={}){
+ const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);
+ if(!drivers.length||analyzerRelayScoreLoading||analyzerRelayBackgroundScheduled)return;
+ const signature=analyzerRelayStructuralSignature();
+ if(analyzerRelayScoreData&&signature===analyzerRelayBackgroundLastSignature)return;
+ analyzerRelayBackgroundScheduled=setTimeout(()=>{
+  analyzerRelayBackgroundScheduled=null;
+  if(analyzerRelayScoreLoading)return;
+  const currentSignature=analyzerRelayStructuralSignature();
+  analyzerLoadRelayScores({background:true,structuralSignature:currentSignature});
+ },delay);
+}
 async function analyzerHydrateActiveRelays({force=false}={}){
  if(analyzerRelayHydrationLoading)return;
  const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);
@@ -3907,8 +4007,10 @@ async function analyzerHydrateActiveRelays({force=false}={}){
  analyzerRelayHydrationLoading=false;analyzerSaveSession('relay-hydration');renderAnalyzer();
 }
 function analyzerScheduleRelayHydration(){
- if(analyzerRelayHydrationScheduled||analyzerRelayHydrationLoading)return;
- analyzerRelayHydrationScheduled=setTimeout(()=>{analyzerRelayHydrationScheduled=null;analyzerHydrateActiveRelays()},250);
+ // V7.2.1753 : l'hydratation automatique séparée est volontairement désactivée.
+ // La reconstruction SCORE RELAIS récupère STATS une seule fois et hydrate le
+ // relais courant avec ces mêmes données. Cela évite deux pipelines concurrents.
+ return;
 }
 
 async function reloadApexTeamPits(){

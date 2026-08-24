@@ -1,3 +1,22 @@
+# V7.2.1753 — Reconstruction historique Score Relais + Live simultané
+
+- Au raccordement à une course déjà commencée, Velocity lance automatiquement UNE reconstruction historique SCORE RELAIS en arrière-plan.
+- Le WebSocket / Analyzer Live reste prioritaire et continue de traiter positions, tours, arrêts, trafic et chronos pendant le rattrapage.
+- Suppression de la concurrence entre deux pipelines STATS :
+  - plus d'hydratation STATS automatique séparée ;
+  - SCORE RELAIS récupère STATS une seule fois et hydrate le relais courant avec les mêmes données.
+- Après un nouvel arrêt, la signature structurelle déclenche une consolidation légère.
+- Le cache STATS reste valable tant que le nombre d'arrêts de l'équipe n'a pas changé : un nouveau tour Live ne provoque plus le rechargement de 1500 tours historiques.
+- Optimisation du calcul adaptatif aux conditions :
+  - même formule et mêmes cohortes ;
+  - index des tours par numéro de tour au lieu de rescanner tout l'historique pour chaque point ;
+  - index des points par équipe pour les fenêtres de relais.
+- Suppression du coût quasi quadratique qui pouvait bloquer Chrome sur ~28 équipes × 1300+ tours.
+- Yield navigateur entre chaque équipe et pendant la qualification afin de préserver l'analyse Live.
+- Progression visible si l'utilisateur ouvre SCORE RELAIS pendant le rattrapage.
+- Logs Console : équipes, tours, PITS, nombre de relais et durée de calcul.
+- Aucun changement de formule du Score Relais.
+
 # V7.2.1752 — SCORE RELAIS : STATS Apex optimisés pour longues endurances
 
 - Objectif inchangé : reconstruire tous les relais de toutes les équipes depuis STATS Apex.
