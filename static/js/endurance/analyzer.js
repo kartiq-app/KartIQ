@@ -48,6 +48,9 @@ let analyzerRelayScoreLoading=false;
 let analyzerRelayScoreLoadToken=0;
 let analyzerRelayScoreScrollLeft=0;
 let analyzerRelayScoreScrollBound=false;
+const analyzerRelayStatsCache=new Map();
+const ANALYZER_RELAY_STATS_CACHE_MS=300000;
+
 let analyzerActiveSessionId=null;
 let analyzerSessionCircuitId=null;
 let analyzerLastSessionSaveAt=0;
@@ -1414,20 +1417,26 @@ async function analyzerLoadRelayScores({force=false}={}){
   if(host)host.innerHTML='<div class="analyzer-empty">Reconstruction des relais depuis STATS…</div>';
  }
  const teams=[];
+ const host=document.getElementById('analyzerKartMarket');
  for(let i=0;i<drivers.length;i++){
   if(token!==analyzerRelayScoreLoadToken)break;
-  const driver=drivers[i];
+  const driver=drivers[i],rowId=Number(driver.apex_row);
+  if(analyzerVelocityView==='relays'&&host)host.innerHTML=`<div class="analyzer-empty">Reconstruction SCORE RELAIS depuis STATS… ${i+1}/${drivers.length}<br><small>${analyzerEscape(driver.driver||'')}</small></div>`;
   try{
-   const rowId=Number(driver.apex_row);
-   const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(rowId,'',null),fetchAllApexTeamPits(rowId,'',null)]);
-   if(!pits.length&&Number(driver.stops||driver.pits||0)>0)console.warn('[Velocity][SCORE RELAIS] STATS PITS vide malgré des arrêts Live',{rowId,team:driver.driver,liveStops:Number(driver.stops||driver.pits||0)});
+   const {laps,pits,cached}=await analyzerRelayFetchStats(driver,{force});
+   const expectedPits=analyzerRelayExpectedPits(driver);
+   if(!pits.length&&expectedPits>0)console.warn('[Velocity][SCORE RELAIS] STATS PITS vide malgré des arrêts Live',{rowId,team:driver.driver,liveStops:expectedPits});
    teams.push({driver,relays:analyzerRelayScoreSlices(laps,pits,driver)});
+   console.info('[Velocity][SCORE RELAIS] équipe reconstruite',{index:i+1,total:drivers.length,rowId,team:driver.driver,laps:laps.length,pits:pits.length,cached});
   }catch(error){
-   console.warn('[Velocity][SCORE RELAIS] reconstruction STATS impossible',{rowId:Number(driver.apex_row),team:driver.driver,error});
+   console.warn('[Velocity][SCORE RELAIS] reconstruction STATS impossible',{rowId,team:driver.driver,error});
    teams.push({driver,relays:[]});
   }
+  // Rend la main au navigateur entre deux équipes : essentiel sur 24 h / 28+ équipes.
+  await apexHistorySleep(30);
  }
  if(token===analyzerRelayScoreLoadToken){
+  await apexHistorySleep(50);
   const qualification=await analyzerRelayScoreQualificationContext(drivers);
   const computed=analyzerRelayScoreCompute(teams,qualification);
   analyzerRelayScoreData={teams,qualification,...computed,updatedAt:Date.now()};
@@ -1545,7 +1554,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
  const ordered=(state.drivers||[]).map(driver=>({driver,relayMetrics:analyzerVelocityUnifiedMetrics(driver)})).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score||analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999)).map((item,index)=>({...item,kartiqTop:index+1}));
  if(analyzerRelayScoreLoading&&!analyzerRelayScoreData){host.innerHTML='<div class="analyzer-empty">Reconstruction des relais depuis STATS…</div>';return}
  const data=analyzerRelayScoreData;if(!data){host.innerHTML='<div class="analyzer-empty">Cliquez sur SCORE RELAIS pour reconstruire les relais depuis STATS.</div>';return}
- if(Date.now()-data.updatedAt>60000&&!analyzerRelayScoreLoading)setTimeout(()=>analyzerLoadRelayScores({force:true}),0);
+ if(Date.now()-data.updatedAt>300000&&!analyzerRelayScoreLoading)setTimeout(()=>analyzerLoadRelayScores({force:true}),0);
  const maxRelay=Math.max(1,data.maxRelay||0),relayColWidth=56,relayTableWidth=maxRelay*relayColWidth,relayColgroup=`<colgroup>${Array.from({length:maxRelay},()=>`<col class="relay-score-width-col" style="width:${relayColWidth}px;min-width:${relayColWidth}px;max-width:${relayColWidth}px">`).join('')}</colgroup>`,relayHeaders=Array.from({length:maxRelay},(_,i)=>`<th class="relay-score-col">R${i+1}</th>`).join('');
  const byRow=new Map(data.teams.map(team=>[Number(team.driver.apex_row),team]));
  const fixedRows=[],relayRows=[];
@@ -3207,7 +3216,7 @@ function renderAnalyzer(){
  document.getElementById('analyzerOpportunityScore').textContent=opportunity.score;document.getElementById('analyzerAdvice').textContent=opportunity.advice;document.getElementById('analyzerAdviceDetail').textContent=opportunity.detail;
  const forecastRows=all.filter(x=>x.driver.status==='pit'||(Number.isFinite(x.forecast.seconds)&&x.forecast.seconds<=900)).sort((a,b)=>(a.forecast.seconds??999999)-(b.forecast.seconds??999999)).slice(0,10);
  const analyzerForecastEl=document.getElementById('analyzerForecast');if(analyzerForecastEl)analyzerForecastEl.innerHTML=forecastRows.length?forecastRows.map(x=>`<div class="analyzer-forecast-row"><span class="analyzer-forecast-time">${x.driver.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</span><span><span class="analyzer-forecast-team">${analyzerEscape(x.driver.driver)}</span><span class="analyzer-forecast-meta">Kart virtuel ${analyzerEscape(x.history.virtualKart)}</span></span><span class="analyzer-score-pill ${analyzerScoreClass(x.score)}">${x.score}/100</span><span class="analyzer-confidence">${x.forecast.confidence}%</span></div>`).join(''):'<div class="analyzer-empty">Aucun arrêt attendu dans les 15 prochaines minutes.</div>';
- if(!analyzerRelayScoreData&&!analyzerRelayScoreLoading)setTimeout(()=>analyzerLoadRelayScores(),0);
+ // SCORE RELAIS est chargé à la demande via le bouton dédié : pas de reconstruction STATS cachée ici.
  const marketByScore=all.map(x=>({...x,relayMetrics:analyzerVelocityUnifiedMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).map((x,index)=>({...x,kartiqTop:index+1,relayRemaining:analyzerKartRelayRemaining(x.driver)}));
  const mobileVelocity=document.getElementById('analyzerMobileVelocityScore');
  if(mobileVelocity){const ownVelocity=marketByScore.find(x=>x.driver?.driver===(followed?.driver||state.followed_driver));mobileVelocity.textContent=ownVelocity?.relayMetrics?.score??'—';mobileVelocity.className=ownVelocity?analyzerScoreClass(ownVelocity.relayMetrics.score):'';}
@@ -3595,11 +3604,22 @@ function formatApexMilliseconds(ms){
  return minutes?`${minutes}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`:`${seconds}.${String(millis).padStart(3,'0')}`;
 }
 function apexHistorySleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-async function fetchAllApexTeamLaps(rowId,sessionId,status){
+function analyzerApexHistoryWindows(expectedCount,available){
+ const windows=[...(available||[])].map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+ const expected=Math.max(0,Number(expectedCount)||0);
+ if(!windows.length)return [];
+ if(!expected)return windows;
+ const target=Math.ceil(expected*1.03)+5;
+ const start=windows.findIndex(value=>value>=target);
+ return start>=0?windows.slice(start):[windows[windows.length-1]];
+}
+async function fetchAllApexTeamLaps(rowId,sessionId,status,expectedLapCount=0){
  const prefix=sessionId?`S#${sessionId}#`:'';
- // Apex peut répondre ponctuellement vide alors que les stats existent.
- // Une réponse vide n'est donc jamais considérée comme définitive au premier essai.
- const windows=[30,100,300,750,1500,3000];
+ // V7.2.1752 : si le Live connaît déjà ~1300 tours, demander directement
+ // la première fenêtre capable de les contenir (ex. 1500), au lieu de
+ // 30→100→300→750→1500. Les anciennes fenêtres restent utilisées si le
+ // nombre de tours attendu est inconnu.
+ const windows=analyzerApexHistoryWindows(expectedLapCount,[30,100,300,750,1500,3000]);
  let latest=[];
  for(let wi=0;wi<windows.length;wi++){
   const count=windows[wi],maxAttempts=wi===0?3:2;
@@ -3607,18 +3627,20 @@ async function fetchAllApexTeamLaps(rowId,sessionId,status){
   const command=`${prefix}D#-${count}#D${rowId}.L#-999#D${rowId}.P#2#D${rowId}.B#1#D${rowId}.INF`;
   let parsed=[];
   for(let attempt=1;attempt<=maxAttempts;attempt++){
-   try{parsed=parseApexTeamData(await apexHistoryRequest(command),rowId).laps}catch(_){parsed=[]}
+   try{parsed=parseApexTeamData(await apexHistoryRequest(command),rowId).laps}catch(error){
+    parsed=[];
+    console.warn('[Velocity][Apex STATS LAPS] requête en échec',{rowId,sessionId:sessionId||'live',count,attempt,error});
+   }
    if(parsed.length)break;
    if(attempt<maxAttempts)await apexHistorySleep(120*attempt);
   }
   if(!parsed.length)continue;
   latest=parsed;
-  // Dès qu'Apex renvoie une vraie réponse, moins de lignes que la fenêtre
-  // demandée (ou présence du tour 1) signifie que l'historique est complet.
   if(parsed.some(l=>l.lap===1)||parsed.length<count)return parsed;
  }
  return latest;
 }
+
 function classifyApexLapTimes(laps,pits){
  const pitInLaps=new Set((pits||[]).map(p=>Number(p.lap)).filter(Number.isFinite));
  let previousBest=0;
@@ -3738,12 +3760,12 @@ function parseApexPitData(raw,rowId){
  analyzerCacheOfficialPilotTotals(rowId,chronological,drivers,teamInfo);
  return chronological.sort((a,b)=>b.stop-a.stop);
 }
-async function fetchAllApexTeamPits(rowId,sessionId,status){
+async function fetchAllApexTeamPits(rowId,sessionId,status,expectedPitCount=0){
  const prefix=sessionId?`S#${sessionId}#`:'';
- // Apex peut répondre ponctuellement vide alors que l'historique PITS existe.
- // Même protection que fetchAllApexTeamLaps : ne jamais conclure "0 arrêt"
- // à partir de la première réponse vide.
- const windows=[30,100,300,750];let latest=[];
+ // V7.2.1752 : même optimisation pour les PITS. Avec 31 arrêts connus,
+ // Velocity commence directement à la fenêtre 100.
+ const windows=analyzerApexHistoryWindows(expectedPitCount,[30,100,300,750]);
+ let latest=[];
  for(let wi=0;wi<windows.length;wi++){
   const count=windows[wi],maxAttempts=wi===0?3:2;
   if(status)status.textContent=`Chargement des arrêts Apex… fenêtre ${count}`;
@@ -3767,6 +3789,32 @@ async function fetchAllApexTeamPits(rowId,sessionId,status){
  return latest;
 }
 
+function analyzerRelayStatsCacheKey(driver){
+ return `${analyzerSessionCircuit()}:${Number(driver?.apex_row)||0}`;
+}
+function analyzerRelayExpectedLaps(driver){return Math.max(0,analyzerNumeric(driver?.laps,0))}
+function analyzerRelayExpectedPits(driver){return Math.max(0,analyzerNumeric(driver?.pit_stops,analyzerNumeric(driver?.stops,analyzerNumeric(driver?.pits,0))))}
+async function analyzerRelayFetchStats(driver,{force=false}={}){
+ const rowId=Number(driver?.apex_row),lapsExpected=analyzerRelayExpectedLaps(driver),pitsExpected=analyzerRelayExpectedPits(driver);
+ if(!rowId)return {laps:[],pits:[],cached:false};
+ const key=analyzerRelayStatsCacheKey(driver),cached=analyzerRelayStatsCache.get(key),now=Date.now();
+ if(!force&&cached&&now-cached.updatedAt<ANALYZER_RELAY_STATS_CACHE_MS&&cached.lapsExpected===lapsExpected&&cached.pitsExpected===pitsExpected){
+  return {laps:cached.laps,pits:cached.pits,cached:true};
+ }
+ const started=performance.now();
+ const [laps,pits]=await Promise.all([
+  fetchAllApexTeamLaps(rowId,'',null,lapsExpected),
+  fetchAllApexTeamPits(rowId,'',null,pitsExpected)
+ ]);
+ const item={laps,pits,lapsExpected,pitsExpected,updatedAt:Date.now()};
+ analyzerRelayStatsCache.set(key,item);
+ console.info('[Velocity][SCORE RELAIS][STATS]',{
+  rowId,team:driver?.driver||'',lapsExpected,pitsExpected,
+  lapsLoaded:laps.length,pitsLoaded:pits.length,
+  durationMs:Math.round(performance.now()-started)
+ });
+ return {laps,pits,cached:false};
+}
 function analyzerRelayHydrationKey(driver){
  return `${analyzerSessionCircuit()}:${Number(driver?.apex_row)||0}`;
 }
@@ -3834,8 +3882,11 @@ async function analyzerHydrateActiveRelays({force=false}={}){
  const circuit=analyzerSessionCircuit(),now=Date.now();
  const pending=drivers.filter(driver=>{
   const cache=analyzerRelayHydrationCache.get(analyzerRelayHydrationKey(driver));
-  const currentLap=analyzerNumeric(driver.laps,0),currentStops=analyzerNumeric(driver.pit_stops,0);
-  return force||!cache||cache.laps!==currentLap||cache.stops!==currentStops||now-cache.updatedAt>60000;
+  const currentStops=analyzerNumeric(driver.pit_stops,0);
+  // Le moteur Live apprend les nouveaux tours en continu. Une relecture complète
+  // de 1300+ tours à CHAQUE nouveau tour est inutile et pouvait figer Chrome.
+  // STATS est relu à l'initialisation, à un changement d'arrêt, ou toutes les 5 min.
+  return force||!cache||cache.stops!==currentStops||now-cache.updatedAt>300000;
  });
  if(!pending.length)return;
  analyzerRelayHydrationLoading=true;const token=++analyzerRelayHydrationToken;renderAnalyzer();
@@ -3843,13 +3894,15 @@ async function analyzerHydrateActiveRelays({force=false}={}){
   if(token!==analyzerRelayHydrationToken||circuit!==analyzerSessionCircuit())break;
   const rowId=Number(driver.apex_row),cacheKey=analyzerRelayHydrationKey(driver);
   try{
-   const [laps,pits]=await Promise.all([fetchAllApexTeamLaps(rowId,'',null),fetchAllApexTeamPits(rowId,'',null)]);
+   const {laps,pits}=await analyzerRelayFetchStats(driver);
    analyzerApplyHydratedRelay(driver,laps,pits);
    analyzerRelayHydrationCache.set(cacheKey,{laps:analyzerNumeric(driver.laps,0),stops:analyzerNumeric(driver.pit_stops,0),updatedAt:Date.now()});
   }catch(error){
    analyzerRelayHydrationCache.set(cacheKey,{laps:analyzerNumeric(driver.laps,0),stops:analyzerNumeric(driver.pit_stops,0),updatedAt:Date.now(),error:String(error?.message||error)});
   }
-  analyzerSaveLearning();renderAnalyzer();
+  analyzerSaveLearning();
+  // Laisser Chrome traiter le Live, le scroll et les interactions entre deux équipes.
+  await apexHistorySleep(20);
  }
  analyzerRelayHydrationLoading=false;analyzerSaveSession('relay-hydration');renderAnalyzer();
 }

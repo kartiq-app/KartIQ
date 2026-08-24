@@ -1,3 +1,23 @@
+# V7.2.1752 — SCORE RELAIS : STATS Apex optimisés pour longues endurances
+
+- Objectif inchangé : reconstruire tous les relais de toutes les équipes depuis STATS Apex.
+- Aucun changement de formule du Score Relais.
+- Suppression de la reconstruction SCORE RELAIS cachée pendant l'affichage normal d'Analyzer.
+- SCORE RELAIS est désormais chargé lorsque l'utilisateur ouvre l'onglet SCORE RELAIS.
+- Si le Live connaît déjà le nombre de tours, Velocity demande directement la fenêtre STATS adaptée :
+  - ~1379 tours → fenêtre 1500 directement, au lieu de 30→100→300→750→1500.
+- Même optimisation pour les PITS :
+  - 31 arrêts → fenêtre 100 directement.
+- Cache STATS partagé 5 minutes par équipe / circuit.
+- Le navigateur récupère du temps entre chaque équipe (`yield`) pour continuer à traiter le Live et l'interface.
+- L'hydratation automatique des relais ne recharge plus tout l'historique à chaque nouveau tour :
+  - initialisation,
+  - changement du nombre d'arrêts,
+  - ou rafraîchissement de sécurité toutes les 5 minutes.
+- Progression visible pendant la reconstruction : équipe X / N.
+- Logs Console détaillés `[Velocity][SCORE RELAIS][STATS]` avec tours attendus/chargés, PITS attendus/chargés et durée.
+- Les retries PITS de V7.2.1751 sont conservés.
+
 # V7.2.1751 — SCORE RELAIS : fiabilisation STATS Apex PITS
 
 - STATS Apex reste la source de vérité pour reconstruire les relais.
