@@ -1,3 +1,21 @@
+# V7.2.1771 — Qualification non bloquante pour SCORE RELAIS
+
+- Base : V7.2.1770 Clean Engine.
+- Aucun changement de l'algorithme Velocity / Score Relais.
+- La qualification devient strictement optionnelle et ne peut plus bloquer une reconstruction d'endurance.
+- Timeout navigateur ajouté aux requêtes Apex History / Sessions.
+- Recherche de qualification : timeout 2,5 s.
+- Test unique du snapshot de la qualification avant toute requête équipe.
+- Si la session est listée mais son snapshot est vide, inaccessible ou expiré :
+  - abandon immédiat de la qualification ;
+  - aucune requête qualification par équipe ;
+  - calcul des Scores Relais directement avec `qualification = null`.
+- Si le snapshot existe mais les détails d'une première équipe sont inaccessibles :
+  - arrêt immédiat de la phase qualification pour éviter des dizaines de timeouts identiques.
+- Budget global qualification : 8 s maximum ; au-delà, Velocity calcule sans qualification.
+- Changement circuit/session continue d'annuler immédiatement le job en cours.
+- Le Live et l'algo Velocity restent inchangés.
+
 # V7.2.1770 — SCORE RELAIS : moteur STATS propre
 
 - Base : V7.2.1769.

@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1770"
+APP_VERSION = "7.2.1771"
 APP_RELEASE_NAME = "FOCUS SPRINT — DELTA ALIGNÉ ENDURANCE"
 
 

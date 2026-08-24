@@ -1227,31 +1227,90 @@ function analyzerRelayScoreQualificationAverage(laps,pits){
  const values=clean.map(l=>Number(l.seconds)).filter(Number.isFinite);
  return values.length>=2?analyzerMean(values):null;
 }
-async function analyzerRelayScoreEnsureSessions(){
+async function analyzerRelayScoreEnsureSessions({timeoutMs=2500}={}){
  if(apexPreviousSessions.length)return apexPreviousSessions;
- try{apexPreviousSessions=await apexSessionsRequest()}catch(_){apexPreviousSessions=parseApexPreviousSessions(await apexHistoryRequest('S#'))}
+ try{apexPreviousSessions=await apexSessionsRequest({timeoutMs})}
+ catch(_){
+  try{apexPreviousSessions=parseApexPreviousSessions(await apexHistoryRequest('S#',{timeoutMs}))}
+  catch(__){return []}
+ }
  return apexPreviousSessions;
 }
 async function analyzerRelayScoreQualificationContext(drivers){
- let sessions=[];try{sessions=await analyzerRelayScoreEnsureSessions()}catch(_){return {session:null,grid:null,byRow:new Map()}}
+ // La qualification est un enrichissement facultatif. Elle ne doit JAMAIS
+ // bloquer la reconstruction d'une endurance si Apex ne la conserve plus.
+ const empty=()=>({session:null,grid:null,byRow:new Map()});
+ const context=analyzerRelayEnsureContext();
+ const phaseStarted=performance.now();
+ let sessions=[];
+ try{sessions=await analyzerRelayScoreEnsureSessions({timeoutMs:2500})}
+ catch(_){return empty()}
+ if(context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
  const session=sessions.find(item=>analyzerSessionKind(item)==='qualification');
- if(!session)return {session:null,grid:null,byRow:new Map()};
- let historical=[];try{historical=parseApexSnapshotTeams(await apexHistoryRequest(`S#${session.id}`))}catch(_){historical=[]}
- const byRow=new Map(),averages=[];
+ if(!session){
+  console.info('[Velocity][SCORE RELAIS][QUALIF] aucune qualification disponible : calcul sans référence qualif');
+  return empty();
+ }
+
+ // Test UNIQUE de disponibilité. Une session peut rester listée dans S# alors
+ // que son contenu n'est plus accessible. Si le snapshot est vide/timeout,
+ // on abandonne immédiatement : surtout pas une requête par équipe.
+ let historical=[];
+ try{
+  const raw=await apexHistoryRequest(`S#${session.id}`,{timeoutMs:2500});
+  historical=parseApexSnapshotTeams(raw);
+ }catch(error){
+  console.info('[Velocity][SCORE RELAIS][QUALIF] session listée mais inaccessible : calcul sans référence qualif',{sessionId:session.id,error:String(error?.message||error)});
+  return empty();
+ }
+ if(context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+ if(!historical.length){
+  console.info('[Velocity][SCORE RELAIS][QUALIF] snapshot vide : calcul sans référence qualif',{sessionId:session.id});
+  return empty();
+ }
+
+ const matches=[];
  for(const driver of drivers){
-  const liveName=normalizeApexTeamName(driver.driver),livePilot=normalizeApexTeamName(analyzerOfficialCurrentPilot(driver)||analyzerDriverPilot(driver)||''),liveKart=String(analyzerOfficialCurrentKart(driver)||validKartNumber(driver)||driver.apex||'').trim();
-  const match=historical.find(team=>normalizeApexTeamName(team.name)===liveName)||historical.find(team=>livePilot&&normalizeApexTeamName(team.name)===livePilot)||historical.find(team=>liveKart&&String(team.kart||'').trim()===liveKart);
-  if(!match)continue;
+  const liveName=normalizeApexTeamName(driver.driver),
+        livePilot=normalizeApexTeamName(analyzerOfficialCurrentPilot(driver)||analyzerDriverPilot(driver)||''),
+        liveKart=String(analyzerOfficialCurrentKart(driver)||validKartNumber(driver)||driver.apex||'').trim();
+  const match=historical.find(team=>normalizeApexTeamName(team.name)===liveName)||
+              historical.find(team=>livePilot&&normalizeApexTeamName(team.name)===livePilot)||
+              historical.find(team=>liveKart&&String(team.kart||'').trim()===liveKart);
+  if(match)matches.push({driver,match});
+ }
+ if(!matches.length){
+  console.info('[Velocity][SCORE RELAIS][QUALIF] snapshot accessible mais aucune équipe correspondante : calcul sans référence qualif',{sessionId:session.id});
+  return empty();
+ }
+
+ const byRow=new Map(),averages=[];
+ for(let i=0;i<matches.length;i++){
+  if(context!==analyzerRelayContextKey())throw new Error('SCORE_RELAIS_CONTEXT_CHANGED');
+  // Budget global : la qualif reste facultative. Au-delà de 8 s, on préfère
+  // calculer immédiatement la course sans elle plutôt que bloquer l'Analyzer.
+  if(performance.now()-phaseStarted>8000){
+   console.info('[Velocity][SCORE RELAIS][QUALIF] budget dépassé : calcul sans référence qualif',{sessionId:session.id,processed:i,total:matches.length});
+   return empty();
+  }
+  const {driver,match}=matches[i];
   try{
    const historicalDriver={...driver,apex_row:match.rowId,laps:0,pit_stops:0};
-   const {laps,pits}=await analyzerRelayFetchTeamStatsClean(historicalDriver,{sessionId:session.id,lapWindowHint:300,contextKey:analyzerRelayEnsureContext()});
+   const {laps,pits}=await analyzerRelayFetchTeamStatsClean(historicalDriver,{
+    sessionId:session.id,lapWindowHint:300,contextKey:context,requestTimeoutMs:2500
+   });
    const average=analyzerRelayScoreQualificationAverage(laps,pits);
    if(Number.isFinite(average)){byRow.set(Number(driver.apex_row),average);averages.push(average)}
   }catch(error){
-   if(String(error?.message||error)!=='SCORE_RELAIS_CONTEXT_CHANGED')console.warn('[Velocity][SCORE RELAIS][QUALIF]',driver?.driver,error);
+   if(String(error?.message||error)==='SCORE_RELAIS_CONTEXT_CHANGED')throw error;
+   // Première équipe inaccessible = session de détail probablement morte.
+   // On stoppe immédiatement pour éviter 44 timeouts identiques.
+   console.info('[Velocity][SCORE RELAIS][QUALIF] détail indisponible : abandon immédiat de la qualif',{sessionId:session.id,team:driver?.driver||'',error:String(error?.message||error)});
+   return empty();
   }
-  await apexHistorySleep(15);
+  await apexHistorySleep(10);
  }
+ console.info('[Velocity][SCORE RELAIS][QUALIF] référence chargée',{sessionId:session.id,teams:averages.length,durationMs:Math.round(performance.now()-phaseStarted)});
  return {session,grid:analyzerMedian(averages),byRow};
 }
 function analyzerRelayWindowValues(team,from,to){
@@ -3746,18 +3805,32 @@ function updateApexHistoricalDebriefButton(){
 }
 
 function apexHistoryCircuitId(){return String(state?.circuit_id||'')}
-async function apexHistoryRequest(command){
- const response=await fetch('/api/apex/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({circuit_id:apexHistoryCircuitId(),request:command})});
- const data=await response.json().catch(()=>({ok:false,error:'Réponse Apex illisible'}));
- if(!response.ok||!data.ok)throw new Error(data.error||`Erreur Apex ${response.status}`);
- return String(data.raw||'');
+async function apexHistoryRequest(command,{timeoutMs=20000}={}){
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),Math.max(250,Number(timeoutMs)||20000));
+ try{
+  const response=await fetch('/api/apex/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({circuit_id:apexHistoryCircuitId(),request:command}),signal:controller.signal});
+  const data=await response.json().catch(()=>({ok:false,error:'Réponse Apex illisible'}));
+  if(!response.ok||!data.ok)throw new Error(data.error||`Erreur Apex ${response.status}`);
+  return String(data.raw||'');
+ }catch(error){
+  if(error?.name==='AbortError')throw new Error('APEX_HISTORY_TIMEOUT');
+  throw error;
+ }finally{clearTimeout(timeout)}
 }
-async function apexSessionsRequest(){
+async function apexSessionsRequest({timeoutMs=20000}={}){
  const query=new URLSearchParams({circuit_id:apexHistoryCircuitId()});
- const response=await fetch(`/api/apex/sessions?${query.toString()}`,{cache:'no-store'});
- const data=await response.json().catch(()=>({ok:false,error:'Réponse Apex illisible'}));
- if(!response.ok||!data.ok)throw new Error(data.error||`Erreur Apex ${response.status}`);
- return Array.isArray(data.sessions)?data.sessions:[];
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),Math.max(250,Number(timeoutMs)||20000));
+ try{
+  const response=await fetch(`/api/apex/sessions?${query.toString()}`,{cache:'no-store',signal:controller.signal});
+  const data=await response.json().catch(()=>({ok:false,error:'Réponse Apex illisible'}));
+  if(!response.ok||!data.ok)throw new Error(data.error||`Erreur Apex ${response.status}`);
+  return Array.isArray(data.sessions)?data.sessions:[];
+ }catch(error){
+  if(error?.name==='AbortError')throw new Error('APEX_SESSIONS_TIMEOUT');
+  throw error;
+ }finally{clearTimeout(timeout)}
 }
 function openApexHistory(){
  document.getElementById('apexHistoryModal')?.classList.add('show');
@@ -4167,7 +4240,7 @@ function analyzerRelayNextLapWindow(current){
  if(current<3000)return 3000;
  return 3000;
 }
-async function analyzerRelayFetchTeamStatsClean(driver,{force=false,sessionId='',lapWindowHint=0,contextKey=null}={}){
+async function analyzerRelayFetchTeamStatsClean(driver,{force=false,sessionId='',lapWindowHint=0,contextKey=null,requestTimeoutMs=20000}={}){
  const rowId=Number(driver?.apex_row||driver?.rowId||0);
  if(!rowId)return {laps:[],pits:[],cached:false,window:0};
  const context=contextKey||analyzerRelayEnsureContext();
@@ -4184,7 +4257,7 @@ async function analyzerRelayFetchTeamStatsClean(driver,{force=false,sessionId=''
   const command=`${prefix}D#-${windowSize}#D${rowId}.L#-999#D${rowId}.P#2#D${rowId}.B#1#D${rowId}.INF`;
   const started=performance.now();
   let raw='';
-  try{raw=await apexHistoryRequest(command)}catch(error){
+  try{raw=await apexHistoryRequest(command,{timeoutMs:requestTimeoutMs})}catch(error){
    console.warn('[Velocity][SCORE RELAIS][STATS] requête combinée en échec',{context,rowId,team:driver?.driver||driver?.name||'',sessionId:sessionId||'live',windowSize,error});
    if(pass===1){await apexHistorySleep(120);continue}
    throw error;
@@ -4216,7 +4289,7 @@ function analyzerRelayStructuralSignature(){
 }
 function analyzerRelayProgressText(){
  const p=analyzerRelayScoreProgress;
- if(p.phase==='qualification')return 'Référence qualification…';
+ if(p.phase==='qualification')return 'Référence qualification (optionnelle)…';
  if(p.phase==='compute')return 'Calcul final des Scores Relais…';
  if(p.total>0)return `Reconstruction SCORE RELAIS depuis STATS… ${p.done}/${p.total}${p.team?` · ${p.team}`:''}`;
  return 'Reconstruction SCORE RELAIS depuis STATS…';
