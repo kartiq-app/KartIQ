@@ -204,6 +204,69 @@ def parse_pits(raw, row_id):
     return sorted(by_stop.values(), key=lambda x: x["stop"], reverse=True)
 
 
+def sector_value_ms(lap, key):
+    """Retourne un chrono secteur Apex plausible en millisecondes."""
+    try:
+        value = int(lap.get(key) or 0)
+        lap_time = int(lap.get("lapTime") or 0)
+    except Exception:
+        return None
+    # Les secteurs karting observés sont largement > 1 s. Ce garde-fou élimine
+    # les valeurs parasites type 0.47 s sans coder de borne propre à un circuit.
+    if value < 1000:
+        return None
+    if lap_time > 0 and value >= lap_time:
+        return None
+    return value
+
+
+def sector_best_from_laps(laps):
+    out = {"s1": None, "s2": None, "s3": None}
+    mapping = {"s1": "sector1", "s2": "sector2", "s3": "sector3"}
+    for target, source in mapping.items():
+        values = [sector_value_ms(lap, source) for lap in (laps or [])]
+        values = [v for v in values if v is not None]
+        out[target] = min(values) if values else None
+    return out
+
+
+def sector_count_from_laps(laps):
+    best = sector_best_from_laps(laps)
+    if best.get("s3") is not None:
+        return 3
+    if best.get("s2") is not None:
+        return 2
+    if best.get("s1") is not None:
+        return 1
+    return 0
+
+
+def team_sector_stats(team):
+    """Agrégats secteurs dérivés des mêmes STATS Apex que SCORE RELAIS.
+
+    - currentRelay : uniquement le relais en cours (donc reset après PIT) ;
+    - teamBest : historique équipe complet ;
+    - aucun nouvel appel Apex n'est nécessaire.
+    """
+    relays = list(team.get("relays") or [])
+    team_laps = []
+    for relay in relays:
+        team_laps.extend(relay.get("sectorLapPoints") or [])
+    current = relays[-1] if relays else None
+    current_laps = list((current or {}).get("sectorLapPoints") or [])
+    team_best = sector_best_from_laps(team_laps)
+    current_best = sector_best_from_laps(current_laps)
+    count = sector_count_from_laps(team_laps)
+    best_laps = [int(lap.get("lapTime") or 0) for lap in team_laps if int(lap.get("lapTime") or 0) > 0]
+    return {
+        "sectorCount": count or None,
+        "currentRelayIndex": int((current or {}).get("index") or 0) or None,
+        "sectorBestCurrentRelay": current_best,
+        "sectorBestTeam": team_best,
+        "bestLapTeamMs": min(best_laps) if best_laps else None,
+    }
+
+
 def relay_slices(laps, pits, driver):
     pit_laps_set = {int(p["lap"]) for p in pits if p.get("lap")}
     clean = [
@@ -240,6 +303,16 @@ def relay_slices(laps, pits, driver):
             "consistency": stddev(scored),
             "values": scored,
             "lapPoints": [{"lap": int(l["lap"]), "seconds": float(l["seconds"])} for l in segment],
+            "sectorLapPoints": [
+                {
+                    "lap": int(l["lap"]),
+                    "lapTime": int(l.get("lapTime") or 0),
+                    "sector1": int(l.get("sector1") or 0),
+                    "sector2": int(l.get("sector2") or 0),
+                    "sector3": int(l.get("sector3") or 0),
+                }
+                for l in segment
+            ],
             "pilot": completed_pilot or current_pilot or None,
         })
     return relays
@@ -534,6 +607,7 @@ def score_compute(teams):
             "team": team["driver"].get("driver") or "",
             "kart": team["driver"].get("kart") or "",
             "relays": cells,
+            "sector_stats": team_sector_stats(team),
         })
     return {"maxRelay": max_relay, "teams": result}
 
@@ -599,9 +673,20 @@ def fetch_and_compute(circuit, drivers, apex_http_request, progress=None, max_wo
             except Exception:
                 cached_stops = None
             cached_team = cached.get("team")
-        if cached_team and cached_stops == driver["pit_stops"]:
-            # Rafraîchir uniquement l'identité Live ; les relais historiques
-            # restent ceux qui ont déjà été reconstruits.
+        cached_laps = None
+        if isinstance(cached_team, dict):
+            try:
+                cached_laps = int((cached_team.get("driver") or {}).get("laps") or 0)
+            except Exception:
+                cached_laps = None
+        try:
+            live_laps = int(float(driver.get("laps") or 0))
+        except Exception:
+            live_laps = 0
+        if cached_team and cached_stops == driver["pit_stops"] and cached_laps == live_laps:
+            # Réutilisation sûre seulement si arrêts ET nombre de tours sont
+            # identiques. Après un refresh navigateur, un relais ayant avancé
+            # doit republier ses meilleurs secteurs STATS actualisés.
             cached_team = dict(cached_team)
             cached_team["driver"] = driver
             teams[index] = cached_team

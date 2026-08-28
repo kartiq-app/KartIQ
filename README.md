@@ -1,3 +1,9 @@
+# Velocity V7.2.1782 — Secteurs STATS serveur partagés
+
+## V7.2.1782
+
+Analyzer exploite directement les STATS Apex déjà récupérés côté serveur par Score Relais pour alimenter les meilleurs secteurs du relais, les meilleurs secteurs équipe, le théorique relais et le Classement secteurs. Le relais courant est remis à zéro après un passage aux stands ; les records équipe restent conservés. Aucune requête Apex supplémentaire n'est ajoutée côté navigateur.
+
 # Velocity V7.2.1781 — Cache STATS partagé pour les secteurs
 
 ## Correction V7.2.1781

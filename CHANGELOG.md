@@ -1,3 +1,15 @@
+# V7.2.1782 — ANALYZER : secteurs STATS serveur partagés
+
+## Correction V7.2.1782
+
+- Le moteur serveur **SCORE RELAIS** renvoie désormais aussi les agrégats secteurs calculés depuis les mêmes STATS Apex `.L`.
+- Pour chaque équipe : meilleur S1/S2/S3 du **relais courant**, meilleur S1/S2/S3 **équipe**, nombre de secteurs et meilleur tour équipe.
+- Le **CLASSEMENT SECTEURS** est reconstruit automatiquement à partir de ces données STATS, sans nouvelle requête Apex côté navigateur.
+- `MEILLEUR DU RELAIS`, `MEILLEUR ÉQUIPE` et `THÉORIQUE RELAIS` utilisent la même source.
+- Après un passage aux stands, les meilleurs secteurs du relais courant repartent à zéro ; l'historique `MEILLEUR ÉQUIPE` est conservé.
+- Le flux S1/S2/S3 live de V7.2.1780 continue d'alimenter `TOUR EN COURS` et peut améliorer immédiatement le relais courant entre deux reconstructions STATS.
+- Le cache serveur tient maintenant compte du nombre de tours en plus du nombre d'arrêts afin d'éviter de republier un relais courant obsolète après un refresh.
+
 # V7.2.1781 — ANALYZER : cache STATS partagé pour les secteurs
 
 ## Correction V7.2.1781

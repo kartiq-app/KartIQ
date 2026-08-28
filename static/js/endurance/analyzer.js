@@ -1575,12 +1575,46 @@ function analyzerRelayServerDrivers(){
   pit_stops:analyzerNumeric(d.pit_stops,analyzerNumeric(d.stops,analyzerNumeric(d.pits,0)))
  }));
 }
+function analyzerRelayApplyServerSectorStats(serverTeam,driver){
+ const stats=serverTeam?.sector_stats;if(!stats||!driver)return false;
+ const key=analyzerTeamKey(driver),now=Date.now();
+ const item=analyzerLearning.teams[key]||{name:driver.driver,stints:[],relays:[],lastStatus:null,lastTrackSeconds:null,lastStops:null,lastLapCount:null,currentStintLapSum:0,currentStintLapCount:0,virtualKart:`V-${String(driver.apex||driver.pos||key).replace(/\D/g,'').padStart(2,'0')}`,updatedAt:now};
+ item.relays=Array.isArray(item.relays)?item.relays:[];
+ const cleanBest=source=>({
+  s1:Number(source?.s1)>0?Number(source.s1):null,
+  s2:Number(source?.s2)>0?Number(source.s2):null,
+  s3:Number(source?.s3)>0?Number(source.s3):null
+ });
+ item.sectorBestTeam=cleanBest(stats.sectorBestTeam);
+ item.sectorCount=Number(stats.sectorCount)||item.sectorCount||null;
+ item.bestLapTeamMs=Number(stats.bestLapTeamMs)>0?Number(stats.bestLapTeamMs):(item.bestLapTeamMs||null);
+ item.sectorDataAvailable=Object.values(item.sectorBestTeam||{}).some(v=>Number.isFinite(Number(v))&&Number(v)>0);
+ if(driver.status==='pit'){
+  // Un passage aux stands clôt le relais : aucun meilleur du relais précédent
+  // ne doit survivre dans le classement secteurs.
+  item.currentRelay=null;
+  item.currentStintLapSum=0;item.currentStintLapCount=0;
+ }else{
+  const relayIndex=Number(stats.currentRelayIndex)||analyzerStopsInfo(driver).done+1;
+  const historicalBest=cleanBest(stats.sectorBestCurrentRelay);
+  const existing=item.currentRelay&&Number(item.currentRelay.index)===relayIndex?item.currentRelay:null;
+  item.currentRelay={...(existing||{}),index:relayIndex,sectorBest:analyzerMergeSectorBest(existing?.sectorBest||{},historicalBest),status:'active',source:'server-stats-sectors',hydratedAt:now,kart:existing?.kart||analyzerOfficialCurrentKart(driver)||analyzerRelayKart(driver)||null,pilot:existing?.pilot||analyzerOfficialCurrentPilot(driver)||analyzerDriverPilot(driver)||null};
+ }
+ item.lastStops=analyzerNumeric(driver.pit_stops,item.lastStops);
+ item.lastLapCount=analyzerNumeric(driver.laps,item.lastLapCount);
+ item.lastStatus=driver.status||item.lastStatus;
+ item.name=driver.driver;item.updatedAt=now;item.hydratedAt=now;
+ analyzerLearning.teams[key]=item;
+ return true;
+}
+
 function analyzerRelayApplyServerResult(result,context,signature){
  const currentByRow=new Map((state.drivers||[]).map(d=>[Number(d.apex_row),d]));
- const matrix=new Map(),teams=[];
+ const matrix=new Map(),teams=[];let sectorStatsApplied=false;
  for(const serverTeam of (result?.teams||[])){
   const rowId=Number(serverTeam.apex_row),driver=currentByRow.get(rowId);
   if(!driver)continue;
+  if(analyzerRelayApplyServerSectorStats(serverTeam,driver))sectorStatsApplied=true;
   const row=new Map(),relays=[];
   for(const item of (serverTeam.relays||[])){
    const index=Number(item.relay_index)||Number(item?.relay?.index)||0;
@@ -1602,7 +1636,9 @@ function analyzerRelayApplyServerResult(result,context,signature){
  };
  analyzerRelayBackgroundLastSignature=signature;
  analyzerRelayCleanLastCompletedContext=context;
+ if(sectorStatsApplied)analyzerSaveLearning();
  analyzerSaveSession('relay-server-rebuild');
+ if(sectorStatsApplied&&String(document.body?.dataset?.appMode||'')==='analyzer')renderAnalyzer();
 }
 async function analyzerLoadRelayScores({force=false,background=false,structuralSignature=null,contextKey=null}={}){
  const context=contextKey||analyzerRelayEnsureContext();

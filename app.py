@@ -1933,7 +1933,14 @@ def _relay_score_stop_signature(drivers):
             stops = int(float(d.get("pit_stops") or 0))
         except Exception:
             stops = 0
-        parts.append(f"{row}:{stops}")
+        try:
+            laps = int(float(d.get("laps") or 0))
+        except Exception:
+            laps = 0
+        # Le cache résultat doit aussi refléter l'avancement du relais. Sinon
+        # un refresh navigateur peut récupérer des meilleurs secteurs STATS
+        # anciens tant que le nombre d'arrêts n'a pas changé.
+        parts.append(f"{row}:{stops}:{laps}")
     return "|".join(parts)
 
 
