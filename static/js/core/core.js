@@ -420,6 +420,14 @@ function ingestApexMapEvents(frame,circuitId){
    // Protocole Apex officiel : * porte S1 dans le 4e champ (t[3]).
    // C'est également notre marqueur de nouveau tour secteur : S2/S3 du tour
    // précédent sont effacés pour que « TOUR EN COURS » soit réellement live.
+   // V7.2.1777 : le nouveau * confirme aussi la découpe du tour précédent,
+   // sans retarder l'affichage live. Une piste déjà confirmée à 3 secteurs
+   // ne peut jamais être rétrogradée à 2 sur une impulsion manquée.
+   if(Number(previous.currentSectorSequence)>0){
+    const completed=previous.currentSectors||{};
+    const completedCount=Number.isFinite(Number(completed.s3))&&Number(completed.s3)>0?3:Number.isFinite(Number(completed.s2))&&Number(completed.s2)>0&&Number.isFinite(Number(completed.s1))&&Number(completed.s1)>0?2:Number.isFinite(Number(completed.s1))&&Number(completed.s1)>0?1:0;
+    if(completedCount>0)previous.confirmedSectorCount=Math.max(Number(previous.confirmedSectorCount)||0,completedCount);
+   }
    const s1=Number.isFinite(extra)&&extra>0?extra:null;
    previous.currentSectors={s1,s2:null,s3:null};
    previous.currentSectorSequence=(Number(previous.currentSectorSequence)||0)+1;
@@ -439,7 +447,7 @@ function ingestApexMapEvents(frame,circuitId){
    previous.sectorMode=true;previous.segment='s2';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*i2'){
    // Protocole Apex officiel : *i2 porte S3 dans t[2].
-   if(Number.isFinite(value)&&value>0){previous.sectors.s3=value;previous.currentSectors.s3=value}
+   if(Number.isFinite(value)&&value>0){previous.sectors.s3=value;previous.currentSectors.s3=value;previous.confirmedSectorCount=3}
    previous.currentSectorUpdatedAt=now;
    previous.sectorMode=true;previous.segment='s3';previous.durationMs=value;previous.inPit=false;
   }else if(code==='*in'){
@@ -452,6 +460,9 @@ function ingestApexMapEvents(frame,circuitId){
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
   previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
   registry.rows.set(row,previous);registry.lastEventAt=now;registry.noLive=false;
+  // Le classement secteurs Analyzer consomme la même impulsion que TOUR EN COURS.
+  // Aucun aller-retour serveur ni attente de fin de tour n'est nécessaire.
+  try{window.dispatchEvent(new CustomEvent('velocity:apex-map-sector',{detail:{row,code,currentSectors:{...previous.currentSectors},confirmedSectorCount:Number(previous.confirmedSectorCount)||0,at:now}}))}catch(_e){}
  }
 }
 async function sendApexStatus(status,connection,error=null){try{await fetch('/api/apex/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,connection,error})})}catch(e){}}

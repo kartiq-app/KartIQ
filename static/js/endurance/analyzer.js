@@ -3153,6 +3153,55 @@ function analyzerRenderFollowedPerformance(followed){
  const lapText=followed?.last||'—';
  chronoEl.textContent=`${rankText} | ${lapText}`;
 }
+// V7.2.1777 — cache secteurs 100 % LIVE.
+// Le classement secteurs et la carte ÉQUIPE SUIVIE partagent désormais les
+// mêmes impulsions Apex (* / *i1 / *i2). Les records sont mis à jour dès le
+// passage du secteur, sans attendre la ligne d'arrivée ni relancer STATS Apex.
+const analyzerLiveSectorRelayBest=new Map();
+const analyzerLiveSectorTeamBest=new Map();
+function analyzerLiveSectorPlausible(value){
+ const ms=analyzerSectorRawToMilliseconds(value);
+ // Garde-fou contre les impulsions parasites (ex. 0,47 s observé auparavant).
+ // Bornes volontairement larges et indépendantes du circuit.
+ return Number.isFinite(ms)&&ms>=3000&&ms<=180000?ms:null;
+}
+function analyzerLiveSectorDriver(row){
+ const id=Number(row);return (state?.drivers||[]).find(driver=>Number(driver?.apex_row)===id)||null;
+}
+function analyzerLiveSectorRelayToken(driver,row){
+ const stops=analyzerNumeric(driver?.pit_stops,0);return `${Number(row)}:${stops}`;
+}
+function analyzerLiveSectorRecord(row,{resetRelay=false}={}){
+ const id=Number(row);if(!Number.isFinite(id))return null;
+ const driver=analyzerLiveSectorDriver(id),entry=analyzerApexMapRegistry().rows.get(id);if(!driver||!entry)return null;
+ const token=analyzerLiveSectorRelayToken(driver,id);
+ let relay=analyzerLiveSectorRelayBest.get(id);
+ if(resetRelay||!relay||relay.token!==token){relay={token,best:{s1:null,s2:null,s3:null}};analyzerLiveSectorRelayBest.set(id,relay)}
+ let team=analyzerLiveSectorTeamBest.get(id);if(!team){team={s1:null,s2:null,s3:null};analyzerLiveSectorTeamBest.set(id,team)}
+ for(const key of ['s1','s2','s3']){
+  const ms=analyzerLiveSectorPlausible(entry?.currentSectors?.[key]);if(!Number.isFinite(ms))continue;
+  if(!Number.isFinite(Number(relay.best[key]))||ms<Number(relay.best[key]))relay.best[key]=ms;
+  if(!Number.isFinite(Number(team[key]))||ms<Number(team[key]))team[key]=ms;
+ }
+ return {driver,entry,relay:relay.best,team};
+}
+function analyzerIngestLiveSectorCache(){
+ for(const row of analyzerApexMapRegistry().rows.keys())analyzerLiveSectorRecord(row);
+}
+function analyzerLiveSectorBestFor(driver){
+ const row=Number(driver?.apex_row);if(!Number.isFinite(row))return {relay:{},team:{}};
+ analyzerLiveSectorRecord(row);
+ return {relay:analyzerLiveSectorRelayBest.get(row)?.best||{},team:analyzerLiveSectorTeamBest.get(row)||{}};
+}
+function analyzerMergeSectorBest(primary={},secondary={}){
+ const out={s1:null,s2:null,s3:null};
+ for(const key of ['s1','s2','s3']){
+  const values=[Number(primary?.[key]),Number(secondary?.[key])].filter(v=>Number.isFinite(v)&&v>0);
+  out[key]=values.length?Math.min(...values):null;
+ }
+ return out;
+}
+
 function analyzerSectorGridBest(){
  const best={s1:null,s2:null,s3:null};
  const include=values=>{for(const key of ['s1','s2','s3']){const value=Number(values?.[key]);if(Number.isFinite(value)&&value>0&&(!Number.isFinite(best[key])||value<best[key]))best[key]=value;}};
@@ -3183,7 +3232,7 @@ function analyzerSetSectorCell(id,value,gridBest,options={}){
 function analyzerRenderFollowedSectors(followed){
  const block=document.getElementById('analyzerFollowedSectors');if(!block)return;
  if(!followed){block.hidden=true;return}
- const history=analyzerTeamHistory(followed),relay=history?.currentRelay||null,relayBest=relay?.sectorBest||{},teamBest=history?.sectorBestTeam||{};
+ const history=analyzerTeamHistory(followed),relay=history?.currentRelay||null,liveBest=analyzerLiveSectorBestFor(followed),relayBest=analyzerMergeSectorBest(relay?.sectorBest||{},liveBest.relay),teamBest=analyzerMergeSectorBest(history?.sectorBestTeam||{},liveBest.team);
  // V7.2.1754 — source live conforme au JavaScript Apex Timing :
  //   *   -> S1 dans t[3]
  //   *i1 -> S2 dans t[2]
@@ -3241,22 +3290,29 @@ function analyzerSectorRankingSessionCount(rows=[]){
   const count=Number(row?.history?.sectorCount);
   if([1,2,3].includes(count))counts.push(count);
  }
- if(!counts.length)return 0;
+ // V7.2.1777 : la confirmation live voyage avec velocityApexMap. *i2 confirme
+ // immédiatement 3 secteurs ; un nouveau * confirme 2 secteurs si le tour
+ // précédent contenait S1+S2 mais aucun S3.
+ let hasLive=false;
+ for(const entry of analyzerApexMapRegistry().rows.values()){
+  const confirmed=Number(entry?.confirmedSectorCount);if([1,2,3].includes(confirmed))counts.push(confirmed);
+  const current=entry?.currentSectors||{};
+  if(['s1','s2','s3'].some(key=>Number.isFinite(analyzerLiveSectorPlausible(current?.[key]))))hasLive=true;
+ }
  // Une session Apex utilise la même découpe pour toutes les équipes. Si une
  // équipe a déjà confirmé 3 secteurs, cette information est prioritaire ;
- // sinon 2, puis 1.
+ // sinon 2. Pendant le tout premier tour, les valeurs live sont déjà affichées
+ // avec 3 colonnes provisoires afin de ne jamais attendre la ligne d'arrivée.
  if(counts.includes(3))return 3;
  if(counts.includes(2))return 2;
- // Un unique secteur n'apporte aucune découpe exploitable : pour le classement
- // secteurs, Velocity le traite comme une session sans secteurs.
- return 0;
+ return hasLive?3:0;
 }
 function analyzerSectorRankingKeys(count){
  return count===3?['s1','s2','s3']:count===2?['s1','s2']:count===1?['s1']:[];
 }
 function analyzerSectorRankingMetrics(row,sectorCount){
- const driver=row?.driver||{},history=row?.history||analyzerTeamHistory(driver),relay=history?.currentRelay||null;
- const relayBest=relay?.sectorBest||{},teamBest=history?.sectorBestTeam||{};
+ const driver=row?.driver||{},history=row?.history||analyzerTeamHistory(driver),relay=history?.currentRelay||null,liveBest=analyzerLiveSectorBestFor(driver);
+ const relayBest=analyzerMergeSectorBest(relay?.sectorBest||{},liveBest.relay),teamBest=analyzerMergeSectorBest(history?.sectorBestTeam||{},liveBest.team);
  const keys=analyzerSectorRankingKeys(sectorCount);
  const clean=value=>{const n=Number(value);return Number.isFinite(n)&&n>0?n:null};
  const current={s1:clean(relayBest?.s1),s2:clean(relayBest?.s2),s3:clean(relayBest?.s3)};
@@ -3266,7 +3322,7 @@ function analyzerSectorRankingMetrics(row,sectorCount){
  return {
   row,driver,history,relay,current,team,theoretical,
   kart:relay?.kart||analyzerRelayKart(driver)||validKartNumber(driver)||driver?.apex||'—',
-  relayIndex:Number(relay?.index)||null
+  relayIndex:Number(relay?.index)||analyzerStopsInfo(driver).done+1
  };
 }
 function analyzerSectorRankingSortValue(metric,sort=analyzerSectorSort){
@@ -3356,6 +3412,23 @@ function analyzerRenderSectorRanking(rows,sectorCount){
   }
   return `<tr data-driver="${analyzerEscape(metric.driver?.driver||'')}" class="${followed?'followed':''}" onclick="followDriver(${JSON.stringify(metric.driver?.driver||'').replace(/"/g,'&quot;')})">${cells.join('')}</tr>`;
  }).join('');
+}
+
+function analyzerRefreshLiveSectorViews(detail={}){
+ const row=Number(detail?.row);if(Number.isFinite(row))analyzerLiveSectorRecord(row,{resetRelay:detail?.code==='*out'});
+ if(String(document.body?.dataset?.appMode||'')!=='analyzer')return;
+ const followed=(state?.drivers||[]).find(driver=>driver?.driver===state?.followed_driver)||state?.followed||(state?.drivers||[])[0]||null;
+ analyzerRenderFollowedSectors(followed);
+ if(analyzerRankingMode!=='sectors')return;
+ const rows=analyzerRows(),sectorCount=analyzerSectorRankingSessionCount(rows);
+ analyzerSyncRankingSortControl(rows);
+ analyzerRenderSectorRanking(rows,sectorCount);
+ const subtitle=document.getElementById('analyzerRankingSubtitle');
+ if(subtitle)subtitle.textContent=sectorCount?`Secteurs Apex LIVE — meilleurs secteurs du relais en cours — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré détecté pour cette session Apex';
+}
+if(!window.__velocityAnalyzerLiveSectorListener){
+ window.__velocityAnalyzerLiveSectorListener=true;
+ window.addEventListener('velocity:apex-map-sector',event=>analyzerRefreshLiveSectorViews(event?.detail||{}));
 }
 
 function analyzerTrafficLapSeconds(driver){
@@ -3641,6 +3714,7 @@ function renderAnalyzer(){
  analyzerApplySharedRulesFromState();
  analyzerLearnFromState();
  analyzerScheduleRelayBackgroundRebuild();
+ analyzerIngestLiveSectorCache();
  const all=analyzerRows();
  analyzerSyncRankingSortControl(all);
  const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sectorCount=analyzerSectorRankingSessionCount(all);

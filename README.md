@@ -1,3 +1,9 @@
+# Velocity V7.2.1777 — Analyzer secteurs Apex LIVE
+
+## Correction V7.2.1777
+
+Le **Classement secteurs** utilise directement les impulsions Apex `*`, `*i1`, `*i2`, exactement comme la ligne **TOUR EN COURS** de la carte ÉQUIPE SUIVIE. S1, S2 et S3 apparaissent et peuvent modifier le classement immédiatement au passage de chaque secteur, sans attendre la fin du tour et sans relancer l’ancien pipeline STATS.
+
 # Velocity V7.2.1768 — Delta Focus Sprint aligné sur Focus Endurance
 
 ## Correction V7.2.1768

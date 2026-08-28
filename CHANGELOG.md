@@ -1,3 +1,18 @@
+# V7.2.1777 — ANALYZER : classement secteurs Apex LIVE
+
+- Base : V7.2.1776.
+- Correction de la régression du **Classement secteurs** après l’optimisation du pipeline STATS / Score Relais.
+- Le classement secteurs consomme désormais directement les mêmes impulsions Apex live que **TOUR EN COURS** : `*` → S1, `*i1` → S2, `*i2` → S3.
+- Mise à jour du classement **dès le passage de chaque secteur**, sans attendre la fin du tour.
+- Les meilleurs S1 / S2 / S3 du relais courant et de l’équipe sont mémorisés incrémentalement côté navigateur, sans requête Apex supplémentaire.
+- Le **THÉORIQUE RELAIS** se met à jour dès que tous les secteurs nécessaires ont été reçus.
+- Détection dynamique conservée : 3 secteurs confirmés immédiatement par `*i2`; 2 secteurs confirmés au début du tour suivant si le tour précédent contenait S1 + S2 sans S3.
+- Avant confirmation, les colonnes live restent visibles pour ne jamais confondre un S3 encore à venir avec une piste à 2 secteurs.
+- Garde-fou sur les valeurs secteurs manifestement aberrantes afin qu’une impulsion parasite ne puisse pas prendre la tête du classement.
+- Entrée / sortie stands : le cache du relais est remis à zéro au PIT OUT; le meilleur équipe reste conservé.
+- Aucun retour de l’ancien second pipeline STATS : **aucune surcharge serveur / Render ajoutée**.
+- Score Relais, Velocity Score, Recorder, Spotter et Focus inchangés.
+
 # V7.2.1776 — SCORE RELAIS : cache incrémental 24H
 
 - Base : V7.2.1775.
