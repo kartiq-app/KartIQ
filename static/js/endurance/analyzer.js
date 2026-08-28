@@ -3169,14 +3169,21 @@ function analyzerLiveSectorDriver(row){
  const id=Number(row);return (state?.drivers||[]).find(driver=>Number(driver?.apex_row)===id)||null;
 }
 function analyzerLiveSectorRelayToken(driver,row){
- const stops=analyzerNumeric(driver?.pit_stops,0);return `${Number(row)}:${stops}`;
+ // V7.2.1778 : le cache live doit exister même si state.drivers n'a pas encore
+ // rattaché la row Apex au pilote. Dans ce cas on utilise temporairement la
+ // row seule comme token, puis le nombre de pits dès que le driver est connu.
+ const stops=driver?analyzerNumeric(driver?.pit_stops,0):0;return `${Number(row)}:${stops}`;
 }
 function analyzerLiveSectorRecord(row,{resetRelay=false}={}){
  const id=Number(row);if(!Number.isFinite(id))return null;
- const driver=analyzerLiveSectorDriver(id),entry=analyzerApexMapRegistry().rows.get(id);if(!driver||!entry)return null;
+ const entry=analyzerApexMapRegistry().rows.get(id);if(!entry)return null;
+ const driver=analyzerLiveSectorDriver(id);
  const token=analyzerLiveSectorRelayToken(driver,id);
  let relay=analyzerLiveSectorRelayBest.get(id);
- if(resetRelay||!relay||relay.token!==token){relay={token,best:{s1:null,s2:null,s3:null}};analyzerLiveSectorRelayBest.set(id,relay)}
+ if(resetRelay||!relay||relay.token!==token){
+  const previousBest=!resetRelay&&relay?.best?relay.best:{s1:null,s2:null,s3:null};
+  relay={token,best:{...previousBest}};analyzerLiveSectorRelayBest.set(id,relay)
+ }
  let team=analyzerLiveSectorTeamBest.get(id);if(!team){team={s1:null,s2:null,s3:null};analyzerLiveSectorTeamBest.set(id,team)}
  for(const key of ['s1','s2','s3']){
   const ms=analyzerLiveSectorPlausible(entry?.currentSectors?.[key]);if(!Number.isFinite(ms))continue;
@@ -3190,8 +3197,18 @@ function analyzerIngestLiveSectorCache(){
 }
 function analyzerLiveSectorBestFor(driver){
  const row=Number(driver?.apex_row);if(!Number.isFinite(row))return {relay:{},team:{}};
- analyzerLiveSectorRecord(row);
- return {relay:analyzerLiveSectorRelayBest.get(row)?.best||{},team:analyzerLiveSectorTeamBest.get(row)||{}};
+ const recorded=analyzerLiveSectorRecord(row);
+ const relay={...(analyzerLiveSectorRelayBest.get(row)?.best||{})};
+ const team={...(analyzerLiveSectorTeamBest.get(row)||{})};
+ // Filet de sécurité : si l'impulsion live est déjà dans velocityApexMap mais
+ // que le cache n'a pas encore été promu, l'injecter immédiatement ici.
+ const entry=recorded?.entry||analyzerApexMapRegistry().rows.get(row);
+ for(const key of ['s1','s2','s3']){
+  const ms=analyzerLiveSectorPlausible(entry?.currentSectors?.[key]);if(!Number.isFinite(ms))continue;
+  if(!Number.isFinite(Number(relay[key]))||ms<Number(relay[key]))relay[key]=ms;
+  if(!Number.isFinite(Number(team[key]))||ms<Number(team[key]))team[key]=ms;
+ }
+ return {relay,team};
 }
 function analyzerMergeSectorBest(primary={},secondary={}){
  const out={s1:null,s2:null,s3:null};

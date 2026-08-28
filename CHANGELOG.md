@@ -1,3 +1,10 @@
+# V7.2.1778 — ANALYZER : cache secteurs LIVE autonome
+
+- Le cache des meilleurs secteurs ne dépend plus de la présence immédiate de `state.drivers`.
+- Les impulsions Apex LIVE déjà présentes dans `velocityApexMap.currentSectors` alimentent immédiatement MEILLEUR DU RELAIS / MEILLEUR ÉQUIPE et le CLASSEMENT SECTEURS.
+- Ajout d’un filet de sécurité dans `analyzerLiveSectorBestFor()` pour promouvoir les secteurs live même si l’événement est arrivé avant le rattachement de la row au pilote.
+- Aucun changement du protocole Apex, du Score Relais, du Recorder, du Spotter ou des Focus.
+
 # V7.2.1777 — ANALYZER : classement secteurs Apex LIVE
 
 - Base : V7.2.1776.
