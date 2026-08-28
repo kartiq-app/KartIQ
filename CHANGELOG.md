@@ -1,3 +1,17 @@
+# V7.2.1781 — ANALYZER : cache STATS partagé pour les secteurs
+
+## Correction V7.2.1781
+
+- Le cache STATS déjà téléchargé par **SCORE RELAIS** est désormais réinjecté directement dans `analyzerLearning`.
+- Les données `.L` déjà disponibles alimentent à nouveau :
+  - **MEILLEUR DU RELAIS** ;
+  - **MEILLEUR ÉQUIPE** ;
+  - **THÉORIQUE RELAIS** ;
+  - **CLASSEMENT SECTEURS**.
+- Aucune seconde requête Apex n'est ajoutée : l'ancien pipeline automatique `analyzerHydrateActiveRelays()` reste désactivé.
+- `TOUR EN COURS` conserve la source chrono live S1/S2/S3 introduite en V7.2.1780.
+- Les données des sessions historiques `S#...` ne sont jamais mélangées à la course live.
+
 # V7.2.1780 — ANALYZER : secteurs chrono Apex autoritaires
 
 - Corrige la source des secteurs : cellules S1/S2/S3 Apex, et non durées de tracking `* / *i1 / *i2`.

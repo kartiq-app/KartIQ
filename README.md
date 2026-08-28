@@ -1,4 +1,8 @@
-# Velocity V7.2.1780 — Secteurs chrono Apex autoritaires
+# Velocity V7.2.1781 — Cache STATS partagé pour les secteurs
+
+## Correction V7.2.1781
+
+Le cache STATS déjà chargé par SCORE RELAIS alimente désormais directement les records secteurs d’Analyzer (`MEILLEUR DU RELAIS`, `MEILLEUR ÉQUIPE`, `THÉORIQUE RELAIS`, `CLASSEMENT SECTEURS`) sans lancer un second pipeline de requêtes Apex. Le tour en cours reste alimenté par les cellules chrono S1/S2/S3 live.
 
 ## Correction V7.2.1780
 

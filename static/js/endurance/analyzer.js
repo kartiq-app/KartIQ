@@ -4469,7 +4469,13 @@ async function analyzerRelayFetchTeamStatsClean(driver,{force=false,sessionId=''
  const context=contextKey||analyzerRelayEnsureContext();
  const expectedLaps=analyzerRelayExpectedLaps(driver),expectedPits=analyzerRelayExpectedPits(driver);
  const cacheKey=`${context}:${sessionId||'live'}:${rowId}`,cached=analyzerRelayStatsCache.get(cacheKey);
- if(!force&&cached&&cached.pitsExpected===expectedPits&&cached.sessionId===(sessionId||''))return {...cached,cached:true};
+ if(!force&&cached&&cached.pitsExpected===expectedPits&&cached.sessionId===(sessionId||'')){
+  // V7.2.1781 — le cache STATS de SCORE RELAIS devient la source historique
+  // partagée des secteurs Analyzer. On republie le cache LIVE dans
+  // analyzerLearning sans aucune nouvelle requête Apex.
+  if(!sessionId&&Array.isArray(cached.laps)&&cached.laps.length)analyzerApplyHydratedRelay(driver,cached.laps,cached.pits||[]);
+  return {...cached,cached:true};
+ }
 
  let windowSize=analyzerRelayCleanLapWindow({expectedLaps,hint:lapWindowHint});
  const prefix=sessionId?`S#${sessionId}#`:'';
@@ -4532,6 +4538,15 @@ async function analyzerRelayFetchTeamStatsClean(driver,{force=false,sessionId=''
   sessionId:sessionId||'',window:windowSize,updatedAt:Date.now(),cached:false
  };
  analyzerRelayStatsCache.set(cacheKey,item);
+ // V7.2.1781 — partage direct du STATS déjà téléchargé par SCORE RELAIS avec
+ // le moteur secteurs. Cela alimente sectorBest, sectorBestTeam, sectorCount,
+ // bestLapTeamMs et donc MEILLEUR DU RELAIS / ÉQUIPE / THÉORIQUE / CLASSEMENT
+ // SECTEURS, sans réactiver analyzerHydrateActiveRelays() et sans deuxième
+ // requête réseau. Les sessions historiques (S#...) restent isolées.
+ if(!sessionId&&Array.isArray(item.laps)&&item.laps.length){
+  analyzerApplyHydratedRelay(driver,item.laps,item.pits||[]);
+  analyzerSaveLearning();
+ }
  return item;
 }
 
