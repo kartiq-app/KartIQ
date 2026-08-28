@@ -346,7 +346,7 @@ let apexBrowserConnectionToken=0;
 // MAP Velocity — événements de position réellement émis par Apex Timing.
 // Chaque ligne de classement est animée uniquement à la réception de *, *i1,
 // *i2, *in ou *out. Aucune rotation autonome n'est créée côté Velocity.
-window.velocityApexMap={rows:new Map(),lastEventAt:0,noLive:true,circuitId:null};
+window.velocityApexMap={rows:new Map(),lastEventAt:0,noLive:true,circuitId:null,schema:new Map(),labels:new Map()};
 function velocityApexMapEntryPhase(entry,at=Date.now()){
  if(!entry||!entry.startedAt||!entry.durationMs)return Number(entry?.lastPhase)||0;
  const progress=Math.max(0,Math.min(1,(at-entry.startedAt)/Math.max(1,entry.durationMs)));
@@ -361,6 +361,57 @@ function velocityApexMapEntryPhase(entry,at=Date.now()){
 }
 function resetVelocityApexMap(circuitId=null){
  window.velocityApexMap.rows.clear();window.velocityApexMap.lastEventAt=0;window.velocityApexMap.noLive=true;window.velocityApexMap.circuitId=circuitId;
+ window.velocityApexMap.schema=new Map();window.velocityApexMap.labels=new Map();
+}
+function velocityApexSectorCellToMs(raw){
+ const text=String(raw??'').trim().replace(',','.');if(!text)return null;
+ if(/^\d+(?::\d{1,2})?\.\d{1,3}$/.test(text)&&text.includes(':')){
+  const parts=text.split(':').map(Number);const seconds=parts.length===2?parts[0]*60+parts[1]:NaN;return Number.isFinite(seconds)?Math.round(seconds*1000):null;
+ }
+ const value=Number(text);if(!Number.isFinite(value)||value<=0)return null;
+ // Les cellules S1/S2/S3 Apex sont généralement en secondes décimales
+ // (ex. 22.071), alors que les impulsions * transportent des millisecondes.
+ return value<1000?Math.round(value*1000):Math.round(value);
+}
+function ingestApexGridSchema(frame,circuitId){
+ const registry=window.velocityApexMap;if(registry.circuitId!==circuitId)resetVelocityApexMap(circuitId);
+ const raw=String(frame||'');const marker=raw.indexOf('grid||');if(marker<0)return false;
+ const html=raw.slice(marker+6);
+ try{
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const schema=new Map(),labels=new Map();
+  doc.querySelectorAll('[data-id]').forEach(el=>{
+   const id=String(el.getAttribute('data-id')||'');const match=id.match(/^c(\d+)$/);if(!match)return;
+   const col=Number(match[1]),type=String(el.getAttribute('data-type')||'').trim().toLowerCase();
+   if(type)schema.set(col,type);labels.set(col,String(el.textContent||'').trim());
+  });
+  if(schema.size){registry.schema=schema;registry.labels=labels;}
+  return schema.size>0;
+ }catch(_e){return false}
+}
+function ingestApexSectorCellUpdates(frame,circuitId){
+ const registry=window.velocityApexMap;if(registry.circuitId!==circuitId)resetVelocityApexMap(circuitId);
+ if(!(registry.schema instanceof Map)||!registry.schema.size)return;
+ const raw=String(frame||'').replace(/\r\n?/g,'\n');
+ // Ne traite ici que les mises à jour incrémentales rXXXXXcY|code|valeur.
+ // Le GRID initial sert au mapping dynamique mais ne doit pas être confondu
+ // avec le TOUR EN COURS : ses valeurs sont le dernier état connu par Apex.
+ const updateRe=/r(\d+)c(\d+)\|([^|\s@]*)\|([^|\s@<]+)/g;
+ for(const match of raw.matchAll(updateRe)){
+  const row=Number(match[1]),col=Number(match[2]),code=String(match[3]||'').trim(),type=String(registry.schema.get(col)||'').toLowerCase();
+  if(!['s1','s2','s3'].includes(type))continue;
+  const ms=velocityApexSectorCellToMs(match[4]);if(!Number.isFinite(ms)||ms<=0)continue;
+  const now=Date.now(),previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},currentSectors:{s1:null,s2:null,s3:null},lastPhase:0,sectorMode:false};
+  previous.sectors=previous.sectors||{s1:null,s2:null,s3:null};previous.currentSectors=previous.currentSectors||{s1:null,s2:null,s3:null};
+  if(type==='s1'){
+   // S1 marque le début d'un nouveau tour sectoriel côté cellules Apex.
+   previous.currentSectors={s1:ms,s2:null,s3:null};previous.currentSectorSequence=(Number(previous.currentSectorSequence)||0)+1;
+  }else previous.currentSectors[type]=ms;
+  previous.sectors[type]=ms;previous.sectorMode=true;previous.currentSectorUpdatedAt=now;previous.lastEventAt=now;
+  if(type==='s3')previous.confirmedSectorCount=3;
+  registry.rows.set(row,previous);registry.lastEventAt=now;registry.noLive=false;
+  try{window.dispatchEvent(new CustomEvent('velocity:apex-map-sector',{detail:{row,code:`cell:${type}`,currentSectors:{...previous.currentSectors},confirmedSectorCount:Number(previous.confirmedSectorCount)||0,at:now}}))}catch(_e){}
+ }
 }
 function velocityDriverHasParticipated(driver){
  const laps=Number(driver?.laps);
@@ -504,6 +555,11 @@ function connectApexBrowser(force=false){
   if(!lapProgressFrame)ingestApexCountdown(frame);
   ingestApexElapsed(frame);
   ingestApexSessionType(frame);
+  // V7.2.1779 : le numéro de colonne Apex n'est jamais stable d'une session
+  // à l'autre. Le GRID courant reconstruit donc le mapping data-type -> cX
+  // avant toute lecture des cellules S1/S2/S3.
+  ingestApexGridSchema(frame,circuit.id);
+  ingestApexSectorCellUpdates(frame,circuit.id);
   ingestApexMapEvents(frame,circuit.id);
   try{
    const r=await fetch('/api/apex/frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame,circuit_id:circuit.id})});

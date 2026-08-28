@@ -1,3 +1,11 @@
+# Velocity V7.2.1779 — Mapping dynamique secteurs Apex
+
+## Correction V7.2.1779
+
+Analyzer reconstruit désormais à chaque `grid||` le mapping réel des colonnes Apex à partir des attributs `data-type` (`s1`, `s2`, `s3`, `llp`, `blp`, etc.). Les numéros `c7`, `c8`, `c9`… ne sont plus supposés fixes entre deux sessions.
+
+Les mises à jour incrémentales `rXXXXXcY|...|...` des cellules S1/S2/S3 alimentent directement le même cache LIVE que les impulsions `*`, `*i1`, `*i2`. Le TOUR EN COURS et le CLASSEMENT SECTEURS restent donc mis à jour au passage de chaque secteur, sans attendre la fin du tour.
+
 # Velocity V7.2.1778 — Cache secteurs LIVE autonome
 
 ## Correction V7.2.1778

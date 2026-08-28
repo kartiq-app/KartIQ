@@ -1,3 +1,13 @@
+# V7.2.1779 — ANALYZER : mapping dynamique des colonnes secteurs Apex
+
+- Le `grid||` de chaque session devient la source de vérité du mapping `data-type -> cX`.
+- Suppression de toute dépendance fonctionnelle à un numéro de colonne fixe pour S1/S2/S3 côté flux navigateur.
+- Les cellules live `rXXXXXcY|code|valeur` sont interprétées selon le schéma de la session courante.
+- Les updates `s1`, `s2`, `s3` alimentent immédiatement `velocityApexMap.currentSectors`, MEILLEUR DU RELAIS / MEILLEUR ÉQUIPE et le CLASSEMENT SECTEURS.
+- Les impulsions Apex natives `*`, `*i1`, `*i2` restent exploitées en parallèle ; aucune attente de fin de tour.
+- Le GRID initial n'est pas pris pour un tour en cours : il sert uniquement à reconstruire le schéma.
+- Correction ciblée Analyzer ; Score Relais, Recorder, Spotter et Focus inchangés.
+
 # V7.2.1778 — ANALYZER : cache secteurs LIVE autonome
 
 - Le cache des meilleurs secteurs ne dépend plus de la présence immédiate de `state.drivers`.
