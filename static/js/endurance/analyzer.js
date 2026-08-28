@@ -3153,62 +3153,58 @@ function analyzerRenderFollowedPerformance(followed){
  const lapText=followed?.last||'—';
  chronoEl.textContent=`${rankText} | ${lapText}`;
 }
-// V7.2.1777 — cache secteurs 100 % LIVE.
-// Le classement secteurs et la carte ÉQUIPE SUIVIE partagent désormais les
-// mêmes impulsions Apex (* / *i1 / *i2). Les records sont mis à jour dès le
-// passage du secteur, sans attendre la ligne d'arrivée ni relancer STATS Apex.
+// V7.2.1780 — cache chrono secteurs LIVE, alimenté uniquement par les
+// cellules Apex data-type=s1/s2/s3 (et state.drivers en secours). Les
+// impulsions de tracking * / *i1 / *i2 ne sont plus utilisées comme chronos.
 const analyzerLiveSectorRelayBest=new Map();
 const analyzerLiveSectorTeamBest=new Map();
 function analyzerLiveSectorPlausible(value){
  const ms=analyzerSectorRawToMilliseconds(value);
- // Garde-fou contre les impulsions parasites (ex. 0,47 s observé auparavant).
- // Bornes volontairement larges et indépendantes du circuit.
  return Number.isFinite(ms)&&ms>=3000&&ms<=180000?ms:null;
 }
 function analyzerLiveSectorDriver(row){
  const id=Number(row);return (state?.drivers||[]).find(driver=>Number(driver?.apex_row)===id)||null;
 }
 function analyzerLiveSectorRelayToken(driver,row){
- // V7.2.1778 : le cache live doit exister même si state.drivers n'a pas encore
- // rattaché la row Apex au pilote. Dans ce cas on utilise temporairement la
- // row seule comme token, puis le nombre de pits dès que le driver est connu.
  const stops=driver?analyzerNumeric(driver?.pit_stops,0):0;return `${Number(row)}:${stops}`;
+}
+function analyzerTimingSectorValuesForDriver(driver){
+ const row=Number(driver?.apex_row),entry=Number.isFinite(row)?analyzerApexMapRegistry().rows.get(row):null;
+ const timing=entry?.timingCurrentSectors||{};
+ // Le backend ApexInterpreter est lui aussi piloté par data-type ; il sert de
+ // secours si le navigateur vient juste de se reconnecter au WebSocket.
+ return {
+  s1:analyzerLiveSectorPlausible(timing?.s1)??analyzerLiveSectorPlausible(driver?.sector_1),
+  s2:analyzerLiveSectorPlausible(timing?.s2)??analyzerLiveSectorPlausible(driver?.sector_2),
+  s3:analyzerLiveSectorPlausible(timing?.s3)??analyzerLiveSectorPlausible(driver?.sector_3)
+ };
 }
 function analyzerLiveSectorRecord(row,{resetRelay=false}={}){
  const id=Number(row);if(!Number.isFinite(id))return null;
- const entry=analyzerApexMapRegistry().rows.get(id);if(!entry)return null;
- const driver=analyzerLiveSectorDriver(id);
+ const driver=analyzerLiveSectorDriver(id);if(!driver)return null;
  const token=analyzerLiveSectorRelayToken(driver,id);
  let relay=analyzerLiveSectorRelayBest.get(id);
- if(resetRelay||!relay||relay.token!==token){
-  const previousBest=!resetRelay&&relay?.best?relay.best:{s1:null,s2:null,s3:null};
-  relay={token,best:{...previousBest}};analyzerLiveSectorRelayBest.set(id,relay)
- }
+ if(resetRelay||!relay||relay.token!==token){relay={token,best:{s1:null,s2:null,s3:null}};analyzerLiveSectorRelayBest.set(id,relay)}
  let team=analyzerLiveSectorTeamBest.get(id);if(!team){team={s1:null,s2:null,s3:null};analyzerLiveSectorTeamBest.set(id,team)}
+ const current=analyzerTimingSectorValuesForDriver(driver);
  for(const key of ['s1','s2','s3']){
-  const ms=analyzerLiveSectorPlausible(entry?.currentSectors?.[key]);if(!Number.isFinite(ms))continue;
+  const ms=Number(current[key]);if(!Number.isFinite(ms)||ms<=0)continue;
   if(!Number.isFinite(Number(relay.best[key]))||ms<Number(relay.best[key]))relay.best[key]=ms;
   if(!Number.isFinite(Number(team[key]))||ms<Number(team[key]))team[key]=ms;
  }
- return {driver,entry,relay:relay.best,team};
+ return {driver,entry:analyzerApexMapRegistry().rows.get(id)||null,relay:relay.best,team,current};
 }
 function analyzerIngestLiveSectorCache(){
- for(const row of analyzerApexMapRegistry().rows.keys())analyzerLiveSectorRecord(row);
+ for(const driver of (state?.drivers||[])){const row=Number(driver?.apex_row);if(Number.isFinite(row))analyzerLiveSectorRecord(row)}
 }
 function analyzerLiveSectorBestFor(driver){
- const row=Number(driver?.apex_row);if(!Number.isFinite(row))return {relay:{},team:{}};
+ const row=Number(driver?.apex_row);if(!Number.isFinite(row))return {relay:{},team:{},current:{}};
  const recorded=analyzerLiveSectorRecord(row);
- const relay={...(analyzerLiveSectorRelayBest.get(row)?.best||{})};
- const team={...(analyzerLiveSectorTeamBest.get(row)||{})};
- // Filet de sécurité : si l'impulsion live est déjà dans velocityApexMap mais
- // que le cache n'a pas encore été promu, l'injecter immédiatement ici.
- const entry=recorded?.entry||analyzerApexMapRegistry().rows.get(row);
- for(const key of ['s1','s2','s3']){
-  const ms=analyzerLiveSectorPlausible(entry?.currentSectors?.[key]);if(!Number.isFinite(ms))continue;
-  if(!Number.isFinite(Number(relay[key]))||ms<Number(relay[key]))relay[key]=ms;
-  if(!Number.isFinite(Number(team[key]))||ms<Number(team[key]))team[key]=ms;
- }
- return {relay,team};
+ return {
+  relay:{...(analyzerLiveSectorRelayBest.get(row)?.best||{})},
+  team:{...(analyzerLiveSectorTeamBest.get(row)||{})},
+  current:recorded?.current||analyzerTimingSectorValuesForDriver(driver)
+ };
 }
 function analyzerMergeSectorBest(primary={},secondary={}){
  const out={s1:null,s2:null,s3:null};
@@ -3250,18 +3246,11 @@ function analyzerRenderFollowedSectors(followed){
  const block=document.getElementById('analyzerFollowedSectors');if(!block)return;
  if(!followed){block.hidden=true;return}
  const history=analyzerTeamHistory(followed),relay=history?.currentRelay||null,liveBest=analyzerLiveSectorBestFor(followed),relayBest=analyzerMergeSectorBest(relay?.sectorBest||{},liveBest.relay),teamBest=analyzerMergeSectorBest(history?.sectorBestTeam||{},liveBest.team);
- // V7.2.1754 — source live conforme au JavaScript Apex Timing :
- //   *   -> S1 dans t[3]
- //   *i1 -> S2 dans t[2]
- //   *i2 -> S3 dans t[2]
- // core.js conserve ces impulsions dans velocityApexMap.currentSectors.
- // On ne dépend donc plus de l'affichage éventuel des colonnes S1/S2/S3 de la grille.
- const apexEntry=analyzerApexMapEntry(followed),rawLive=!apexEntry?.inPit&&analyzerApexRaceIsActive()?(apexEntry?.currentSectors||{}):{};
- const live={
-  s1:analyzerSectorRawToMilliseconds(rawLive?.s1),
-  s2:analyzerSectorRawToMilliseconds(rawLive?.s2),
-  s3:analyzerSectorRawToMilliseconds(rawLive?.s3)
- };
+ // V7.2.1780 — source chrono live autoritaire : cellules Apex S1/S2/S3.
+ // Le navigateur les lit directement via le mapping data-type dynamique ; le
+ // state backend est utilisé en secours. Les impulsions de tracking ne sont
+ // jamais utilisées comme temps secteur.
+ const live=analyzerApexRaceIsActive()?(liveBest.current||analyzerTimingSectorValuesForDriver(followed)):{s1:null,s2:null,s3:null};
  const available=[...Object.values(live),...Object.values(relayBest||{}),...Object.values(teamBest||{})].some(v=>Number.isFinite(Number(v))&&Number(v)>0);
  block.hidden=!available;if(!available)return;
  // Tant qu'aucun tour terminé n'a confirmé la configuration, on laisse les
@@ -3307,14 +3296,18 @@ function analyzerSectorRankingSessionCount(rows=[]){
   const count=Number(row?.history?.sectorCount);
   if([1,2,3].includes(count))counts.push(count);
  }
- // V7.2.1777 : la confirmation live voyage avec velocityApexMap. *i2 confirme
- // immédiatement 3 secteurs ; un nouveau * confirme 2 secteurs si le tour
- // précédent contenait S1+S2 mais aucun S3.
+ // V7.2.1780 : détection à partir des vraies cellules timing. S3 reçu
+ // confirme immédiatement une session à 3 secteurs.
  let hasLive=false;
  for(const entry of analyzerApexMapRegistry().rows.values()){
-  const confirmed=Number(entry?.confirmedSectorCount);if([1,2,3].includes(confirmed))counts.push(confirmed);
-  const current=entry?.currentSectors||{};
+  const confirmed=Number(entry?.timingConfirmedSectorCount);if([1,2,3].includes(confirmed))counts.push(confirmed);
+  const current=entry?.timingCurrentSectors||{};
   if(['s1','s2','s3'].some(key=>Number.isFinite(analyzerLiveSectorPlausible(current?.[key]))))hasLive=true;
+ }
+ for(const driver of (state?.drivers||[])){
+  const current=analyzerTimingSectorValuesForDriver(driver);
+  if(Number.isFinite(current.s3))counts.push(3);
+  if([current.s1,current.s2,current.s3].some(Number.isFinite))hasLive=true;
  }
  // Une session Apex utilise la même découpe pour toutes les équipes. Si une
  // équipe a déjà confirmé 3 secteurs, cette information est prioritaire ;
@@ -3445,7 +3438,13 @@ function analyzerRefreshLiveSectorViews(detail={}){
 }
 if(!window.__velocityAnalyzerLiveSectorListener){
  window.__velocityAnalyzerLiveSectorListener=true;
- window.addEventListener('velocity:apex-map-sector',event=>analyzerRefreshLiveSectorViews(event?.detail||{}));
+ window.addEventListener('velocity:apex-timing-sector',event=>analyzerRefreshLiveSectorViews(event?.detail||{}));
+ // Les événements MAP ne servent plus aux chronos ; on conserve uniquement
+ // *out pour remettre à zéro le meilleur du nouveau relais.
+ window.addEventListener('velocity:apex-map-sector',event=>{
+  const detail=event?.detail||{};if(detail?.code!=='*out')return;
+  const row=Number(detail?.row);if(Number.isFinite(row))analyzerLiveSectorRecord(row,{resetRelay:true});
+ });
 }
 
 function analyzerTrafficLapSeconds(driver){

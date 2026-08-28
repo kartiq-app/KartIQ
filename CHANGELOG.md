@@ -1,3 +1,10 @@
+# V7.2.1780 — ANALYZER : secteurs chrono Apex autoritaires
+
+- Corrige la source des secteurs : cellules S1/S2/S3 Apex, et non durées de tracking `* / *i1 / *i2`.
+- Alimente en live TOUR EN COURS, records du relais/équipe et classement secteurs.
+- Conserve le mapping dynamique `data-type` introduit en 1779.
+- Aucun changement sur Score Relais, Velocity Score, Recorder, Spotter ou Focus.
+
 # V7.2.1779 — ANALYZER : mapping dynamique des colonnes secteurs Apex
 
 - Le `grid||` de chaque session devient la source de vérité du mapping `data-type -> cX`.

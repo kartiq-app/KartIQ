@@ -1,6 +1,12 @@
-# Velocity V7.2.1779 — Mapping dynamique secteurs Apex
+# Velocity V7.2.1780 — Secteurs chrono Apex autoritaires
 
-## Correction V7.2.1779
+## Correction V7.2.1780
+
+- Analyzer lit les chronos S1/S2/S3 depuis les cellules Apex `data-type=s1/s2/s3`.
+- Le mapping de colonnes reste dynamique à chaque GRID.
+- Les événements `* / *i1 / *i2` restent réservés au tracking TRAFIC / Heat Map et ne servent plus de chronos.
+- TOUR EN COURS, MEILLEUR DU RELAIS, MEILLEUR ÉQUIPE et CLASSEMENT SECTEURS partagent la même source timing live.
+- Le state backend `sector_1/2/3` sert de secours après reconnexion.
 
 Analyzer reconstruit désormais à chaque `grid||` le mapping réel des colonnes Apex à partir des attributs `data-type` (`s1`, `s2`, `s3`, `llp`, `blp`, etc.). Les numéros `c7`, `c8`, `c9`… ne sont plus supposés fixes entre deux sessions.
 

@@ -385,7 +385,23 @@ function ingestApexGridSchema(frame,circuitId){
    const col=Number(match[1]),type=String(el.getAttribute('data-type')||'').trim().toLowerCase();
    if(type)schema.set(col,type);labels.set(col,String(el.textContent||'').trim());
   });
-  if(schema.size){registry.schema=schema;registry.labels=labels;}
+  if(schema.size){
+   registry.schema=schema;registry.labels=labels;
+   // V7.2.1780 — les chronos secteurs viennent des cellules S1/S2/S3 Apex.
+   // On initialise également l'état timing avec le snapshot GRID courant,
+   // sans toucher aux données de tracking (* / *i1 / *i2) utilisées par la carte.
+   doc.querySelectorAll('[data-id^="r"][data-id*="c"]').forEach(el=>{
+    const id=String(el.getAttribute('data-id')||''),m=id.match(/^r(\d+)c(\d+)$/);if(!m)return;
+    const row=Number(m[1]),col=Number(m[2]),type=String(schema.get(col)||'').toLowerCase();
+    if(!['s1','s2','s3'].includes(type))return;
+    const ms=velocityApexSectorCellToMs(String(el.textContent||'').trim());if(!Number.isFinite(ms)||ms<=0)return;
+    const previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},currentSectors:{s1:null,s2:null,s3:null},lastPhase:0,sectorMode:false};
+    previous.timingCurrentSectors=previous.timingCurrentSectors||{s1:null,s2:null,s3:null};
+    previous.timingCurrentSectors[type]=ms;previous.timingSectorUpdatedAt=Date.now();
+    if(type==='s3')previous.timingConfirmedSectorCount=3;
+    registry.rows.set(row,previous);
+   });
+  }
   return schema.size>0;
  }catch(_e){return false}
 }
@@ -393,24 +409,26 @@ function ingestApexSectorCellUpdates(frame,circuitId){
  const registry=window.velocityApexMap;if(registry.circuitId!==circuitId)resetVelocityApexMap(circuitId);
  if(!(registry.schema instanceof Map)||!registry.schema.size)return;
  const raw=String(frame||'').replace(/\r\n?/g,'\n');
- // Ne traite ici que les mises à jour incrémentales rXXXXXcY|code|valeur.
- // Le GRID initial sert au mapping dynamique mais ne doit pas être confondu
- // avec le TOUR EN COURS : ses valeurs sont le dernier état connu par Apex.
+ // V7.2.1780 — SOURCE CHRONO : cellules S1/S2/S3 du GRID Apex.
+ // Les impulsions * / *i1 / *i2 restent exclusivement réservées au tracking
+ // de la carte et ne doivent jamais alimenter les chronos affichés dans Analyzer.
  const updateRe=/r(\d+)c(\d+)\|([^|\s@]*)\|([^|\s@<]+)/g;
  for(const match of raw.matchAll(updateRe)){
   const row=Number(match[1]),col=Number(match[2]),code=String(match[3]||'').trim(),type=String(registry.schema.get(col)||'').toLowerCase();
   if(!['s1','s2','s3'].includes(type))continue;
   const ms=velocityApexSectorCellToMs(match[4]);if(!Number.isFinite(ms)||ms<=0)continue;
   const now=Date.now(),previous=registry.rows.get(row)||{row,sectors:{s1:null,s2:null,s3:null},currentSectors:{s1:null,s2:null,s3:null},lastPhase:0,sectorMode:false};
-  previous.sectors=previous.sectors||{s1:null,s2:null,s3:null};previous.currentSectors=previous.currentSectors||{s1:null,s2:null,s3:null};
+  previous.timingCurrentSectors=previous.timingCurrentSectors||{s1:null,s2:null,s3:null};
+  // Une nouvelle valeur S1 marque le nouveau tour chrono : S2/S3 visibles
+  // appartenaient au tour précédent et sont remis à blanc côté Velocity.
   if(type==='s1'){
-   // S1 marque le début d'un nouveau tour sectoriel côté cellules Apex.
-   previous.currentSectors={s1:ms,s2:null,s3:null};previous.currentSectorSequence=(Number(previous.currentSectorSequence)||0)+1;
-  }else previous.currentSectors[type]=ms;
-  previous.sectors[type]=ms;previous.sectorMode=true;previous.currentSectorUpdatedAt=now;previous.lastEventAt=now;
-  if(type==='s3')previous.confirmedSectorCount=3;
+   previous.timingCurrentSectors={s1:ms,s2:null,s3:null};
+   previous.timingSectorSequence=(Number(previous.timingSectorSequence)||0)+1;
+  }else previous.timingCurrentSectors[type]=ms;
+  previous.timingSectorUpdatedAt=now;previous.timingLastCode=code;
+  if(type==='s3')previous.timingConfirmedSectorCount=3;
   registry.rows.set(row,previous);registry.lastEventAt=now;registry.noLive=false;
-  try{window.dispatchEvent(new CustomEvent('velocity:apex-map-sector',{detail:{row,code:`cell:${type}`,currentSectors:{...previous.currentSectors},confirmedSectorCount:Number(previous.confirmedSectorCount)||0,at:now}}))}catch(_e){}
+  try{window.dispatchEvent(new CustomEvent('velocity:apex-timing-sector',{detail:{row,sector:type,value:ms,code,currentSectors:{...previous.timingCurrentSectors},confirmedSectorCount:Number(previous.timingConfirmedSectorCount)||0,at:now}}))}catch(_e){}
  }
 }
 function velocityDriverHasParticipated(driver){
@@ -511,9 +529,9 @@ function ingestApexMapEvents(frame,circuitId){
   if(!Number.isFinite(previous.durationMs)||previous.durationMs<=0)continue;
   previous.startedAt=now;previous.lastEventAt=now;previous.code=code;
   registry.rows.set(row,previous);registry.lastEventAt=now;registry.noLive=false;
-  // Le classement secteurs Analyzer consomme la même impulsion que TOUR EN COURS.
-  // Aucun aller-retour serveur ni attente de fin de tour n'est nécessaire.
-  try{window.dispatchEvent(new CustomEvent('velocity:apex-map-sector',{detail:{row,code,currentSectors:{...previous.currentSectors},confirmedSectorCount:Number(previous.confirmedSectorCount)||0,at:now}}))}catch(_e){}
+  // Événement de tracking conservé pour TRAFIC / Heat Map et reset de relais aux pits.
+  // Les chronos secteurs Analyzer n'utilisent plus ces durées de tracking.
+  try{window.dispatchEvent(new CustomEvent('velocity:apex-map-sector',{detail:{row,code,at:now}}))}catch(_e){}
  }
 }
 async function sendApexStatus(status,connection,error=null){try{await fetch('/api/apex/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,connection,error})})}catch(e){}}
