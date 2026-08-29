@@ -1,4 +1,4 @@
-/* Velocity V7.2.1757 — Synchronisation Spotter / Analyzer sur la release courante */
+/* Velocity V7.2.1786 — Identité Spotter canonique par ligne Apex */
 const SPOTTER_STORAGE_KEY=velocityWorkspaceStorageKey('velocity_spotter_v7_foundation');
 function spotterResolveAppRelease(){
  const explicit=String(window.VELOCITY_APP_VERSION||'').trim();
@@ -506,7 +506,71 @@ function spotterLiveState(){
  try{if(typeof state==='object'&&state)return state}catch(_){ }
  return window.velocityState||window.state||{};
 }
-function spotterDriverKey(driver){return String(driver?.driver||driver?.name||'').trim()}
+function spotterDriverLabel(driver){return String(driver?.team||driver?.driver||driver?.name||'').trim()}
+function spotterDriverKey(driver){
+ const row=Number(driver?.apex_row);
+ if(Number.isFinite(row)&&row>0)return `apex:${row}`;
+ return String(driver?.driver||driver?.name||'').trim();
+}
+function spotterDriverByKey(key){
+ const raw=String(key||'').trim();
+ const match=raw.match(/^apex:(\d+)$/);
+ if(match)return (spotterLiveState()?.drivers||[]).find(driver=>Number(driver?.apex_row)===Number(match[1]))||null;
+ return (spotterLiveState()?.drivers||[]).find(driver=>String(driver?.driver||driver?.name||'').trim()===raw)||null;
+}
+function spotterAssignmentLabel(key){
+ const item=spotterState.assignments?.[String(key||'')];
+ return String(item?.teamLabel||item?.currentTeamLabel||item?.lastTeamLabel||spotterDriverLabel(spotterDriverByKey(key))||key||'').trim();
+}
+function spotterLegacyKeyForDriver(driver,assignments){
+ const canonical=spotterDriverKey(driver),labels=[driver?.team,driver?.driver,driver?.name].map(value=>String(value||'').trim()).filter(Boolean);
+ if(assignments[canonical])return canonical;
+ for(const label of labels)if(assignments[label])return label;
+ const kart=String(driver?.apex||driver?.kart||'').trim();
+ if(kart){
+  const matches=Object.entries(assignments).filter(([,item])=>String(item?.apexKart||'').trim()===kart);
+  if(matches.length===1)return matches[0][0];
+ }
+ return null;
+}
+function spotterCanonicalizeState(drivers){
+ if(!Array.isArray(drivers)||!drivers.length)return false;
+ let changed=false;
+ const assignments=spotterState.assignments||{},remap=new Map();
+ for(const driver of drivers){
+  const canonical=spotterDriverKey(driver);if(!canonical)continue;
+  const legacy=spotterLegacyKeyForDriver(driver,assignments);
+  if(legacy&&legacy!==canonical)remap.set(legacy,canonical);
+  const labels=[driver?.team,driver?.driver,driver?.name].map(value=>String(value||'').trim()).filter(Boolean);
+  labels.forEach(label=>{if(label!==canonical)remap.set(label,canonical)});
+ }
+ if(!remap.size)return false;
+ const next={};
+ Object.entries(assignments).forEach(([oldKey,item])=>{
+  const key=remap.get(oldKey)||oldKey,driver=spotterDriverByKey(key),label=spotterDriverLabel(driver)||item?.teamLabel||oldKey;
+  const candidate={...item,teamLabel:label,currentTeam:key,lastTeam:item?.lastTeam===oldKey?key:item?.lastTeam};
+  if(!next[key])next[key]=candidate;
+  else{
+   const current=next[key],driverKart=String(driver?.apex||driver?.kart||'').trim();
+   const currentMatch=driverKart&&String(current?.apexKart||'').trim()===driverKart,candidateMatch=driverKart&&String(candidate?.apexKart||'').trim()===driverKart;
+   if(candidateMatch&&!currentMatch)next[key]=candidate;
+  }
+  if(key!==oldKey)changed=true;
+ });
+ spotterState.assignments=next;
+ const canonical=value=>remap.get(String(value||''))||String(value||'');
+ (spotterState.incoming||[]).forEach(item=>{const old=item.team,itemKey=canonical(old);if(itemKey!==old){item.team=itemKey;changed=true}if(!item.name||item.name===old)item.name=spotterAssignmentLabel(itemKey)});
+ const seenIncoming=new Set();
+ spotterState.incoming=(spotterState.incoming||[]).filter(item=>{const key=String(item.team||'');if(seenIncoming.has(key)){changed=true;return false}seenIncoming.add(key);return true});
+ const reservedByTeam=new Set();
+ (spotterState.queue||[]).forEach(item=>{
+  if(item?.reservedTeam){const old=item.reservedTeam,key=canonical(old);if(key!==old){item.reservedTeam=key;changed=true}if(reservedByTeam.has(key)){item.status='available';delete item.reservedTeam;delete item.pitInAt;delete item.reservedAt;delete item.sourceLastTeam;changed=true}else reservedByTeam.add(key)}
+  if(item?.lastTeam){const key=canonical(item.lastTeam);if(key!==item.lastTeam){item.lastTeam=key;changed=true}}
+ });
+ (spotterState.maintenance||[]).forEach(item=>{if(item?.lastTeam){const key=canonical(item.lastTeam);if(key!==item.lastTeam){item.lastTeam=key;changed=true}}});
+ const nextStatus={};Object.entries(spotterState.lastDriverStatus||{}).forEach(([key,value])=>{nextStatus[canonical(key)]=value;if(canonical(key)!==key)changed=true});spotterState.lastDriverStatus=nextStatus;
+ return changed;
+}
 // Même source de vérité que la Heat Map Analyzer : le statut de grille ET
 // l'impulsion Apex brute *in/*out conservée dans velocityApexMap.
 function spotterApexMapEntry(driver){
@@ -554,7 +618,7 @@ function spotterSeedGridAssignments(startNumber){
  const drivers=[...(spotterLiveState()?.drivers||[])].filter(driver=>spotterDriverKey(driver)).sort((a,b)=>(Number(a.pos)||999)-(Number(b.pos)||999));
  drivers.forEach(driver=>{
   const team=spotterDriverKey(driver);const metrics=spotterMetricsForDriver(driver);
-  assignments[team]={cardId:spotterCardId('track'),kv:spotterKvFromNumber(next++),apexKart:String(driver.apex||driver.kart||'—'),lastTeam:team,currentTeam:team,score:metrics.score,confidence:metrics.confidence,status:'track'};
+  assignments[team]={cardId:spotterCardId('track'),kv:spotterKvFromNumber(next++),apexKart:String(driver.apex||driver.kart||'—'),lastTeam:team,currentTeam:team,teamLabel:spotterDriverLabel(driver)||team,score:metrics.score,confidence:metrics.confidence,status:'track'};
  });
  return {assignments,next};
 }
@@ -580,13 +644,13 @@ function resetSpotterFoundation(){
  saveSpotterFoundation();spotterUiStep='mode';renderSpotterFoundation('mode');
 }
 function spotterAllocateKv(){const kv=spotterKvFromNumber(spotterState.nextKvNumber);spotterState.nextKvNumber+=1;return kv}
-function spotterFindDriver(team){return (spotterLiveState()?.drivers||[]).find(driver=>spotterDriverKey(driver)===String(team||''))||null}
+function spotterFindDriver(team){return spotterDriverByKey(team)}
 function spotterCurrentAssignment(team){return spotterState.assignments[String(team||'')]||null}
 function spotterEnsureAssignment(team,driver=null){
  const key=String(team||'').trim();if(!key)return null;
  if(spotterState.assignments[key])return spotterState.assignments[key];
  const metrics=spotterMetricsForDriver(driver||spotterFindDriver(key));
- const assignment={cardId:spotterCardId('track'),kv:spotterAllocateKv(),apexKart:String(driver?.apex||driver?.kart||'—'),lastTeam:key,currentTeam:key,score:metrics.score,confidence:metrics.confidence,status:'track'};
+ const assignment={cardId:spotterCardId('track'),kv:spotterAllocateKv(),apexKart:String(driver?.apex||driver?.kart||'—'),lastTeam:key,currentTeam:key,teamLabel:spotterDriverLabel(driver)||key,score:metrics.score,confidence:metrics.confidence,status:'track'};
  spotterState.assignments[key]=assignment;return assignment;
 }
 function spotterAutoQueueFile(){
@@ -620,7 +684,7 @@ function spotterAddIncoming(team,driver=null,{source='apex'}={}){
  const metrics=spotterMetricsForDriver(driver||spotterFindDriver(key));
  assignment.score=metrics.score??assignment.score;assignment.confidence=metrics.confidence??assignment.confidence;
  spotterRegistryUpdateScore(assignment.kv,key,assignment.score);
- const incoming={id:`${source}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,team:key,name:key,returnedCardId:assignment.cardId||spotterCardId('track'),returnedKv:assignment.kv,returnedKart:assignment.apexKart,score:assignment.score,confidence:assignment.confidence,pitInAt:Date.now(),status:'incoming',source,estimated:Boolean(spotterState.freeMode)};
+ const incoming={id:`${source}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,team:key,name:spotterDriverLabel(driver||spotterFindDriver(key))||assignment.teamLabel||key,returnedCardId:assignment.cardId||spotterCardId('track'),returnedKv:assignment.kv,returnedKart:assignment.apexKart,score:assignment.score,confidence:assignment.confidence,pitInAt:Date.now(),status:'incoming',source,estimated:Boolean(spotterState.freeMode)};
  spotterState.incoming.push(incoming);
  if(spotterState.freeMode){spotterState.freePitIns+=1;spotterState.freeNeedsRecalibration=true;}
  spotterLogMovement('pit_in',{team:key,kv:assignment.kv,source,estimated:Boolean(spotterState.freeMode)});
@@ -726,7 +790,7 @@ function spotterProcessPitOut(team,{source='apex'}={}){
  const index=spotterState.queue.findIndex(item=>item.status==='reserved'&&item.reservedTeam===key);
  if(index>=0){
   const [assigned]=spotterState.queue.splice(index,1);
-  spotterState.assignments[key]={...assigned,currentTeam:key,lastTeam:assigned.sourceLastTeam||assigned.lastTeam,status:'track',reservedTeam:null,pitInAt:null,reservedAt:null,score:assigned.score??metrics.score,confidence:assigned.confidence??metrics.confidence,apexKart:String(driver?.apex||driver?.kart||assigned.apexKart||'—')};
+  spotterState.assignments[key]={...assigned,currentTeam:key,lastTeam:assigned.sourceLastTeam||assigned.lastTeam,teamLabel:spotterDriverLabel(driver)||spotterAssignmentLabel(key),status:'track',reservedTeam:null,pitInAt:null,reservedAt:null,score:assigned.score??metrics.score,confidence:assigned.confidence??metrics.confidence,apexKart:String(driver?.apex||driver?.kart||assigned.apexKart||'—')};
   spotterRegistryAppend(assigned.kv,key,spotterState.assignments[key].score,{source:'pit_out'});
   if(spotterState.freeMode){spotterState.freePitOuts+=1;spotterState.freeNeedsRecalibration=true;}
   spotterLogMovement('pit_out',{team:key,kv:assigned.kv,source,estimated:Boolean(spotterState.freeMode||assigned.estimated)});
@@ -758,7 +822,7 @@ function spotterRefreshVelocityMetrics(){
   if(metrics.score!==null&&metrics.score!==item.score){item.score=metrics.score;changed=true}
   spotterRegistryUpdateScore(item.kv,team,item.score);
   if(metrics.confidence!==null&&metrics.confidence!==item.confidence){item.confidence=metrics.confidence;changed=true}
-  item.apexKart=String(driver.apex||driver.kart||item.apexKart||'—');item.currentTeam=team;item.lastTeam=team;
+  item.apexKart=String(driver.apex||driver.kart||item.apexKart||'—');item.currentTeam=team;item.lastTeam=team;item.teamLabel=spotterDriverLabel(driver)||item.teamLabel;
  });
  return changed;
 }
@@ -766,6 +830,7 @@ function spotterMonitorApex(){
  if(!spotterState.configured||spotterState.recalibrating)return;
  const drivers=(spotterLiveState()?.drivers||[]).filter(driver=>spotterDriverKey(driver));
  if(!drivers.length)return;
+ const identityChanged=spotterCanonicalizeState(drivers);
  if(!spotterState.monitorPrimed){
   let primedChange=false;
   const sessionActive=spotterSessionIsActive();
@@ -782,7 +847,7 @@ function spotterMonitorApex(){
   if(primedChange)renderSpotterFoundation('live');
   return;
  }
- let changed=spotterRefreshVelocityMetrics();
+ let changed=identityChanged||spotterRefreshVelocityMetrics();
  const sessionActive=spotterSessionIsActive();
  drivers.forEach(driver=>{
   const team=spotterDriverKey(driver),status=spotterDriverPitState(driver),previous=spotterState.lastDriverStatus[team];
@@ -1276,7 +1341,11 @@ function renderSpotterFoundation(forceStep){
   ${spotterReplacementOverlay()}
  </div>`;
 }
-function spotterDisplayName(value){return String(value??'—').replace(/^\s*Kart\s+/i,'').trim()||'—'}
+function spotterDisplayName(value){
+ const raw=String(value??'—').trim();
+ const resolved=/^apex:\d+$/.test(raw)?spotterAssignmentLabel(raw):raw;
+ return String(resolved||'—').replace(/^\s*Kart\s+/i,'').trim()||'—';
+}
 function spotterOriginLabel(item){return item?.lastTeam&&item.lastTeam!=='Initialisation'?spotterDisplayName(item.lastTeam):spotterDisplayName(item?.apexKart||'—')}
 function spotterSelectIncomingQueue(id,file){
  const count=Math.max(1,Math.min(3,Number(spotterState.mode)||1));

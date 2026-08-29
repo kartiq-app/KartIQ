@@ -1,3 +1,11 @@
+# Velocity V7.2.1786 — Identité Spotter par ligne Apex
+
+## V7.2.1786
+
+Le Spotter identifie désormais une équipe par son `apex_row` stable au lieu du libellé affiché par Apex. Un changement d'affichage entre nom d'équipe et nom du pilote ne peut donc plus créer deux Quick Changes ni réserver deux karts pour la même équipe. Les états locaux hérités sont normalisés au premier flux live : doublons entrants fusionnés et doubles réservations libérées.
+
+## Historique précédent
+
 # Velocity V7.2.1785 — Spotter sortie pits autoritaire
 
 ## V7.2.1785

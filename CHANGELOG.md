@@ -1,3 +1,14 @@
+# V7.2.1786 — SPOTTER : identité canonique équipe/pilote
+
+## Correction V7.2.1786
+
+- L'identité opérationnelle du Spotter repose sur `apex_row` lorsqu'il est disponible.
+- Un même `apex_row` reste une seule équipe même si Apex alterne entre le nom de l'équipe et le nom du pilote.
+- Les `assignments`, `incoming`, `reservedTeam`, `lastDriverStatus`, files et maintenance sont remappés vers cette identité canonique.
+- Les doublons d'entrants sont fusionnés.
+- Si une ancienne sauvegarde contient deux karts réservés pour la même équipe, une seule réservation est conservée et l'autre kart redevient disponible.
+- L'affichage conserve un libellé humain lisible ; la clé `apex:<row>` n'est pas affichée à l'utilisateur.
+
 # V7.2.1785 — SPOTTER : sortie des pits autoritaire
 
 ## Correction V7.2.1785
