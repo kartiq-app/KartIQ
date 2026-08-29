@@ -1,4 +1,8 @@
-# Velocity V7.2.1782 — Secteurs STATS serveur partagés
+# Velocity V7.2.1783 — Position du chrono au même tour
+
+## V7.2.1783
+
+Dans Analyzer, la carte **ÉQUIPE SUIVIE** classe désormais le dernier chrono de l'équipe suivie par rapport aux chronos réalisés par le reste de la grille sur le **même numéro de tour**. Une équipe déjà passée au tour suivant reste donc prise en compte grâce à un historique léger côté navigateur. Les équipes qui n'ont pas encore réalisé ce tour ne sont intégrées qu'une fois leur chrono disponible.
 
 ## V7.2.1782
 

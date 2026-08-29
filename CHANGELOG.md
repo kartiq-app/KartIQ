@@ -1,3 +1,13 @@
+# V7.2.1783 — ANALYZER : Position du chrono au même numéro de tour
+
+## Correction V7.2.1783
+
+- La carte **ÉQUIPE SUIVIE > Position du chrono** ne compare plus uniquement les équipes dont le compteur de tours courant est identique.
+- Velocity conserve désormais une archive légère des derniers chronos par numéro de tour pour chaque équipe.
+- Si l'équipe suivie termine le tour N, son chrono est comparé aux chronos du **tour N** déjà réalisés par le reste de la grille, même si certaines équipes sont depuis passées au tour N+1 ou au-delà.
+- Les équipes qui n'ont pas encore réalisé le tour N ne sont pas intégrées : la position peut donc évoluer à mesure que le plateau termine ce même tour.
+- L'historique est automatiquement purgé si un compteur de tours repart en arrière (nouvelle session/run) et limité à 30 tours par équipe.
+
 # V7.2.1782 — ANALYZER : secteurs STATS serveur partagés
 
 ## Correction V7.2.1782

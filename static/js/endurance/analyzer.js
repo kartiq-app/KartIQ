@@ -3181,10 +3181,47 @@ function analyzerRenderFollowedDeltas(followed){
  if(behindDelta){behindDelta.textContent=data.behindText;behindDelta.className=data.behindTrend}
 }
 
+// V7.2.1783 — Position du chrono : archive légère des derniers tours par
+// numéro de tour. Le classement compare ainsi le tour N de l'équipe suivie
+// avec le tour N des autres équipes, même si elles sont déjà passées au tour N+1.
+const analyzerChronoLapHistory=new Map();
+function analyzerChronoDriverKey(driver){return String(driver?.apex_row??driver?.driver??driver?.pos??'')}
+function analyzerSyncChronoLapHistory(){
+ const seen=new Set();
+ (state?.drivers||[]).forEach(driver=>{
+  const key=analyzerChronoDriverKey(driver),lap=Number(driver?.laps),sec=typeof lapSeconds==='function'?lapSeconds(driver?.last):parseLapTime(driver?.last);
+  if(!key)return;seen.add(key);
+  let item=analyzerChronoLapHistory.get(key);
+  if(!item)item={lastLap:null,laps:new Map()};
+  // Nouveau run / nouvelle session : si le compteur repart en arrière, on purge.
+  if(Number.isFinite(lap)&&Number.isFinite(item.lastLap)&&lap<item.lastLap)item={lastLap:null,laps:new Map()};
+  if(Number.isFinite(lap)&&Number.isFinite(sec)){
+   item.laps.set(lap,{sec,label:String(driver?.last||'—'),driver:String(driver?.driver||'')});
+   // Une petite fenêtre suffit pour le classement au même tour et évite tout gonflement mémoire.
+   const keys=[...item.laps.keys()].sort((a,b)=>a-b);while(keys.length>30)item.laps.delete(keys.shift());
+   item.lastLap=lap;
+  }
+  analyzerChronoLapHistory.set(key,item);
+ });
+ for(const key of [...analyzerChronoLapHistory.keys()])if(!seen.has(key))analyzerChronoLapHistory.delete(key);
+}
+function analyzerSameLapChronoRanking(driver){
+ analyzerSyncChronoLapHistory();
+ const lap=Number(driver?.laps),key=analyzerChronoDriverKey(driver);if(!Number.isFinite(lap)||!key)return null;
+ const target=analyzerChronoLapHistory.get(key)?.laps?.get(lap);if(!target||!Number.isFinite(target.sec))return null;
+ const candidates=[];
+ for(const [driverKey,item] of analyzerChronoLapHistory.entries()){
+  const value=item?.laps?.get(lap);if(value&&Number.isFinite(value.sec))candidates.push({driverKey,...value});
+ }
+ if(!candidates.length)return null;
+ candidates.sort((a,b)=>a.sec-b.sec);
+ const rank=1+candidates.filter(item=>item.sec<target.sec-0.0005).length;
+ return {rank,lap:target.label,lapNumber:lap,compared:candidates.length};
+}
 function analyzerRenderFollowedPerformance(followed){
  const chronoEl=document.getElementById('analyzerFollowedLastChrono');
  if(!chronoEl)return;
- const rank=followed&&typeof sprintLastLapRanking==='function'?sprintLastLapRanking(followed):null;
+ const rank=followed?analyzerSameLapChronoRanking(followed):null;
  const rankText=rank&&Number.isFinite(rank.rank)?`P${rank.rank}`:'P—';
  const lapText=followed?.last||'—';
  chronoEl.textContent=`${rankText} | ${lapText}`;
