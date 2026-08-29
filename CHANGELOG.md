@@ -1,3 +1,13 @@
+# V7.2.1785 — SPOTTER : sortie des pits autoritaire
+
+## Correction V7.2.1785
+
+- Une vraie transition Apex **stands → piste** retire désormais toujours l'équipe de `Karts entrants`.
+- Si un kart de remplacement avait déjà été réservé, le fonctionnement Quick Change existant est conservé : le kart réservé est affecté à l'équipe.
+- Si l'équipe ressort avant validation dans une file, l'entrant est supprimé sans déplacer artificiellement un kart de file.
+- La sélection de file éventuelle de cet entrant est nettoyée et l'affectation de l'équipe repasse en état `track`.
+- La logique est identique dans Spotter et dans la carte Spotter d'Analyzer puisqu'ils partagent le même état.
+
 # V7.2.1784 — SPOTTER : état conservé entre versions
 
 ## Correction V7.2.1784

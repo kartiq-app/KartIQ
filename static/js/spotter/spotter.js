@@ -721,12 +721,33 @@ function spotterReinsertMaintenance(cardId,targetFile=null){
  return true;
 }
 function spotterProcessPitOut(team,{source='apex'}={}){
- const key=String(team||'').trim();const index=spotterState.queue.findIndex(item=>item.status==='reserved'&&item.reservedTeam===key);if(index<0)return false;
- const [assigned]=spotterState.queue.splice(index,1);const driver=spotterFindDriver(key);const metrics=spotterMetricsForDriver(driver);
- spotterState.assignments[key]={...assigned,currentTeam:key,lastTeam:assigned.sourceLastTeam||assigned.lastTeam,status:'track',reservedTeam:null,pitInAt:null,reservedAt:null,score:assigned.score??metrics.score,confidence:assigned.confidence??metrics.confidence,apexKart:String(driver?.apex||driver?.kart||assigned.apexKart||'—')};
- spotterRegistryAppend(assigned.kv,key,spotterState.assignments[key].score,{source:'pit_out'});
+ const key=String(team||'').trim();if(!key)return false;
+ const driver=spotterFindDriver(key);const metrics=spotterMetricsForDriver(driver);
+ const index=spotterState.queue.findIndex(item=>item.status==='reserved'&&item.reservedTeam===key);
+ if(index>=0){
+  const [assigned]=spotterState.queue.splice(index,1);
+  spotterState.assignments[key]={...assigned,currentTeam:key,lastTeam:assigned.sourceLastTeam||assigned.lastTeam,status:'track',reservedTeam:null,pitInAt:null,reservedAt:null,score:assigned.score??metrics.score,confidence:assigned.confidence??metrics.confidence,apexKart:String(driver?.apex||driver?.kart||assigned.apexKart||'—')};
+  spotterRegistryAppend(assigned.kv,key,spotterState.assignments[key].score,{source:'pit_out'});
+  if(spotterState.freeMode){spotterState.freePitOuts+=1;spotterState.freeNeedsRecalibration=true;}
+  spotterLogMovement('pit_out',{team:key,kv:assigned.kv,source,estimated:Boolean(spotterState.freeMode||assigned.estimated)});
+  saveSpotterFoundation();renderSpotterFoundation('live');return true;
+ }
+ // V7.2.1785 : Apex est autoritaire sur la sortie des stands. Si l'équipe
+ // ressort avant d'avoir été validée dans une file, elle doit disparaître de
+ // « Karts entrants » sans provoquer de mouvement de file artificiel.
+ const incomingIndex=spotterState.incoming.findIndex(item=>item.team===key);
+ if(incomingIndex<0)return false;
+ const [incoming]=spotterState.incoming.splice(incomingIndex,1);
+ delete spotterState.incomingQueueSelections[incoming.id];
+ const current=spotterEnsureAssignment(key,driver);
+ current.status='track';current.currentTeam=key;current.lastTeam=key;current.pitInAt=null;current.pendingReplacementKv=null;
+ if(metrics.score!==null)current.score=metrics.score;
+ if(metrics.confidence!==null)current.confidence=metrics.confidence;
+ current.apexKart=String(driver?.apex||driver?.kart||current.apexKart||incoming.returnedKart||'—');
+ spotterRegistryUpdateScore(current.kv,key,current.score);
  if(spotterState.freeMode){spotterState.freePitOuts+=1;spotterState.freeNeedsRecalibration=true;}
- spotterLogMovement('pit_out',{team:key,kv:assigned.kv,source,estimated:Boolean(spotterState.freeMode||assigned.estimated)});saveSpotterFoundation();renderSpotterFoundation('live');return true;
+ spotterLogMovement('pit_out_unvalidated',{team:key,kv:current.kv,source});
+ saveSpotterFoundation();renderSpotterFoundation('live');return true;
 }
 function spotterRefreshVelocityMetrics(){
  let changed=false;

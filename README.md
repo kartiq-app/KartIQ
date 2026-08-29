@@ -1,4 +1,10 @@
-# Velocity V7.2.1784 — Spotter persistant entre versions
+# Velocity V7.2.1785 — Spotter sortie pits autoritaire
+
+## V7.2.1785
+
+- Une transition Apex `pit -> track` retire toujours l'équipe de **Karts entrants**.
+- Si un kart est réservé, le Quick Change est finalisé normalement.
+- Si aucun kart n'a été validé, l'équipe quitte simplement les entrants et repasse en piste sans modifier les files.
 
 ## V7.2.1784
 
