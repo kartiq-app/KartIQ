@@ -507,6 +507,21 @@ function spotterLiveState(){
  return window.velocityState||window.state||{};
 }
 function spotterDriverLabel(driver){return String(driver?.team||driver?.driver||driver?.name||'').trim()}
+// V7.2.1788 — libellé équipe stable : le pilote courant ne doit jamais remplacer
+// le nom de l'équipe sur les cartes Spotter / Analyzer.
+function spotterStableTeamLabel(driver,previous=''){
+ const pilot=String(driver?.pilot||'').trim();
+ const candidates=[driver?.team,driver?.driver,driver?.name].map(value=>String(value||'').trim()).filter(Boolean);
+ const team=candidates.find(value=>!pilot||value.toLocaleLowerCase()!==pilot.toLocaleLowerCase());
+ return team||String(previous||'').trim()||'—';
+}
+function spotterStableTeamNumber(driver,previous=''){
+ const explicit=driver?.teamNumber??driver?.team_number??driver?.number??driver?.num??driver?.bib;
+ if(explicit!==undefined&&explicit!==null&&String(explicit).trim())return String(explicit).trim();
+ // Sur Apex Quick Change, le kart présent lors de la création de l'identité équipe
+ // sert de numéro stable si aucun numéro d'équipe dédié n'est fourni.
+ return String(previous||driver?.apex||driver?.kart||'').trim()||'—';
+}
 function spotterDriverKey(driver){
  const row=Number(driver?.apex_row);
  if(Number.isFinite(row)&&row>0)return `apex:${row}`;
@@ -547,8 +562,8 @@ function spotterCanonicalizeState(drivers){
  if(!remap.size)return false;
  const next={};
  Object.entries(assignments).forEach(([oldKey,item])=>{
-  const key=remap.get(oldKey)||oldKey,driver=spotterDriverByKey(key),label=spotterDriverLabel(driver)||item?.teamLabel||oldKey;
-  const candidate={...item,teamLabel:label,currentTeam:key,lastTeam:item?.lastTeam===oldKey?key:item?.lastTeam};
+  const key=remap.get(oldKey)||oldKey,driver=spotterDriverByKey(key),label=spotterStableTeamLabel(driver,item?.teamLabel||oldKey);
+  const candidate={...item,teamLabel:label,teamNumber:spotterStableTeamNumber(driver,item?.teamNumber),currentTeam:key,lastTeam:item?.lastTeam===oldKey?key:item?.lastTeam};
   if(!next[key])next[key]=candidate;
   else{
    const current=next[key],driverKart=String(driver?.apex||driver?.kart||'').trim();
@@ -618,7 +633,7 @@ function spotterSeedGridAssignments(startNumber){
  const drivers=[...(spotterLiveState()?.drivers||[])].filter(driver=>spotterDriverKey(driver)).sort((a,b)=>(Number(a.pos)||999)-(Number(b.pos)||999));
  drivers.forEach(driver=>{
   const team=spotterDriverKey(driver);const metrics=spotterMetricsForDriver(driver);
-  assignments[team]={cardId:spotterCardId('track'),kv:spotterKvFromNumber(next++),apexKart:String(driver.apex||driver.kart||'—'),lastTeam:team,currentTeam:team,teamLabel:spotterDriverLabel(driver)||team,score:metrics.score,confidence:metrics.confidence,status:'track'};
+  assignments[team]={cardId:spotterCardId('track'),kv:spotterKvFromNumber(next++),apexKart:String(driver.apex||driver.kart||'—'),lastTeam:team,currentTeam:team,teamLabel:spotterStableTeamLabel(driver,team),teamNumber:spotterStableTeamNumber(driver),score:metrics.score,confidence:metrics.confidence,status:'track'};
  });
  return {assignments,next};
 }
@@ -650,7 +665,7 @@ function spotterEnsureAssignment(team,driver=null){
  const key=String(team||'').trim();if(!key)return null;
  if(spotterState.assignments[key])return spotterState.assignments[key];
  const metrics=spotterMetricsForDriver(driver||spotterFindDriver(key));
- const assignment={cardId:spotterCardId('track'),kv:spotterAllocateKv(),apexKart:String(driver?.apex||driver?.kart||'—'),lastTeam:key,currentTeam:key,teamLabel:spotterDriverLabel(driver)||key,score:metrics.score,confidence:metrics.confidence,status:'track'};
+ const assignment={cardId:spotterCardId('track'),kv:spotterAllocateKv(),apexKart:String(driver?.apex||driver?.kart||'—'),lastTeam:key,currentTeam:key,teamLabel:spotterStableTeamLabel(driver,key),teamNumber:spotterStableTeamNumber(driver),score:metrics.score,confidence:metrics.confidence,status:'track'};
  spotterState.assignments[key]=assignment;return assignment;
 }
 function spotterAutoQueueFile(){
@@ -684,7 +699,7 @@ function spotterAddIncoming(team,driver=null,{source='apex'}={}){
  const metrics=spotterMetricsForDriver(driver||spotterFindDriver(key));
  assignment.score=metrics.score??assignment.score;assignment.confidence=metrics.confidence??assignment.confidence;
  spotterRegistryUpdateScore(assignment.kv,key,assignment.score);
- const incoming={id:`${source}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,team:key,name:spotterDriverLabel(driver||spotterFindDriver(key))||assignment.teamLabel||key,returnedCardId:assignment.cardId||spotterCardId('track'),returnedKv:assignment.kv,returnedKart:assignment.apexKart,score:assignment.score,confidence:assignment.confidence,pitInAt:Date.now(),status:'incoming',source,estimated:Boolean(spotterState.freeMode)};
+ const incoming={id:`${source}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,team:key,name:spotterStableTeamLabel(driver||spotterFindDriver(key),assignment.teamLabel||key),teamNumber:assignment.teamNumber||spotterStableTeamNumber(driver),returnedCardId:assignment.cardId||spotterCardId('track'),returnedKv:assignment.kv,returnedKart:assignment.apexKart,score:assignment.score,confidence:assignment.confidence,pitInAt:Date.now(),status:'incoming',source,estimated:Boolean(spotterState.freeMode)};
  spotterState.incoming.push(incoming);
  if(spotterState.freeMode){spotterState.freePitIns+=1;spotterState.freeNeedsRecalibration=true;}
  spotterLogMovement('pit_in',{team:key,kv:assignment.kv,source,estimated:Boolean(spotterState.freeMode)});
@@ -790,7 +805,7 @@ function spotterProcessPitOut(team,{source='apex'}={}){
  const index=spotterState.queue.findIndex(item=>item.status==='reserved'&&item.reservedTeam===key);
  if(index>=0){
   const [assigned]=spotterState.queue.splice(index,1);
-  spotterState.assignments[key]={...assigned,currentTeam:key,lastTeam:assigned.sourceLastTeam||assigned.lastTeam,teamLabel:spotterDriverLabel(driver)||spotterAssignmentLabel(key),status:'track',reservedTeam:null,pitInAt:null,reservedAt:null,score:assigned.score??metrics.score,confidence:assigned.confidence??metrics.confidence,apexKart:String(driver?.apex||driver?.kart||assigned.apexKart||'—')};
+  spotterState.assignments[key]={...assigned,currentTeam:key,lastTeam:assigned.sourceLastTeam||assigned.lastTeam,teamLabel:spotterStableTeamLabel(driver,spotterAssignmentLabel(key)),teamNumber:assigned.teamNumber||spotterStableTeamNumber(driver),status:'track',reservedTeam:null,pitInAt:null,reservedAt:null,score:assigned.score??metrics.score,confidence:assigned.confidence??metrics.confidence,apexKart:String(driver?.apex||driver?.kart||assigned.apexKart||'—')};
   spotterRegistryAppend(assigned.kv,key,spotterState.assignments[key].score,{source:'pit_out'});
   if(spotterState.freeMode){spotterState.freePitOuts+=1;spotterState.freeNeedsRecalibration=true;}
   spotterLogMovement('pit_out',{team:key,kv:assigned.kv,source,estimated:Boolean(spotterState.freeMode||assigned.estimated)});
@@ -822,7 +837,7 @@ function spotterRefreshVelocityMetrics(){
   if(metrics.score!==null&&metrics.score!==item.score){item.score=metrics.score;changed=true}
   spotterRegistryUpdateScore(item.kv,team,item.score);
   if(metrics.confidence!==null&&metrics.confidence!==item.confidence){item.confidence=metrics.confidence;changed=true}
-  item.apexKart=String(driver.apex||driver.kart||item.apexKart||'—');item.currentTeam=team;item.lastTeam=team;item.teamLabel=spotterDriverLabel(driver)||item.teamLabel;
+  item.apexKart=String(driver.apex||driver.kart||item.apexKart||'—');item.currentTeam=team;item.lastTeam=team;item.teamLabel=spotterStableTeamLabel(driver,item.teamLabel);item.teamNumber=spotterStableTeamNumber(driver,item.teamNumber);
  });
  return changed;
 }
@@ -1382,7 +1397,8 @@ function spotterQueueCard(item,visualState='next'){
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
 function spotterTeamNumber(item){
  const driver=spotterFindDriver(item?.team||item?.name);
- const raw=item?.teamNumber??item?.team_number??item?.number??item?.num??driver?.teamNumber??driver?.team_number??driver?.number??driver?.num??driver?.bib;
+ const assignment=spotterState.assignments?.[String(item?.team||'')];
+ const raw=item?.teamNumber??item?.team_number??item?.number??item?.num??assignment?.teamNumber??driver?.teamNumber??driver?.team_number??driver?.number??driver?.num??driver?.bib;
  if(raw!==undefined&&raw!==null&&String(raw).trim())return String(raw).trim();
  const match=String(item?.team||item?.name||'').trim().match(/^(?:TEAM|ÉQUIPE)?\s*#?([0-9]{1,4})\b/i);
  return match?match[1]:'—';

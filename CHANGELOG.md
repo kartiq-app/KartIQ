@@ -1,3 +1,9 @@
+## V7.2.1788 — Numéro et nom d’équipe Spotter
+
+- Affiche le numéro d’équipe au-dessus du nom dans Spotter et Analyzer.
+- Verrouille le libellé sur le nom d’équipe canonique par `apex_row` : le pilote ne remplace plus le nom d’équipe.
+- Conserve un numéro d’équipe stable pendant les Quick Changes.
+
 # V7.2.1787 — SPOTTER : option Pas de Quick Change
 
 ## Correction V7.2.1787

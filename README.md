@@ -1,4 +1,10 @@
-# Velocity V7.2.1787 — Pas de Quick Change
+# Velocity V7.2.1788 — Numéro et nom d’équipe Spotter
+
+## V7.2.1788
+
+- Spotter et cartes Spotter de l’Analyzer : numéro d’équipe affiché au-dessus du nom.
+- Le nom affiché reste le nom d’équipe mémorisé par `apex_row` et n’est plus remplacé par le nom du pilote.
+- En l’absence d’un numéro d’équipe Apex dédié, Velocity mémorise le numéro de kart présent lors de la création de l’identité équipe comme numéro stable.
 
 ## V7.2.1787
 
