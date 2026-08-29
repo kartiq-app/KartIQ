@@ -1,4 +1,4 @@
-/* Velocity V7.2.1786 — Identité Spotter canonique par ligne Apex */
+/* Velocity V7.2.1787 — Option Pas de Quick Change */
 const SPOTTER_STORAGE_KEY=velocityWorkspaceStorageKey('velocity_spotter_v7_foundation');
 function spotterResolveAppRelease(){
  const explicit=String(window.VELOCITY_APP_VERSION||'').trim();
@@ -1352,6 +1352,26 @@ function spotterSelectIncomingQueue(id,file){
  spotterState.incomingQueueSelections[id]=Math.max(1,Math.min(count,Number(file)||1));
  saveSpotterFoundation();spotterRenderCurrent();
 }
+function spotterSelectIncomingNoQuickChange(id){
+ spotterState.incomingQueueSelections[id]='none';
+ saveSpotterFoundation();spotterRenderCurrent();
+}
+function spotterValidateIncomingNoQuickChange(id){
+ const index=spotterState.incoming.findIndex(item=>item.id===id);if(index<0)return false;
+ const incoming=spotterState.incoming[index];
+ spotterRememberUndo();
+ spotterState.incoming.splice(index,1);
+ delete spotterState.incomingQueueSelections[id];
+ const driver=spotterFindDriver(incoming.team);
+ const current=spotterEnsureAssignment(incoming.team,driver);
+ // L'équipe reste physiquement aux stands : aucun kart n'est réservé, aucune
+ // file n'est modifiée. La future transition Apex pit -> track terminera l'arrêt.
+ current.status='pit';current.currentTeam=incoming.team;current.pitInAt=incoming.pitInAt||Date.now();current.pendingReplacementKv=null;
+ if(incoming.returnedKv)current.kv=incoming.returnedKv;
+ if(incoming.returnedKart)current.apexKart=incoming.returnedKart;
+ spotterLogMovement('no_quick_change',{team:incoming.team,kv:current.kv});
+ saveSpotterFoundation();renderSpotterFoundation('live');return true;
+}
 function spotterMaintenanceSelectionKey(cardId){return `maintenance:${String(cardId||'')}`}
 function spotterQueueCard(item,visualState='next'){
  const score=item.score==null?'—':item.score,confidence=item.confidence==null?'—':`${item.confidence}%`;
@@ -1369,12 +1389,16 @@ function spotterTeamNumber(item){
 }
 function updateSpotterLiveTimers(){document.querySelectorAll('[data-spotter-pit-start]').forEach(node=>{node.textContent=spotterFormatDuration(Date.now()-Number(node.dataset.spotterPitStart||Date.now()))})}
 function spotterIncomingCard(item){
- const selected=Number(spotterState.incomingQueueSelections[item.id])||0;
+ const selection=spotterState.incomingQueueSelections[item.id];
+ const selected=Number(selection)||0;
+ const noQuickChange=selection==='none';
  const count=Math.max(1,Math.min(3,Number(spotterState.mode)||1));
  const queueButtons=Array.from({length:count},(_,index)=>{
   const file=index+1;
   return `<button type="button" class="spotter-file-choice ${selected===file?'active':''}" onclick="spotterSelectIncomingQueue('${spotterEscapeJs(item.id)}',${file})" aria-pressed="${selected===file?'true':'false'}">${file}</button>`;
- }).join('');
+ }).join('')+`<button type="button" class="spotter-file-choice spotter-no-qc-choice ${noQuickChange?'active':''}" onclick="spotterSelectIncomingNoQuickChange('${spotterEscapeJs(item.id)}')" aria-pressed="${noQuickChange?'true':'false'}" title="Pas de Quick Change">✕</button>`;
+ const canValidate=Boolean(selected||noQuickChange);
+ const validateAction=noQuickChange?`spotterValidateIncomingNoQuickChange('${spotterEscapeJs(item.id)}')`:`spotterValidateIncoming('${spotterEscapeJs(item.id)}',false,{targetFile:${selected||'null'}})`;
  return `<div class="spotter-incoming-card">
   <div class="spotter-incoming-info">
    <span class="spotter-team-number">${spotterEscape(spotterTeamNumber(item))}</span>
@@ -1387,7 +1411,7 @@ function spotterIncomingCard(item){
   <div class="spotter-incoming-control">
    <div class="spotter-file-choices">${queueButtons}</div>
    <div class="spotter-incoming-buttons">
-    <button type="button" class="spotter-validate ${selected?'ready':''}" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',false,{targetFile:${selected||'null'}})" ${selected?'':'disabled'}>VALIDER</button>
+    <button type="button" class="spotter-validate ${canValidate?'ready':''}" onclick="${validateAction}" ${canValidate?'':'disabled'}>VALIDER</button>
     <button type="button" class="spotter-maintenance-btn" onclick="spotterValidateIncoming('${spotterEscapeJs(item.id)}',true)" aria-label="Envoyer en maintenance" title="Maintenance">⚠</button>
    </div>
   </div>

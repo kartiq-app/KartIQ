@@ -1,3 +1,16 @@
+# V7.2.1787 — SPOTTER : option Pas de Quick Change
+
+## Correction V7.2.1787
+
+- Ajout d’un choix **✕** à droite des boutons FILE 1 / FILE 2 / FILE 3 sur chaque kart entrant.
+- Le choix ✕ signifie **Pas de Quick Change** : après validation, l’équipe disparaît immédiatement de la zone Karts entrants.
+- Aucun kart disponible n’est réservé et aucune file Quick Change n’est modifiée.
+- L’équipe reste marquée aux stands jusqu’à la véritable transition Apex `pit -> track`.
+- Le bouton **WARNING MÉCA** reste inchangé, sous les choix et à droite du bouton VALIDER.
+- L’identité canonique `apex_row` de la V7.2.1786 est conservée afin qu’un changement d’affichage équipe/pilote ne fasse pas réapparaître l’entrant.
+
+---
+
 # V7.2.1786 — SPOTTER : identité canonique équipe/pilote
 
 ## Correction V7.2.1786

@@ -1,3 +1,11 @@
+# Velocity V7.2.1787 — Pas de Quick Change
+
+## V7.2.1787
+
+Le Spotter propose désormais, pour chaque kart entrant, les choix `FILE 1`, `FILE 2`, `FILE 3` selon la configuration, plus `✕`. Le choix `✕` permet de signaler qu’une équipe effectue son arrêt sans Quick Change : elle est retirée de la zone des entrants sans réserver de kart ni modifier les files, puis reste aux stands jusqu’à sa sortie Apex réelle. Le bouton Warning Méca reste disponible à droite de Valider.
+
+---
+
 # Velocity V7.2.1786 — Identité Spotter par ligne Apex
 
 ## V7.2.1786
