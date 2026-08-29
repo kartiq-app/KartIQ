@@ -214,11 +214,13 @@ function loadSpotterFoundation(){
   // Migration V7.1.2 : les sauvegardes V7.1.1 et antérieures peuvent contenir
   // des cartes rouges et événements de test. On repart une seule fois du menu
   // de configuration, puis les sessions V7.1.2 sont conservées normalement.
-  if(saved?.version>=6&&saved?.state&&String(saved.appRelease||'')===SPOTTER_APP_RELEASE){
+  if(saved?.version>=6&&saved?.state){
+   // V7.2.1784 : une mise à jour Velocity ne doit jamais effacer une course
+   // Spotter en cours. On migre l'état local vers la release courante puis on
+   // laisse les protections circuit/session décider d'une éventuelle remise à zéro.
    Object.assign(spotterState,saved.state);
   }else if(saved){
-   // Chaque nouvelle version démarre avec une session Spotter vierge.
-   // La synchronisation distante de la même version pourra ensuite la remplir.
+   // Seules les très anciennes sauvegardes au format incompatible sont purgées.
    localStorage.removeItem(SPOTTER_STORAGE_KEY);
   }
  }catch(_){localStorage.removeItem(SPOTTER_STORAGE_KEY)}
@@ -763,7 +765,10 @@ function spotterMonitorApex(){
  const sessionActive=spotterSessionIsActive();
  drivers.forEach(driver=>{
   const team=spotterDriverKey(driver),status=spotterDriverPitState(driver),previous=spotterState.lastDriverStatus[team];
-  if(sessionActive&&previous&&previous!=='pit'&&status==='pit')changed=spotterAddIncoming(team,driver,{source:'apex'})||changed;
+  // V7.2.1784 : une vraie transition live piste -> stands est autoritaire.
+  // Le garde-fou sessionActive reste réservé à l'initialisation pour éviter
+  // de réimporter une ancienne grille entièrement laissée IN par Apex.
+  if(previous&&previous!=='pit'&&status==='pit')changed=spotterAddIncoming(team,driver,{source:'apex'})||changed;
   if(previous==='pit'&&status==='track')changed=spotterProcessPitOut(team,{source:'apex'})||changed;
   spotterState.lastDriverStatus[team]=status;
  });

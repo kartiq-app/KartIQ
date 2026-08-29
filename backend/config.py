@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1783"
-APP_RELEASE_NAME = "ANALYZER — MAPPING DYNAMIQUE SECTEURS APEX"
+APP_VERSION = "7.2.1784"
+APP_RELEASE_NAME = "SPOTTER — ETAT CONSERVE ENTRE VERSIONS"
 
 
 def _circuit_sort_key(circuit):

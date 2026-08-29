@@ -1,4 +1,9 @@
-# Velocity V7.2.1783 — Position du chrono au même tour
+# Velocity V7.2.1784 — Spotter persistant entre versions
+
+## V7.2.1784
+
+Cette version empêche une mise à jour Velocity de réinitialiser une course Spotter en cours. Les files et affectations compatibles sont migrées localement vers la nouvelle release. Les transitions live Apex piste → stands restent détectées même si le statut global de session est momentanément ambigu.
+
 
 ## V7.2.1783
 

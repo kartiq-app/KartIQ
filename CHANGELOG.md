@@ -1,3 +1,14 @@
+# V7.2.1784 — SPOTTER : état conservé entre versions
+
+## Correction V7.2.1784
+
+- Une mise à jour de Velocity ne supprime plus automatiquement la configuration Spotter enregistrée dans le navigateur.
+- Les files, affectations, maintenance, entrants et état opérationnel compatibles sont migrés vers la nouvelle release.
+- La purge reste réservée aux sauvegardes réellement incompatibles et aux changements de circuit/réinitialisations explicites.
+- Une vraie transition Apex **piste → stands** est désormais autoritaire même si le détecteur générique `sessionActive` hésite momentanément.
+- Le garde-fou `sessionActive` reste actif lors de l'initialisation afin de ne pas remplir `Karts entrants` avec une ancienne grille Apex laissée intégralement IN après une session terminée.
+- Analyzer continue de lire le même état Spotter partagé.
+
 # V7.2.1783 — ANALYZER : Position du chrono au même numéro de tour
 
 ## Correction V7.2.1783
