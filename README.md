@@ -1,3 +1,12 @@
+# Velocity V7.2.1789 — Temps aux stands au millième
+
+## V7.2.1789
+
+- Focus Endurance : à la sortie des stands, la durée de l’arrêt est désormais affichée au millième (`MM:SS.mmm`).
+- La durée finale est calculée entre les transitions Apex d’entrée et de sortie afin de ne plus être tronquée par la valeur STANDS Apex lorsqu’elle ne fournit que la seconde entière.
+- Exemple : un arrêt de 1 min 2 s 357 ms s’affiche désormais `01:02.357` au lieu de `01:02.000`.
+- Aucun changement sur la logique Spotter, Analyzer ou Quick Change.
+
 # Velocity V7.2.1788 — Numéro et nom d’équipe Spotter
 
 ## V7.2.1788

@@ -340,8 +340,13 @@ function renderEndurancePitState(f){
   // suivant immédiatement la transition TO -> IN.
   const apexPassages=Number(f?.pit_stops);
   if(Number.isFinite(apexPassages)&&apexPassages>0)endurancePitPassageCount=apexPassages;
-  if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
-  else if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitDuration(now-endurancePitEnteredAt);
+  // À la sortie, conserver la précision milliseconde du chrono local.
+  // La colonne STANDS Apex est souvent limitée à la seconde entière (ex. 1:02),
+  // ce qui transformait auparavant 1:02.357 en 01:02.000 dans le Focus Endurance.
+  // Le timestamp d'entrée est capturé sur la transition Apex piste -> stands et
+  // celui de sortie sur stands -> piste : leur différence fournit les millièmes.
+  if(endurancePitEnteredAt)endurancePitLastTime=formatEndurancePitDuration(now-endurancePitEnteredAt);
+  else if(apexPitTime&&apexPitTime!=='—')endurancePitLastTime=apexPitTime;
   endurancePitOutUntil=now+5000;
   resetEnduranceRelayLapColor(f);
   enduranceTrackStartedAt=now;
