@@ -393,6 +393,13 @@ class RecorderStore:
             "CREATE INDEX IF NOT EXISTS idx_velocity_frames_rec_time ON velocity_recorder_frames(recording_id, received_at_ms)",
             "CREATE INDEX IF NOT EXISTS idx_velocity_laps_rec_time ON velocity_recorder_laps(recording_id, received_at_ms)",
             "CREATE INDEX IF NOT EXISTS idx_velocity_scores_rec_time ON velocity_recorder_scores(recording_id, received_at_ms)",
+            # V7.2.1791 — cache SCORE RELAIS Analyzer persistant. Sur Render/Postgres,
+            # il survit aux refresh navigateur, reconnexions et redéploiements.
+            """CREATE TABLE IF NOT EXISTS velocity_analyzer_relay_cache (
+                cache_key TEXT PRIMARY KEY, circuit_id TEXT, context_key TEXT, stop_signature TEXT,
+                payload_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
+            )""",
+            "CREATE INDEX IF NOT EXISTS idx_velocity_analyzer_relay_cache_updated ON velocity_analyzer_relay_cache(updated_at_ms)",
         ]
         for sql in ddl:
             self._execute(sql)
@@ -434,6 +441,54 @@ class RecorderStore:
                END
                WHERE desired_status IS NULL OR desired_status=''"""
         )
+
+    def get_analyzer_relay_cache(self, cache_key: str) -> dict[str, Any]:
+        """Retourne le cache SCORE RELAIS persistant d'une Session Analyzer."""
+        key = str(cache_key or "").strip()
+        if not key:
+            return {}
+        row = self._execute(
+            "SELECT payload_json FROM velocity_analyzer_relay_cache WHERE cache_key=?",
+            (key,), fetchone=True,
+        )
+        if not row:
+            return {}
+        try:
+            data = json.loads(row.get("payload_json") or "{}")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    def put_analyzer_relay_cache(self, cache_key: str, entry: dict[str, Any]):
+        """Upsert atomique du cache SCORE RELAIS Analyzer."""
+        key = str(cache_key or "").strip()
+        if not key:
+            return
+        payload = dict(entry or {})
+        now_ms = int(time.time() * 1000)
+        circuit_id = str(payload.get("circuit_id") or "")
+        context_key = str(payload.get("context_key") or "")
+        stop_signature = str(payload.get("stop_signature") or "")
+        raw = _safe_json(payload)
+        self._execute(
+            """INSERT INTO velocity_analyzer_relay_cache(cache_key,circuit_id,context_key,stop_signature,payload_json,updated_at_ms)
+               VALUES (?,?,?,?,?,?)
+               ON CONFLICT(cache_key) DO UPDATE SET
+                 circuit_id=excluded.circuit_id,context_key=excluded.context_key,
+                 stop_signature=excluded.stop_signature,payload_json=excluded.payload_json,
+                 updated_at_ms=excluded.updated_at_ms""",
+            (key, circuit_id, context_key, stop_signature, raw, now_ms),
+        )
+
+    def prune_analyzer_relay_cache(self, keep: int = 24):
+        """Garde seulement les caches Analyzer les plus récents."""
+        keep = max(4, int(keep or 24))
+        rows = self._execute(
+            "SELECT cache_key FROM velocity_analyzer_relay_cache ORDER BY updated_at_ms DESC",
+            fetchall=True,
+        ) or []
+        for row in rows[keep:]:
+            self._execute("DELETE FROM velocity_analyzer_relay_cache WHERE cache_key=?", (row.get("cache_key"),))
 
     def storage_info(self) -> dict[str, Any]:
         return {

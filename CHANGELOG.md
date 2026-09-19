@@ -1,3 +1,13 @@
+# V7.2.1791 — SCORE RELAIS persistant Analyzer / longues endurances
+
+- Les caches de reconstruction **SCORE RELAIS** ne dépendent plus uniquement d'un fichier JSON éphémère du serveur.
+- Sur Render avec `DATABASE_URL`, l'historique calculé est enregistré dans PostgreSQL via `velocity_analyzer_relay_cache`.
+- Le cache est rattaché à la **Session Analyzer active** en plus du circuit et de la session Apex, pour éviter tout mélange entre deux courses.
+- Après refresh, reconnexion ou redéploiement, Analyzer recharge le cache persistant et ne repart plus systématiquement d'une reconstruction vierge.
+- Les données restent incrémentales : le moteur réutilise le cache existant et ne reconstruit que ce que sa signature live impose de rafraîchir.
+- Un miroir JSON reste disponible uniquement comme secours/développement local lorsque PostgreSQL n'est pas persistant.
+- Aucun changement de formule du Velocity Score.
+
 # V7.2.1790 — Position du chrono live
 
 - Focus Endurance et Analyzer > Équipe suivie utilisent désormais exactement le même calcul.

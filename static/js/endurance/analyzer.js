@@ -4457,7 +4457,11 @@ async function fetchAllApexTeamPits(rowId,sessionId,status,expectedPitCount=0){
 function analyzerRelayContextKey(){
  const circuit=String(analyzerSessionCircuit()||'').trim();
  const liveSession=String(state?.session_name||'').trim();
- return `${circuit}|${liveSession}`;
+ // V7.2.1791 : le cache SCORE RELAIS appartient à la Session Analyzer active.
+ // Deux courses portant le même nom Apex sur le même circuit ne partagent donc
+ // jamais leurs scores historiques.
+ const analyzerSession=String(analyzerActiveSessionId||'').trim()||'no-analyzer-session';
+ return `${circuit}|${liveSession}|${analyzerSession}`;
 }
 function analyzerRelayResetEngine(reason='context-change'){
  analyzerRelayScoreLoadToken++;

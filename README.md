@@ -166,3 +166,7 @@ La consultation des anciennes sessions fonctionne en lecture seule et ne coupe p
 ## Déploiement
 
 Déposez le contenu de ce dossier à la racine du dépôt GitHub puis redéployez le dernier commit sur Render.
+
+## V7.2.1791 — Persistance SCORE RELAIS Analyzer
+
+Pour les endurances longues (12H/24H), Analyzer conserve désormais son cache de reconstruction SCORE RELAIS dans PostgreSQL lorsque `DATABASE_URL` est configurée. La clé inclut la Session Analyzer active, le circuit et la session Apex. Les refresh/reconnexions/redéploiements peuvent ainsi reprendre l'historique déjà calculé au lieu de repartir d'un cache serveur éphémère. La formule du score n'est pas modifiée.

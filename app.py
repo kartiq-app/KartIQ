@@ -1945,16 +1945,35 @@ def _relay_score_stop_signature(drivers):
 
 
 def _relay_score_cache_get(cache_key):
+    """V7.2.1791 : Postgres/RecorderStore d'abord, JSON seulement en secours local."""
     with RELAY_SCORE_CACHE_LOCK:
+        try:
+            manager = _get_recorder_manager()
+            cached = manager.store.get_analyzer_relay_cache(cache_key)
+            if cached:
+                return deepcopy(cached)
+        except Exception as exc:
+            write_live_log(f"SCORE RELAIS CACHE DB READ FALLBACK {exc}")
         data = _relay_score_cache_load()
         return deepcopy((data.get("entries") or {}).get(cache_key) or {})
 
 
 def _relay_score_cache_put(cache_key, entry):
+    """Persiste les relais/scorings Analyzer en base ; miroir JSON pour le dev local."""
     with RELAY_SCORE_CACHE_LOCK:
-        data = _relay_score_cache_load()
-        data.setdefault("entries", {})[cache_key] = deepcopy(entry)
-        _relay_score_cache_save(data)
+        saved_db = False
+        try:
+            manager = _get_recorder_manager()
+            manager.store.put_analyzer_relay_cache(cache_key, deepcopy(entry))
+            manager.store.prune_analyzer_relay_cache(24)
+            saved_db = True
+        except Exception as exc:
+            write_live_log(f"SCORE RELAIS CACHE DB WRITE FALLBACK {exc}")
+        # Le miroir JSON reste utile en développement SQLite et pour compatibilité.
+        if not saved_db or not getattr(getattr(_get_recorder_manager(), 'store', None), 'persistent', False):
+            data = _relay_score_cache_load()
+            data.setdefault("entries", {})[cache_key] = deepcopy(entry)
+            _relay_score_cache_save(data)
 
 
 def _relay_score_job_cleanup():
