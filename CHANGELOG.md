@@ -1,3 +1,11 @@
+# V7.2.1792 — AJOUT KARTING DE SAINTES
+
+- Ajout de Karting de Saintes au catalogue des circuits Velocity.
+- Live Apex : https://www.apex-timing.com/live-timing/karting-de-saintes/
+- WebSocket Apex : wss://live-data.apex-timing.com:8583/
+- Configuration déclarée en test jusqu’à validation pendant un live actif.
+- Aucune modification des modules Analyzer, Focus, Spotter ou Velocity Score.
+
 # V7.2.1791 — SCORE RELAIS persistant Analyzer / longues endurances
 
 - Les caches de reconstruction **SCORE RELAIS** ne dépendent plus uniquement d'un fichier JSON éphémère du serveur.
