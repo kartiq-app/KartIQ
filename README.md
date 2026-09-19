@@ -1,4 +1,4 @@
-# Velocity V7.2.1789 — Temps aux stands au millième
+# Velocity V7.2.1790 — Position du chrono live
 
 ## V7.2.1789
 

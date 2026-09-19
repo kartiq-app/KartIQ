@@ -1,3 +1,10 @@
+# V7.2.1790 — Position du chrono live
+
+- Focus Endurance et Analyzer > Équipe suivie utilisent désormais exactement le même calcul.
+- Compare le dernier tour piste valide de chaque équipe, indépendamment du numéro de tour.
+- Les passages aux stands et le tour de sortie associé ne remplacent pas la dernière référence piste valide.
+- Le classement se recalcule en live à chaque mise à jour Apex.
+
 ## V7.2.1788 — Numéro et nom d’équipe Spotter
 
 - Affiche le numéro d’équipe au-dessus du nom dans Spotter et Analyzer.

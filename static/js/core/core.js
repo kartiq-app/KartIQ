@@ -453,6 +453,47 @@ function velocityKartIsInPit(driver){
 }
 window.velocityDriverHasParticipated=velocityDriverHasParticipated;
 window.velocityKartIsInPit=velocityKartIsInPit;
+
+// V7.2.1790 — Source de vérité commune « Position du chrono ».
+// On compare le dernier tour PISTE valide de chaque équipe, sans tenir compte
+// de leur numéro de tour. Un passage aux stands et le tour de sortie associé
+// ne remplacent jamais la dernière référence piste mémorisée.
+const velocityLastValidLapByTeam=new Map();
+function velocityLiveChronoKey(driver){return String(driver?.apex_row??driver?.driver??driver?.pos??'').trim()}
+function velocityLiveChronoSeconds(value){
+ const raw=String(value??'').trim().replace(',', '.');if(!raw||raw==='—'||raw==='--')return null;
+ const parts=raw.split(':').map(Number);if(parts.some(v=>!Number.isFinite(v)))return null;
+ return parts.length===2?parts[0]*60+parts[1]:parts.length===3?parts[0]*3600+parts[1]*60+parts[2]:Number(raw);
+}
+function velocitySyncLastValidLaps(){
+ const seen=new Set();
+ for(const driver of (state?.drivers||[])){
+  const key=velocityLiveChronoKey(driver);if(!key)continue;seen.add(key);
+  const lap=Number(driver?.laps),sec=velocityLiveChronoSeconds(driver?.last),inPit=velocityKartIsInPit(driver);
+  let item=velocityLastValidLapByTeam.get(key)||{lap:null,sec:null,label:'—',driver:'',wasPit:false,skipOutLap:false};
+  // Nouvelle session / compteur remis à zéro.
+  if(Number.isFinite(lap)&&Number.isFinite(item.lap)&&lap<item.lap)item={lap:null,sec:null,label:'—',driver:'',wasPit:false,skipOutLap:false};
+  if(inPit){item.wasPit=true;item.skipOutLap=true;velocityLastValidLapByTeam.set(key,item);continue}
+  const advanced=Number.isFinite(lap)&&(!Number.isFinite(item.observedLap)||lap>item.observedLap);
+  if(advanced){
+   item.observedLap=lap;
+   if(item.skipOutLap){item.skipOutLap=false;item.wasPit=false;velocityLastValidLapByTeam.set(key,item);continue}
+   if(Number.isFinite(sec)&&sec>0){item.lap=lap;item.sec=sec;item.label=String(driver?.last||'—');item.driver=String(driver?.driver||'')}
+  }
+  item.wasPit=false;velocityLastValidLapByTeam.set(key,item);
+ }
+ for(const key of [...velocityLastValidLapByTeam.keys()])if(!seen.has(key))velocityLastValidLapByTeam.delete(key);
+}
+function velocityLiveLastLapRanking(driver){
+ velocitySyncLastValidLaps();
+ const key=velocityLiveChronoKey(driver);if(!key)return null;
+ const target=velocityLastValidLapByTeam.get(key);if(!target||!Number.isFinite(target.sec))return null;
+ const candidates=[...velocityLastValidLapByTeam.entries()].filter(([,item])=>Number.isFinite(item?.sec)).map(([teamKey,item])=>({teamKey,...item})).sort((a,b)=>a.sec-b.sec);
+ const rank=1+candidates.filter(item=>item.sec<target.sec-0.0005).length;
+ return {rank,lap:target.label,lapNumber:target.lap,compared:candidates.length};
+}
+window.velocitySyncLastValidLaps=velocitySyncLastValidLaps;
+window.velocityLiveLastLapRanking=velocityLiveLastLapRanking;
 function ingestApexMapEvents(frame,circuitId){
  const registry=window.velocityApexMap;
  if(registry.circuitId!==circuitId)resetVelocityApexMap(circuitId);

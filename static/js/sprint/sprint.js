@@ -77,12 +77,11 @@ function sprintFocusRankMarkup(rank){
 }
 
 function sprintLastLapRanking(driver){
- const followedLaps=Number(driver?.laps);if(!Number.isFinite(followedLaps))return null;
- const valid=(state.drivers||[]).filter(d=>Number(d?.laps)===followedLaps).map(d=>({...d,_lastSec:lapSeconds(d.last)})).filter(d=>Number.isFinite(d._lastSec)).sort((a,b)=>a._lastSec-b._lastSec);
- const target=valid.find(d=>d.driver===driver?.driver);if(!target)return null;
- const rank=1+valid.filter(d=>d._lastSec<target._lastSec-0.0005).length;
- return {rank,label:`${frenchOrdinal(rank).number}${frenchOrdinal(rank).suffix} temps`,driver:target.driver,lap:target.last};
+ const liveRank=typeof window.velocityLiveLastLapRanking==='function'?window.velocityLiveLastLapRanking(driver):null;
+ if(!liveRank)return null;
+ return {rank:liveRank.rank,label:`${frenchOrdinal(liveRank.rank)} temps`,driver:String(driver?.driver||''),lap:liveRank.lap,compared:liveRank.compared};
 }
+
 let sprintFocusPenaltyInitialized=false;
 let sprintFocusPenaltySeen=new Set();
 let sprintFocusPenaltyAlertUntil=0;
