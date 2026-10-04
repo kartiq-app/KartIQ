@@ -1,3 +1,11 @@
+# V7.2.1793 — CORRECTION CLASSEMENT DERNIER CHRONO ENDURANCE
+
+- Focus Endurance / Analyzer : le renouvellement du dernier chrono ne dépend plus du compteur `laps`.
+- Chaque vraie mise à jour Apex `llp` (`Dernier T.`) reçoit désormais un marqueur `last_lap_updated_at`, y compris si deux tours consécutifs ont exactement le même chrono.
+- Le classement P1/P2/P3 compare donc bien le dernier tour piste valide connu de chaque équipe sur les layouts Apex sans colonne Tours.
+- Conservation de la règle stands : le passage aux stands et le premier tour de sortie ne remplacent pas la dernière référence piste valide.
+- Aucun autre comportement de la V7.2.1792 n'est modifié.
+
 # V7.2.1792 — AJOUT KARTING DE SAINTES
 
 - Ajout de Karting de Saintes au catalogue des circuits Velocity.

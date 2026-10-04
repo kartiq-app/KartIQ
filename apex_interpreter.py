@@ -107,7 +107,7 @@ class ApexInterpreter:
             "interval": None, "laps": None, "timer": None,
             "pit_timer": None, "track_timer": None,
             "pit_stops": None, "penalty": None, "status": "unknown", "status_source": None, "last_lap_kind": None,
-            "updated_at": None,
+            "last_lap_updated_at": None, "updated_at": None,
         })
 
     def _emit(self, row: int, type_: str, title: str, detail: str, value: str = "", severity: str = "info") -> None:
@@ -232,6 +232,12 @@ class ApexInterpreter:
         elif field == "last_lap":
             if lap_seconds(value) is not None:
                 row["last_lap"] = value
+                # Marque l'impulsion Apex `llp` elle-même, et non le compteur Tours.
+                # Deux tours consécutifs peuvent avoir exactement le même chrono :
+                # le timestamp doit donc évoluer à chaque update `llp`, même si la
+                # valeur texte n'a pas changé. Le GRID initial sert aussi à amorcer
+                # la référence courante côté Focus/Analyzer.
+                row["last_lap_updated_at"] = datetime.now(timezone.utc).isoformat()
                 kind = {"tb": "fastest", "ti": "team_best", "tn": "normal"}.get(code, "lap")
                 row["last_lap_kind"] = kind
                 if not initial and previous_value != value:

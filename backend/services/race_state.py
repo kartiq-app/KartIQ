@@ -414,6 +414,7 @@ class RaceStateService:
                 "pit_stops": row.get("pit_stops") if row.get("pit_stops") is not None else previous.get("pit_stops", "—"),
                 "penalty": row.get("penalty") if row.get("penalty") is not None else previous.get("penalty", ""),
                 "last": last,
+                "last_lap_updated_at": row.get("last_lap_updated_at") or previous.get("last_lap_updated_at"),
                 "best": best,
                 # Secteurs live Apex. Contrairement aux autres cellules de classement,
                 # on ne réutilise jamais la valeur précédente : au passage d'un nouveau

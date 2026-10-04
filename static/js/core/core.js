@@ -454,10 +454,13 @@ function velocityKartIsInPit(driver){
 window.velocityDriverHasParticipated=velocityDriverHasParticipated;
 window.velocityKartIsInPit=velocityKartIsInPit;
 
-// V7.2.1790 — Source de vérité commune « Position du chrono ».
+// V7.2.1793 — Source de vérité commune « Position du chrono ».
 // On compare le dernier tour PISTE valide de chaque équipe, sans tenir compte
-// de leur numéro de tour. Un passage aux stands et le tour de sortie associé
-// ne remplacent jamais la dernière référence piste mémorisée.
+// de leur numéro de tour. La détection d'un nouveau chrono repose désormais
+// sur l'impulsion Apex `llp` remontée par le backend (`last_lap_updated_at`) :
+// elle fonctionne donc aussi sur les layouts endurance sans colonne Tours.
+// Un passage aux stands et le tour de sortie associé ne remplacent jamais la
+// dernière référence piste mémorisée.
 const velocityLastValidLapByTeam=new Map();
 function velocityLiveChronoKey(driver){return String(driver?.apex_row??driver?.driver??driver?.pos??'').trim()}
 function velocityLiveChronoSeconds(value){
@@ -470,15 +473,21 @@ function velocitySyncLastValidLaps(){
  for(const driver of (state?.drivers||[])){
   const key=velocityLiveChronoKey(driver);if(!key)continue;seen.add(key);
   const lap=Number(driver?.laps),sec=velocityLiveChronoSeconds(driver?.last),inPit=velocityKartIsInPit(driver);
-  let item=velocityLastValidLapByTeam.get(key)||{lap:null,sec:null,label:'—',driver:'',wasPit:false,skipOutLap:false};
-  // Nouvelle session / compteur remis à zéro.
-  if(Number.isFinite(lap)&&Number.isFinite(item.lap)&&lap<item.lap)item={lap:null,sec:null,label:'—',driver:'',wasPit:false,skipOutLap:false};
-  if(inPit){item.wasPit=true;item.skipOutLap=true;velocityLastValidLapByTeam.set(key,item);continue}
-  const advanced=Number.isFinite(lap)&&(!Number.isFinite(item.observedLap)||lap>item.observedLap);
-  if(advanced){
-   item.observedLap=lap;
+  const marker=String(driver?.last_lap_updated_at||'').trim();
+  let item=velocityLastValidLapByTeam.get(key)||{lap:null,sec:null,label:'—',driver:'',lastMarker:'',wasPit:false,skipOutLap:false};
+  // Nouvelle session explicite lorsqu'un circuit fournit encore un compteur Tours.
+  if(Number.isFinite(lap)&&lap>0&&Number.isFinite(item.lap)&&item.lap>0&&lap<item.lap)item={lap:null,sec:null,label:'—',driver:'',lastMarker:'',wasPit:false,skipOutLap:false};
+  if(inPit){item.wasPit=true;item.skipOutLap=true;if(marker)item.lastMarker=marker;velocityLastValidLapByTeam.set(key,item);continue}
+  // `last_lap_updated_at` change à chaque vraie update Apex de la cellule llp,
+  // y compris lorsque deux tours consécutifs ont exactement le même chrono.
+  // Fallback valeur/compteur uniquement pour compatibilité avec un ancien backend.
+  const markerAdvanced=Boolean(marker)&&marker!==item.lastMarker;
+  const legacyAdvanced=!marker&&((Number.isFinite(lap)&&(!Number.isFinite(item.observedLap)||lap>item.observedLap))||(!Number.isFinite(item.sec)&&Number.isFinite(sec)));
+  if(markerAdvanced||legacyAdvanced){
+   if(marker)item.lastMarker=marker;
+   if(Number.isFinite(lap))item.observedLap=lap;
    if(item.skipOutLap){item.skipOutLap=false;item.wasPit=false;velocityLastValidLapByTeam.set(key,item);continue}
-   if(Number.isFinite(sec)&&sec>0){item.lap=lap;item.sec=sec;item.label=String(driver?.last||'—');item.driver=String(driver?.driver||'')}
+   if(Number.isFinite(sec)&&sec>0){item.lap=Number.isFinite(lap)&&lap>0?lap:null;item.sec=sec;item.label=String(driver?.last||'—');item.driver=String(driver?.driver||'')}
   }
   item.wasPit=false;velocityLastValidLapByTeam.set(key,item);
  }
