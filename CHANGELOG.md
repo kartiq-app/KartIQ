@@ -1,3 +1,12 @@
+# V7.2.1795 — CHOIX KART FIXE / QUICK CHANGE DÉPLACÉ DANS SPOTTER
+
+- Supprime le bloc « Gestion des karts · Endurance » de la Home : retour à l'accueil d'origine, utilisable en Qualification, Sprint et Endurance.
+- Ajoute dans Spotter un bouton compact « MODE KARTS » (desktop) et un accès adapté sur mobile.
+- Le choix **Kart fixe / Quick Change** et « Nouvelle course » sont regroupés dans une fenêtre de configuration Spotter, sans encombrer la Home.
+- Conserve l'API de paramétrage serveur `/api/kart-setup`, la réinitialisation sécurisée des scores et les KV physiques suivis par Spotter.
+- Aucun changement au moteur Potentiel / Vitesse récente, au Score Relais, ni à la logique P1/P2/P3 partagée entre Équipe suivie et Focus Endurance.
+- Service worker et numéro de version incrémentés pour éviter de conserver l'ancien écran en cache.
+
 # V7.2.1794 — MODES KART FIXE / QUICK CHANGE + VITESSE LIVE KART
 
 - Ajoute sur la Home le mode de course **Kart fixe** / **Quick Change** (choix partagé dans la Session Velocity, enregistré par le serveur actif).

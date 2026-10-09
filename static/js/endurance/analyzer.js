@@ -1805,7 +1805,7 @@ function analyzerRefreshVelocityDeltaCells(){
 function analyzerRenderKartSpeedMarket(){
  const target=document.getElementById('analyzerKartMarket');if(!target)return;
  const mode=typeof window.velocityKartScoreMode==='function'?window.velocityKartScoreMode():null;
- if(!mode){target.innerHTML='<div class="analyzer-empty">Choisissez Kart fixe ou Quick Change sur la page d’accueil avant de noter les machines.</div>';return}
+ if(!mode){target.innerHTML='<div class="analyzer-empty">Choisissez Kart fixe ou Quick Change dans Spotter → MODE KARTS avant de noter les machines.</div>';return}
  const rankings=typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
  if(!rankings.length){
   const detail=mode==='quick'?'Activez SUIVI KARTS dans Spotter et confirmez les KV. Une identité incertaine n’est jamais notée.':'Attente des premières fenêtres de huit tours piste valides.';

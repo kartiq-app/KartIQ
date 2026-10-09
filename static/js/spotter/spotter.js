@@ -388,6 +388,33 @@ async function spotterOpenKartRegistry(){
 }
 function spotterCloseKartRegistry(){document.getElementById('spotterRegistryOverlay')?.remove()}
 
+// V7.2.1795 — Mode de course dans Spotter, jamais sur la Home générale.
+// Le choix utilise l'API et le moteur de la V1794 ; pas d'état local concurrent.
+function spotterKartModeLabel(){
+ const mode=typeof velocityKartScoreMode==='function'?velocityKartScoreMode():null;
+ return mode==='fixed'?'KART FIXE':mode==='quick'?'QUICK CHANGE':'À DÉFINIR';
+}
+function spotterOpenKartModeDialog(){
+ document.getElementById('spotterKartModeOverlay')?.remove();
+ document.body.insertAdjacentHTML('beforeend',`<div class="spotter-kart-mode-overlay" id="spotterKartModeOverlay" role="presentation" onclick="if(event.target===this)spotterCloseKartModeDialog()">
+ <section class="spotter-kart-mode-panel" role="dialog" aria-modal="true" aria-labelledby="spotterKartModeTitle">
+  <div class="spotter-kart-mode-head"><h2 id="spotterKartModeTitle">MODE DE COURSE</h2><button type="button" class="spotter-kart-mode-close" onclick="spotterCloseKartModeDialog()" aria-label="Fermer">×</button></div>
+  <p class="spotter-kart-mode-hint">Gestion des machines en endurance. Cette option ne concerne pas les courses Sprint ou Qualification.</p>
+  <div class="spotter-kart-mode-options">
+   <button type="button" class="spotter-kart-mode-choice" data-velocity-kart-mode-option="fixed" aria-pressed="false" onclick="velocitySetKartMode('fixed')"><strong>KART FIXE</strong><span>Même machine pour chaque équipe pendant la course</span></button>
+   <button type="button" class="spotter-kart-mode-choice" data-velocity-kart-mode-option="quick" aria-pressed="false" onclick="velocitySetKartMode('quick')"><strong>QUICK CHANGE</strong><span>Machines suivies par identifiant KV dans le registre Spotter</span></button>
+  </div>
+  <p id="velocityKartModeNotice" class="spotter-kart-mode-notice" aria-live="polite"></p>
+  <div class="spotter-kart-mode-actions"><button type="button" class="spotter-kart-mode-reset" onclick="velocityKartNewRace()">NOUVELLE COURSE · RÉINITIALISER LES NOTES</button><button type="button" class="spotter-kart-mode-done" onclick="spotterCloseKartModeDialog()">FERMER</button></div>
+ </section></div>`);
+ if(typeof velocityRenderKartModeChoice==='function')velocityRenderKartModeChoice();
+ document.querySelector('#spotterKartModeOverlay .spotter-kart-mode-close')?.focus();
+}
+function spotterCloseKartModeDialog(){document.getElementById('spotterKartModeOverlay')?.remove()}
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&document.getElementById('spotterKartModeOverlay'))spotterCloseKartModeDialog();
+});
+
 function spotterNormalizePhysicalKart(value){return String(value??'').trim().replace(/^kart\s*/i,'').replace(/\s+/g,' ').toUpperCase()}
 function spotterFindPhysicalKartDuplicate(kart){
  const target=spotterNormalizePhysicalKart(kart);if(!target)return null;
@@ -972,6 +999,7 @@ function spotterCommandBar(step){
  const desktop=`<div class="spotter-command-bar spotter-command-desktop">
   <span class="spotter-live-state">LIVE</span>
   ${undo}
+  <button class="spotter-desktop-command spotter-kart-mode-command" type="button" onclick="spotterOpenKartModeDialog()">MODE KARTS · <span data-spotter-kart-mode-label>${spotterKartModeLabel()}</span></button>
   <button class="spotter-desktop-command spotter-quick-change-command" type="button" onclick="openSpotterSetup()">PRÉPARER LA ZONE QUICK CHANGE</button>
   <button class="spotter-desktop-command spotter-auto-command ${spotterState.freeMode?'active resume':''}" type="button" onclick="spotterToggleAuto()">${spotterState.freeMode?'▶ REPRENDRE':'AUTO'}</button>
   <button class="spotter-desktop-command spotter-add-kart-command" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button>
@@ -1355,7 +1383,7 @@ function renderSpotterFoundation(forceStep){
   <div class="spotter-desktop-heading"><span>SPOTTER</span></div>
   ${spotterCommandBar(step)}
   <div class="spotter-step ${step==='mode'?'active':''}" id="spotterModeStep">
-   <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option ${spotterState.mode===1?'active':''}" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Verticale</small></button><button class="spotter-mode-option ${spotterState.mode===2?'active':''}" type="button" onclick="setSpotterMode(2)"><strong>2</strong><span>Files</span><small>Côte à côte</small></button><button class="spotter-mode-option ${spotterState.mode===3?'active':''}" type="button" onclick="setSpotterMode(3)"><strong>3</strong><span>Files</span><small>Côte à côte</small></button></div><button class="spotter-secondary spotter-cancel-setup" type="button" onclick="spotterCancelSetup()">ANNULER</button></div></section>
+   <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><button class="spotter-secondary spotter-mobile-kart-mode-link" type="button" onclick="spotterOpenKartModeDialog()">MODE KARTS · <span data-spotter-kart-mode-label>${spotterKartModeLabel()}</span></button><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option ${spotterState.mode===1?'active':''}" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Verticale</small></button><button class="spotter-mode-option ${spotterState.mode===2?'active':''}" type="button" onclick="setSpotterMode(2)"><strong>2</strong><span>Files</span><small>Côte à côte</small></button><button class="spotter-mode-option ${spotterState.mode===3?'active':''}" type="button" onclick="setSpotterMode(3)"><strong>3</strong><span>Files</span><small>Côte à côte</small></button></div><button class="spotter-secondary spotter-cancel-setup" type="button" onclick="spotterCancelSetup()">ANNULER</button></div></section>
   </div>
   <div class="spotter-step ${step==='queue'?'active':''}" id="spotterQueueStep">
    <section class="spotter-card"><div class="spotter-card-head"><h2>Initialiser ${spotterState.mode>1?'les files':'la file'}</h2><span>${spotterState.setupKarts.length} kart(s)</span></div><div class="spotter-card-body"><p class="spotter-intro">Chaque file possède son propre stock de karts. Un kart est déjà prévu dans chaque file ; utilisez le bouton « Ajouter un kart » situé sous la file concernée pour compléter uniquement cette file.</p><div id="spotterSetupRows">${spotterRenderSetupFiles()}</div><button id="spotterLaunchButton" class="spotter-primary" type="button" onclick="launchSpotterFoundation()">LANCER LE SPOTTER</button><button class="spotter-secondary spotter-cancel-setup" type="button" onclick="spotterCancelSetup()">ANNULER</button></div></section>
@@ -1374,7 +1402,7 @@ function renderSpotterFoundation(forceStep){
      <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 ZONE MECA</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en zone méca.</div>'}</div></section>
     </aside>
    </div>
-   <div class="spotter-footer-actions"><button class="spotter-secondary" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button><button class="spotter-secondary ${spotterState.kartTrackingEnabled?'tracking-active':''}" type="button" onclick="spotterOpenKartRegistry()">${spotterState.kartTrackingEnabled?'● ':''}SUIVI KARTS</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
+   <div class="spotter-footer-actions"><button class="spotter-secondary spotter-mobile-kart-mode-link" type="button" onclick="spotterOpenKartModeDialog()">MODE KARTS · <span data-spotter-kart-mode-label>${spotterKartModeLabel()}</span></button><button class="spotter-secondary" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button><button class="spotter-secondary ${spotterState.kartTrackingEnabled?'tracking-active':''}" type="button" onclick="spotterOpenKartRegistry()">${spotterState.kartTrackingEnabled?'● ':''}SUIVI KARTS</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
   </div>
   <div class="spotter-step ${step==='recalibrate'?'active':''}" id="spotterRecalibrateStep">
    <div class="spotter-recalibrate-desktop-layout">

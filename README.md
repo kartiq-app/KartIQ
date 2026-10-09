@@ -173,7 +173,7 @@ Pour les endurances longues (12H/24H), Analyzer conserve désormais son cache de
 
 ## V7.2.1794 — Nouvelle notation de vitesse kart (en validation)
 
-1. Depuis la Home, sélectionnez le circuit et **Kart fixe** ou **Quick Change** avant la course. Le mode est commun à la Session Velocity sur le serveur actif. Après une autre course sur le même circuit, cliquez sur **NOUVELLE COURSE · RÉINITIALISER LES NOTES**.
+1. Sélectionnez le circuit sur la Home, puis ouvrez **Spotter → MODE KARTS** pour choisir **Kart fixe** ou **Quick Change**. Le mode est commun à la Session Velocity sur le serveur actif. Après une autre course sur le même circuit, utilisez **NOUVELLE COURSE · RÉINITIALISER LES NOTES** depuis cette fenêtre Spotter.
 2. **Kart fixe** : chaque équipe conserve sa machine ; à chaque nouveau relais, sa vitesse récente repart à zéro, mais son potentiel déjà démontré est conservé.
 3. **Quick Change** : configurez Spotter, activez **SUIVI KARTS** et validez les attributions KV. Le numéro Apex est le numéro affiché de l'équipe : il peut rester identique malgré un échange de machine. Une association KV incertaine n'alimente pas les notes.
 4. Ouvrez **Analyzer → KARTS** : le **Potentiel** est la meilleure fenêtre connue (10 tours, au moins 8 exploitables, moyenne des 6 meilleurs), **RÉC.** représente le relais actuel, **Δ** l'écart chronométrique avec la meilleure référence, **PREUVE** indique provisoire/confirmé (deux fenêtres indépendantes proches à 0,3 %). Dans un nouveau relais, **RÉC.** est provisoire à partir de 4 tours valides, puis calculé sur la fenêtre de 10 tours.

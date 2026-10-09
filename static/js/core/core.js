@@ -610,13 +610,23 @@ window.velocityKartScoreHydrateRegistry=velocityKartScoreHydrateRegistry;
 window.velocityKartScoreRankings=velocityKartScoreRankings;
 window.velocityKartScoreMode=velocityKartScoreMode;
 function velocityRenderKartModeChoice(){
- const el=document.getElementById('velocityKartModeSelect');if(!el)return;
- const mode=velocityKartScoreMode()||'';
- if(el.value!==mode)el.value=mode;
- el.disabled=!state?.circuit_id;
+ // Réglage disponible uniquement dans Spotter : jamais sur la Home ni en Sprint.
+ const overlay=document.getElementById('spotterKartModeOverlay');
+ if(!overlay)return;
+ const mode=velocityKartScoreMode();
+ const ready=Boolean(state?.circuit_id);
+ overlay.querySelectorAll('[data-velocity-kart-mode-option]').forEach(button=>{
+  const selected=ready&&button.dataset.velocityKartModeOption===mode;
+  button.classList.toggle('selected',selected);
+  button.setAttribute('aria-pressed',String(selected));
+  button.disabled=!ready||overlay.dataset.saving==='true';
+ });
  const notice=document.getElementById('velocityKartModeNotice');
- if(notice&&!state?.circuit_id){notice.textContent='Sélectionnez d’abord le circuit avant de définir le mode de course.';return}
- if(notice)notice.textContent=mode==='quick'?'Quick Change : seul le suivi KV confirmé par Spotter attribue les chronos à une machine.':mode==='fixed'?'Kart fixe : potentiel conservé pour la machine de chaque équipe, vitesse récente réinitialisée à chaque arrêt.':'Choisissez le mode avant la course. Le numéro Apex peut rester identique en Quick Change.';
+ if(!notice)return;
+ notice.textContent=!ready?'Sélectionnez d’abord un circuit depuis l’accueil.':
+  mode==='quick'?'Quick Change : chaque chrono est lié uniquement à une machine KV confirmée par Spotter. Le numéro Apex peut rester identique.':
+  mode==='fixed'?'Kart fixe : chaque équipe conserve sa machine ; le potentiel survit aux passages aux stands.':
+  'Choisissez le type de course pour activer le suivi des potentiels dans Analyzer.';
 }
 async function velocitySetKartMode(mode){
  if(!state?.circuit_id){alert('Sélectionnez d’abord un circuit.');velocityRenderKartModeChoice();return}
@@ -624,15 +634,21 @@ async function velocitySetKartMode(mode){
  if(!['quick','fixed'].includes(mode)){velocityRenderKartModeChoice();return}
  if(previous===mode)return;
  if(previous&&!confirm('Changer de mode efface les notes de vitesse de cette course pour éviter de mélanger les machines. Continuer ?')){velocityRenderKartModeChoice();return}
- const picker=document.getElementById('velocityKartModeSelect');if(picker)picker.disabled=true;
+ const overlay=document.getElementById('spotterKartModeOverlay');
+ if(overlay)overlay.dataset.saving='true';
+ velocityRenderKartModeChoice();
  try{
   const response=await fetch('/api/kart-setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode})});
   const payload=await response.json();if(!response.ok||!payload.ok)throw new Error(payload.error||'Mode non enregistré');
   state.kart_setup_mode=mode;state.kart_scoring_epoch=payload.epoch;
-  velocityKartScoreEnsureScope();velocityRenderKartModeChoice();
+  velocityKartScoreEnsureScope();
   if(typeof window.spotterRegistryClearSpeeds==='function')window.spotterRegistryClearSpeeds();
- }catch(error){alert(error.message||String(error));velocityRenderKartModeChoice()}
- finally{if(picker)picker.disabled=false}
+  // Mise à jour de l'intitulé du bouton, sans reconstruire les files Spotter.
+  document.querySelectorAll('[data-spotter-kart-mode-label]').forEach(node=>{
+   node.textContent=mode==='quick'?'QUICK CHANGE':'KART FIXE';
+  });
+ }catch(error){alert(error.message||String(error))}
+ finally{if(overlay)overlay.dataset.saving='false';velocityRenderKartModeChoice()}
 }
 async function velocityKartNewRace(){
  const mode=velocityKartScoreMode();if(!mode){alert('Choisissez d’abord Kart fixe ou Quick Change.');return}

@@ -34,18 +34,6 @@
         </select>
       </div>
 
-      <div class="velocity-kart-mode-config" id="velocityKartModeConfig">
-        <span>GESTION DES KARTS · ENDURANCE</span>
-        <label for="velocityKartModeSelect" class="velocity-kart-mode-label">Mode de la course</label>
-        <select id="velocityKartModeSelect" onchange="velocitySetKartMode(this.value)" aria-label="Mode de gestion des karts">
-          <option value="">Choisir un mode</option>
-          <option value="fixed">Kart fixe (même machine toute la course)</option>
-          <option value="quick">Quick Change (machines suivies par KV / Spotter)</option>
-        </select>
-        <small id="velocityKartModeNotice">Choisissez le mode avant le départ. Le numéro Apex peut rester le même en Quick Change.</small>
-        <button type="button" class="velocity-kart-reset" onclick="velocityKartNewRace()">NOUVELLE COURSE · RÉINITIALISER LES NOTES</button>
-      </div>
-
       <div class="race-mode-cards">
         <button class="race-mode-card" data-home-mode="qualification" onclick="showMode('qualification')" aria-label="Ouvrir le mode Qualification">
           <span class="race-icon" aria-hidden="true">
