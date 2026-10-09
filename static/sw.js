@@ -1,4 +1,4 @@
-const CACHE = 'velocity-v7-2-1742';
+const CACHE = 'velocity-v7-2-1794';
 
 const ASSETS = [
   '/',
@@ -10,6 +10,8 @@ const ASSETS = [
   '/static/css/40-landscape-overrides.css',
   '/static/css/50-endurance-latest.css',
   '/static/css/60-analyzer.css',
+  '/static/css/61-analyzer-mobile-portrait.css',
+  '/static/css/62-velocity-lab.css',
   '/static/css/70-spotter.css',
   '/static/js/core/core.js',
   '/static/js/spotter/spotter.js',
@@ -18,6 +20,8 @@ const ASSETS = [
   '/static/js/ui/race-ui.js',
   '/static/js/endurance/queues.js',
   '/static/js/endurance/analyzer.js',
+  '/static/js/lab-recorder.js',
+  '/static/js/ui/session-clock-fit.js',
   '/static/js/core/bootstrap.js',
   '/static/manifest.json',
   '/static/fonts/f1-regular.woff2',

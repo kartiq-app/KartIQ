@@ -34,6 +34,18 @@
         </select>
       </div>
 
+      <div class="velocity-kart-mode-config" id="velocityKartModeConfig">
+        <span>GESTION DES KARTS · ENDURANCE</span>
+        <label for="velocityKartModeSelect" class="velocity-kart-mode-label">Mode de la course</label>
+        <select id="velocityKartModeSelect" onchange="velocitySetKartMode(this.value)" aria-label="Mode de gestion des karts">
+          <option value="">Choisir un mode</option>
+          <option value="fixed">Kart fixe (même machine toute la course)</option>
+          <option value="quick">Quick Change (machines suivies par KV / Spotter)</option>
+        </select>
+        <small id="velocityKartModeNotice">Choisissez le mode avant le départ. Le numéro Apex peut rester le même en Quick Change.</small>
+        <button type="button" class="velocity-kart-reset" onclick="velocityKartNewRace()">NOUVELLE COURSE · RÉINITIALISER LES NOTES</button>
+      </div>
+
       <div class="race-mode-cards">
         <button class="race-mode-card" data-home-mode="qualification" onclick="showMode('qualification')" aria-label="Ouvrir le mode Qualification">
           <span class="race-icon" aria-hidden="true">
@@ -278,7 +290,7 @@
 
       <aside class="analyzer-strategy-column" aria-label="Outils stratégiques">
         <section id="analyzerVelocityPanel" class="panel analyzer-panel analyzer-market-panel">
-          <div class="analyzer-panel-title analyzer-velocity-title"><div class="analyzer-ranking-switch analyzer-velocity-switch" role="group" aria-label="Vue Velocity"><button id="analyzerVelocityViewBtn" class="active" type="button" onclick="setAnalyzerVelocityView('velocity')">VELOCITY</button><button id="analyzerRelayScoreViewBtn" type="button" onclick="setAnalyzerVelocityView('relays')">SCORE RELAIS</button></div><label class="analyzer-kartiq-sort">Trier par <select id="analyzerKartSort" onchange="setAnalyzerKartSort(this.value)"><option value="none">Aucun</option><option value="relay-end">Fin relais</option><option value="delta">Delta</option></select></label></div>
+          <div class="analyzer-panel-title analyzer-velocity-title"><div class="analyzer-ranking-switch analyzer-velocity-switch" role="group" aria-label="Vue Velocity"><button id="analyzerKartSpeedViewBtn" class="active" type="button" onclick="setAnalyzerVelocityView('karts')">KARTS</button><button id="analyzerVelocityViewBtn" type="button" onclick="setAnalyzerVelocityView('velocity')">VELOCITY</button><button id="analyzerRelayScoreViewBtn" type="button" onclick="setAnalyzerVelocityView('relays')">SCORE RELAIS</button></div><label class="analyzer-kartiq-sort">Trier par <select id="analyzerKartSort" onchange="setAnalyzerKartSort(this.value)"><option value="none">Aucun</option><option value="relay-end">Fin relais</option><option value="delta">Delta</option></select></label></div>
           <div id="analyzerKartMarket" class="analyzer-kartiq-wrap"><div class="analyzer-empty">Apprentissage en cours…</div></div>
         </section>
 

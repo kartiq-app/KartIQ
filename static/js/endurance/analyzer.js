@@ -42,7 +42,7 @@ const ANALYZER_AUTOSAVE_MS=15000;
 const ANALYZER_STORAGE_CLEANUP_KEY=velocityWorkspaceStorageKey('velocity-analyzer-storage-cleanup-v3');
 const ANALYZER_MAX_SESSION_INDEX=10;
 let analyzerKartSort='none';
-let analyzerVelocityView='velocity';
+let analyzerVelocityView='karts';
 let analyzerRelayScoreData=null;
 let analyzerRelayScoreLoading=false;
 let analyzerRelayScoreLoadToken=0;
@@ -1801,14 +1801,42 @@ function analyzerRefreshVelocityDeltaCells(){
  });
 }
 
+// V7.2.1794 — Carte « KARTS », distincte de Velocity et Score Relais historiques.
+function analyzerRenderKartSpeedMarket(){
+ const target=document.getElementById('analyzerKartMarket');if(!target)return;
+ const mode=typeof window.velocityKartScoreMode==='function'?window.velocityKartScoreMode():null;
+ if(!mode){target.innerHTML='<div class="analyzer-empty">Choisissez Kart fixe ou Quick Change sur la page d’accueil avant de noter les machines.</div>';return}
+ const rankings=typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
+ if(!rankings.length){
+  const detail=mode==='quick'?'Activez SUIVI KARTS dans Spotter et confirmez les KV. Une identité incertaine n’est jamais notée.':'Attente des premières fenêtres de huit tours piste valides.';
+  target.innerHTML=`<div class="analyzer-empty">${detail}</div>`;return;
+ }
+ const drivers=(state?.drivers||[]);
+ const rows=rankings.map((entry,index)=>{
+  const kv=entry.kv;
+  const identity=kv&&typeof window.velocityKartDisplayAssignment==='function'?window.velocityKartDisplayAssignment(kv):null;
+  const teamKey=identity?.team||entry.team;
+  const driver=drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===teamKey)||null;
+  const teamName=identity?.team||driver?.driver||String(entry.team||'').replace(/^apex:/,'Equipe ');
+  const kartNumber=mode==='quick'?kv:String(driver?.apex||driver?.kart||'—');
+  const label=entry.confirmed?'CONFIRMÉ':'PROVISOIRE';
+  const recent=entry.recentScore===null?'—':`${entry.recentScore.toFixed(1)}${entry.recentProvisional?'*':''}`;
+  const potential=entry.potential.toFixed(1);
+  const clickTeam=driver?.driver?` onclick="followDriver(${JSON.stringify(driver.driver).replace(/"/g,'&quot;')})"`:'';
+  return `<tr${clickTeam}><td>${index+1}</td><td>${analyzerEscape(kartNumber)}</td><td title="${analyzerEscape(teamName)}">${analyzerEscape(teamName)}</td><td class="kart-speed-high">${potential}</td><td class="${entry.recentScore!==null&&entry.recentScore<entry.potential-10?'kart-speed-low':''}">${recent}</td><td>${(entry.best.seconds-entry.reference).toFixed(3)}s</td><td title="${entry.totalValid} tours observés">${label}</td></tr>`;
+ }).join('');
+ target.innerHTML=`<div class="velocity-kart-speed-help">${mode==='quick'?'QUICK CHANGE · scores associés aux KV confirmés par Spotter':'KART FIXE · scores par machine de l’équipe'} · Potentiel = meilleure fenêtre connue (6 rapides / 10 tours). Récente = relais actuel. * provisoire. La régularité ne pénalise pas la vitesse.</div><table class="velocity-kart-speed-table"><thead><tr><th>P</th><th>KART</th><th>ÉQUIPE</th><th>POT.</th><th>RÉC.</th><th>Δ</th><th>PREUVE</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 function setAnalyzerVelocityView(view){
- const nextView=view==='relays'?'relays':'velocity';
+ const nextView=['relays','velocity','karts'].includes(view)?view:'karts';
  const enteringRelays=nextView==='relays'&&analyzerVelocityView!=='relays';
  analyzerVelocityView=nextView;
  if(enteringRelays)analyzerRelayScoreScrollLeft=0;
+ document.getElementById('analyzerKartSpeedViewBtn')?.classList.toggle('active',analyzerVelocityView==='karts');
  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
- const sort=document.querySelector('.analyzer-kartiq-sort');if(sort)sort.hidden=analyzerVelocityView==='relays';
+ const sort=document.querySelector('.analyzer-kartiq-sort');if(sort)sort.hidden=analyzerVelocityView!=='velocity';
  renderAnalyzer();
  if(analyzerVelocityView==='relays'){
   requestAnimationFrame(()=>{
@@ -3189,7 +3217,7 @@ function analyzerRenderFollowedPerformance(followed){
  if(!chronoEl)return;
  const rank=followed&&typeof window.velocityLiveLastLapRanking==='function'?window.velocityLiveLastLapRanking(followed):null;
  const rankText=rank&&Number.isFinite(rank.rank)?`P${rank.rank}`:'P—';
- const lapText=rank?.lap||followed?.last||'—';
+ const lapText=rank?.lap||'—';
  chronoEl.textContent=`${rankText} | ${lapText}`;
 }
 // V7.2.1780 — cache chrono secteurs LIVE, alimenté uniquement par les
@@ -3815,7 +3843,18 @@ function renderAnalyzer(){
  // SCORE RELAIS : un seul scheduler propre est lancé en début de renderAnalyzer().
  const marketByScore=all.map(x=>({...x,relayMetrics:analyzerVelocityUnifiedMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).map((x,index)=>({...x,kartiqTop:index+1,relayRemaining:analyzerKartRelayRemaining(x.driver)}));
  const mobileVelocity=document.getElementById('analyzerMobileVelocityScore');
- if(mobileVelocity){const ownVelocity=marketByScore.find(x=>x.driver?.driver===(followed?.driver||state.followed_driver));mobileVelocity.textContent=ownVelocity?.relayMetrics?.score??'—';mobileVelocity.className=ownVelocity?analyzerScoreClass(ownVelocity.relayMetrics.score):'';}
+ if(mobileVelocity){
+  if(analyzerVelocityView==='karts'){
+   const identity=typeof velocityKartScoreIdentity==='function'?velocityKartScoreIdentity(followed):null;
+   const entry=identity?velocityKartScoreRankings().find(p=>p.id===identity.id):null;
+   mobileVelocity.textContent=entry?.potential?.toFixed(1)??'—';
+   mobileVelocity.className=entry?.potential>=90?'high':'';
+  }else{
+   const ownVelocity=marketByScore.find(x=>x.driver?.driver===(followed?.driver||state.followed_driver));
+   mobileVelocity.textContent=ownVelocity?.relayMetrics?.score??'—';
+   mobileVelocity.className=ownVelocity?analyzerScoreClass(ownVelocity.relayMetrics.score):'';
+  }
+ }
  let market=marketByScore;
  if(analyzerKartSort==='relay-end')market=marketByScore.slice().sort((a,b)=>{
   const av=Number.isFinite(a.relayRemaining)?a.relayRemaining:Number.POSITIVE_INFINITY;
@@ -3829,11 +3868,14 @@ function renderAnalyzer(){
   const bv=Number.isFinite(bDelta)?bDelta:Number.POSITIVE_INFINITY;
   return av-bv||a.kartiqTop-b.kartiqTop;
  });
+ document.getElementById('analyzerKartSpeedViewBtn')?.classList.toggle('active',analyzerVelocityView==='karts');
  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
- const velocitySortLabel=document.querySelector('.analyzer-kartiq-sort');if(velocitySortLabel)velocitySortLabel.hidden=analyzerVelocityView==='relays';
+ const velocitySortLabel=document.querySelector('.analyzer-kartiq-sort');if(velocitySortLabel)velocitySortLabel.hidden=analyzerVelocityView!=='velocity';
  if(analyzerVelocityView==='relays'){
   analyzerRenderRelayScoreTable(marketByScore);
+ }else if(analyzerVelocityView==='karts'){
+  analyzerRenderKartSpeedMarket();
  }else{
    const kartSortSelect=document.getElementById('analyzerKartSort');if(kartSortSelect)kartSortSelect.value=analyzerKartSort;
    const showPilotContinuity=analyzerSessionHasPilotData();

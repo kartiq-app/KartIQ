@@ -262,3 +262,19 @@ body.velocity-lab-open{overflow:hidden!important}
 
 /* V7.2.1763 — état du rattrapage historique du Data Recorder. */
 .velocity-recorder-backfill{display:flex;align-items:center;gap:8px;margin:0 12px;padding:8px 10px;border:1px solid #24313b;border-radius:6px;background:#0d141a;color:#8d99a6;font-size:8px;line-height:1.25}.velocity-recorder-backfill span{color:#d71f27;font-weight:950;letter-spacing:.08em;white-space:nowrap}.velocity-recorder-backfill b{color:#c8d0d8;font-weight:800}.velocity-recorder-backfill.syncing{border-color:#6a4b20}.velocity-recorder-backfill.syncing b{color:#ffb25a}.velocity-recorder-backfill.partial{border-color:#6a4b20}.velocity-recorder-backfill.partial b{color:#ffb25a}.velocity-recorder-backfill.waiting b{color:#9aa5b1}@media(max-width:700px){.velocity-recorder-backfill{align-items:flex-start;flex-direction:column;gap:4px}}
+
+/* V7.2.1794 — Choix de mode et vue des potentiels (aucune rupture du Score Relais) */
+.velocity-kart-mode-config{margin:8px auto 18px;max-width:690px;padding:12px 16px;background:#101115;border:1px solid #34343a;border-radius:10px;display:flex;flex-wrap:wrap;gap:7px 12px;align-items:center;justify-content:center;color:#eee}
+.velocity-kart-mode-config>span{font-size:12px;font-weight:900;letter-spacing:.1em;width:100%;text-align:center;color:#ddd}
+.velocity-kart-mode-label{font-weight:800;font-size:12px}
+#velocityKartModeSelect{min-height:36px;max-width:100%;background:#1c1c20;color:#fff;border:1px solid #555;border-radius:7px;padding:6px 9px}
+#velocityKartModeNotice{width:100%;text-align:center;font-size:11px;color:#bcbcc2}
+.velocity-kart-speed-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:12px}
+.velocity-kart-speed-table th,.velocity-kart-speed-table td{padding:8px 4px;text-align:center;border-bottom:1px solid #333}
+.velocity-kart-speed-table td:nth-child(3){text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.velocity-kart-speed-table .kart-speed-high{color:#4ae19b;font-weight:900}
+.velocity-kart-speed-table .kart-speed-low{color:#f5c66b}
+.velocity-kart-speed-help{padding:8px;font-size:11px;color:#c4c4ca;line-height:1.4}
+@media(max-width:650px){.velocity-kart-speed-table{font-size:10px}.velocity-kart-speed-table th,.velocity-kart-speed-table td{padding:6px 2px}}
+
+.velocity-kart-reset{background:transparent;border:1px solid #4a4a50;border-radius:6px;color:#d5d5dc;padding:7px 10px;font-size:10px;font-weight:800;cursor:pointer}.velocity-kart-reset:hover{border-color:#e10600;color:white}

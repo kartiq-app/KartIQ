@@ -461,6 +461,193 @@ window.velocityKartIsInPit=velocityKartIsInPit;
 // elle fonctionne donc aussi sur les layouts endurance sans colonne Tours.
 // Un passage aux stands et le tour de sortie associé ne remplacent jamais la
 // dernière référence piste mémorisée.
+// V7.2.1794 — Vitesse démontrée par machine et vitesse du relais en cours.
+// Pilote non identifié != kart lent : on ne retire pas de points de régularité.
+// Les notes restent des preuves de VITESSE OBSERVÉE, jamais un potentiel mécanique inféré.
+let velocityKartScoreStore={karts:{},markers:{}};
+let velocityKartScoreScope='';
+let velocityKartScoreSaveTimer=null;
+function velocityKartScoreMode(){
+ const value=String(state?.kart_setup_mode||'');
+ return value==='fixed'||value==='quick'?value:null;
+}
+function velocityKartScoreEnsureScope(){
+ const mode=velocityKartScoreMode(),circuit=String(state?.circuit_id||'');
+ const epoch=String(state?.kart_scoring_epoch||'');
+ if(!mode||!circuit||!epoch){velocityKartScoreScope='';velocityKartScoreStore={karts:{},markers:{}};return false}
+ const scope=`${velocityWorkspaceStorageKey('velocity_kart_scores_1794')}:${circuit}:${epoch}:${mode}`;
+ if(scope!==velocityKartScoreScope){
+  if(velocityKartScoreSaveTimer){clearTimeout(velocityKartScoreSaveTimer);velocityKartScoreSaveTimer=null}
+  velocityKartScoreScope=scope;
+  try{
+   const stored=JSON.parse(localStorage.getItem(scope)||'null');
+   velocityKartScoreStore=stored&&stored.karts&&stored.markers?stored:{karts:{},markers:{}};
+  }catch(_){velocityKartScoreStore={karts:{},markers:{}}}
+ }
+ return true;
+}
+function velocityKartScorePersist(){
+ if(!velocityKartScoreScope)return;
+ if(velocityKartScoreSaveTimer)return;
+ velocityKartScoreSaveTimer=setTimeout(()=>{
+  velocityKartScoreSaveTimer=null;
+  try{localStorage.setItem(velocityKartScoreScope,JSON.stringify(velocityKartScoreStore))}catch(e){console.warn('[Velocity] Sauvegarde des scores karts indisponible',e)}
+ },600);
+}
+function velocityKartScoreIdentity(driver){
+ const mode=velocityKartScoreMode();if(!driver||!mode)return null;
+ const row=Number(driver.apex_row);
+ const teamKey=Number.isFinite(row)&&row>0?`apex:${row}`:String(driver.driver||'').trim();
+ if(!teamKey)return null;
+ if(mode==='fixed')return {id:`FIX:${teamKey}`,teamKey,kv:null,mode};
+ // En Quick Change, seul Spotter sait quelle machine physique a été attribuée.
+ // Le numéro Apex est un numéro d'équipe et NE DOIT JAMAIS être utilisé comme KV.
+ const spotter=typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver):null;
+ if(!spotter?.kv||spotter.teamKey!==teamKey||spotter.verified!==true)return null;
+ return {id:`KV:${spotter.kv}`,teamKey,kv:spotter.kv,mode};
+}
+function velocityKartScoreMedian(values){
+ if(!values.length)return null;
+ const ordered=values.slice().sort((a,b)=>a-b),mid=ordered.length>>1;
+ return ordered.length%2?ordered[mid]:(ordered[mid-1]+ordered[mid])/2;
+}
+function velocityKartScoreFiltered(raw){
+ const numbers=raw.map(v=>v.seconds).filter(v=>Number.isFinite(v)&&v>20&&v<400);
+ const fastest=numbers.slice().sort((a,b)=>a-b).slice(0,Math.max(3,Math.ceil(numbers.length*0.6)));
+ const med=velocityKartScoreMedian(fastest);
+ if(!Number.isFinite(med))return [];
+ // Filtre par machine/relais : ne jamais rejeter un kart simplement plus lent que le plateau.
+ const limit=med+Math.max(5,med*0.05);
+ return raw.filter(v=>v.seconds>20&&v.seconds<400&&v.seconds<=limit);
+}
+function velocityKartScoreWindow(raw){
+ if(raw.length<8)return null;
+ const clean=velocityKartScoreFiltered(raw);
+ if(clean.length<8)return null;
+ const best6=clean.map(v=>v.seconds).sort((a,b)=>a-b).slice(0,6);
+ return {seconds:best6.reduce((a,b)=>a+b,0)/6,start:raw[0].serial,end:raw[raw.length-1].serial};
+}
+function velocityKartScoreEvaluate(profile){
+ const recent=profile.recentRaw||[],win=velocityKartScoreWindow(recent.slice(-10));
+ if(win){
+  profile.recent=win.seconds;profile.recentProvisional=false;
+  const evidence={...win,at:Date.now(),relay:profile.relay,team:profile.team};
+  profile.windows.push(evidence);profile.windows=profile.windows.slice(-300);
+  if(!profile.best||evidence.seconds<profile.best.seconds)profile.best=evidence;
+  const best=profile.best;
+  if(profile.windows.some(w=>(w.end<best.start||w.start>best.end)&&Math.abs(w.seconds-best.seconds)<=best.seconds*0.003))profile.confirmed=true;
+ }else{
+  const clean=velocityKartScoreFiltered(recent.slice(-10));
+  if(clean.length>=4){
+   const count=Math.max(3,Math.floor(clean.length*0.6));
+   const fast=clean.map(v=>v.seconds).sort((a,b)=>a-b).slice(0,count);
+   profile.recent=fast.reduce((a,b)=>a+b,0)/fast.length;
+   profile.recentProvisional=true;
+  }else{profile.recent=null;profile.recentProvisional=true}
+ }
+}
+function velocityKartScoreProfile(identity){
+ const karts=velocityKartScoreStore.karts;
+ if(!karts[identity.id])karts[identity.id]={id:identity.id,kv:identity.kv,team:identity.teamKey,relay:0,lapSerial:0,recentRaw:[],windows:[],best:null,recent:null,recentProvisional:true,confirmed:false,stops:null,wasPit:false,totalValid:0};
+ return karts[identity.id];
+}
+function velocityKartScoreMarkPit(driver){
+ if(!velocityKartScoreEnsureScope())return;
+ const identity=velocityKartScoreIdentity(driver);if(!identity)return;
+ const profile=velocityKartScoreStore.karts[identity.id];
+ if(profile&&!profile.wasPit){profile.wasPit=true;profile.recent=null;profile.recentProvisional=true;velocityKartScorePersist()}
+}
+function velocityKartScoreOnLap(driver,seconds,marker){
+ if(!velocityKartScoreEnsureScope()||!Number.isFinite(seconds)||seconds<=20||seconds>=400)return;
+ const identity=velocityKartScoreIdentity(driver);if(!identity)return;
+ const m=String(marker||'').trim();if(!m)return;
+ // Dédoublonnage persistant des impulsions llp à travers rechargements du navigateur.
+ // Il faut aussi conserver la machine : un changement de KV ne rejoue pas l'ancien tour.
+ const last=velocityKartScoreStore.markers[identity.teamKey];
+ if(last===m)return;
+ velocityKartScoreStore.markers[identity.teamKey]=m;
+ const profile=velocityKartScoreProfile(identity);
+ const rawStops=driver?.pit_stops;
+ const stops=(rawStops===null||rawStops===undefined||String(rawStops).trim()==='')?null:Number(rawStops);
+ const stopCount=Number.isFinite(stops)?stops:null;
+ const newRelay=profile.relay===0||profile.team!==identity.teamKey||profile.wasPit||(stopCount!==null&&profile.stops!==null&&stopCount!==profile.stops);
+ if(newRelay){profile.relay+=1;profile.recentRaw=[];profile.recent=null;profile.recentProvisional=true}
+ profile.team=identity.teamKey;profile.kv=identity.kv;profile.stops=stopCount;profile.wasPit=false;
+ profile.lapSerial+=1;profile.totalValid+=1;
+ profile.recentRaw.push({serial:profile.lapSerial,seconds});
+ profile.recentRaw=profile.recentRaw.slice(-20);
+ velocityKartScoreEvaluate(profile);
+ if(identity.kv&&typeof window.spotterRegistryUpdateSpeed==='function'){
+  window.spotterRegistryUpdateSpeed(identity.kv,{potential:profile.best?.seconds??null,recent:profile.recent,confirmed:profile.confirmed,provisional:profile.recentProvisional,validLaps:profile.totalValid,updatedAt:Date.now(),epoch:String(state.kart_scoring_epoch||'')});
+ }
+ velocityKartScorePersist();
+}
+function velocityKartScoreRankings(){
+ if(!velocityKartScoreEnsureScope())return [];
+ const profiles=Object.values(velocityKartScoreStore.karts).filter(p=>p.best&&Number.isFinite(p.best.seconds));
+ const reference=Math.min(...profiles.map(p=>p.best.seconds));
+ return profiles.map(p=>{
+  const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
+  return {...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference};
+ }).sort((a,b)=>(b.potential??-1)-(a.potential??-1));
+}
+// Récupération facultative des meilleurs chronos KV depuis le registre partagé.
+// Le numéro Apex / une éventuelle vitesse récente d'un autre relais ne sont jamais réutilisés.
+function velocityKartScoreHydrateRegistry(kv,speed){
+ if(!velocityKartScoreEnsureScope()||velocityKartScoreMode()!=='quick')return;
+ if(!kv||!speed||String(speed.epoch||'')!==String(state?.kart_scoring_epoch||''))return;
+ const seconds=Number(speed.potential);if(!Number.isFinite(seconds)||seconds<=20||seconds>=400)return;
+ const identity={id:`KV:${kv}`,kv,teamKey:''};
+ const profile=velocityKartScoreProfile(identity);
+ if(!profile.best||seconds<profile.best.seconds){
+  profile.best={seconds,relay:0,start:-1,end:-1,at:Number(speed.updatedAt)||0};
+ }
+ profile.confirmed=Boolean(profile.confirmed||speed.confirmed);
+ profile.totalValid=Math.max(Number(profile.totalValid)||0,Number(speed.validLaps)||0);
+ velocityKartScorePersist();
+}
+window.velocityKartScoreHydrateRegistry=velocityKartScoreHydrateRegistry;
+window.velocityKartScoreRankings=velocityKartScoreRankings;
+window.velocityKartScoreMode=velocityKartScoreMode;
+function velocityRenderKartModeChoice(){
+ const el=document.getElementById('velocityKartModeSelect');if(!el)return;
+ const mode=velocityKartScoreMode()||'';
+ if(el.value!==mode)el.value=mode;
+ el.disabled=!state?.circuit_id;
+ const notice=document.getElementById('velocityKartModeNotice');
+ if(notice&&!state?.circuit_id){notice.textContent='Sélectionnez d’abord le circuit avant de définir le mode de course.';return}
+ if(notice)notice.textContent=mode==='quick'?'Quick Change : seul le suivi KV confirmé par Spotter attribue les chronos à une machine.':mode==='fixed'?'Kart fixe : potentiel conservé pour la machine de chaque équipe, vitesse récente réinitialisée à chaque arrêt.':'Choisissez le mode avant la course. Le numéro Apex peut rester identique en Quick Change.';
+}
+async function velocitySetKartMode(mode){
+ if(!state?.circuit_id){alert('Sélectionnez d’abord un circuit.');velocityRenderKartModeChoice();return}
+ const previous=velocityKartScoreMode();
+ if(!['quick','fixed'].includes(mode)){velocityRenderKartModeChoice();return}
+ if(previous===mode)return;
+ if(previous&&!confirm('Changer de mode efface les notes de vitesse de cette course pour éviter de mélanger les machines. Continuer ?')){velocityRenderKartModeChoice();return}
+ const picker=document.getElementById('velocityKartModeSelect');if(picker)picker.disabled=true;
+ try{
+  const response=await fetch('/api/kart-setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode})});
+  const payload=await response.json();if(!response.ok||!payload.ok)throw new Error(payload.error||'Mode non enregistré');
+  state.kart_setup_mode=mode;state.kart_scoring_epoch=payload.epoch;
+  velocityKartScoreEnsureScope();velocityRenderKartModeChoice();
+  if(typeof window.spotterRegistryClearSpeeds==='function')window.spotterRegistryClearSpeeds();
+ }catch(error){alert(error.message||String(error));velocityRenderKartModeChoice()}
+ finally{if(picker)picker.disabled=false}
+}
+async function velocityKartNewRace(){
+ const mode=velocityKartScoreMode();if(!mode){alert('Choisissez d’abord Kart fixe ou Quick Change.');return}
+ if(!confirm('Nouvelle course sur ce circuit : effacer les notes Potentiel et Vitesse récente de cette session ? Le registre Spotter reste intact.'))return;
+ try{
+  const response=await fetch('/api/kart-setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reset:true})});
+  const payload=await response.json();if(!response.ok||!payload.ok)throw new Error(payload.error||'Réinitialisation impossible');
+  state.kart_scoring_epoch=payload.epoch;velocityKartScoreEnsureScope();
+  // Garder le marqueur du dernier tour connu : ne pas rejouer un ancien llp.
+  if(typeof window.spotterRegistryClearSpeeds==='function')window.spotterRegistryClearSpeeds();
+ }catch(error){alert(error.message||String(error))}
+}
+window.velocitySetKartMode=velocitySetKartMode;
+window.velocityKartNewRace=velocityKartNewRace;
+
 const velocityLastValidLapByTeam=new Map();
 function velocityLiveChronoKey(driver){return String(driver?.apex_row??driver?.driver??driver?.pos??'').trim()}
 function velocityLiveChronoSeconds(value){
@@ -477,7 +664,7 @@ function velocitySyncLastValidLaps(){
   let item=velocityLastValidLapByTeam.get(key)||{lap:null,sec:null,label:'—',driver:'',lastMarker:'',wasPit:false,skipOutLap:false};
   // Nouvelle session explicite lorsqu'un circuit fournit encore un compteur Tours.
   if(Number.isFinite(lap)&&lap>0&&Number.isFinite(item.lap)&&item.lap>0&&lap<item.lap)item={lap:null,sec:null,label:'—',driver:'',lastMarker:'',wasPit:false,skipOutLap:false};
-  if(inPit){item.wasPit=true;item.skipOutLap=true;if(marker)item.lastMarker=marker;velocityLastValidLapByTeam.set(key,item);continue}
+  if(inPit){item.wasPit=true;item.skipOutLap=true;if(marker)item.lastMarker=marker;velocityLastValidLapByTeam.set(key,item);velocityKartScoreMarkPit(driver);continue}
   // `last_lap_updated_at` change à chaque vraie update Apex de la cellule llp,
   // y compris lorsque deux tours consécutifs ont exactement le même chrono.
   // Fallback valeur/compteur uniquement pour compatibilité avec un ancien backend.
@@ -487,7 +674,7 @@ function velocitySyncLastValidLaps(){
    if(marker)item.lastMarker=marker;
    if(Number.isFinite(lap))item.observedLap=lap;
    if(item.skipOutLap){item.skipOutLap=false;item.wasPit=false;velocityLastValidLapByTeam.set(key,item);continue}
-   if(Number.isFinite(sec)&&sec>0){item.lap=Number.isFinite(lap)&&lap>0?lap:null;item.sec=sec;item.label=String(driver?.last||'—');item.driver=String(driver?.driver||'')}
+   if(Number.isFinite(sec)&&sec>0){item.lap=Number.isFinite(lap)&&lap>0?lap:null;item.sec=sec;item.label=String(driver?.last||'—');item.driver=String(driver?.driver||'');velocityKartScoreOnLap(driver,sec,marker)}
   }
   item.wasPit=false;velocityLastValidLapByTeam.set(key,item);
  }

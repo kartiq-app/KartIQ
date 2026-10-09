@@ -290,6 +290,11 @@ async function spotterPullRegistry(){
   const payload=await response.json();
   if(payload?.registry&&typeof payload.registry==='object'&&!Array.isArray(payload.registry)){
    spotterState.kartRegistry=spotterClone(payload.registry);
+   if(typeof window.velocityKartScoreHydrateRegistry==='function'){
+    Object.entries(spotterState.kartRegistry).forEach(([kv,row])=>{
+     if(row?.speed)window.velocityKartScoreHydrateRegistry(kv,row.speed);
+    });
+   }
    localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
   }
   return true;
@@ -321,6 +326,35 @@ function spotterRegistryUpdateScore(kv,team,score){
  const last=[...(row.history||[])].reverse().find(entry=>entry.team===String(team||''));
  if(last){last.score=Math.round(Number(score));last.updatedAt=Date.now();spotterScheduleRegistryPush()}
 }
+// V7.2.1794 — pont Spotter / notes par machine physique.
+// Jamais de déduction d'un KV à partir du numéro affiché par Apex.
+function velocityKartIdentityForDriver(driver){
+ const teamKey=spotterDriverKey(driver),assignment=spotterState.assignments?.[teamKey];
+ if(!spotterState.kartTrackingEnabled||!spotterState.configured||!assignment?.kv)return null;
+ const registry=spotterState.kartRegistry?.[assignment.kv];
+ const verified=assignment.status==='track'&&!assignment.pendingReplacementKv&&!assignment.estimated&&registry?.trace!=='interrupted';
+ return {kv:String(assignment.kv),teamKey,verified};
+}
+window.velocityKartIdentityForDriver=velocityKartIdentityForDriver;
+function velocityKartDisplayAssignment(kv){
+ const team=Object.entries(spotterState.assignments||{}).find(([,item])=>item?.kv===kv&&item.status==='track');
+ if(team)return {team:spotterStableTeamLabel(spotterFindDriver(team[0]),team[1].teamLabel||team[0]),status:'EN PISTE'};
+ const queued=[...(spotterState.queue||[]),...(spotterState.maintenance||[])].find(item=>item?.kv===kv);
+ return {team:queued?.lastTeam||'',status:queued?.status==='maintenance'?'MÉCANIQUE':'EN FILE'};
+}
+window.velocityKartDisplayAssignment=velocityKartDisplayAssignment;
+function spotterRegistryUpdateSpeed(kv,speed){
+ if(!spotterState.kartTrackingEnabled||!kv)return;
+ const row=spotterRegistryEnsure(kv);if(!row||row.trace==='interrupted')return;
+ row.speed={...speed};
+ spotterScheduleRegistryPush();
+}
+window.spotterRegistryUpdateSpeed=spotterRegistryUpdateSpeed;
+function spotterRegistryClearSpeeds(){
+ Object.values(spotterState.kartRegistry||{}).forEach(row=>{if(row)delete row.speed});
+ // Le serveur efface aussi les scores de l'ancien epoch ; conserver le suivi des KV.
+}
+window.spotterRegistryClearSpeeds=spotterRegistryClearSpeeds;
 function spotterRegistrySeedCurrent(){
  if(!spotterState.kartTrackingEnabled)return;
  Object.entries(spotterState.assignments||{}).forEach(([team,item])=>{if(item?.kv)spotterRegistryAppend(item.kv,team,item.score,{source:'activation'})});
@@ -339,7 +373,9 @@ function spotterRegistryRowsHtml(){
  if(!rows.length)return '<div class="spotter-registry-empty-block">Aucun kart enregistré.</div>';
  return rows.map(row=>{
   const history=(row.history||[]).map(entry=>`<span class="spotter-registry-entry"><b>${spotterEscape(spotterDisplayName(entry.team))}</b><em class="${spotterScoreTone(entry.score)}">${entry.score==null?'—':entry.score}</em></span>`).join('<span class="spotter-registry-arrow">›</span>');
-  return `<div class="spotter-registry-row"><strong>${spotterEscape(row.kv)}</strong><div class="spotter-registry-history">${history||'<span class="spotter-registry-empty">Aucune affectation</span>'}${row.trace==='interrupted'?'<span class="spotter-registry-lost">TRACE INTERROMPUE</span>':''}</div></div>`;
+  const speed=row.speed;
+  const speedHtml=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(speed.potential)?`<span class="spotter-registry-entry">POT. ${Number(speed.potential).toFixed(3)}s · RÉC. ${Number.isFinite(speed.recent)?Number(speed.recent).toFixed(3)+'s':'—'} · ${speed.confirmed?'CONFIRMÉ':'PROVISOIRE'}</span>`:'';
+  return `<div class="spotter-registry-row"><strong>${spotterEscape(row.kv)}</strong><div class="spotter-registry-history">${speedHtml}${history||'<span class="spotter-registry-empty">Aucune affectation</span>'}${row.trace==='interrupted'?'<span class="spotter-registry-lost">TRACE INTERROMPUE</span>':''}</div></div>`;
  }).join('');
 }
 async function spotterOpenKartRegistry(){
@@ -1460,4 +1496,4 @@ function spotterMaintenanceCard(item){
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured&&spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()}},2000)});
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled)spotterPullRegistry()},15000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured&&spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()}},2000)});

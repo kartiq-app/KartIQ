@@ -170,3 +170,16 @@ Déposez le contenu de ce dossier à la racine du dépôt GitHub puis redéploye
 ## V7.2.1791 — Persistance SCORE RELAIS Analyzer
 
 Pour les endurances longues (12H/24H), Analyzer conserve désormais son cache de reconstruction SCORE RELAIS dans PostgreSQL lorsque `DATABASE_URL` est configurée. La clé inclut la Session Analyzer active, le circuit et la session Apex. Les refresh/reconnexions/redéploiements peuvent ainsi reprendre l'historique déjà calculé au lieu de repartir d'un cache serveur éphémère. La formule du score n'est pas modifiée.
+
+## V7.2.1794 — Nouvelle notation de vitesse kart (en validation)
+
+1. Depuis la Home, sélectionnez le circuit et **Kart fixe** ou **Quick Change** avant la course. Le mode est commun à la Session Velocity sur le serveur actif. Après une autre course sur le même circuit, cliquez sur **NOUVELLE COURSE · RÉINITIALISER LES NOTES**.
+2. **Kart fixe** : chaque équipe conserve sa machine ; à chaque nouveau relais, sa vitesse récente repart à zéro, mais son potentiel déjà démontré est conservé.
+3. **Quick Change** : configurez Spotter, activez **SUIVI KARTS** et validez les attributions KV. Le numéro Apex est le numéro affiché de l'équipe : il peut rester identique malgré un échange de machine. Une association KV incertaine n'alimente pas les notes.
+4. Ouvrez **Analyzer → KARTS** : le **Potentiel** est la meilleure fenêtre connue (10 tours, au moins 8 exploitables, moyenne des 6 meilleurs), **RÉC.** représente le relais actuel, **Δ** l'écart chronométrique avec la meilleure référence, **PREUVE** indique provisoire/confirmé (deux fenêtres indépendantes proches à 0,3 %). Dans un nouveau relais, **RÉC.** est provisoire à partir de 4 tours valides, puis calculé sur la fenêtre de 10 tours.
+5. La notation /100 est relative au meilleur potentiel du circuit dans la course (10 points par 1 % de chrono). **Elle ne contient aucune pénalité de régularité et n'est pas une prédiction de potentiel mécanique intrinsèque.** Un kart lent jamais exploité vite ne peut pas être révélé sans autre source de données.
+6. La vue historique **VELOCITY**, **SCORE RELAIS** et le moteur du classement « Position du chrono » de Focus Endurance / Équipe suivie sont conservés.
+
+Les tours sont ajoutés sur nouvelles impulsions Apex `llp` reçues par le navigateur (le premier tour de sortie de stands est ignoré). L'historique de score local est conservé lors d'un rechargement sur le même appareil, isolé par course/circuit/Session Velocity. En Quick Change, la meilleure référence d'un KV peut aussi être récupérée depuis le registre partagé sur un autre appareil ; la vitesse récente ne se transmet pas entre pilotes. Les données historiques antérieures à l'ouverture de l'application ne sont pas automatiquement rétro-importées.
+
+**Validation nécessaire avant usage stratégique :** recontrôler le suivi KV en conditions réelles, les transitions IN/OUT sur chaque layout Apex, et la disponibilité du score sur un appareil qui rejoint une course déjà démarrée.

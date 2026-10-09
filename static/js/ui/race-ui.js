@@ -241,6 +241,8 @@ function velocityRenderRoleOnly(role){
 }
 
 function render(){
+ if(typeof velocityRenderKartModeChoice==='function')velocityRenderKartModeChoice();
+ if(typeof velocitySyncLastValidLaps==='function')velocitySyncLastValidLaps();
  renderDeveloperRecorder();
  if(typeof renderVelocityWorkspaceSummary==='function')renderVelocityWorkspaceSummary();
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);if(circuitNameElement)circuitNameElement.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));

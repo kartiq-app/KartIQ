@@ -336,6 +336,8 @@ def _new_velocity_state():
             "client_id": "server",
         },
         "spotter_registry": {},
+        "kart_setup_mode": None,
+        "kart_scoring_epoch": secrets.token_hex(8),
         "analyzer_rules": None,
         "analyzer_strategy": None,
     }
@@ -2407,6 +2409,31 @@ def get_analyzer_strategy():
         return jsonify(ok=True, analyzer_strategy=deepcopy(STATE.get("analyzer_strategy")))
 
 
+@app.post("/api/kart-setup")
+def velocity_update_kart_setup():
+    """Mode de karts partagé par Session Velocity, indépendant du numéro Apex."""
+    body = request.get_json(force=True, silent=True) or {}
+    mode = body.get("mode")
+    reset = body.get("reset") is True
+    if not reset and mode not in {"fixed", "quick"}:
+        return jsonify(ok=False, error="Choisissez Kart fixe ou Quick Change"), 400
+    with SPOTTER_LOCK:
+        previous = STATE.get("kart_setup_mode")
+        if reset and previous not in {"fixed", "quick"}:
+            return jsonify(ok=False, error="Choisissez d'abord un mode"), 400
+        if not reset and previous == mode:
+            return jsonify(ok=True, mode=mode, epoch=STATE.get("kart_scoring_epoch"))
+        STATE["kart_setup_mode"] = previous if reset else mode
+        # Évite toute contamination par les karts d'une course précédente.
+        STATE["kart_scoring_epoch"] = secrets.token_hex(8)
+        # Seules les anciennes notes de vitesse sont purgées, pas l'identité KV
+        # ni les affectations et l'historique Spotter.
+        for row in (STATE.get("spotter_registry") or {}).values():
+            if isinstance(row, dict):
+                row.pop("speed", None)
+        return jsonify(ok=True, mode=STATE["kart_setup_mode"], epoch=STATE["kart_scoring_epoch"])
+
+
 @app.get("/api/spotter-registry")
 def get_spotter_registry():
     with SPOTTER_LOCK:
@@ -2474,6 +2501,8 @@ def reset_race_state_for_new_circuit(circuit_id):
     with SPOTTER_LOCK:
         STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
         STATE["spotter_registry"] = {}
+        STATE["kart_setup_mode"] = None
+        STATE["kart_scoring_epoch"] = secrets.token_hex(8)
     with ANALYZER_STRATEGY_LOCK:
         STATE["analyzer_strategy"] = None
     # Le live principal est ouvert dans chaque navigateur. Ne jamais arrêter ici

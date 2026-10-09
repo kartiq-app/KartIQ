@@ -1,3 +1,18 @@
+# V7.2.1794 — MODES KART FIXE / QUICK CHANGE + VITESSE LIVE KART
+
+- Ajoute sur la Home le mode de course **Kart fixe** / **Quick Change** (choix partagé dans la Session Velocity, enregistré par le serveur actif).
+- Les notes de vitesse sont isolées par session Velocity, circuit et identifiant de course. Bouton « Nouvelle course » pour réinitialiser les notes sans supprimer l’historique des affectations Spotter.
+- Kart fixe : associe les chronos à la machine de l’équipe pendant la course. Le passage aux stands relance l’analyse de vitesse récente sans effacer le potentiel démontré.
+- Quick Change : associe les chronos uniquement au **KV physique confirmé** dans le registre Spotter ; le numéro Apex ne suffit jamais pour identifier une machine. Les passages non confirmés ne sont pas notés.
+- Nouvel onglet **KARTS** dans Analyzer, à côté des vues VELOCITY et SCORE RELAIS conservées : **Potentiel démontré** (meilleure fenêtre 10 tours / 6 rapides, au moins 8 exploitables), **Vitesse récente** (relais actuel), écart au meilleur et indicateur provisoire/confirmé.
+- Scores de vitesse /100 proportionnels aux écarts chronométriques (10 points par 1 %), sans contribution de la régularité ni du nombre de tours. Indice de confiance indépendant : deuxième fenêtre non chevauchante dans les 0,3 %.
+- Les impulsions Apex `llp` alimentent la nouvelle note au fil des tours ; on ignore les tours IN et la première sortie, comme dans le classement de chrono V1793. Filtrage par machine/relais, pas par vitesse globale du plateau.
+- Registre KV : mémorise les meilleures références et permet une reprise de potentiel sur un autre appareil (quand l’état du suivi est confirmé et compatible avec la même course). La vitesse récente ne suit pas l’ancien pilote.
+- **Équipe suivie** et **Focus Endurance** restent raccordés à `velocityLiveLastLapRanking()` : même position du dernier chrono piste valide, indépendamment du compteur Tours. Équipe suivie n’affiche plus un chrono brut lorsque le classement partagé est indisponible.
+- Le moteur historique « SCORE RELAIS » reste inchangé pour comparaison.
+
+**Limites :** nouveau score = vitesse **démontrée**, pas niveau mécanique certain d’un kart qui n’a jamais roulé vite. Pas de correction temporelle fiable lorsque les horodatages de passage Apex ne sont pas disponibles. La collecte live démarre à la réception des événements sur le navigateur ; pas de reconstruction automatique d’une course antérieure.
+
 # V7.2.1793 — CORRECTION CLASSEMENT DERNIER CHRONO ENDURANCE
 
 - Focus Endurance / Analyzer : le renouvellement du dernier chrono ne dépend plus du compteur `laps`.
