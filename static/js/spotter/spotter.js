@@ -353,7 +353,16 @@ window.velocityKartDisplayAssignment=velocityKartDisplayAssignment;
 function spotterRegistryUpdateSpeed(kv,speed){
  if(!spotterState.kartTrackingEnabled||!kv)return;
  const row=spotterRegistryEnsure(kv);if(!row||row.trace==='interrupted')return;
+ const previous=row.speed||{};
  row.speed={...speed};
+ // Historique borné des évaluations par machine, persisté dans le registre Render.
+ // Ne conserver un point que si une note/état change réellement, pour limiter les écritures.
+ const fields=['potential','recent','confirmed','epoch'];
+ if(fields.some(field=>String(previous[field]??'')!==String(speed[field]??''))){
+  if(!Array.isArray(row.scoreHistory))row.scoreHistory=[];
+  row.scoreHistory.push({at:Date.now(),potential:Number.isFinite(Number(speed.potential))?Number(speed.potential):null,recent:Number.isFinite(Number(speed.recent))?Number(speed.recent):null,confirmed:Boolean(speed.confirmed),epoch:String(speed.epoch||'')});
+  row.scoreHistory=row.scoreHistory.slice(-1500);
+ }
  spotterScheduleRegistryPush();
 }
 window.spotterRegistryUpdateSpeed=spotterRegistryUpdateSpeed;
@@ -394,9 +403,15 @@ async function spotterOpenKartRegistry(){
  document.getElementById('spotterRegistryOverlay')?.remove();await spotterPullRegistry();
  const active=Boolean(spotterState.kartTrackingEnabled),counts=spotterRegistryCounts();
  const content=active
-  ? `<div class="spotter-registry-head"><div><div class="spotter-registry-title">REGISTRE DES KARTS</div><small>● SUIVI ACTIF · ${counts.active}/${counts.total} KV</small></div><button class="spotter-registry-close" type="button" onclick="spotterCloseKartRegistry()">×</button></div><div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary danger" type="button" onclick="spotterSetKartTracking(false)">ARRÊTER LE SUIVI</button><button class="spotter-primary" type="button" onclick="spotterCloseKartRegistry()">FERMER</button></div>`
-  : `<div class="spotter-registry-title">SUIVI KARTS</div><p class="spotter-registry-warning">Le suivi n’est fiable que si chaque échange est compté. Une interruption conserve l’historique connu mais Velocity ne reconstitue jamais une filiation incertaine.</p>${counts.total?`<div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div>`:''}<div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterCloseKartRegistry()">ANNULER</button><button class="spotter-primary" type="button" onclick="spotterSetKartTracking(true)">ACTIVER LE SUIVI</button></div>`;
+  ? `<div class="spotter-registry-head"><div><div class="spotter-registry-title">REGISTRE DES KARTS</div><small>● SUIVI ACTIF · ${counts.active}/${counts.total} KV</small></div><button class="spotter-registry-close" type="button" onclick="spotterCloseKartRegistry()">×</button></div><div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterExportKartRegistry()">EXPORTER HISTORIQUE KV</button><button class="spotter-secondary danger" type="button" onclick="spotterSetKartTracking(false)">ARRÊTER LE SUIVI</button><button class="spotter-primary" type="button" onclick="spotterCloseKartRegistry()">FERMER</button></div>`
+  : `<div class="spotter-registry-title">SUIVI KARTS</div><p class="spotter-registry-warning">Le suivi n’est fiable que si chaque échange est compté. Une interruption conserve l’historique connu mais Velocity ne reconstitue jamais une filiation incertaine.</p>${counts.total?`<div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div>`:''}<div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterExportKartRegistry()">EXPORTER HISTORIQUE KV</button><button class="spotter-secondary" type="button" onclick="spotterCloseKartRegistry()">ANNULER</button><button class="spotter-primary" type="button" onclick="spotterSetKartTracking(true)">ACTIVER LE SUIVI</button></div>`;
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel ${active?'wide':''}">${content}</div></div>`);
+}
+function spotterExportKartRegistry(){
+ const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1801',registry:spotterClone(spotterState.kartRegistry||{})};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
 function spotterCloseKartRegistry(){document.getElementById('spotterRegistryOverlay')?.remove()}
 

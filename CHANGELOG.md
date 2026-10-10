@@ -1,3 +1,9 @@
+## V7.2.1801 — Historique des notes KV et version affichée
+- Enregistrement borné des évolutions POT/RÉC et statut dans le registre KV synchronisé avec Render.
+- Export JSON du registre complet (affectations, scores et évolution).
+- Mise à jour APP_VERSION et du cache service worker.
+- Les historiques antérieurs à cette version ne peuvent pas être recréés si non enregistrés.
+
 ## V7.2.1800 — correctifs interface / Spotter (candidat partiel)
 - Registre KV : POT, RÉC, DER, kart Apex et équipe sur une seule ligne ; largeur 95 %, historique défilant.
 - Radar grand écran : KV, kart Apex, équipe, dernier tour, temps en piste ; défilement vertical conservé.
