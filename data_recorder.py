@@ -38,6 +38,7 @@ from apex_grid import parse_grid_frame
 from apex_table import ApexTable
 from protocol_engine import ProtocolEngine
 from backend.services.race_state import RaceStateService
+from backend.services.recorder_relay_matrix import compute_recorder_relay_matrix
 
 
 def _now_ms() -> int:
@@ -401,6 +402,15 @@ class RecorderStore:
                 payload_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
             )""",
             "CREATE INDEX IF NOT EXISTS idx_velocity_analyzer_relay_cache_updated ON velocity_analyzer_relay_cache(updated_at_ms)",
+            # V1797: une cellule exhaustive par (enregistrement, équipe, relais).
+            # Le payload est exactement celui de score_compute() utilisé par Analyzer.
+            """CREATE TABLE IF NOT EXISTS velocity_session_relay_scores (
+                recording_id TEXT NOT NULL, row_id BIGINT NOT NULL,
+                relay_index BIGINT NOT NULL, payload_json TEXT NOT NULL,
+                updated_at_ms BIGINT NOT NULL,
+                PRIMARY KEY(recording_id,row_id,relay_index)
+            )""",
+            "CREATE INDEX IF NOT EXISTS idx_session_relay_scores_recording ON velocity_session_relay_scores(recording_id)",
             """CREATE TABLE IF NOT EXISTS velocity_race_team_state (
                 state_id TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
             )""",
@@ -553,12 +563,85 @@ class RecorderStore:
             (_safe_json(data), _now_ms()),
         )
 
+    def save_session_relay_matrix(self, rid: str, matrix: dict[str, Any]) -> int:
+        """Upsert seulement les cellules modifiées, sans effacer les anciens relais.
+
+        Recalcul du moteur unique possible après redémarrage/backfill; aucune
+        duplication SQL des scores d'un relais grâce à la clé primaire.
+        """
+        existing = self._execute(
+            "SELECT row_id,relay_index,payload_json FROM velocity_session_relay_scores WHERE recording_id=?",
+            (rid,), fetchall=True,
+        ) or []
+        previous = {(int(row["row_id"]), int(row["relay_index"])): row["payload_json"] for row in existing}
+        changed = 0
+        for team in matrix.get("teams") or []:
+            row_id = int(team.get("apex_row") or 0)
+            if row_id <= 0:
+                continue
+            for cell in team.get("relays") or []:
+                index = int(cell.get("relay_index") or 0)
+                if index <= 0:
+                    continue
+                payload = {"team": team.get("team") or "", "kart": team.get("kart") or "", "cell": cell,
+                           "sector_stats": team.get("sector_stats") or {}}
+                serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                if previous.get((row_id, index)) == serialized:
+                    continue
+                self._execute(
+                    """INSERT INTO velocity_session_relay_scores(recording_id,row_id,relay_index,payload_json,updated_at_ms)
+                       VALUES (?,?,?,?,?) ON CONFLICT(recording_id,row_id,relay_index)
+                       DO UPDATE SET payload_json=excluded.payload_json,updated_at_ms=excluded.updated_at_ms""",
+                    (rid, row_id, index, serialized, _now_ms()),
+                )
+                changed += 1
+        return changed
+
+    def session_relay_matrix_version(self, rid: str) -> tuple[int, int]:
+        """Version légère pour ETag HTTP, sans lire toutes les cellules."""
+        row = self._execute(
+            "SELECT MAX(updated_at_ms) AS updated, COUNT(*) AS total FROM velocity_session_relay_scores WHERE recording_id=?",
+            (rid,), fetchone=True,
+        ) or {}
+        return int(row.get("updated") or 0), int(row.get("total") or 0)
+
+    def session_relay_matrix_snapshot(self, rid: str) -> dict[str, Any]:
+        """Lecture légère de tout l'historique, même si le navigateur était fermé."""
+        rows = self._execute(
+            """SELECT row_id,relay_index,payload_json,updated_at_ms FROM velocity_session_relay_scores
+               WHERE recording_id=? ORDER BY row_id,relay_index""",
+            (rid,), fetchall=True,
+        ) or []
+        by_team = {}
+        last_update = 0
+        max_relay = 0
+        for row in rows:
+            ident = int(row["row_id"])
+            relay_index = int(row["relay_index"])
+            try:
+                payload = json.loads(row["payload_json"])
+            except (ValueError, TypeError):
+                continue
+            item = by_team.setdefault(ident, {"apex_row": ident, "team": payload.get("team") or "",
+                                               "kart": payload.get("kart") or "", "relays": [], "sector_stats": {}})
+            item["team"] = payload.get("team") or item["team"]
+            item["kart"] = payload.get("kart") or item["kart"]
+            item["sector_stats"] = payload.get("sector_stats") or item["sector_stats"]
+            item["relays"].append(payload.get("cell") or {})
+            max_relay = max(max_relay, relay_index)
+            last_update = max(last_update, int(row.get("updated_at_ms") or 0))
+        return {"maxRelay": max_relay, "teams": list(by_team.values()),
+                "updated_at_ms": last_update, "source": "recorder-persisted"}
+
     def score_matrix_snapshot(self, rid: str) -> dict[str, Any]:
         """Small, saved, read-only score matrix for mobile; never triggers Apex calls.
 
         One latest snapshot per (team, relay), even for a 24-hour race. Scores
         remain available after the race ends, unlike in-memory job results.
         """
+        full = self.session_relay_matrix_snapshot(rid)
+        if full["teams"]:
+            return full
         rows = self._execute(
             """SELECT row_id,team,pilot,kart,relay_index,score,confidence,
                       average,best3,consistency,corrected_delta,condition_mode,
@@ -897,7 +980,7 @@ class RecorderStore:
             return False
         if rec.get("status") in {"starting", "waiting", "recording", "reconnecting"}:
             raise ValueError("Arrêtez l'enregistrement avant de le supprimer.")
-        for table in ("velocity_recorder_frames", "velocity_recorder_laps", "velocity_recorder_sectors", "velocity_recorder_pits", "velocity_recorder_scores", "velocity_recorder_events", "velocity_recorder_snapshots"):
+        for table in ("velocity_session_relay_scores", "velocity_recorder_frames", "velocity_recorder_laps", "velocity_recorder_sectors", "velocity_recorder_pits", "velocity_recorder_scores", "velocity_recorder_events", "velocity_recorder_snapshots"):
             self._execute(f"DELETE FROM {table} WHERE recording_id=?", (rid,))
         self._execute("DELETE FROM velocity_recordings WHERE id=?", (rid,))
         return True
@@ -1284,6 +1367,12 @@ class DataRecorderWorker:
         self.score_engine = VelocityRecorderScoreEngine()
         self.last_score_at = 0
         self.last_score_signatures: dict[int, tuple] = {}
+        self.last_matrix_at = 0
+        self.score_event = threading.Event()
+        self.score_thread = None
+        self.score_force = False
+        self.data_version = 0
+        self.scored_version = -1
         self.last_snapshot_at = 0
         self.counters = {"frames": int(recording.get("frames_count") or 0), "laps": int(recording.get("laps_count") or 0), "sectors": int(recording.get("sectors_count") or 0), "pits": int(recording.get("pits_count") or 0), "scores": int(recording.get("scores_count") or 0)}
         self.on_done = on_done
@@ -1300,10 +1389,12 @@ class DataRecorderWorker:
 
     def _hydrate_history(self):
         """Conserve le contexte Velocity Score si Render redémarre pendant un REC."""
-        if not self.counters["laps"] and not self.counters["pits"]:
-            return
+        # Ne jamais inférer l'absence d'historique des seuls compteurs : un
+        # crash peut survenir entre le commit d'un tour et leur sauvegarde.
         try:
             laps, pits = self.store.worker_history(self.id)
+            self.counters["laps"] = max(self.counters["laps"], len(laps))
+            self.counters["pits"] = max(self.counters["pits"], len(pits))
             for lap in laps:
                 try:
                     row = int(lap.get("row_id") or 0)
@@ -1317,7 +1408,11 @@ class DataRecorderWorker:
                 bucket["kart"] = lap.get("kart") or bucket.get("kart")
                 seconds = lap.get("lap_seconds")
                 if isinstance(seconds, (int, float)) and math.isfinite(float(seconds)) and float(seconds) > 0:
-                    bucket["laps"].append({"lap": int(lap.get("lap_number") or 0), "seconds": float(seconds), "received_at_ms": int(lap.get("received_at_ms") or 0)})
+                    bucket["laps"].append({"lap": int(lap.get("lap_number") or 0), "seconds": float(seconds),
+                                           "sector1": round(float(lap.get("sector_1_seconds") or 0) * 1000),
+                                           "sector2": round(float(lap.get("sector_2_seconds") or 0) * 1000),
+                                           "sector3": round(float(lap.get("sector_3_seconds") or 0) * 1000),
+                                           "received_at_ms": int(lap.get("received_at_ms") or 0)})
             for pit in pits:
                 if str(pit.get("event") or "").upper() != "IN":
                     continue
@@ -1341,8 +1436,10 @@ class DataRecorderWorker:
             return
         self.thread = threading.Thread(target=self._run, name=f"velocity-recorder-{self.id}", daemon=True)
         self.backfill_thread = threading.Thread(target=self._backfill_loop, name=f"velocity-recorder-backfill-{self.id}", daemon=True)
+        self.score_thread = threading.Thread(target=self._score_loop, name=f"velocity-recorder-score-{self.id}", daemon=True)
         self.lease_thread = threading.Thread(target=self._lease_loop, name=f"velocity-recorder-lease-{self.id}", daemon=True)
         self.lease_thread.start()
+        self.score_thread.start()
         self.thread.start()
         self.backfill_thread.start()
         self.backfill_wakeup.set()
@@ -1350,6 +1447,7 @@ class DataRecorderWorker:
     def stop(self):
         self.stop_event.set()
         self.backfill_wakeup.set()
+        self.score_event.set()
         try:
             if self.ws:
                 self.ws.close()
@@ -1422,9 +1520,15 @@ class DataRecorderWorker:
                     self.stop_event.wait(retry)
         finally:
             try:
-                # Capture the final scores as well during an explicit STOP.
-                with self.data_lock:
-                    self._snapshot_scores(force=True)
+                # Attendre le backfill éventuel, puis sauvegarder la dernière
+                # matrice complète avant de fermer la Session Course.
+                if self.backfill_thread and self.backfill_thread.is_alive():
+                    self.backfill_thread.join(timeout=25)
+                # Terminer le dernier calcul avant de relâcher le lease. Le WS
+                # et les callbacks Apex restent indépendants du moteur score.
+                self._snapshot_scores(force=True)
+                if self.score_thread:
+                    self.score_thread.join(timeout=30)
             except Exception:
                 pass
             self.store.release_lease(self.id, self.owner_id)
@@ -1581,7 +1685,8 @@ class DataRecorderWorker:
                 }
                 if self.store.upsert_lap(self.id, record, preserve_existing_timestamp=True):
                     self.counters["laps"] += 1; new["laps"] += 1
-                existing_laps[lap_no] = {"lap": lap_no, "seconds": lap_ms / 1000, "received_at_ms": at}
+                existing_laps[lap_no] = {"lap": lap_no, "seconds": lap_ms / 1000,
+                                         "sector1": s1, "sector2": s2, "sector3": s3, "received_at_ms": at}
                 for sector, value in ((1, s1), (2, s2), (3, s3)):
                     if value <= 0:
                         continue
@@ -1600,6 +1705,8 @@ class DataRecorderWorker:
             self.backfill_total_pits += new["pits"]
             self.backfill_total_sectors += new["sectors"]
             self._persist_counters()
+            if history.get("laps") or history.get("pits"):
+                self.data_version += 1
         return new
 
     def _backfill_loop(self):
@@ -1668,14 +1775,27 @@ class DataRecorderWorker:
                 3: (driver.get("sector_3"), driver.get("sector_3_kind")),
             }
             prev = self.seen.get(row)
+            marker = str(driver.get("last_lap_updated_at") or "")
             if prev is None:
-                self.seen[row] = {"laps": laps, "last": last, "status": status, "pit_stops": pit_stops, "sectors": {}, "sector_values": {}}
+                self.seen[row] = {"laps": laps, "last": last, "llp_marker": marker, "status": status, "pit_stops": pit_stops, "sectors": {}, "sector_values": {}}
                 prev = self.seen[row]
             else:
                 last_seconds = _time_seconds(last)
-                completed = (laps > int(prev.get("laps") or 0) or (last and last not in {"—", "--"} and last != prev.get("last"))) and last_seconds is not None
+                # Priorité à l'impulsion llp native. Elle distingue deux tours
+                # successifs avec le même chrono et fonctionne avec laps=0.
+                marker_changed = bool(marker and marker != prev.get("llp_marker"))
+                laps_advanced = laps > int(prev.get("laps") or 0)
+                text_changed = last and last not in {"—", "--"} and last != prev.get("last")
+                completed = last_seconds is not None and (marker_changed or laps_advanced or (not marker and text_changed))
                 if completed:
-                    lap_number = laps if laps > 0 else int(prev.get("laps") or 0) + 1
+                    # Sans colonne Tours, un compteur monotone local, repris du
+                    # dernier historique persistant, empêche d'écraser toujours L1.
+                    lap_number = laps if laps > 0 else max(
+                        int(prev.get("synthetic_lap") or 0),
+                        max((int(x.get("lap") or 0) for x in bucket.get("laps") or []), default=0),
+                    ) + 1
+                    prev["synthetic_lap"] = lap_number
+                    self.data_version += 1
                     sectors = prev.get("sectors") or {}
                     relay_index = pit_stops + 1
                     lap = {
@@ -1688,7 +1808,11 @@ class DataRecorderWorker:
                     }
                     inserted = self.store.upsert_lap(self.id, lap)
                     existing = {int(x.get("lap") or 0): x for x in bucket["laps"]}
-                    existing[lap_number] = {"lap": lap_number, "seconds": last_seconds, "received_at_ms": at}
+                    existing[lap_number] = {"lap": lap_number, "seconds": last_seconds,
+                                            "sector1": round(float((sectors.get(1) or {}).get("seconds") or 0) * 1000),
+                                            "sector2": round(float((sectors.get(2) or {}).get("seconds") or 0) * 1000),
+                                            "sector3": round(float((sectors.get(3) or {}).get("seconds") or 0) * 1000),
+                                            "received_at_ms": at}
                     bucket["laps"] = [existing[k] for k in sorted(existing)]
                     if inserted:
                         self.counters["laps"] += 1
@@ -1717,6 +1841,7 @@ class DataRecorderWorker:
 
             prev["laps"] = laps
             prev["last"] = last
+            prev["llp_marker"] = marker
             prev["status"] = status
             prev["pit_stops"] = pit_stops
 
@@ -1729,33 +1854,80 @@ class DataRecorderWorker:
         inserted = self.store.append_pit_once(self.id, item)
         if inserted:
             self.counters["pits"] += 1
+            self.data_version += 1
         if event == "IN":
             key = (int(laps or 0), int(pit_stops or 0))
             if not any((int(p.get("lap") or 0), int(p.get("stop") or 0)) == key for p in bucket["pits"]):
                 bucket["pits"].append({"lap": laps, "pilot": driver.get("pilot"), "event": "IN", "stop": pit_stops})
                 bucket["pits"].sort(key=lambda item: int(item.get("lap") or 0))
+            # Enregistrer la note du relais qui se termine, avant que le
+            # relais suivant ne devienne le dernier pour le Velocity Score.
+            self._snapshot_scores(force=True)
 
     def _snapshot_scores(self, force=False):
+        """Planifie un calcul hors du thread WebSocket Apex (priorité live)."""
+        now = _now_ms()
         if self.backfill_syncing and not force:
             return
-        now = _now_ms()
-        if not force and now - self.last_score_at < 15_000:
+        if not force and (now - self.last_score_at < 15_000 or self.data_version == self.scored_version):
             return
         self.last_score_at = now
-        for score in self.score_engine.compute(self.teams):
-            row = int(score.get("row_id") or 0)
-            signature = (
-                score.get("score"), score.get("confidence"), score.get("relay_index"),
-                round(float(score.get("average") or 0), 4), round(float(score.get("best3") or 0), 4),
-                round(float(score.get("consistency") or 0), 4), round(float(score.get("corrected_delta") or 0), 4),
-                str(score.get("condition_mode") or ""), str(score.get("criteria_json") or ""), str(score.get("weights_json") or ""),
-            )
-            if not force and self.last_score_signatures.get(row) == signature:
+        if force:
+            self.score_force = True
+        self.score_event.set()
+
+    def _score_loop(self):
+        """Un seul worker score par Session Course, jamais un job par mobile."""
+        while True:
+            self.score_event.wait(timeout=1)
+            if not self.score_event.is_set() and not self.stop_event.is_set():
                 continue
-            self.last_score_signatures[row] = signature
-            score["received_at_ms"] = now
-            self.store.append_score(self.id, score)
-            self.counters["scores"] += 1
+            self.score_event.clear()
+            with self.data_lock:
+                teams = deepcopy(self.teams)
+                version = self.data_version
+                force = self.score_force
+                self.score_force = False
+            if teams:
+                try:
+                    if str(self.recording.get("name") or "").startswith("SESSION_V1796:"):
+                        matrix = compute_recorder_relay_matrix(teams)
+                        self.store.save_session_relay_matrix(self.id, matrix)
+                    # L'ancien Velocity Score reste enregistré séparément pour
+                    # compatibilité et comparaison avec la matrice STATS complète.
+                    now = _now_ms()
+                    for score in self.score_engine.compute(teams):
+                        row = int(score.get("row_id") or 0)
+                        signature = (
+                            score.get("score"), score.get("confidence"), score.get("relay_index"),
+                            round(float(score.get("average") or 0), 4),
+                            round(float(score.get("best3") or 0), 4),
+                            round(float(score.get("consistency") or 0), 4),
+                            round(float(score.get("corrected_delta") or 0), 4),
+                            str(score.get("condition_mode") or ""),
+                            str(score.get("criteria") or ""), str(score.get("weights") or ""),
+                        )
+                        if not force and self.last_score_signatures.get(row) == signature:
+                            continue
+                        self.last_score_signatures[row] = signature
+                        score["received_at_ms"] = now
+                        self.store.append_score(self.id, score)
+                        with self.data_lock:
+                            self.counters["scores"] += 1
+                    with self.data_lock:
+                        self.scored_version = version
+                        self._persist_counters()
+                except Exception as exc:
+                    # Le chronométrage Apex ne doit jamais être ralenti ou
+                    # déconnecté si le moteur des scores rencontre une erreur.
+                    try:
+                        self.store.append_event(self.id, _now_ms(), {
+                            "kind": "relay_score_error", "message": str(exc)[:400]
+                        })
+                    except Exception:
+                        pass
+            if self.stop_event.is_set() and not self.score_event.is_set():
+                break
 
 
 class RecorderManager:

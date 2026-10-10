@@ -1,3 +1,16 @@
+## Velocity V7.2.1797 — Scores Relais persistants sur Render
+
+- Une Session Course active déclenche **un seul** Recorder partagé (jamais un collecteur par téléphone).
+- Le moteur Score Relais serveur `score_compute()` est maintenant utilisé aussi par le Recorder à partir des tours et arrêts Apex réellement capturés : chaque relais reçoit sa propre cellule persistante, avec critères, poids et deltas, et les mini-relais non notés ne décalent pas les colonnes.
+- L'ancien **Velocity Score** du Recorder continue d'être sauvegardé séparément, sans écraser la matrice Score Relais.
+- À la réouverture d'Analyzer → SCORE RELAIS, lecture directe de l'ensemble des cellules depuis PostgreSQL, sans reconstruction du navigateur ni deuxième collecte STATS. Un ETag HTTP évite les transferts 4G lorsque rien n'a changé.
+- Le calcul des scores est effectué dans un worker séparé du WebSocket Apex. Une mise à jour réelle peut arriver avant le prochain calcul de score (cadence 15 secondes), mais le live Apex n'attend jamais le moteur des notes.
+- Les données de tours et de relais sont réhydratées après redémarrage Render, y compris si les compteurs persistés étaient momentanément en retard. Les impulsions `llp` sont prises en charge même si `laps=0` et même si deux tours consécutifs sont identiques.
+- Une Session Course terminée arrête les calculs autonomes. Les scores enregistrés restent lisibles par le serveur avec l'identifiant de session (`/api/race-session/score-snapshot?session_id=...`) pour son workspace.
+- **PostgreSQL obligatoire sur Render** (`DATABASE_URL`) : une session est refusée clairement si la base durable n'est pas configurée. Le fallback SQLite est réservé au développement local.
+- Les nouvelles notes **Potentiel / Vitesse récente par KV** restent séparées et dépendent encore du client : cette mise à jour porte sur Velocity Score et Score Relais complet.
+- Les résultats sont aussi fiables que les tours, stands et pilotes effectivement fournis par Apex ; si STATS est incomplet, le serveur ne peut pas inventer les relais manquants.
+
 ## Velocity V7.2.1796 — Mobile 4G et Session Course
 
 - La création **explicite** d’une Session Course démarre son Data Recorder partagé sur Render.

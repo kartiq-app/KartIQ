@@ -1,3 +1,16 @@
+# V7.2.1797 — Persistance Score Relais / Render (mobile 4G)
+
+- Adaptateur vers le **même moteur serveur** de Score Relais (`score_compute`) depuis le Data Recorder.
+- Enregistrement idempotent en base d'une cellule par équipe et par relais, incluant score, critères, coefficients et métriques détaillées.
+- Conservation des mini-relais sans score, et des anciennes cellules lors des changements de relais.
+- Snapshot récupérable depuis Analyzer sans téléchargement ni recalcul des STATS ; requêtes conditionnelles ETag (304).
+- Traitement des scores déporté dans un worker distinct du WebSocket Apex pour préserver le live.
+- Prise en compte des nouvelles impulsions llp avec `laps=0`, y compris les chronos identiques successifs.
+- Reprise robuste des tours en base après redémarrage Render, même avec compteurs partiellement sauvegardés.
+- Déclenchement exclusif par Session Course active ; PostgreSQL requis sur Render.
+- Aucun changement des règles du classement chrono Focus Endurance / Équipe suivie ni du système Quick Change / KV.
+- Les scores Potentiel / Vitesse récente par KV ne font pas partie de cette centralisation.
+
 # V7.2.1796 — Mobile 4G / Collecte Session Course
 
 - Le Recorder Apex/Velocity Score démarre uniquement lors de la création explicite d'une Session Course, et s'arrête à sa clôture.

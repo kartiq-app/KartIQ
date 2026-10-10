@@ -60,9 +60,10 @@ let analyzerRelayScoreRenderSignature='';
 let analyzerRecorderLastFetch=0;
 let analyzerRecorderFetching=false;
 let analyzerRecorderLastUpdated=0;
+let analyzerRecorderETag='';
 
 function analyzerRecorderActive(){
- return Boolean(window.velocityRaceSession?.status==='active'&&window.velocityRaceSession?.recorder_id);
+ return Boolean(window.velocityRaceSession?.recorder_id);
 }
 async function analyzerFetchRecorderScores(force=false){
  if(!analyzerRecorderActive()||analyzerRecorderFetching)return false;
@@ -70,12 +71,15 @@ async function analyzerFetchRecorderScores(force=false){
  analyzerRecorderFetching=true;
  analyzerRecorderLastFetch=Date.now();
  try{
-  const response=await fetch('/api/race-session/score-snapshot',{cache:'no-store'});
+  const headers=analyzerRecorderETag&&analyzerRelayScoreData?{'If-None-Match':analyzerRecorderETag}:{};
+  const response=await fetch('/api/race-session/score-snapshot',{cache:'no-store',headers});
+  if(response.status===304)return true;
   if(!response.ok)throw new Error('Scores session indisponibles');
+  analyzerRecorderETag=response.headers.get('ETag')||'';
   const data=await response.json();
-  if(!data.ok||!data.active)return false;
+  if(!data.ok)return false;
   const update=Number(data.updated_at_ms)||0;
-  if(!update||update===analyzerRecorderLastUpdated)return true;
+  if(!update||(update===analyzerRecorderLastUpdated&&analyzerRelayScoreData))return true;
   const result=data.result||{};
   if(!Array.isArray(result.teams)||!result.teams.length)return true;
   // Only the recorder's PERSISTED matrix is applied. It never requests STATS
@@ -1907,7 +1911,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
  const data=analyzerRelayScoreData;
  if(!data){
   const signature=`empty:${analyzerRelayContextKey()}`;
-  if(analyzerRelayScoreRenderSignature!==signature){host.innerHTML='<div class="analyzer-empty">Cliquez sur SCORE RELAIS pour reconstruire les relais depuis STATS.</div>';analyzerRelayScoreRenderSignature=signature}
+  if(analyzerRelayScoreRenderSignature!==signature){host.innerHTML='<div class="analyzer-empty">Scores Relais indisponibles : vérifiez qu’une Session Course avec Recorder a été démarrée. Si oui, patientez quelques secondes pour la synchronisation Render.</div>';analyzerRelayScoreRenderSignature=signature}
   return;
  }
  const rowSignature=(state.drivers||[]).map(d=>`${Number(d.apex_row)||0}:${String(d.driver||'')}:${String(d.pos||'')}`).join('|');
@@ -1925,7 +1929,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
   const d=item.driver,rowId=Number(d.apex_row),team=byRow.get(rowId),scores=data.matrix.get(rowId)||new Map(),kart=validKartNumber(d)||d.apex||'—';
   const follow=`followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})`;
   fixedRows.push(`<tr onclick="${follow}"><td class="kartiq-top relay-fixed-top">${item.kartiqTop}</td><td class="kartiq-pos relay-fixed-pos">${analyzerEscape(d.pos||'—')}</td><td class="kartiq-kart relay-fixed-kart">${analyzerEscape(kart)}</td><td class="kartiq-team relay-fixed-team" title="${analyzerEscape(analyzerRelayScorePilotLabel(d))}">${analyzerEscape(analyzerRelayScorePilotLabel(d))}</td></tr>`);
-  const relays=Array.from({length:maxRelay},(_,i)=>{const cell=scores.get(i+1),relay=team?.relays?.find(r=>r.index===i+1);if(!cell)return `<td class="relay-score-col empty" title="${relay&&relay.laps<3?'Moins de 3 tours exploitables':'Relais non disponible'}">—</td>`;const delta=Number.isFinite(cell.correctedDelta)?` · Δ ${analyzerKartDeltaLabel(cell.correctedDelta)}`:'';return `<td class="relay-score-col ${analyzerScoreClass(cell.score)} kartiq-tooltip" data-tooltip="R${i+1} · ${relay.laps} tours · T.MOYEN ${formatApexMilliseconds(relay.average*1000)}${delta}">${cell.score}</td>`}).join('');
+  const relays=Array.from({length:maxRelay},(_,i)=>{const cell=scores.get(i+1),relay=team?.relays?.find(r=>r.index===i+1);if(!cell||typeof cell.score!=='number')return `<td class="relay-score-col empty" title="${relay&&relay.laps<3?'Moins de 3 tours exploitables':'Relais non disponible'}">—</td>`;const delta=Number.isFinite(cell.correctedDelta)?` · Δ ${analyzerKartDeltaLabel(cell.correctedDelta)}`:'';return `<td class="relay-score-col ${analyzerScoreClass(cell.score)} kartiq-tooltip" data-tooltip="R${i+1} · ${relay.laps} tours · T.MOYEN ${formatApexMilliseconds(relay.average*1000)}${delta}">${cell.score}</td>`}).join('');
   relayRows.push(`<tr onclick="${follow}">${relays}</tr>`);
  });
  const qualLabel=data.qualification?.session?.name?`R1 référencé sur ${analyzerEscape(data.qualification.session.name)}`:'R1 sans qualification reconnue : transition neutralisée';
@@ -5384,6 +5388,7 @@ async function refreshRaceSessionManager(){
   velocityRaceTeams=data.teams||[];
   velocityRaceSession=data.session||null;
   window.velocityRaceSession=velocityRaceSession;
+  if(velocityRaceSession?.recorder_id&&analyzerVelocityView==='relays')void analyzerFetchRecorderScores(true).then(()=>{if(typeof renderAnalyzer==='function')renderAnalyzer()});
   velocitySessionButtonUpdate(velocityRaceSession);
   if(!velocityRaceTeamId&&velocityRaceSession?.team_id)velocityRaceTeamId=velocityRaceSession.team_id;
   if(!velocityRaceTeamId&&velocityRaceTeams[0])velocityRaceTeamId=velocityRaceTeams[0].id;

@@ -1010,7 +1010,14 @@ function showMode(mode){
  // un clone de Qualification pour le dashboard, mais son bouton Focus ouvre
  // le Focus Sprint dédié à Endurance.
  const screen=document.getElementById(mode);
- screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode==='spotter'&&typeof spotterEnterMode==='function')spotterEnterMode();if(mode!=='home'&&mode!=='spotter')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode});if(VELOCITY_MOBILE_4G&&typeof render==='function')render()
+ screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode==='spotter'&&typeof spotterEnterMode==='function')spotterEnterMode();if(mode!=='home'&&mode!=='spotter')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode});if(VELOCITY_MOBILE_4G&&typeof render==='function')render();
+ if(mode==='analyzer'&&typeof refreshRaceSessionManager==='function'){
+  void refreshRaceSessionManager().then(()=>{
+   if(currentMode==='analyzer'&&typeof analyzerFetchRecorderScores==='function'&&window.velocityRaceSession?.recorder_id){
+    return analyzerFetchRecorderScores(true).then(()=>{if(currentMode==='analyzer'&&typeof renderAnalyzer==='function')renderAnalyzer()});
+   }
+  });
+ }
 }
 
 let sprintFocusWakeLock=null;

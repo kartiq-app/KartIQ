@@ -1823,9 +1823,15 @@ def get_race_session():
 def race_session_score_snapshot():
     # Read-only: does not connect to Apex or start a score job.
     workspace_id = _current_workspace_id()
+    requested_session = str(request.args.get("session_id") or "").strip()
     with TEAM_DATA_LOCK:
         active = _active_session_for_workspace(TEAM_DATA, workspace_id)
-        rid = str((active or {}).get("recorder_id") or "")
+        chosen = active
+        if requested_session:
+            chosen = next((item for item in TEAM_DATA.get("sessions", [])
+                           if str(item.get("id")) == requested_session
+                           and str(item.get("workspace_id")) == str(workspace_id)), None)
+        rid = str((chosen or {}).get("recorder_id") or "")
     if not rid:
         return jsonify(ok=True, active=False, result={"maxRelay": 0, "teams": []})
     try:
@@ -1833,9 +1839,22 @@ def race_session_score_snapshot():
         recording = manager.store.get_recording(rid)
         if not recording:
             return jsonify(ok=False, error="Enregistrement introuvable"), 404
+        # Si rien n'a changé, économiser les données mobiles : réponse 304.
+        updated, count = manager.store.session_relay_matrix_version(rid)
+        etag = f'"velocity-relays-{rid}-{updated}-{count}"' if count else None
+        if etag and request.headers.get("If-None-Match") == etag:
+            response = app.response_class(status=304)
+            response.headers["ETag"] = etag
+            response.headers["Cache-Control"] = "private, no-cache"
+            return response
         result = manager.store.score_matrix_snapshot(rid)
-        return jsonify(ok=True, active=True, recording_status=recording.get("status"),
-                       updated_at_ms=result.get("updated_at_ms"), result=result)
+        response = jsonify(ok=True, active=(chosen or {}).get("status") == "active",
+                           recording_status=recording.get("status"),
+                           updated_at_ms=result.get("updated_at_ms"), result=result)
+        response.headers["Cache-Control"] = "private, no-cache"
+        if etag:
+            response.headers["ETag"] = etag
+        return response
     except Exception as exc:
         return jsonify(ok=False, error=f"Scores enregistrés indisponibles : {exc}"), 503
 
@@ -1873,6 +1892,8 @@ def create_race_session():
         # Explicit creation is the only automatic entry point for Apex Recorder.
         try:
             manager = _get_recorder_manager()
+            if os.environ.get("RENDER") == "true" and not manager.store.persistent:
+                return jsonify(ok=False, error="DATABASE_URL PostgreSQL obligatoire sur Render pour conserver tous les scores après une fermeture ou un redémarrage."), 503
             recording = manager.create(f"{VELOCITY_SESSION_RECORDER_PREFIX}{sid}", circuit_id)
         except Exception as exc:
             return jsonify(ok=False, error=f"Session non démarrée : Recorder indisponible ({exc}). Aucun calcul de fond lancé."), 503
