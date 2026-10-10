@@ -1922,3 +1922,12 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-kart-mode-reset:hover,.spotter-kart-mode-done:hover{border-color:#ff8a32}
 @media(max-width:899px){.spotter-kart-mode-overlay{padding:12px}.spotter-kart-mode-panel{padding:16px}.spotter-kart-mode-options{grid-template-columns:1fr}.spotter-kart-mode-choice{min-height:75px}}
 @media(min-width:900px){.spotter-mobile-kart-mode-link{display:none!important}}
+
+/* V7.2.1800 — registre une ligne / KV, historique défilant */
+.spotter-registry-panel.wide{width:95vw;max-width:none}
+.spotter-registry-row{grid-template-columns:55px 48px minmax(125px,180px) 105px 105px 105px 105px minmax(0,1fr);gap:8px}
+.spotter-registry-kart,.spotter-registry-current,.spotter-registry-stat{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8edf5}
+.spotter-registry-current{font-weight:800}
+.spotter-registry-history{min-width:0;overscroll-behavior-x:contain;scrollbar-width:thin}
+.spotter-registry-entry{width:235px;min-width:235px;max-width:235px;justify-content:space-between}
+.spotter-registry-entry b{overflow:hidden;text-overflow:ellipsis;min-width:0}

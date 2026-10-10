@@ -1,3 +1,9 @@
+## V7.2.1800 — correctifs interface / Spotter (candidat partiel)
+- Registre KV : POT, RÉC, DER, kart Apex et équipe sur une seule ligne ; largeur 95 %, historique défilant.
+- Radar grand écran : KV, kart Apex, équipe, dernier tour, temps en piste ; défilement vertical conservé.
+- Spotter : protection temporaire contre restauration d’une entrée déjà validée par snapshot distant ; déverrouillage au pit-out.
+- ATTENTION : récupération des scores relais manquants non corrigée dans ce candidat. Ne pas considérer cette archive comme une version finale validée.
+
 # V7.2.1797 — Persistance Score Relais / Render (mobile 4G)
 
 - Adaptateur vers le **même moteur serveur** de Score Relais (`score_compute`) depuis le Data Recorder.
@@ -2122,3 +2128,9 @@
 - Le champ de 25 caractères est compacté avec compteur intégré pour libérer de la place aux commandes ENVOYER et URGENT.
 ## V7.2.1799
 - Affichage des observations des karts en piste sans KV confirmé, sans attribuer leur identité physique.
+
+### V7.2.1800 — Rattrapage Score Relais (10 octobre 2026)
+- Réconciliation automatique des cellules Score Relais depuis les tours et passages aux stands persistés de la Session Course, sans accès Apex ni reconstruction STATS.
+- Calcul asynchrone et limité à une fois par minute par session active/consultée ; upsert sans suppression des notes existantes.
+- Un relais dont les tours sont absents ne reçoit pas de note artificielle (cas RACING UP ALPHA R1–R4 dans l'export fourni).
+- Maintien des corrections d'interface KV/radar et validation Spotter du candidat partiel.

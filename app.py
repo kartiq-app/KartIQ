@@ -1819,6 +1819,9 @@ def get_race_session():
     return jsonify(ok=True,session=_race_session_public(session) if session else None,teams=teams)
 
 
+_RELAY_REPAIR_CHECKED_AT = {}
+_RELAY_REPAIR_LOCK = threading.Lock()
+
 @app.get("/api/race-session/score-snapshot")
 def race_session_score_snapshot():
     # Read-only: does not connect to Apex or start a score job.
@@ -1839,6 +1842,21 @@ def race_session_score_snapshot():
         recording = manager.store.get_recording(rid)
         if not recording:
             return jsonify(ok=False, error="Enregistrement introuvable"), 404
+        # Rattrapage local limité à une fois par minute et par session.
+        # Aucun appel STATS/Apex supplémentaire, aucun calcul sans session.
+        # Ne jamais bloquer le flux live : le traitement s'exécute hors du thread Apex.
+        with _RELAY_REPAIR_LOCK:
+            due = time.monotonic() - _RELAY_REPAIR_CHECKED_AT.get(rid, -1e12) >= 60
+            if due:
+                _RELAY_REPAIR_CHECKED_AT[rid] = time.monotonic()
+        if due:
+            def _repair_saved_relays():
+                try:
+                    manager.store.repair_session_relay_matrix(rid)
+                except Exception:
+                    app.logger.exception("Relay matrix repair failed for %s", rid)
+            threading.Thread(target=_repair_saved_relays, daemon=True,
+                             name="relay-repair-" + rid[:8]).start()
         # Si rien n'a changé, économiser les données mobiles : réponse 304.
         updated, count = manager.store.session_relay_matrix_version(rid)
         etag = f'"velocity-relays-{rid}-{updated}-{count}"' if count else None

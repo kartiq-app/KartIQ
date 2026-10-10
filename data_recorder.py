@@ -633,6 +633,40 @@ class RecorderStore:
         return {"maxRelay": max_relay, "teams": list(by_team.values()),
                 "updated_at_ms": last_update, "source": "recorder-persisted"}
 
+    def repair_session_relay_matrix(self, rid: str) -> int:
+        """Rebuild missing relay cells from persisted laps/pits; never contact Apex.
+
+        Called only for an existing Session Course, and does not start a worker.
+        The matrix upsert preserves previously stored cells.
+        """
+        recording = self.get_recording(rid)
+        if not recording or not str(recording.get("name") or "").startswith("SESSION_V1796:"):
+            return 0
+        laps, pits = self.worker_history(rid)
+        if not laps:
+            return 0
+        buckets = {}
+        for lap in laps:
+            row = int(lap.get("row_id") or 0)
+            number = int(lap.get("lap_number") or 0)
+            seconds = float(lap.get("lap_seconds") or 0)
+            if row <= 0 or number <= 0 or seconds <= 0:
+                continue
+            item = buckets.setdefault(row, {"team": lap.get("team"), "kart": lap.get("kart"), "pilot": lap.get("pilot"), "laps": [], "pits": []})
+            item["laps"].append({"lap": number, "seconds": seconds})
+        for pit in pits:
+            if str(pit.get("event") or "").upper() != "IN":
+                continue
+            row = int(pit.get("row_id") or 0)
+            if row not in buckets:
+                continue
+            buckets[row]["pits"].append({"lap": int(pit.get("lap_number") or 0),
+                                           "stop": int(pit.get("stop_number") or 0),
+                                           "pilot": pit.get("pilot"), "event": "IN"})
+        if not buckets:
+            return 0
+        return self.save_session_relay_matrix(rid, compute_recorder_relay_matrix(buckets))
+
     def score_matrix_snapshot(self, rid: str) -> dict[str, Any]:
         """Small, saved, read-only score matrix for mobile; never triggers Apex calls.
 

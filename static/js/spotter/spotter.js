@@ -137,8 +137,15 @@ function spotterMergeProtectedMaintenance(remoteMaintenance){
  );
  return remote.filter(item=>!recentReinserted.has(String(item?.cardId||'')));
 }
+// Les validations locales restent protégées contre les snapshots Render retardés.
+const spotterAcknowledgedIncoming=new Map();
+function spotterRememberAcknowledged(item){
+ if(!item?.id)return;
+ spotterAcknowledgedIncoming.set(String(item.id),{team:String(item.team||''),at:Date.now()});
+ for(const [id,record] of spotterAcknowledgedIncoming)if(Date.now()-record.at>120000)spotterAcknowledgedIncoming.delete(id);
+}
 function spotterMergeProtectedIncoming(remoteIncoming){
- const remote=Array.isArray(remoteIncoming)?spotterClone(remoteIncoming):[];
+ const remote=(Array.isArray(remoteIncoming)?spotterClone(remoteIncoming):[]).filter(item=>!spotterAcknowledgedIncoming.has(String(item?.id||'')));
  const ids=new Set(remote.map(item=>String(item?.id||'')));
  const protectedLocal=(spotterState.incoming||[]).filter(item=>{
   if(!item||ids.has(String(item.id||'')))return false;
@@ -372,10 +379,15 @@ function spotterRegistryRowsHtml(){
  const rows=Object.values(spotterState.kartRegistry||{}).sort((a,b)=>spotterKvNumber(a?.kv)-spotterKvNumber(b?.kv));
  if(!rows.length)return '<div class="spotter-registry-empty-block">Aucun kart enregistré.</div>';
  return rows.map(row=>{
-  const history=(row.history||[]).map(entry=>`<span class="spotter-registry-entry"><b>${spotterEscape(spotterDisplayName(entry.team))}</b><em class="${spotterScoreTone(entry.score)}">${entry.score==null?'—':entry.score}</em></span>`).join('<span class="spotter-registry-arrow">›</span>');
-  const speed=row.speed;
-  const speedHtml=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(speed.potential)?`<span class="spotter-registry-entry">POT. ${Number(speed.potential).toFixed(3)}s · RÉC. ${Number.isFinite(speed.recent)?Number(speed.recent).toFixed(3)+'s':'—'} · ${speed.confirmed?'CONFIRMÉ':'PROVISOIRE'}</span>`:'';
-  return `<div class="spotter-registry-row"><strong>${spotterEscape(row.kv)}</strong><div class="spotter-registry-history">${speedHtml}${history||'<span class="spotter-registry-empty">Aucune affectation</span>'}${row.trace==='interrupted'?'<span class="spotter-registry-lost">TRACE INTERROMPUE</span>':''}</div></div>`;
+  const current=Object.entries(spotterState.assignments||{}).find(([,a])=>a?.kv===row.kv&&a.status==='track'&&!a.pendingReplacementKv&&!a.estimated);
+  const driver=current?spotterFindDriver(current[0]):null;
+  const kart=current?String(driver?.apex||driver?.kart||current[1]?.apexKart||'—'):'—';
+  const team=current?spotterStableTeamLabel(driver,current[1].teamLabel||current[0]):'—';
+  const der=current?String(driver?.last||driver?.last_lap||'—'):'—';
+  const speed=row.speed,valid=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(speed.potential);
+  const cell=(label,value)=>`<span class="spotter-registry-stat">${label} ${spotterEscape(String(value))}</span>`;
+  const history=(row.history||[]).map(entry=>`<span class="spotter-registry-entry" title="${spotterEscape(spotterDisplayName(entry.team))}"><b>${spotterEscape(spotterDisplayName(entry.team))}</b><em class="${spotterScoreTone(entry.score)}">${entry.score==null?'—':entry.score}</em></span>`).join('<span class="spotter-registry-arrow">›</span>');
+  return `<div class="spotter-registry-row"><strong>${spotterEscape(row.kv)}</strong><span class="spotter-registry-kart">${spotterEscape(kart)}</span><span class="spotter-registry-current" title="${spotterEscape(team)}">${spotterEscape(team)}</span>${cell('POT.',valid?Number(speed.potential).toFixed(3)+'s':'—')}${cell('RÉC.',valid&&Number.isFinite(speed.recent)?Number(speed.recent).toFixed(3)+'s':'—')}${cell('DER',der)}<span class="spotter-registry-stat">${valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—'}</span><div class="spotter-registry-history">${history||'<span class="spotter-registry-empty">Aucune affectation</span>'}${row.trace==='interrupted'?'<span class="spotter-registry-lost">TRACE INTERROMPUE</span>':''}</div></div>`;
  }).join('');
 }
 async function spotterOpenKartRegistry(){
@@ -754,6 +766,8 @@ function spotterAutoProcessPending(){
 function spotterAddIncoming(team,driver=null,{source='apex'}={}){
  const key=String(team||'').trim();if(!key)return false;
  if(spotterState.incoming.some(item=>item.team===key)||spotterState.queue.some(item=>item.status==='reserved'&&item.reservedTeam===key))return false;
+ // Après validation, attendre une véritable sortie de stands avant un nouveau pit-in.
+ if(source==='apex'&&[...spotterAcknowledgedIncoming.values()].some(record=>record.team===key))return false;
  const assignment=spotterEnsureAssignment(key,driver);
  // Une ancienne sauvegarde ne doit jamais pouvoir réutiliser le KV d'un kart
  // déjà présent dans la file ou en maintenance.
@@ -837,6 +851,8 @@ function spotterValidateIncoming(id,toMaintenance=false,{silent=false,estimated=
  spotterRemoveCardEverywhere(returned.cardId);
  assigned.status='reserved';assigned.reservedTeam=incoming.team;assigned.pitInAt=incoming.pitInAt||Date.now();assigned.reservedAt=Date.now();assigned.sourceLastTeam=assigned.lastTeam;assigned.estimated=Boolean(estimated||incoming.estimated||spotterState.freeMode);
  spotterState.incoming.splice(index,1);
+ spotterRememberAcknowledged(incoming);
+ spotterDeferredRemote=null;
  delete spotterState.incomingQueueSelections[id];
  if(toMaintenance)spotterState.maintenance.push(returned);else spotterState.queue.push(returned);
  current.status='pit';current.pendingReplacementKv=assigned.kv;
@@ -865,6 +881,7 @@ function spotterReinsertMaintenance(cardId,targetFile=null){
 function spotterProcessPitOut(team,{source='apex'}={}){
  const key=String(team||'').trim();if(!key)return false;
  const driver=spotterFindDriver(key);const metrics=spotterMetricsForDriver(driver);
+ for(const [id,record] of spotterAcknowledgedIncoming)if(record.team===key)spotterAcknowledgedIncoming.delete(id);
  const index=spotterState.queue.findIndex(item=>item.status==='reserved'&&item.reservedTeam===key);
  if(index>=0){
   const [assigned]=spotterState.queue.splice(index,1);
