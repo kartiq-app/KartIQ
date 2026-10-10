@@ -2134,3 +2134,8 @@
 - Calcul asynchrone et limité à une fois par minute par session active/consultée ; upsert sans suppression des notes existantes.
 - Un relais dont les tours sont absents ne reçoit pas de note artificielle (cas RACING UP ALPHA R1–R4 dans l'export fourni).
 - Maintien des corrections d'interface KV/radar et validation Spotter du candidat partiel.
+
+### Correctif EN PISTE radar / Apex (V7.2.1800)
+- Priorité absolue au compteur `otr` fourni par la colonne Apex « En piste ».
+- Les durées `[H:MM]` extraites du nom du pilote ne sont plus autorisées à écraser ce compteur.
+- Le correctif est appliqué à la source des données pour tous les affichages utilisant `track_timer`.
