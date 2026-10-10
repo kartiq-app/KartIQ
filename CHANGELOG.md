@@ -1,3 +1,16 @@
+# V7.2.1796 — Mobile 4G / Collecte Session Course
+
+- Le Recorder Apex/Velocity Score démarre uniquement lors de la création explicite d'une Session Course, et s'arrête à sa clôture.
+- Sur Render, PostgreSQL (`DATABASE_URL`) est indispensable avant de créer une Session Course enregistrée ; échec explicite sans démarrage silencieux.
+- Les données de Sessions Course sont restaurées depuis la base après redémarrage Render. Une Session Course ne crée jamais plus d'un Recorder pour un circuit : protection contre les collectes concurrentes.
+- Sécurité de durée maximale (30 h par défaut, configurable via `VELOCITY_RECORDER_MAX_HOURS` jusqu'à 72 h), y compris après redémarrage du service.
+- REST `GET /api/race-session/score-snapshot`: derniers Velocity Scores et Score Relais de chaque équipe depuis le Recorder persistant ; pas de recalcul Apex en consultation.
+- HTTP `GET /api/state` conserve la cadence live existante, ajoute ETag/304 exact et compression gzip rapide pour mobile. Jamais de délai artificiel ajouté à la réception d'un chrono.
+- Affichage mobile orienté mode actif et chargement des scores persistés à la demande, en restant sur le même moteur Apex.
+- Les scores récents de kart KV nécessitent toujours une affectation Spotter confirmée; pas d'attribution de machine depuis le numéro Apex.
+
+> Point de vigilance: le Recorder sauvegarde les Velocity Scores, tours et événements ; les nouveaux scores Potentiel/Vitesse récente KV ne sont pas encore recalculés de manière autonome sur Render dans cette version. Ils restent issus du live navigateur et du registre Spotter. Il faudra centraliser leurs événements KV pour permettre un calcul serveur exact.
+
 # V7.2.1795 — CHOIX KART FIXE / QUICK CHANGE DÉPLACÉ DANS SPOTTER
 
 - Supprime le bloc « Gestion des karts · Endurance » de la Home : retour à l'accueil d'origine, utilisable en Qualification, Sprint et Endurance.

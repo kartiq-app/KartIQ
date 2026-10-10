@@ -1,3 +1,14 @@
+## Velocity V7.2.1796 — Mobile 4G et Session Course
+
+- La création **explicite** d’une Session Course démarre son Data Recorder partagé sur Render.
+- La fin de session demande l’arrêt immédiat ; watchdog automatique au bout de 30 heures (configurable).
+- PostgreSQL (`DATABASE_URL`) est nécessaire sur Render. La table partagée des Sessions Course est également sauvegardée en base pour supporter les redémarrages Render. Sans base persistante, la création refuse de démarrer et affiche une erreur claire.
+- Les derniers scores enregistrés sont disponibles dans Analyzer → SCORE RELAIS, sans reconstruire les STATS à la reconnexion.
+- La cadence du live Apex n’est **pas ralentie** (250 ms, une seule requête en vol). ETag 304 sur réponses inchangées et gzip rapide pour mobile.
+- Les tableaux invisibles ne sont plus reconstruits à chaque polling sur téléphone. Ils sont rendus à l’ouverture du mode.
+- Les scores historiques du Recorder et le calcul navigateur des nouveaux scores KARTS ne sont **pas encore le même moteur**. Le Potentiel / Vitesse récente des KV reste calculé dans le navigateur avec partage de potentiel par Spotter ; on ne prétend pas avoir un score KV calculé hors navigateur.
+- Les appareils partageant une Session Course ne créent pas d'autre collecteur. Le Lab Recorder ne peut plus être lancé indépendamment d'une Session Course.
+
 # Velocity V7.2.1790 — Position du chrono live
 
 ## V7.2.1789

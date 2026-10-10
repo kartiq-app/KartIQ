@@ -1,4 +1,4 @@
-const CACHE = 'velocity-v7-2-1795';
+const CACHE = 'velocity-v7-2-1796';
 
 const ASSETS = [
   '/',
@@ -64,5 +64,6 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  if (event.request.url.includes('/api/')) return; // jamais servir un faux live depuis SW
   event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });

@@ -393,6 +393,7 @@ class RecorderStore:
             "CREATE INDEX IF NOT EXISTS idx_velocity_frames_rec_time ON velocity_recorder_frames(recording_id, received_at_ms)",
             "CREATE INDEX IF NOT EXISTS idx_velocity_laps_rec_time ON velocity_recorder_laps(recording_id, received_at_ms)",
             "CREATE INDEX IF NOT EXISTS idx_velocity_scores_rec_time ON velocity_recorder_scores(recording_id, received_at_ms)",
+            "CREATE INDEX IF NOT EXISTS idx_velocity_scores_rec_row_relay ON velocity_recorder_scores(recording_id,row_id,relay_index,received_at_ms)",
             # V7.2.1791 — cache SCORE RELAIS Analyzer persistant. Sur Render/Postgres,
             # il survit aux refresh navigateur, reconnexions et redéploiements.
             """CREATE TABLE IF NOT EXISTS velocity_analyzer_relay_cache (
@@ -400,6 +401,9 @@ class RecorderStore:
                 payload_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
             )""",
             "CREATE INDEX IF NOT EXISTS idx_velocity_analyzer_relay_cache_updated ON velocity_analyzer_relay_cache(updated_at_ms)",
+            """CREATE TABLE IF NOT EXISTS velocity_race_team_state (
+                state_id TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
+            )""",
         ]
         for sql in ddl:
             self._execute(sql)
@@ -529,6 +533,77 @@ class RecorderStore:
             fetchall=True,
         ) or []
         return [self._public_recording(row) for row in rows]
+
+    def get_race_team_state(self) -> dict[str, Any] | None:
+        row = self._execute("SELECT payload_json FROM velocity_race_team_state WHERE state_id='global'", fetchone=True)
+        if not row:
+            return None
+        try:
+            data = json.loads(row.get("payload_json") or "{}")
+            return data if isinstance(data, dict) else None
+        except (TypeError, ValueError):
+            return None
+
+    def put_race_team_state(self, data: dict[str, Any]):
+        self._execute(
+            """INSERT INTO velocity_race_team_state(state_id,payload_json,updated_at_ms)
+               VALUES ('global',?,?)
+               ON CONFLICT(state_id) DO UPDATE SET payload_json=excluded.payload_json,
+                                                  updated_at_ms=excluded.updated_at_ms""",
+            (_safe_json(data), _now_ms()),
+        )
+
+    def score_matrix_snapshot(self, rid: str) -> dict[str, Any]:
+        """Small, saved, read-only score matrix for mobile; never triggers Apex calls.
+
+        One latest snapshot per (team, relay), even for a 24-hour race. Scores
+        remain available after the race ends, unlike in-memory job results.
+        """
+        rows = self._execute(
+            """SELECT row_id,team,pilot,kart,relay_index,score,confidence,
+                      average,best3,consistency,corrected_delta,condition_mode,
+                      received_at_ms
+               FROM (SELECT row_id,team,pilot,kart,relay_index,score,confidence,
+                            average,best3,consistency,corrected_delta,condition_mode,
+                            received_at_ms,
+                            ROW_NUMBER() OVER (
+                              PARTITION BY row_id,relay_index
+                              ORDER BY received_at_ms DESC
+                            ) AS seq
+                     FROM velocity_recorder_scores WHERE recording_id=?) recent
+               WHERE seq=1 ORDER BY row_id,relay_index""",
+            (rid,), fetchall=True,
+        ) or []
+        lap_counts = self._execute(
+            """SELECT row_id,relay_index,COUNT(*) AS n FROM velocity_recorder_laps
+               WHERE recording_id=? AND relay_index IS NOT NULL
+               GROUP BY row_id,relay_index""", (rid,), fetchall=True,
+        ) or []
+        counts = {(int(x["row_id"]),int(x["relay_index"])):int(x["n"]) for x in lap_counts}
+        by_team = {}
+        last_update = 0
+        max_relay = 0
+        for row in rows:
+            key = int(row.get("row_id") or 0)
+            index = int(row.get("relay_index") or 0)
+            if not key or not index:
+                continue
+            current = by_team.setdefault(key, {"apex_row": key, "team": row.get("team") or "",
+                                               "kart": row.get("kart") or "", "relays": []})
+            current["team"] = row.get("team") or current["team"]
+            current["kart"] = row.get("kart") or current["kart"]
+            current["relays"].append({
+                "relay_index": index, "score": row.get("score"),
+                "confidence": row.get("confidence"), "average": row.get("average"),
+                "best3": row.get("best3"), "consistency": row.get("consistency"),
+                "correctedDelta": row.get("corrected_delta"),
+                "conditionMode": row.get("condition_mode"),
+                "relay": {"index": index, "laps": counts.get((key,index), 0), "average": row.get("average")},
+            })
+            max_relay = max(max_relay, index)
+            last_update = max(last_update, int(row.get("received_at_ms") or 0))
+        return {"maxRelay": max_relay, "teams": list(by_team.values()),
+                "updated_at_ms": last_update, "source": "recorder-persisted"}
 
     def worker_history(self, rid: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Recharge l'historique utile au score après un redémarrage Render."""
@@ -1347,7 +1422,8 @@ class DataRecorderWorker:
                     self.stop_event.wait(retry)
         finally:
             try:
-                if not self.stop_event.is_set():
+                # Capture the final scores as well during an explicit STOP.
+                with self.data_lock:
                     self._snapshot_scores(force=True)
             except Exception:
                 pass
@@ -1364,8 +1440,11 @@ class DataRecorderWorker:
 
     def _ingest(self, frame: str):
         at = _now_ms()
-        self.store.append_frame(self.id, at, frame)
-        self.counters["frames"] += 1
+        # Session Course: save scored laps/pits/snapshots, not every verbose
+        # raw WS frame (could be very costly on a 24-hour endurance).
+        if not str(self.recording.get("name") or "").startswith("SESSION_V1796:"):
+            self.store.append_frame(self.id, at, frame)
+            self.counters["frames"] += 1
         result = self.runtime.process(frame)
         state = result["state"]
         for event in result.get("events") or []:

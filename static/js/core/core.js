@@ -41,6 +41,11 @@ window.velocityWorkspaceStorageKey=velocityWorkspaceStorageKey;
 try{Object.defineProperty(window,'velocityState',{configurable:true,get:()=>state})}catch(_){window.velocityState=state}
 let circuitChangeInProgress=false,pendingCircuitId='';
 let stateLoadInFlight=false;
+let velocityStateETag='';
+const VELOCITY_MOBILE_4G=/iPhone|iPod|Android/i.test(navigator.userAgent||'');
+// A 304 means the exact Apex state has not changed. We deliberately keep
+// 250 ms polling and NEVER delay a new llp event to save bandwidth.
+
 let velocityWorkspaceSwitching=false;
 let autoBriceFollowApplied=false,manualFollowOverride=false,autoBriceFollowInFlight=false;
 let remainingCountdownMs=null,remainingCountdownPerfAt=0,remainingCountdownUsesHours=false,remainingCountdownDirectSyncAt=0;
@@ -307,9 +312,9 @@ function updateRemainingDisplay(){
  const sp=document.getElementById('sRemaining');if(sp){sp.textContent=display;sp.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  const en=document.getElementById('eRemaining');if(en){en.textContent=display;en.classList.toggle('time-critical',!lapMode&&Number.isFinite(seconds)&&seconds<120)}
  if(typeof renderDriverMessageOverlay==='function')renderDriverMessageOverlay();
- renderQualificationFocus();
- renderSprintFocus();
- renderEnduranceFocus();
+ if(!VELOCITY_MOBILE_4G||currentMode==='qualification')renderQualificationFocus();
+ if(!VELOCITY_MOBILE_4G||currentMode==='sprint')renderSprintFocus();
+ if(!VELOCITY_MOBILE_4G||currentMode==='endurance'||currentMode==='analyzer')renderEnduranceFocus();
 }
 window.addEventListener('orientationchange',()=>setTimeout(updateRemainingDisplay,80));
 window.addEventListener('resize',()=>updateRemainingDisplay());
@@ -321,11 +326,17 @@ async function load(){
  if(stateLoadInFlight)return;
  stateLoadInFlight=true;
  try{
-  const response=await fetch('/api/state',{cache:'no-store'});
+  const headers={};
+  if(velocityStateETag)headers['If-None-Match']=velocityStateETag;
+  if(VELOCITY_MOBILE_4G)headers['X-Velocity-Mobile']='1';
+  const response=await fetch('/api/state',{cache:'no-store',headers});
+  if(response.status===304){ensureApexBrowserConnection();return;}
+  const newTag=response.headers.get('ETag');
   if(!response.ok)throw new Error(`État Velocity indisponible (${response.status})`);
   const nextState=await response.json();
   // Pendant un changement de circuit, ignorer les anciens états encore en transit.
   if(circuitChangeInProgress&&pendingCircuitId&&String(nextState?.circuit_id||'')!==String(pendingCircuitId))return;
+  if(newTag)velocityStateETag=newTag;
   syncRemainingFromState(nextState);
   state=nextState;
   if(!(state.drivers||[]).length){autoBriceFollowApplied=false;manualFollowOverride=false}
@@ -999,7 +1010,7 @@ function showMode(mode){
  // un clone de Qualification pour le dashboard, mais son bouton Focus ouvre
  // le Focus Sprint dédié à Endurance.
  const screen=document.getElementById(mode);
- screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode==='spotter'&&typeof spotterEnterMode==='function')spotterEnterMode();if(mode!=='home'&&mode!=='spotter')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode})
+ screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode==='spotter'&&typeof spotterEnterMode==='function')spotterEnterMode();if(mode!=='home'&&mode!=='spotter')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode});if(VELOCITY_MOBILE_4G&&typeof render==='function')render()
 }
 
 let sprintFocusWakeLock=null;

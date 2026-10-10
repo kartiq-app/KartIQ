@@ -63,9 +63,77 @@ def _get_recorder_manager():
             RECORDER_INIT_ERROR = str(exc)
             raise
 
+# Only an explicitly started Session Course may own an automatic recorder.
+# HARD STOP also protects Render spending after a forgotten 24-hour race.
+VELOCITY_SESSION_RECORDER_PREFIX = "SESSION_V1796:"
+try:
+    VELOCITY_RECORDER_MAX_HOURS = max(1, min(72, int(os.getenv("VELOCITY_RECORDER_MAX_HOURS", "30"))))
+except (TypeError, ValueError):
+    VELOCITY_RECORDER_MAX_HOURS = 30
+
+
+def _session_recorder_active_ids():
+    now = int(time.time() * 1000)
+    maximum = VELOCITY_RECORDER_MAX_HOURS * 3600 * 1000
+    with TEAM_DATA_LOCK:
+        active = set()
+        expired = False
+        for race in TEAM_DATA.get("sessions", []):
+            if race.get("status") != "active" or not race.get("recorder_id"):
+                continue
+            if now - int(race.get("created_at_ms") or now) > maximum:
+                race["status"] = "ended"
+                race["ended_at_ms"] = now
+                race["end_reason"] = "automatic_recorder_timeout"
+                expired = True
+            else:
+                active.add(str(race["recorder_id"]))
+        if expired:
+            for workspace in list(TEAM_DATA.get("active_session_ids", {})):
+                sid = TEAM_DATA["active_session_ids"].get(workspace)
+                if not any(s.get("id") == sid and s.get("status") == "active" for s in TEAM_DATA["sessions"]):
+                    TEAM_DATA["active_session_ids"].pop(workspace, None)
+            _save_team_data(TEAM_DATA, force_db=True)
+        return active
+
+
+def _reap_session_recorders():
+    """Stop abandoned automatic records, including after a Render restart."""
+    manager = _get_recorder_manager()
+    active = _session_recorder_active_ids()
+    for rec in manager.store.active_recordings():
+        rid = str(rec.get("id") or "")
+        name = str(rec.get("name") or "")
+        # V1796 migration: stop old orphan Lab recorders as well, otherwise
+        # Render could keep collecting despite zero active Session Course.
+        if rid not in active:
+            manager.store.request_stop(rid)
+            try:
+                manager.stop(rid)
+            except Exception:
+                app.logger.exception("Arrêt Recorder session abandonnée %s", rid)
+
+
+def _session_recorder_watchdog():
+    while True:
+        try:
+            _reap_session_recorders()
+        except Exception:
+            app.logger.exception("Surveillance du plafond de durée des sessions")
+        time.sleep(60)
+
 def _resume_velocity_recorders():
     try:
+        global TEAM_DATA, TEAM_DATA_LAST_DB_HASH
+        manager = _get_recorder_manager()
+        restored = manager.store.get_race_team_state()
+        if restored and isinstance(restored.get("sessions"), list):
+            with TEAM_DATA_LOCK:
+                TEAM_DATA = restored
+                TEAM_DATA_LAST_DB_HASH = hashlib.sha256(json.dumps(restored, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
+        _reap_session_recorders()
         _get_recorder_manager().resume_active()
+        threading.Thread(target=_session_recorder_watchdog, name="velocity-session-recorder-budget-guard", daemon=True).start()
     except Exception:
         # L'état est exposé dans Velocity Lab ; pas de crash global de l'application.
         pass
@@ -441,6 +509,8 @@ RACE_SESSION_LOCK = threading.Lock()
 RACE_SESSION = None
 TEAM_DATA_LOCK = threading.Lock()
 TEAM_DATA_PATH = APP_DIR / "velocity_team_management.json"
+TEAM_DATA_LAST_DB_HASH = ''
+TEAM_DATA_DB_LAST_AT = 0.0
 
 def _default_team_data():
     return {"teams": [], "invites": {}, "devices": {}, "active_session_id": None, "active_session_ids": {}, "sessions": []}
@@ -455,7 +525,9 @@ def _load_team_data():
         pass
     return _default_team_data()
 
-def _save_team_data(data):
+def _save_team_data(data, force_db=False):
+    global TEAM_DATA_LAST_DB_HASH, TEAM_DATA_DB_LAST_AT
+    raw = json.dumps(data, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     try:
         TEAM_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp = TEAM_DATA_PATH.with_suffix('.tmp')
@@ -463,6 +535,26 @@ def _save_team_data(data):
         tmp.replace(TEAM_DATA_PATH)
     except Exception:
         pass
+    # Mirror team/session membership into the persistent Recorder database.
+    # Do not connect to the database when no Session Course has ever started.
+    # Limit incidental device heartbeat writes to 15s, without delaying an
+    # important active-session creation or closure.
+    if RECORDER_STORE is None:
+        return
+    now = time.monotonic()
+    signature = hashlib.sha256(raw.encode()).hexdigest()
+    if signature == TEAM_DATA_LAST_DB_HASH:
+        return
+    # Frequent paired-device heartbeat updates need not write the entire
+    # Session Course document to PostgreSQL several times per second.
+    if not force_db and now-TEAM_DATA_DB_LAST_AT<15:
+        return
+    try:
+        RECORDER_STORE.put_race_team_state(data)
+        TEAM_DATA_LAST_DB_HASH = signature
+        TEAM_DATA_DB_LAST_AT = now
+    except Exception:
+        app.logger.exception("Sessions Course : sauvegarde Postgres impossible")
 
 TEAM_DATA = _load_team_data()
 WEATHER_TTL_SECONDS = 300
@@ -1057,6 +1149,7 @@ def _race_session_public(session, include_assignments=True):
         "followed_driver": session.get("followed_driver"), "pilot_focus_driver": session.get("pilot_focus_driver") or session.get("followed_driver"), "pilot_focus_apex_row": session.get("pilot_focus_apex_row"), "team_id": session.get("team_id"),
         "team_name": session.get("team_name"), "workspace_id": session.get("workspace_id"), "created_at_ms": session.get("created_at_ms"),
         "ended_at_ms": session.get("ended_at_ms"),
+        "recorder_id": session.get("recorder_id"), "recorder_status": session.get("recorder_status"),
     }
     if include_assignments:
         public["assignments"] = deepcopy(session.get("assignments") or {})
@@ -1726,6 +1819,27 @@ def get_race_session():
     return jsonify(ok=True,session=_race_session_public(session) if session else None,teams=teams)
 
 
+@app.get("/api/race-session/score-snapshot")
+def race_session_score_snapshot():
+    # Read-only: does not connect to Apex or start a score job.
+    workspace_id = _current_workspace_id()
+    with TEAM_DATA_LOCK:
+        active = _active_session_for_workspace(TEAM_DATA, workspace_id)
+        rid = str((active or {}).get("recorder_id") or "")
+    if not rid:
+        return jsonify(ok=True, active=False, result={"maxRelay": 0, "teams": []})
+    try:
+        manager = _get_recorder_manager()
+        recording = manager.store.get_recording(rid)
+        if not recording:
+            return jsonify(ok=False, error="Enregistrement introuvable"), 404
+        result = manager.store.score_matrix_snapshot(rid)
+        return jsonify(ok=True, active=True, recording_status=recording.get("status"),
+                       updated_at_ms=result.get("updated_at_ms"), result=result)
+    except Exception as exc:
+        return jsonify(ok=False, error=f"Scores enregistrés indisponibles : {exc}"), 503
+
+
 @app.post("/api/race-session/create")
 def create_race_session():
     global RACE_SESSION
@@ -1756,7 +1870,15 @@ def create_race_session():
         initial_focus_driver=str(STATE.get("followed_driver") or "").strip()
         initial_focus_entry=driver_by_name(initial_focus_driver) if initial_focus_driver else None
         session={"id":sid,"workspace_id":workspace_id,"name":str(body.get("name") or STATE.get("session_name") or "SESSION DE COURSE").strip()[:80] or "SESSION DE COURSE","status":"active","circuit_id":circuit_id,"circuit_name":str(circuit.get("name") or circuit_id),"followed_driver":initial_focus_driver,"pilot_focus_driver":initial_focus_driver,"pilot_focus_apex_row":(initial_focus_entry or {}).get("apex_row"),"team_id":team.get("id"),"team_name":str(body.get("team_name") or team.get("name") or "").strip()[:80] or team.get("name"),"assignments":clean,"created_at_ms":now_ms,"ended_at_ms":None}
-        TEAM_DATA.setdefault("sessions",[]).append(session); _set_active_session_for_workspace(TEAM_DATA,workspace_id,sid); _save_team_data(TEAM_DATA)
+        # Explicit creation is the only automatic entry point for Apex Recorder.
+        try:
+            manager = _get_recorder_manager()
+            recording = manager.create(f"{VELOCITY_SESSION_RECORDER_PREFIX}{sid}", circuit_id)
+        except Exception as exc:
+            return jsonify(ok=False, error=f"Session non démarrée : Recorder indisponible ({exc}). Aucun calcul de fond lancé."), 503
+        session["recorder_id"] = recording["id"]
+        session["recorder_status"] = "recording"
+        TEAM_DATA.setdefault("sessions",[]).append(session); _set_active_session_for_workspace(TEAM_DATA,workspace_id,sid); _save_team_data(TEAM_DATA, force_db=True)
     # Miroir de compatibilité avec le verrouillage déjà présent côté V7.2.87.
     with RACE_SESSION_LOCK: RACE_SESSION=deepcopy(session)
     return jsonify(ok=True,session=_race_session_public(session))
@@ -1863,7 +1985,17 @@ def end_race_session():
     with TEAM_DATA_LOCK:
         session=_active_session_for_workspace(TEAM_DATA,workspace_id)
         if not session or session.get("status")!="active":return jsonify(ok=False,error="Aucune session active."),400
-        session["status"]="ended"; session["ended_at_ms"]=int(time.time()*1000); _set_active_session_for_workspace(TEAM_DATA,workspace_id,None); _save_team_data(TEAM_DATA)
+        session["status"]="ended"; session["ended_at_ms"]=int(time.time()*1000); _set_active_session_for_workspace(TEAM_DATA,workspace_id,None); _save_team_data(TEAM_DATA, force_db=True)
+        recorder_id = str(session.get("recorder_id") or "")
+    # STOP is durable and immediate; socket/join cleanup does not block UI.
+    if recorder_id:
+        try:
+            manager = _get_recorder_manager()
+            manager.store.request_stop(recorder_id)
+            threading.Thread(target=manager.stop, args=(recorder_id,), daemon=True,
+                             name=f"velocity-stop-session-{recorder_id[:6]}").start()
+        except Exception:
+            app.logger.exception("Recorder session : arrêt demandé, finalisation en échec")
     with RACE_SESSION_LOCK: RACE_SESSION=deepcopy(session)
     return jsonify(ok=True,session=_race_session_public(session))
 
@@ -2106,6 +2238,15 @@ def _relay_score_run_job(job_id):
 def apex_relay_scores_start():
     """Lance une reconstruction SCORE RELAIS serveur, adaptée aux 12H/24H."""
     _relay_score_job_cleanup()
+    # Never start an expensive STATS reconstruction outside an active course.
+    # When a session is active, clients should read the Recorder snapshot,
+    # rather than launching another worker per phone.
+    with TEAM_DATA_LOCK:
+        active = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
+    if not active:
+        return jsonify(ok=False, error="Créez une Session Course pour enregistrer les Score Relais sur Render."), 409
+    if active.get("recorder_id"):
+        return jsonify(ok=False, error="Recorder actif : consultez /api/race-session/score-snapshot, aucun second calcul nécessaire."), 409
     body = request.get_json(force=True, silent=True) or {}
     circuit_id = str(body.get("circuit_id") or STATE.get("circuit_id") or "")
     context_key = str(body.get("context_key") or "")[:300]
@@ -2303,11 +2444,13 @@ def lab_recorder_create():
     name = str(body.get("name") or "").strip()
     if not circuit_id:
         return jsonify(ok=False, error="Sélectionnez un circuit Apex."), 400
-    try:
-        recording = manager.create(name, circuit_id)
-        return jsonify(ok=True, recording=recording, storage=manager.store.storage_info())
-    except Exception as exc:
-        return jsonify(ok=False, error=str(exc)), 400
+    # Lab can inspect/stop existing recordings but never creates an autonomous
+    # background calculation without an explicitly active Session Course.
+    with TEAM_DATA_LOCK:
+        active = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
+    if not active or active.get("status") != "active":
+        return jsonify(ok=False, error="Créez d'abord une Session Course pour lancer le Recorder."), 409
+    return jsonify(ok=False, error="Le Recorder de cette Session Course est déjà géré automatiquement. Aucun second collecteur n'est autorisé."), 409
 
 
 @app.post("/api/lab/recorders/<recording_id>/stop")
@@ -2364,7 +2507,25 @@ def weather():
 
 @app.get("/api/state")
 def get_state():
-    return jsonify(payload())
+    # Every request uses the latest state. ETag=exact payload bytes, so a 304
+    # cannot hide a new Apex chrono. No debounce, no throttling of the live.
+    raw = app.json.dumps(payload(), separators=(",", ":"), sort_keys=True).encode("utf-8")
+    digest = hashlib.sha256(raw).hexdigest()[:24]
+    if request.headers.get("If-None-Match", "").strip('"') == digest:
+        response = app.response_class(status=304)
+    else:
+        # Fast compression on 4G, without slowing polling when gzip is not useful.
+        if request.headers.get("X-Velocity-Mobile") == "1" and "gzip" in request.headers.get("Accept-Encoding", "") and len(raw) > 4096:
+            import gzip
+            encoded = gzip.compress(raw, compresslevel=1, mtime=0)
+            response = app.response_class(encoded, mimetype="application/json")
+            response.headers["Content-Encoding"] = "gzip"
+        else:
+            response = app.response_class(raw, mimetype="application/json")
+    response.headers["ETag"] = f'"{digest}"'
+    response.headers["Cache-Control"] = "private, no-cache, must-revalidate"
+    response.headers["Vary"] = "X-Velocity-Mobile, Accept-Encoding"
+    return response
 
 
 @app.post("/api/analyzer-rules")
@@ -2417,6 +2578,12 @@ def velocity_update_kart_setup():
     reset = body.get("reset") is True
     if not reset and mode not in {"fixed", "quick"}:
         return jsonify(ok=False, error="Choisissez Kart fixe ou Quick Change"), 400
+    with TEAM_DATA_LOCK:
+        course = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
+    if course and course.get("status") == "active":
+        previous_mode = STATE.get("kart_setup_mode")
+        if reset or (previous_mode in {"fixed", "quick"} and mode != previous_mode):
+            return jsonify(ok=False, error="Terminez d’abord la Session Course avant de réinitialiser ou changer le mode kart : l’enregistrement Render continue pendant la session."), 409
     with SPOTTER_LOCK:
         previous = STATE.get("kart_setup_mode")
         if reset and previous not in {"fixed", "quick"}:

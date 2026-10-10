@@ -57,6 +57,37 @@ let analyzerRelayServerPollTimer=null;
 let analyzerRelayScoreLastStatus={state:'idle',done:0,total:0,team:'',phase:'idle',updatedAt:0,durationMs:0,error:''};
 let analyzerRelayScoreStatusDismissed=false;
 let analyzerRelayScoreRenderSignature='';
+let analyzerRecorderLastFetch=0;
+let analyzerRecorderFetching=false;
+let analyzerRecorderLastUpdated=0;
+
+function analyzerRecorderActive(){
+ return Boolean(window.velocityRaceSession?.status==='active'&&window.velocityRaceSession?.recorder_id);
+}
+async function analyzerFetchRecorderScores(force=false){
+ if(!analyzerRecorderActive()||analyzerRecorderFetching)return false;
+ if(!force&&Date.now()-analyzerRecorderLastFetch<10000)return true;
+ analyzerRecorderFetching=true;
+ analyzerRecorderLastFetch=Date.now();
+ try{
+  const response=await fetch('/api/race-session/score-snapshot',{cache:'no-store'});
+  if(!response.ok)throw new Error('Scores session indisponibles');
+  const data=await response.json();
+  if(!data.ok||!data.active)return false;
+  const update=Number(data.updated_at_ms)||0;
+  if(!update||update===analyzerRecorderLastUpdated)return true;
+  const result=data.result||{};
+  if(!Array.isArray(result.teams)||!result.teams.length)return true;
+  // Only the recorder's PERSISTED matrix is applied. It never requests STATS
+  // nor reconstructs an entire race on the phone.
+  analyzerRelayApplyServerResult(result,analyzerRelayEnsureContext(),analyzerRelayStructuralSignature());
+  analyzerRelayScoreData.source='recorder-persisted';
+  analyzerRecorderLastUpdated=update;
+  return true;
+ }catch(error){console.warn('[Velocity] Scores enregistrés non disponibles',error);return false}
+ finally{analyzerRecorderFetching=false}
+}
+
 
 
 let analyzerRelayEngineContext='';
@@ -1641,6 +1672,20 @@ function analyzerRelayApplyServerResult(result,context,signature){
  if(sectorStatsApplied&&String(document.body?.dataset?.appMode||'')==='analyzer')renderAnalyzer();
 }
 async function analyzerLoadRelayScores({force=false,background=false,structuralSignature=null,contextKey=null}={}){
+ if(analyzerRecorderActive()){
+  await analyzerFetchRecorderScores(Boolean(force));
+  if(analyzerVelocityView==='relays')analyzerRenderRelayScoreTable();
+  return;
+ }
+ // Budget: never ask Render to reconstruct all STATS without a Session Course.
+ if(!window.velocityRaceSession || window.velocityRaceSession.status!=='active'){
+  analyzerRelayScoreLastStatus={state:'idle',done:0,total:0,team:'',phase:'idle',updatedAt:Date.now(),durationMs:0,error:''};
+  if(analyzerVelocityView==='relays'){
+   const panel=document.getElementById('analyzerRelayScoreTable');
+   if(panel)panel.innerHTML='<div class="analyzer-empty">Créez une Session Course pour activer l’enregistrement des Score Relais sur Render.</div>';
+  }
+  return;
+ }
  const context=contextKey||analyzerRelayEnsureContext();
  if(analyzerRelayScoreLoading)return;
  const signature=structuralSignature||analyzerRelayStructuralSignature();
@@ -1884,7 +1929,7 @@ function analyzerRenderRelayScoreTable(marketByScore){
   relayRows.push(`<tr onclick="${follow}">${relays}</tr>`);
  });
  const qualLabel=data.qualification?.session?.name?`R1 référencé sur ${analyzerEscape(data.qualification.session.name)}`:'R1 sans qualification reconnue : transition neutralisée';
- host.innerHTML=`${analyzerRelayScoreStatusHtml()}<div class="relay-score-meta">${qualLabel} · Scores alimentés par les tours, arrêts et pilotes natifs STATS Apex.</div><div class="relay-score-grid"><div class="relay-score-fixed"><table class="analyzer-kartiq-table relay-score-fixed-table"><thead><tr><th class="relay-fixed-top">TOP</th><th class="relay-fixed-pos">POS</th><th class="relay-fixed-kart">KART</th><th class="relay-fixed-team"><span>ÉQUIPE / PILOTE</span><span class="relay-score-nav"><button id="analyzerRelayScorePrev" type="button" aria-label="Relais précédents" title="Relais précédents" onclick="event.stopPropagation();analyzerRelayScoreScroll(-1)">←</button><button id="analyzerRelayScoreNext" type="button" aria-label="Relais suivants" title="Relais suivants" onclick="event.stopPropagation();analyzerRelayScoreScroll(1)">→</button></span></th></tr></thead><tbody>${fixedRows.join('')}</tbody></table></div><div class="relay-score-xscroll" id="analyzerRelayScoreXScroll"><table class="analyzer-kartiq-table relay-score-table" style="width:${relayTableWidth}px;min-width:${relayTableWidth}px;max-width:${relayTableWidth}px">${relayColgroup}<thead><tr>${relayHeaders}</tr></thead><tbody>${relayRows.join('')}</tbody></table></div></div>`;
+ host.innerHTML=`${analyzerRelayScoreStatusHtml()}<div class="relay-score-meta">${qualLabel} · ${data.source==='recorder-persisted'?'Scores sauvegardés sur Render, actualisés sans reconstruction STATS.':'Scores alimentés par les tours, arrêts et pilotes natifs STATS Apex.'}</div><div class="relay-score-grid"><div class="relay-score-fixed"><table class="analyzer-kartiq-table relay-score-fixed-table"><thead><tr><th class="relay-fixed-top">TOP</th><th class="relay-fixed-pos">POS</th><th class="relay-fixed-kart">KART</th><th class="relay-fixed-team"><span>ÉQUIPE / PILOTE</span><span class="relay-score-nav"><button id="analyzerRelayScorePrev" type="button" aria-label="Relais précédents" title="Relais précédents" onclick="event.stopPropagation();analyzerRelayScoreScroll(-1)">←</button><button id="analyzerRelayScoreNext" type="button" aria-label="Relais suivants" title="Relais suivants" onclick="event.stopPropagation();analyzerRelayScoreScroll(1)">→</button></span></th></tr></thead><tbody>${fixedRows.join('')}</tbody></table></div><div class="relay-score-xscroll" id="analyzerRelayScoreXScroll"><table class="analyzer-kartiq-table relay-score-table" style="width:${relayTableWidth}px;min-width:${relayTableWidth}px;max-width:${relayTableWidth}px">${relayColgroup}<thead><tr>${relayHeaders}</tr></thead><tbody>${relayRows.join('')}</tbody></table></div></div>`;
  host.classList.add('relay-score-scroll-host');
  analyzerRelayScoreRenderSignature=renderSignature;
  const xscroll=document.getElementById('analyzerRelayScoreXScroll');
@@ -4506,6 +4551,8 @@ function analyzerRelayContextKey(){
  return `${circuit}|${liveSession}|${analyzerSession}`;
 }
 function analyzerRelayResetEngine(reason='context-change'){
+ analyzerRecorderLastUpdated=0;
+ analyzerRecorderLastFetch=0;
  analyzerRelayScoreLoadToken++;
  if(analyzerRelayBackgroundScheduled){clearTimeout(analyzerRelayBackgroundScheduled);analyzerRelayBackgroundScheduled=null}
  if(analyzerRelayServerPollTimer){clearTimeout(analyzerRelayServerPollTimer);analyzerRelayServerPollTimer=null}
@@ -4648,6 +4695,11 @@ function analyzerRelayProgressText(){
  return 'Préparation SCORE RELAIS côté serveur…';
 }
 function analyzerScheduleRelayBackgroundRebuild({delay=1200}={}){
+ if(analyzerRecorderActive()){
+  if(analyzerVelocityView==='relays')void analyzerFetchRecorderScores();
+  return;
+ }
+ if(!window.velocityRaceSession || window.velocityRaceSession.status!=='active')return;
  const context=analyzerRelayEnsureContext();
  if(!context.split('|')[0]||analyzerRelayScoreLoading||analyzerRelayBackgroundScheduled)return;
  const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0);if(!drivers.length)return;
