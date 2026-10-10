@@ -2120,3 +2120,5 @@
 - La carte Messagerie pilote de l’Analyzer est réorganisée sur deux lignes.
 - Le titre MESSAGERIE PILOTE reprend la taille, la couleur et la police de CONFORMITÉ RÈGLEMENTAIRE.
 - Le champ de 25 caractères est compacté avec compteur intégré pour libérer de la place aux commandes ENVOYER et URGENT.
+## V7.2.1799
+- Affichage des observations des karts en piste sans KV confirmé, sans attribuer leur identité physique.

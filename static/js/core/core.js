@@ -514,8 +514,12 @@ function velocityKartScoreIdentity(driver){
  // En Quick Change, seul Spotter sait quelle machine physique a été attribuée.
  // Le numéro Apex est un numéro d'équipe et NE DOIT JAMAIS être utilisé comme KV.
  const spotter=typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver):null;
- if(!spotter?.kv||spotter.teamKey!==teamKey||spotter.verified!==true)return null;
- return {id:`KV:${spotter.kv}`,teamKey,kv:spotter.kv,mode};
+ if(!spotter?.kv||spotter.teamKey!==teamKey||spotter.verified!==true){
+  // Observation de relais par équipe, sans prétendre identifier la machine physique.
+  // Jamais de transfert automatique de ce profil vers un KV ultérieur.
+  return {id:`LIVE:${teamKey}`,teamKey,kv:null,mode,unverified:true};
+ }
+ return {id:`KV:${spotter.kv}`,teamKey,kv:spotter.kv,mode,unverified:false};
 }
 function velocityKartScoreMedian(values){
  if(!values.length)return null;
@@ -595,12 +599,13 @@ function velocityKartScoreOnLap(driver,seconds,marker){
 }
 function velocityKartScoreRankings(){
  if(!velocityKartScoreEnsureScope())return [];
- const profiles=Object.values(velocityKartScoreStore.karts).filter(p=>p.best&&Number.isFinite(p.best.seconds));
- const reference=Math.min(...profiles.map(p=>p.best.seconds));
+ const profiles=Object.values(velocityKartScoreStore.karts).filter(p=>(p.best&&Number.isFinite(p.best.seconds))||Number.isFinite(p.recent));
+ if(!profiles.length)return [];
+ const reference=Math.min(...profiles.map(p=>Number.isFinite(p.best?.seconds)?p.best.seconds:p.recent));
  return profiles.map(p=>{
   const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
   return {...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference};
- }).sort((a,b)=>(b.potential??-1)-(a.potential??-1));
+ }).sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
 }
 // Récupération facultative des meilleurs chronos KV depuis le registre partagé.
 // Le numéro Apex / une éventuelle vitesse récente d'un autre relais ne sont jamais réutilisés.
