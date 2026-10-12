@@ -79,6 +79,13 @@ let spotterLocalMutationAt=0;
 let spotterDeferredRemote=null;
 let spotterWorkspaceStatus="Connexion en cours";
 let spotterLastSyncError="";
+let spotterConfirmedSnapshot=null;
+let spotterMonitorLeaseOwner=false;
+let spotterMonitorLeaseUntil=0;
+let spotterLastMonitorLeaseWorkspace='';
+let spotterSyncLastReadAt=0;
+let spotterSyncLastWriteAt=0;
+let spotterRetryDelayMs=0;
 let spotterSetupDraft=null;
 let spotterSetupOrigin='spotter';
 let spotterSetupRequested=false;
@@ -177,12 +184,18 @@ function spotterMergeProtectedIncoming(remoteIncoming,remoteSnapshot=null){
  return [...remote,...spotterClone(protectedLocal)];
 }
 function spotterApplyRemoteSnapshot(remote,{force=false}={}){
- if(!remote||typeof remote!=='object')return;
+ if(!remote||typeof remote!=='object'||!Object.keys(remote).length)return;
  const wasConfigured=Boolean(spotterState.configured);
- // Un état d'une ancienne version ne doit jamais restaurer une ancienne session.
- if(String(remote.app_release||'')!==SPOTTER_APP_RELEASE){spotterLastSyncError='Version différente sur le serveur';spotterUpdateSyncBadge();return;}
+ // A release number is NOT a data schema version. Old V1804-V1807 snapshots
+ // have compatible fields and must migrate without a destructive reset.
+ if(!Array.isArray(remote.queue)||!Array.isArray(remote.incoming)||!Array.isArray(remote.maintenance)){
+  spotterLastSyncError='État serveur incompatible (schéma)';spotterUpdateSyncBadge();return;
+ }
  const currentCircuit=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
- if(remote.circuit_id&&currentCircuit&&String(remote.circuit_id)!==currentCircuit)return;
+ if(remote.circuit_id&&currentCircuit&&String(remote.circuit_id)!==currentCircuit){
+  spotterLastSyncError=`Circuit distant différent : ${remote.circuit_id}`;
+  spotterUpdateSyncBadge();return;
+ }
  const updated=Number(remote.updated_at_ms)||0;
  // Server revision is authoritative; timestamps from different devices are not.
  const remoteRevision=Number(remote.revision)||0;
@@ -220,6 +233,11 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
   if(Array.isArray(remote.incoming)&&!remoteReset)spotterState.incoming=spotterClone(remote.incoming);
   if(remote.assignments&&typeof remote.assignments==='object')spotterState.assignments=spotterClone(remote.assignments);
   if(Array.isArray(remote.movement_log))spotterState.movementLog=spotterClone(remote.movement_log);
+  // Apex monitoring and KV allocator are operational shared state, never client-only.
+  if(remote.last_driver_status&&typeof remote.last_driver_status==='object')spotterState.lastDriverStatus=spotterClone(remote.last_driver_status);
+  if(typeof remote.monitor_primed==='boolean')spotterState.monitorPrimed=remote.monitor_primed;
+  if(Number.isFinite(Number(remote.next_kv_number))&&Number(remote.next_kv_number)>0)
+   spotterState.nextKvNumber=Math.max(Number(remote.next_kv_number),spotterMaxSharedKvNumber(remote)+1);
   if(remote.incoming_queue_selections&&typeof remote.incoming_queue_selections==='object')spotterState.incomingQueueSelections=spotterClone(remote.incoming_queue_selections);
   if(typeof remote.kart_tracking_enabled==='boolean')spotterState.kartTrackingEnabled=remote.kart_tracking_enabled;
   spotterState.configured=Boolean(remote.configured);
@@ -229,6 +247,7 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
   spotterState.freePitIns=Number(remote.pit_ins)||0;
   spotterState.freePitOuts=Number(remote.pit_outs)||0;
   spotterState.autoNextFile=Math.max(1,Math.min(spotterState.mode,Number(remote.auto_next_file)||1));
+  spotterConfirmedSnapshot=spotterClone(remote);
   spotterPublishSharedState(remote);
   spotterLastSyncError='';spotterUpdateSyncBadge();
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
@@ -243,12 +262,26 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
 }
 async function spotterPullSharedState({force=false}={}){
  try{
-  const response=await fetch('/api/spotter-state',{cache:'no-store'});
+  const response=await fetch('/api/spotter-state',{cache:'no-store',headers:{...((typeof velocityDeviceHeaders==='function')?velocityDeviceHeaders():{})}});
   if(!response.ok){spotterLastSyncError=`Lecture serveur HTTP ${response.status}`;spotterUpdateSyncBadge();return false;}
   const payload=await response.json();
+  const previousWorkspace=spotterWorkspaceStatus;
   spotterWorkspaceStatus=String(payload?.workspace_id||'INCONNU');
+  if(previousWorkspace!==spotterWorkspaceStatus){
+   spotterMonitorLeaseOwner=false;spotterMonitorLeaseUntil=0;
+   if(previousWorkspace!=='Connexion en cours'&&previousWorkspace!=='INCONNU'){
+    // Never carry queues and revision numbers into a different workspace.
+    spotterServerRevision=0;spotterConfirmedSnapshot=null;
+    spotterState.queue=[];spotterState.maintenance=[];spotterState.incoming=[];
+    spotterState.assignments={};spotterState.configured=false;
+    spotterState.nextKvNumber=1;spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;
+    spotterPushQueued=false;clearTimeout(spotterSyncTimer);
+   }
+  }
   spotterLastSyncError='';
   spotterApplyRemoteSnapshot(payload?.spotter,{force});
+  if(payload?.storage_backend&&payload.storage_backend!=='postgres')spotterLastSyncError='Stockage local : '+payload.storage_backend;
+  spotterSyncLastReadAt=Date.now();
   spotterUpdateSyncBadge();
   return true;
  }catch(error){spotterLastSyncError='Serveur indisponible';spotterUpdateSyncBadge();console.warn('[Spotter] Lecture de l’état partagé impossible',error);return false}
@@ -285,15 +318,21 @@ function spotterSharedSnapshot(){
   queue:clone(spotterState.queue||[]),maintenance:clone(spotterState.maintenance||[]),incoming:clone(spotterState.incoming||[]),
   assignments:clone(spotterState.assignments||{}),movement_log:clone((spotterState.movementLog||[]).slice(0,40)),incoming_queue_selections:clone(spotterState.incomingQueueSelections||{}),
   kart_tracking_enabled:Boolean(spotterState.kartTrackingEnabled),
-  free_started_at:spotterState.freeStartedAt||null,pit_ins:Number(spotterState.freePitIns)||0,pit_outs:Number(spotterState.freePitOuts)||0,recalibrating:Boolean(spotterState.recalibrating),auto_next_file:Number(spotterState.autoNextFile)||1
+  free_started_at:spotterState.freeStartedAt||null,pit_ins:Number(spotterState.freePitIns)||0,pit_outs:Number(spotterState.freePitOuts)||0,recalibrating:Boolean(spotterState.recalibrating),auto_next_file:Number(spotterState.autoNextFile)||1,
+  next_kv_number:Number(spotterState.nextKvNumber)||1,last_driver_status:clone(spotterState.lastDriverStatus||{}),monitor_primed:Boolean(spotterState.monitorPrimed),
+  circuit_id:String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'')
  };
 }
 function spotterUpdateSyncBadge(){
- const badge=document.getElementById('spotter-sync-diagnostic');if(!badge)return;
  const id=String(spotterWorkspaceStatus||'INCONNU');
- badge.textContent=`ESPACE ${id.slice(0,14)} · R${spotterServerRevision}${spotterLastSyncError?' · '+spotterLastSyncError:''}`;
- badge.style.color=spotterLastSyncError?'#ff7777':'#8cdbb4';
- badge.title=`Espace de travail serveur : ${id} — comparer sur les deux appareils`;
+ const badge=document.getElementById('spotter-sync-diagnostic');
+ const line=`ESPACE ${id.slice(0,14)} · R${spotterServerRevision}${spotterLastSyncError?' · '+spotterLastSyncError:''}`;
+ if(badge){badge.textContent=line;badge.style.color=spotterLastSyncError?'#ff7777':'#8cdbb4';badge.title=`Espace serveur : ${id}`}
+ // Mobile: a fixed-height concise diagnostic, visible even when desktop header
+ // is hidden by portrait CSS, without covering any Kart/Quick Change buttons.
+ let mobile=document.getElementById('spotter-sync-mobile');
+ if(!mobile){const root=document.getElementById('spotterApp');if(root){mobile=document.createElement('div');mobile.id='spotter-sync-mobile';mobile.style.cssText='padding:3px 8px;font:600 10px sans-serif;color:#8cdbb4;text-align:center;white-space:normal;overflow-wrap:anywhere';root.prepend(mobile)}}
+ if(mobile){mobile.textContent=line;mobile.style.color=spotterLastSyncError?'#ff7777':'#8cdbb4'}
 }
 function spotterPublishSharedState(snapshot=null){
  const published=spotterClone(snapshot||spotterSharedSnapshot());
@@ -305,39 +344,172 @@ function spotterPublishSharedState(snapshot=null){
  window.velocitySharedSpotterState=published;
  try{window.dispatchEvent(new CustomEvent('velocity:spotter-state',{detail:spotterClone(published)}))}catch(_){}
 }
+function spotterSame(a,b){return JSON.stringify(a??null)===JSON.stringify(b??null)}
+function spotterMaxSharedKvNumber(snapshot){
+ const objects=[...(snapshot?.queue||[]),...(snapshot?.maintenance||[]),...(snapshot?.incoming||[]),...Object.values(snapshot?.assignments||{})];
+ return objects.reduce((max,item)=>Math.max(max,spotterKvNumber(item?.kv),spotterKvNumber(item?.returnedKv)),0);
+}
+function spotterRebaseCards(baseList,localList,remoteList,key){
+ const b=Array.isArray(baseList)?baseList:[],l=Array.isArray(localList)?localList:[],r=Array.isArray(remoteList)?remoteList:[];
+ const id=item=>String(item?.[key]||'');
+ const baseMap=new Map(b.map(item=>[id(item),item]));
+ const localMap=new Map(l.map(item=>[id(item),item]));
+ const next=r.map(item=>spotterClone(item));
+ const indexOf=(value)=>next.findIndex(item=>id(item)===value);
+ for(const [keyId,oldItem] of baseMap){
+  if(!keyId||localMap.has(keyId))continue;
+  const position=indexOf(keyId);
+  if(position>=0)next.splice(position,1); // local validation explicitly removed it
+ }
+ for(const item of l){
+  const keyId=id(item);if(!keyId)continue;
+  const old=baseMap.get(keyId);
+  if(old&&spotterSame(old,item))continue;
+  const position=indexOf(keyId);
+  if(position<0){if(!old)next.push(spotterClone(item));continue}
+  if(!old||spotterSame(next[position],old))next[position]=spotterClone(item);
+ }
+ return next;
+}
+function spotterRebaseFields(base,local,remote){
+ // Reset is authoritative and must not resurrect old cards or assignments.
+ if(remote?.configured===false&&Array.isArray(remote?.queue)&&!remote.queue.length&&
+    Array.isArray(remote?.incoming)&&!remote.incoming.length&&base?.configured){
+  return null;
+ }
+ if(local?.configured===false&&base?.configured){
+  // Local explicit reset wins when safely retried on top of the latest revision.
+  return {...spotterClone(local),app_release:SPOTTER_APP_RELEASE};
+ }
+ const out=spotterClone(remote||{});
+ for(const [field,key] of [['queue','cardId'],['maintenance','cardId'],['incoming','id']]){
+  if(!spotterSame(base?.[field],local?.[field]))
+   out[field]=spotterRebaseCards(base?.[field],local?.[field],remote?.[field],key);
+ }
+ for(const field of ['assignments','incoming_queue_selections','last_driver_status']){
+  const old=base?.[field]||{}, edited=local?.[field]||{}, server=remote?.[field]||{};
+  if(spotterSame(old,edited))continue;
+  const next=spotterClone(server);
+  for(const key of new Set([...Object.keys(old),...Object.keys(edited)])){
+   if(spotterSame(old[key],edited[key]))continue;
+   if(spotterSame(old[key],server[key])){
+    if(Object.prototype.hasOwnProperty.call(edited,key))next[key]=spotterClone(edited[key]);
+    else delete next[key];
+   }
+  }
+  out[field]=next;
+ }
+ const ignore=new Set(['queue','incoming','maintenance','assignments','incoming_queue_selections','last_driver_status','movement_log','revision','updated_at_ms','client_id','app_release','circuit_id','mutation_at_ms','next_kv_number']);
+ for(const key of Object.keys(local||{})){
+  if(ignore.has(key))continue;
+  if(!spotterSame(base?.[key],local?.[key])&&spotterSame(base?.[key],remote?.[key]))out[key]=spotterClone(local[key]);
+ }
+ if(!spotterSame(base?.movement_log,local?.movement_log)){
+  const previous=new Set((base?.movement_log||[]).map(x=>JSON.stringify(x)));
+  const exists=new Set((out.movement_log||[]).map(x=>JSON.stringify(x)));
+  const records=spotterClone(out.movement_log||[]);
+  for(const item of (local?.movement_log||[])){
+   const encoded=JSON.stringify(item);
+   if(!previous.has(encoded)&&!exists.has(encoded)){records.unshift(spotterClone(item));exists.add(encoded)}
+  }
+  out.movement_log=records.slice(0,40);
+ }
+ out.next_kv_number=Math.max(Number(remote?.next_kv_number)||1,Number(local?.next_kv_number)||1,spotterMaxSharedKvNumber(out)+1);
+ out.client_id=SPOTTER_CLIENT_ID;out.app_release=SPOTTER_APP_RELEASE;out.mutation_at_ms=Date.now();
+ return out;
+}
+function spotterApplyRebasedSnapshot(value){
+ spotterApplyingRemote=true;
+ try{
+  spotterState.queue=spotterClone(value.queue||[]);
+  spotterState.maintenance=spotterClone(value.maintenance||[]);
+  spotterState.incoming=spotterClone(value.incoming||[]);
+  spotterState.assignments=spotterClone(value.assignments||{});
+  spotterState.movementLog=spotterClone(value.movement_log||[]);
+  spotterState.incomingQueueSelections=spotterClone(value.incoming_queue_selections||{});
+  spotterState.nextKvNumber=Number(value.next_kv_number)||spotterState.nextKvNumber;
+  spotterState.lastDriverStatus=spotterClone(value.last_driver_status||{});
+  spotterState.monitorPrimed=Boolean(value.monitor_primed);
+  spotterState.configured=Boolean(value.configured);
+  spotterState.mode=Math.max(1,Math.min(3,Number(value.queue_mode)||1));
+  if(Array.isArray(value.setup_karts))spotterState.setupKarts=spotterClone(value.setup_karts);
+  if(Array.isArray(value.setup_queue_files))spotterState.setupQueueFiles=spotterClone(value.setup_queue_files);
+  if(typeof value.kart_tracking_enabled==='boolean')spotterState.kartTrackingEnabled=value.kart_tracking_enabled;
+  spotterState.freeMode=value.mode==='auto';
+  spotterState.recalibrating=Boolean(value.recalibrating);
+  spotterState.freeStartedAt=value.free_started_at||null;
+  spotterState.freePitIns=Number(value.pit_ins)||0;
+  spotterState.freePitOuts=Number(value.pit_outs)||0;
+  spotterState.autoNextFile=Math.max(1,Math.min(spotterState.mode,Number(value.auto_next_file)||1));
+  spotterPublishSharedState(value);
+  if(document.body.classList.contains('current-spotter')){
+   if(!spotterState.configured){spotterUiStep='mode';renderSpotterFoundation('mode')}
+   else if(spotterUiStep==='live'||spotterUiStep==='recalibrate')spotterRenderCurrent();
+  }
+ }finally{spotterApplyingRemote=false}
+}
 async function spotterPushSharedState(){
  if(spotterPushInFlight){spotterPushQueued=true;return}
  spotterPushInFlight=true;spotterPushQueued=false;
  try{
-  const response=await fetch('/api/spotter-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({spotter:spotterSharedSnapshot(),base_revision:spotterServerRevision})});
-  if(response.ok){
-   const payload=await response.json();
-   spotterLastRemoteUpdate=Math.max(spotterLastRemoteUpdate,Number(payload?.updated_at_ms)||0);
-   spotterServerRevision=Number(payload?.revision)||spotterServerRevision;
-   spotterWorkspaceStatus=String(payload?.workspace_id||spotterWorkspaceStatus);
-   spotterLastSyncError='';spotterUpdateSyncBadge();
-   const published=spotterSharedSnapshot();
-   published.updated_at_ms=spotterLastRemoteUpdate;
-   published.circuit_id=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
-   spotterPublishSharedState(published);
-  }else{
+  let edited=spotterSharedSnapshot();
+  let confirmed=spotterConfirmedSnapshot?spotterClone(spotterConfirmedSnapshot):null;
+  let revision=spotterServerRevision;
+  for(let attempt=0;attempt<4;attempt++){
+   const response=await fetch('/api/spotter-state',{method:'POST',headers:{'Content-Type':'application/json',...((typeof velocityDeviceHeaders==='function')?velocityDeviceHeaders():{})},body:JSON.stringify({spotter:edited,base_revision:revision}),cache:'no-store'});
    const payload=await response.json().catch(()=>({}));
-   spotterLastSyncError=`Écriture refusée : HTTP ${response.status}`;spotterUpdateSyncBadge();
-   console.warn('[Spotter] État partagé refusé',response.status,payload);
-   if(response.status===409){
-    // Refresh from the authoritative server on conflict. Never silently
-    // overwrite a recent validation from a different device.
-    spotterPushQueued=false;
-    const oldMutation=spotterLocalMutationAt;
-    spotterLocalMutationAt=0;
-    await spotterPullSharedState({force:true});
-    console.warn('[Spotter] Conflit multi-appareil: état serveur restauré',oldMutation);
+   if(response.ok){
+    spotterLastRemoteUpdate=Number(payload?.updated_at_ms)||Date.now();
+    spotterServerRevision=Number(payload?.revision)||revision+1;
+    spotterWorkspaceStatus=String(payload?.workspace_id||spotterWorkspaceStatus);
+    spotterSyncLastWriteAt=Date.now();spotterLastSyncError='';
+    spotterConfirmedSnapshot=spotterClone({...edited,revision:spotterServerRevision,updated_at_ms:spotterLastRemoteUpdate});
+    spotterPublishSharedState(spotterConfirmedSnapshot);spotterUpdateSyncBadge();
+    return;
    }
+   if(response.status!==409||!payload?.spotter||!Array.isArray(payload.spotter.queue)){
+    spotterLastSyncError=payload?.expected?'Version obsolète : recharger l’application':`Écriture HTTP ${response.status}`;
+    spotterUpdateSyncBadge();console.warn('[Spotter] écriture refusée',payload);
+    if(response.status>=500){spotterPushQueued=true;spotterRetryDelayMs=2500}
+    return;
+   }
+   const remote=payload.spotter;
+   if(!confirmed&&Number(remote.revision)>0){
+    spotterApplyRemoteSnapshot(remote,{force:true});
+    spotterLastSyncError='Premier chargement effectué après conflit : recommencer l’action';
+    spotterUpdateSyncBadge();return;
+   }
+   const merged=spotterRebaseFields(confirmed||{},edited,remote);
+   if(!merged){
+    spotterApplyRemoteSnapshot(remote,{force:true});
+    spotterLastSyncError='Réinitialisation distante prioritaire';spotterUpdateSyncBadge();return;
+   }
+   revision=Number(remote.revision)||0;
+   spotterServerRevision=revision;
+   spotterConfirmedSnapshot=spotterClone(remote);
+   confirmed=spotterClone(remote);
+   edited=merged;
+   spotterApplyRebasedSnapshot(merged);
+   spotterLastSyncError='Conflit détecté : nouvelle tentative';spotterUpdateSyncBadge();
   }
- }catch(error){spotterLastSyncError='Écriture impossible';spotterUpdateSyncBadge();console.warn('[Spotter] Synchronisation serveur impossible',error)}
- finally{spotterPushInFlight=false;if(spotterPushQueued)spotterScheduleSharedSync()}
+  spotterLastSyncError='Conflit répété : nouvel essai dans 3s';spotterPushQueued=true;spotterRetryDelayMs=3000;spotterUpdateSyncBadge();
+ }catch(error){
+  spotterLastSyncError='Écriture impossible : reprise automatique';
+  spotterPushQueued=true;spotterRetryDelayMs=2500;spotterUpdateSyncBadge();
+  console.warn('[Spotter] Synchronisation impossible',error);
+ }
+ finally{
+  spotterPushInFlight=false;
+  if(spotterPushQueued)spotterScheduleSharedSync(spotterRetryDelayMs||120);
+  spotterRetryDelayMs=0;
+ }
 }
-function spotterScheduleSharedSync(){if(spotterApplyingRemote)return;spotterPushQueued=true;clearTimeout(spotterSyncTimer);spotterSyncTimer=setTimeout(()=>{spotterPushQueued=false;spotterPushSharedState()},120)}
+function spotterScheduleSharedSync(delay=120){
+ if(spotterApplyingRemote)return;
+ spotterPushQueued=true;clearTimeout(spotterSyncTimer);
+ spotterSyncTimer=setTimeout(()=>{spotterPushQueued=false;spotterPushSharedState()},Math.max(120,delay));
+}
+
 function saveSpotterFoundation(){
  spotterLocalMutationAt=Date.now();
  spotterPublishSharedState();
@@ -480,7 +652,7 @@ async function spotterOpenKartRegistry(){
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel ${active?'wide':''}">${content}</div></div>`);
 }
 function spotterExportKartRegistry(){
- const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1806',registry:spotterClone(spotterState.kartRegistry||{})};
+ const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:SPOTTER_APP_RELEASE,registry:spotterClone(spotterState.kartRegistry||{})};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob);
  const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
@@ -1023,7 +1195,7 @@ function spotterConfirmedPitChange(team,previous,next){
  return false;
 }
 function spotterMonitorApex(){
- if(!spotterState.configured||spotterState.recalibrating)return;
+ if(!spotterState.configured||spotterState.recalibrating||!spotterMonitorLeaseOwner||Date.now()>=spotterMonitorLeaseUntil)return;
  const drivers=(spotterLiveState()?.drivers||[]).filter(driver=>spotterDriverKey(driver));
  if(!drivers.length)return;
  const identityChanged=spotterCanonicalizeState(drivers);
@@ -1689,4 +1861,14 @@ function spotterMaintenanceCard(item){
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled)spotterPullRegistry()},15000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});
+async function spotterRenewMonitorLease(){
+ if(!spotterState.configured){spotterMonitorLeaseOwner=false;spotterMonitorLeaseUntil=0;return}
+ try{
+  const response=await fetch('/api/spotter-monitor-lease',{method:'POST',headers:{'Content-Type':'application/json',...((typeof velocityDeviceHeaders==='function')?velocityDeviceHeaders():{})},body:JSON.stringify({client_id:SPOTTER_CLIENT_ID}),cache:'no-store'});
+  const data=await response.json();
+  spotterMonitorLeaseOwner=Boolean(response.ok&&data.owner);
+  spotterMonitorLeaseUntil=spotterMonitorLeaseOwner?Math.min(Number(data.lease_until_ms)||0,Date.now()+4600):0;
+  spotterLastMonitorLeaseWorkspace=data.workspace_id||'';
+ }catch(_){spotterMonitorLeaseOwner=false;spotterMonitorLeaseUntil=0}
+}
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState({force:true});setInterval(spotterRenewMonitorLease,2000);spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled)spotterPullRegistry()},15000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});

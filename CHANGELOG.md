@@ -1,3 +1,19 @@
+## V7.2.1808 — Synchronisation Spotter multi-appareils : refonte et tests
+
+- **Cause racine** : les téléphones appairés sans Session Course pouvaient utiliser `LEGACY` pendant que le PC connecté utilisait son propre workspace ; chaque appareil écrivait dans une autre ligne SQL.
+- Sessions Velocity et membres d'espaces désormais enregistrés et lus depuis le stockage Recorder commun (Postgres Render), avec migration non destructive depuis l'ancien fichier local lorsque la table est vide, cache 2 s et contrôle de révision sur modification.
+- Invitations d'appareils : mémorisation permanente du workspace à la création de l'invitation, puis dans la fiche appareil lors de l'appairage ; fonctionne sans Session Course.
+- Appareils anciennement appairés : bouton « SYNCHRONISER APPAREILS » sur les fiches de membres Team, rattachant explicitement leurs appareils à l'espace sélectionné.
+- État Spotter V1804 à V1807 : migration en lecture quel que soit l'ancien `app_release` ; la version applicative reste vérifiée pour empêcher une ancienne application de publier un format obsolète.
+- Synchronisation de `next_kv_number`, `last_driver_status` et `monitor_primed` pour fiabiliser la reprise d'un autre observateur Apex.
+- Élection d'un seul observateur Apex par workspace avec bail de 5 secondes persistant, renouvellement toutes les 2 secondes, reprise automatique après expiration.
+- Ecriture concurrencée : `409` renvoie l'état serveur courant ; le client réconcilie les changements indépendants et réessaie avec la nouvelle révision, sans réintroduire un entrant validé ni ignorer une remise à zéro.
+- Pannes transitoires du stockage : tentative ultérieure au lieu d'une perte silencieuse de l'écriture ; diagnostic des erreurs.
+- Badge ESPACE/R visible sur ordinateur et mobile ; le stockage local SQLite est identifié et le décalage de circuit annoncé clairement.
+- Service worker et script bootstrap versionnés 1808 pour invalider les caches iPhone.
+- Quatre tests SQL/identité et tests JavaScript du rebase inclus dans `tests/`.
+- **Limites** : le journal d'historique KV reste distinct de l'état opérationnel ; pas de validation en production sur deux appareils dans cet environnement ; les anciens appareils appairés doivent être rattachés explicitement via le bouton ci-dessus ; PostgreSQL Render et VELOCITY_SESSION_SECRET stable requis pour un usage multi-appareils fiable.
+
 ## V7.2.1807 — Synchronisation Spotter multi-appareils
 - Snapshot serveur autoritaire par révision : suppression des fusions locales pour files, entrants et maintenance.
 - Une modification distante est appliquée même si le client est sur un écran interactif ; le rendu des formulaires en édition est préservé.
