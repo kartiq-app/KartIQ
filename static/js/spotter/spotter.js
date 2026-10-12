@@ -77,6 +77,8 @@ let spotterPushInFlight=false;
 let spotterPushQueued=false;
 let spotterLocalMutationAt=0;
 let spotterDeferredRemote=null;
+let spotterWorkspaceStatus="Connexion en cours";
+let spotterLastSyncError="";
 let spotterSetupDraft=null;
 let spotterSetupOrigin='spotter';
 let spotterSetupRequested=false;
@@ -175,24 +177,24 @@ function spotterMergeProtectedIncoming(remoteIncoming,remoteSnapshot=null){
  return [...remote,...spotterClone(protectedLocal)];
 }
 function spotterApplyRemoteSnapshot(remote,{force=false}={}){
- if(!remote||typeof remote!=='object'||remote.client_id===SPOTTER_CLIENT_ID)return;
+ if(!remote||typeof remote!=='object')return;
  const wasConfigured=Boolean(spotterState.configured);
  // Un état d'une ancienne version ne doit jamais restaurer une ancienne session.
- if(String(remote.app_release||'')!==SPOTTER_APP_RELEASE)return;
+ if(String(remote.app_release||'')!==SPOTTER_APP_RELEASE){spotterLastSyncError='Version différente sur le serveur';spotterUpdateSyncBadge();return;}
  const currentCircuit=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
  if(remote.circuit_id&&currentCircuit&&String(remote.circuit_id)!==currentCircuit)return;
  const updated=Number(remote.updated_at_ms)||0;
- if(!force&&updated<=spotterLastRemoteUpdate&&Number(remote.revision||0)<=spotterServerRevision)return;
+ // Server revision is authoritative; timestamps from different devices are not.
+ const remoteRevision=Number(remote.revision)||0;
+ if(!force&&remoteRevision<=spotterServerRevision)return;
  const remoteMutation=spotterRemoteMutationAt(remote);
  // A reset is an authoritative state transition, not a regular queue merge.
  const remoteReset=remote.configured===false && Array.isArray(remote.queue) && remote.queue.length===0 && Array.isArray(remote.incoming) && remote.incoming.length===0;
  // Once the pending local write is finished, a newer server revision wins.
  // Comparing timestamps from two different devices can permanently block sync.
- if(!force&&!remoteReset&&(spotterPushInFlight||spotterPushQueued||Date.now()-spotterLocalMutationAt<1800))return;
- if(!force&&!remoteReset&&document.body.classList.contains('current-spotter')&&spotterUiIsInteractive()){
-  spotterDeferredRemote=spotterClone(remote);
-  return;
- }
+ // A local unsent action must finish its compare-and-swap before applying a
+ // competing server revision. Conflict handling then restores the winner.
+ if(!force&&(spotterPushInFlight||spotterPushQueued))return;
  spotterLastRemoteUpdate=updated;
  spotterServerRevision=Number(remote.revision)||0;
  spotterApplyingRemote=true;
@@ -212,13 +214,10 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
    spotterLocalMutationAt=0;
   }
   if(Array.isArray(remote.queue)&&!remoteReset){
-   const incomingQueue=spotterClone(remote.queue);
-   const remoteIds=new Set(incomingQueue.map(item=>String(item?.cardId||'')));
-   const protectedReinserted=(spotterState.queue||[]).filter(item=>item?.cardId&&Number(item?.reinsertedAt)>0&&Date.now()-Number(item.reinsertedAt)<10000&&!remoteIds.has(String(item.cardId)));
-   spotterState.queue=[...incomingQueue,...spotterClone(protectedReinserted)];
+   spotterState.queue=spotterClone(remote.queue);
   }
-  if(Array.isArray(remote.maintenance)&&!remoteReset)spotterState.maintenance=spotterMergeProtectedMaintenance(remote.maintenance);
-  if(Array.isArray(remote.incoming)&&!remoteReset)spotterState.incoming=spotterMergeProtectedIncoming(remote.incoming,remote);
+  if(Array.isArray(remote.maintenance)&&!remoteReset)spotterState.maintenance=spotterClone(remote.maintenance);
+  if(Array.isArray(remote.incoming)&&!remoteReset)spotterState.incoming=spotterClone(remote.incoming);
   if(remote.assignments&&typeof remote.assignments==='object')spotterState.assignments=spotterClone(remote.assignments);
   if(Array.isArray(remote.movement_log))spotterState.movementLog=spotterClone(remote.movement_log);
   if(remote.incoming_queue_selections&&typeof remote.incoming_queue_selections==='object')spotterState.incomingQueueSelections=spotterClone(remote.incoming_queue_selections);
@@ -231,8 +230,9 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
   spotterState.freePitOuts=Number(remote.pit_outs)||0;
   spotterState.autoNextFile=Math.max(1,Math.min(spotterState.mode,Number(remote.auto_next_file)||1));
   spotterPublishSharedState(remote);
+  spotterLastSyncError='';spotterUpdateSyncBadge();
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
-  if(document.body.classList.contains('current-spotter')&&(remoteReset||!spotterUiIsInteractive())){
+  if(document.body.classList.contains('current-spotter')&&(remoteReset||!(spotterDrag?.active||spotterSetupDraft))){
    // Un snapshot distant peut rafraîchir le LIVE, mais ne remplace jamais
    // un menu de configuration / ajout / Quick Change en cours.
    if(remoteReset){spotterUiStep='mode';renderSpotterFoundation('mode')}
@@ -244,11 +244,14 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
 async function spotterPullSharedState({force=false}={}){
  try{
   const response=await fetch('/api/spotter-state',{cache:'no-store'});
-  if(!response.ok)return false;
+  if(!response.ok){spotterLastSyncError=`Lecture serveur HTTP ${response.status}`;spotterUpdateSyncBadge();return false;}
   const payload=await response.json();
+  spotterWorkspaceStatus=String(payload?.workspace_id||'INCONNU');
+  spotterLastSyncError='';
   spotterApplyRemoteSnapshot(payload?.spotter,{force});
+  spotterUpdateSyncBadge();
   return true;
- }catch(error){console.warn('[Spotter] Lecture de l’état partagé impossible',error);return false}
+ }catch(error){spotterLastSyncError='Serveur indisponible';spotterUpdateSyncBadge();console.warn('[Spotter] Lecture de l’état partagé impossible',error);return false}
 }
 
 function loadSpotterFoundation(){
@@ -285,6 +288,13 @@ function spotterSharedSnapshot(){
   free_started_at:spotterState.freeStartedAt||null,pit_ins:Number(spotterState.freePitIns)||0,pit_outs:Number(spotterState.freePitOuts)||0,recalibrating:Boolean(spotterState.recalibrating),auto_next_file:Number(spotterState.autoNextFile)||1
  };
 }
+function spotterUpdateSyncBadge(){
+ const badge=document.getElementById('spotter-sync-diagnostic');if(!badge)return;
+ const id=String(spotterWorkspaceStatus||'INCONNU');
+ badge.textContent=`ESPACE ${id.slice(0,14)} · R${spotterServerRevision}${spotterLastSyncError?' · '+spotterLastSyncError:''}`;
+ badge.style.color=spotterLastSyncError?'#ff7777':'#8cdbb4';
+ badge.title=`Espace de travail serveur : ${id} — comparer sur les deux appareils`;
+}
 function spotterPublishSharedState(snapshot=null){
  const published=spotterClone(snapshot||spotterSharedSnapshot());
  if(!published||typeof published!=='object')return;
@@ -304,12 +314,15 @@ async function spotterPushSharedState(){
    const payload=await response.json();
    spotterLastRemoteUpdate=Math.max(spotterLastRemoteUpdate,Number(payload?.updated_at_ms)||0);
    spotterServerRevision=Number(payload?.revision)||spotterServerRevision;
+   spotterWorkspaceStatus=String(payload?.workspace_id||spotterWorkspaceStatus);
+   spotterLastSyncError='';spotterUpdateSyncBadge();
    const published=spotterSharedSnapshot();
    published.updated_at_ms=spotterLastRemoteUpdate;
    published.circuit_id=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
    spotterPublishSharedState(published);
   }else{
    const payload=await response.json().catch(()=>({}));
+   spotterLastSyncError=`Écriture refusée : HTTP ${response.status}`;spotterUpdateSyncBadge();
    console.warn('[Spotter] État partagé refusé',response.status,payload);
    if(response.status===409){
     // Refresh from the authoritative server on conflict. Never silently
@@ -321,7 +334,7 @@ async function spotterPushSharedState(){
     console.warn('[Spotter] Conflit multi-appareil: état serveur restauré',oldMutation);
    }
   }
- }catch(error){console.warn('[Spotter] Synchronisation serveur impossible',error)}
+ }catch(error){spotterLastSyncError='Écriture impossible';spotterUpdateSyncBadge();console.warn('[Spotter] Synchronisation serveur impossible',error)}
  finally{spotterPushInFlight=false;if(spotterPushQueued)spotterScheduleSharedSync()}
 }
 function spotterScheduleSharedSync(){if(spotterApplyingRemote)return;spotterPushQueued=true;clearTimeout(spotterSyncTimer);spotterSyncTimer=setTimeout(()=>{spotterPushQueued=false;spotterPushSharedState()},120)}
@@ -1500,7 +1513,7 @@ function renderSpotterFoundation(forceStep){
  spotterUiStep=step;
  root.innerHTML=`<div class="spotter-shell">
   <div class="spotter-top-accent" aria-hidden="true"></div>
-  <div class="spotter-desktop-heading"><span>SPOTTER</span></div>
+  <div class="spotter-desktop-heading"><span>SPOTTER</span><small id="spotter-sync-diagnostic" style="margin-left:14px;color:#8cdbb4;font:600 10px sans-serif;letter-spacing:.04em"></small></div>
   ${spotterCommandBar(step)}
   <div class="spotter-step ${step==='mode'?'active':''}" id="spotterModeStep">
    <section class="spotter-card"><div class="spotter-card-head"><h2>Mode Quick Change</h2></div><div class="spotter-card-body"><button class="spotter-secondary spotter-mobile-kart-mode-link" type="button" onclick="spotterOpenKartModeDialog()">MODE KARTS · <span data-spotter-kart-mode-label>${spotterKartModeLabel()}</span></button><p class="spotter-intro">Choisissez le nombre de files utilisé par le circuit avant de lancer le Spotter.</p><div class="spotter-mode-grid"><button class="spotter-mode-option ${spotterState.mode===1?'active':''}" type="button" onclick="setSpotterMode(1)"><strong>1</strong><span>File</span><small>Verticale</small></button><button class="spotter-mode-option ${spotterState.mode===2?'active':''}" type="button" onclick="setSpotterMode(2)"><strong>2</strong><span>Files</span><small>Côte à côte</small></button><button class="spotter-mode-option ${spotterState.mode===3?'active':''}" type="button" onclick="setSpotterMode(3)"><strong>3</strong><span>Files</span><small>Côte à côte</small></button></div><button class="spotter-secondary spotter-cancel-setup" type="button" onclick="spotterCancelSetup()">ANNULER</button></div></section>
@@ -1539,6 +1552,7 @@ function renderSpotterFoundation(forceStep){
   </div>
   ${spotterReplacementOverlay()}
  </div>`;
+ spotterUpdateSyncBadge();
 }
 function spotterDisplayName(value){
  const raw=String(value??'—').trim();

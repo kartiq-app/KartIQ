@@ -1,3 +1,10 @@
+## V7.2.1807 — Synchronisation Spotter multi-appareils
+- Snapshot serveur autoritaire par révision : suppression des fusions locales pour files, entrants et maintenance.
+- Une modification distante est appliquée même si le client est sur un écran interactif ; le rendu des formulaires en édition est préservé.
+- Diagnostic visible de l’espace de travail serveur et révision, pour comparer mobile et ordinateur.
+- Affichage des erreurs réseau et des conflits de synchronisation.
+- Conserve les fonctionnalités de V1806, notamment registre KV et scores POT Analyzer.
+
 ## V7.2.1806 — Réinitialisation Quick Change synchronisée
 - Une remise à zéro distante est appliquée même quand le client était sur un écran de configuration ou possède des écritures locales récentes.
 - Effacement sans fusion des files, entrants, maintenance et protections locales au moment du reset.
