@@ -184,10 +184,12 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
  const updated=Number(remote.updated_at_ms)||0;
  if(!force&&updated<=spotterLastRemoteUpdate&&Number(remote.revision||0)<=spotterServerRevision)return;
  const remoteMutation=spotterRemoteMutationAt(remote);
+ // A reset is an authoritative state transition, not a regular queue merge.
+ const remoteReset=remote.configured===false && Array.isArray(remote.queue) && remote.queue.length===0 && Array.isArray(remote.incoming) && remote.incoming.length===0;
  // Once the pending local write is finished, a newer server revision wins.
  // Comparing timestamps from two different devices can permanently block sync.
- if(!force&&(spotterPushInFlight||spotterPushQueued||Date.now()-spotterLocalMutationAt<1800))return;
- if(!force&&document.body.classList.contains('current-spotter')&&spotterUiIsInteractive()){
+ if(!force&&!remoteReset&&(spotterPushInFlight||spotterPushQueued||Date.now()-spotterLocalMutationAt<1800))return;
+ if(!force&&!remoteReset&&document.body.classList.contains('current-spotter')&&spotterUiIsInteractive()){
   spotterDeferredRemote=spotterClone(remote);
   return;
  }
@@ -198,14 +200,25 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
   if(Number.isFinite(Number(remote.queue_mode)))spotterState.mode=Math.max(1,Math.min(3,Number(remote.queue_mode)));
   if(Array.isArray(remote.setup_karts)&&remote.setup_karts.length)spotterState.setupKarts=remote.setup_karts.map(value=>String(value||''));
   if(Array.isArray(remote.setup_queue_files)&&remote.setup_queue_files.length)spotterState.setupQueueFiles=remote.setup_queue_files.map(value=>Math.max(1,Math.min(3,Number(value)||1)));
-  if(Array.isArray(remote.queue)){
+  if(remoteReset){
+   // Emptying a queue must not keep locally protected cards or incoming events.
+   spotterState.queue=[];spotterState.maintenance=[];spotterState.incoming=[];
+   spotterState.incomingQueueSelections={};spotterState.lastDriverStatus={};
+   spotterState.monitorPrimed=false;spotterState.replacementRequest=null;
+   spotterState.undoSnapshot=null;spotterState.kartRegistry={};
+   spotterDeferredRemote=null;spotterSetupDraft=null;spotterSetupRequested=false;
+   spotterAcknowledgedIncoming.clear();spotterPersistAcknowledged();
+   clearTimeout(spotterSyncTimer);spotterPushQueued=false;
+   spotterLocalMutationAt=0;
+  }
+  if(Array.isArray(remote.queue)&&!remoteReset){
    const incomingQueue=spotterClone(remote.queue);
    const remoteIds=new Set(incomingQueue.map(item=>String(item?.cardId||'')));
    const protectedReinserted=(spotterState.queue||[]).filter(item=>item?.cardId&&Number(item?.reinsertedAt)>0&&Date.now()-Number(item.reinsertedAt)<10000&&!remoteIds.has(String(item.cardId)));
    spotterState.queue=[...incomingQueue,...spotterClone(protectedReinserted)];
   }
-  if(Array.isArray(remote.maintenance))spotterState.maintenance=spotterMergeProtectedMaintenance(remote.maintenance);
-  if(Array.isArray(remote.incoming))spotterState.incoming=spotterMergeProtectedIncoming(remote.incoming,remote);
+  if(Array.isArray(remote.maintenance)&&!remoteReset)spotterState.maintenance=spotterMergeProtectedMaintenance(remote.maintenance);
+  if(Array.isArray(remote.incoming)&&!remoteReset)spotterState.incoming=spotterMergeProtectedIncoming(remote.incoming,remote);
   if(remote.assignments&&typeof remote.assignments==='object')spotterState.assignments=spotterClone(remote.assignments);
   if(Array.isArray(remote.movement_log))spotterState.movementLog=spotterClone(remote.movement_log);
   if(remote.incoming_queue_selections&&typeof remote.incoming_queue_selections==='object')spotterState.incomingQueueSelections=spotterClone(remote.incoming_queue_selections);
@@ -219,10 +232,12 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
   spotterState.autoNextFile=Math.max(1,Math.min(spotterState.mode,Number(remote.auto_next_file)||1));
   spotterPublishSharedState(remote);
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
-  if(document.body.classList.contains('current-spotter')&&!spotterUiIsInteractive()){
+  if(document.body.classList.contains('current-spotter')&&(remoteReset||!spotterUiIsInteractive())){
    // Un snapshot distant peut rafraîchir le LIVE, mais ne remplace jamais
    // un menu de configuration / ajout / Quick Change en cours.
-   if(spotterUiStep==='live'||spotterUiStep==='recalibrate')spotterRenderCurrent();
+   if(remoteReset){spotterUiStep='mode';renderSpotterFoundation('mode')}
+   else if(!wasConfigured&&spotterState.configured)spotterRenderCurrent();
+   else if(spotterUiStep==='live'||spotterUiStep==='recalibrate')spotterRenderCurrent();
   }
  }finally{spotterApplyingRemote=false}
 }
@@ -452,7 +467,7 @@ async function spotterOpenKartRegistry(){
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel ${active?'wide':''}">${content}</div></div>`);
 }
 function spotterExportKartRegistry(){
- const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1805',registry:spotterClone(spotterState.kartRegistry||{})};
+ const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1806',registry:spotterClone(spotterState.kartRegistry||{})};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob);
  const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
@@ -789,6 +804,8 @@ function launchSpotterFoundation(){
 }
 function resetSpotterFoundation(){
  if(!confirm('Réinitialiser la configuration Spotter ?'))return;
+ spotterAcknowledgedIncoming.clear();spotterPersistAcknowledged();
+ spotterDeferredRemote=null;spotterSetupDraft=null;spotterSetupRequested=false;
  Object.assign(spotterState,{mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,autoNextFile:1,configured:false,kartTrackingEnabled:false,kartRegistry:{}});
  saveSpotterFoundation();spotterUiStep='mode';renderSpotterFoundation('mode');
 }

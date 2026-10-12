@@ -1,3 +1,9 @@
+## V7.2.1806 — Réinitialisation Quick Change synchronisée
+- Une remise à zéro distante est appliquée même quand le client était sur un écran de configuration ou possède des écritures locales récentes.
+- Effacement sans fusion des files, entrants, maintenance et protections locales au moment du reset.
+- Retour automatique de chaque appareil à la configuration des files après reset distant.
+- Aucun changement des scores, FIFO et calculs Analyzer.
+
 ## V7.2.1805 — Validation Spotter développeur synchronisée
 - Ne conserve plus indéfiniment un entrant de simulation local lorsqu’une validation distante l’a supprimé.
 - Protège les vrais entrants locaux très récents uniquement s’ils ne sont pas déjà enregistrés dans la file ou la maintenance distante.
