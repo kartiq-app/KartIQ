@@ -1931,3 +1931,20 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-registry-history{min-width:0;overscroll-behavior-x:contain;scrollbar-width:thin}
 .spotter-registry-entry{width:235px;min-width:235px;max-width:235px;justify-content:space-between}
 .spotter-registry-entry b{overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* V7.2.1802 — labels de files personnalisables et codes couleur des karts. */
+.spotter-file-title{position:relative;gap:5px}
+.spotter-file-title-color{height:15px;width:17px;min-width:17px;padding:0;border:0;background:transparent;cursor:pointer;border-radius:3px}
+.spotter-queue-card.available.score-gold:not(.waiting){background:linear-gradient(145deg,#a87d1e,#67480e)!important;border-color:#dfb949!important}
+.spotter-queue-card.available.score-green:not(.waiting){background:linear-gradient(145deg,#0a7542,#064d30)!important;border-color:#44d790!important}
+.spotter-queue-card.available.score-orange:not(.waiting){background:linear-gradient(145deg,#ae5b1c,#68330d)!important;border-color:#f49b44!important}
+.spotter-queue-card.available.score-red:not(.waiting){background:linear-gradient(145deg,#9c2631,#5b1724)!important;border-color:#ee5967!important}
+.spotter-queue-card.available.score-unknown:not(.waiting){background:linear-gradient(145deg,#3c4656,#1b2431)!important;border-color:#8f9bad!important}
+.spotter-queue-card.available.waiting{border-color:#f3f5f8!important;box-shadow:0 0 0 1px rgba(255,255,255,.14),0 9px 22px rgba(0,0,0,.38)!important}
+.spotter-queue-card.reserved{border-color:#ef3349!important}
+.spotter-queue-card .spotter-card-stats{display:flex!important;gap:2px!important;align-items:center!important;justify-content:center!important;flex-direction:column!important}
+.spotter-queue-card .spotter-score{white-space:nowrap!important;display:inline-block!important}
+
+.spotter-incoming-card{border:1.5px solid #f3f6fa!important}
+.spotter-queue-card.incoming{border-color:#f3f6fa!important}
+.spotter-incoming-info .spotter-score,.spotter-queue-card .spotter-score{white-space:nowrap!important;line-height:1.1!important}

@@ -1,3 +1,11 @@
+## V7.2.1802 — Correctifs groupés (à valider en direct)
+- Downloader autonome remis en service avec exclusivité d'un Recorder par circuit.
+- Registre KV: scores absents non convertis en zéro; affichage POT. Analyzer via le moteur unique KARTS.
+- Carte Spotter: confiance retirée, Score sur une ligne, couleur des disponibles selon score, contours entrants/attente blancs.
+- Titres FILE 1/2/3 colorables, sans changer la configuration 1/2/3 files ni le moteur FIFO.
+- Recorder: correction collision marqueur de tour / marqueur secteur.
+- Confirmation des transitions Apex sur plusieurs lectures ; validations mémorisées localement 12h pour éviter réinjection de l'ancien entrant.
+
 ## V7.2.1801 — Historique des notes KV et version affichée
 - Enregistrement borné des évolutions POT/RÉC et statut dans le registre KV synchronisé avec Render.
 - Export JSON du registre complet (affectations, scores et évolution).

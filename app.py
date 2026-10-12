@@ -104,9 +104,12 @@ def _reap_session_recorders():
     for rec in manager.store.active_recordings():
         rid = str(rec.get("id") or "")
         name = str(rec.get("name") or "")
-        # V1796 migration: stop old orphan Lab recorders as well, otherwise
-        # Render could keep collecting despite zero active Session Course.
-        if rid not in active:
+        # Only session-owned recorders are reaped automatically. Autonomous Lab
+        # recorders have their own hard time limit in the guard below.
+        created_ms = int(rec.get("created_at_ms") or rec.get("started_at_ms") or 0)
+        lab_expired = (not name.startswith(VELOCITY_SESSION_RECORDER_PREFIX) and created_ms > 0
+                       and int(time.time() * 1000) - created_ms > VELOCITY_RECORDER_MAX_HOURS * 3600 * 1000)
+        if (name.startswith(VELOCITY_SESSION_RECORDER_PREFIX) and rid not in active) or lab_expired:
             manager.store.request_stop(rid)
             try:
                 manager.stop(rid)
@@ -2483,13 +2486,23 @@ def lab_recorder_create():
     name = str(body.get("name") or "").strip()
     if not circuit_id:
         return jsonify(ok=False, error="Sélectionnez un circuit Apex."), 400
-    # Lab can inspect/stop existing recordings but never creates an autonomous
-    # background calculation without an explicitly active Session Course.
-    with TEAM_DATA_LOCK:
-        active = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
-    if not active or active.get("status") != "active":
-        return jsonify(ok=False, error="Créez d'abord une Session Course pour lancer le Recorder."), 409
-    return jsonify(ok=False, error="Le Recorder de cette Session Course est déjà géré automatiquement. Aucun second collecteur n'est autorisé."), 409
+    # Autonomous one-shot Lab Recorder, mutually exclusive with race-session collector.
+    # RecorderManager.create also rejects a concurrent collector on this circuit.
+    try:
+        circuit = next((c for c in load_circuits() if str(c.get("id")) == circuit_id), None)
+        if not circuit:
+            return jsonify(ok=False, error="Circuit Apex inconnu."), 404
+        with TEAM_DATA_LOCK:
+            active = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
+        if active and active.get("status") == "active" and str(active.get("circuit_id") or "") == circuit_id:
+            return jsonify(ok=False, error="Le Recorder de cette Session Course fonctionne déjà ; utilisez son export."), 409
+        recording = manager.create(name or "Velocity Lab", circuit_id)
+        return jsonify(ok=True, recording=recording), 201
+    except ValueError as exc:
+        return jsonify(ok=False, error=str(exc)), 409
+    except Exception as exc:
+        app.logger.exception("Démarrage Recorder Velocity Lab")
+        return jsonify(ok=False, error=str(exc)), 500
 
 
 @app.post("/api/lab/recorders/<recording_id>/stop")

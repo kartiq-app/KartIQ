@@ -1865,10 +1865,10 @@ class DataRecorderWorker:
                 seconds = _sector_seconds(value)
                 if seconds is None:
                     continue
-                marker = (str(value), str(kind or ""))
-                if prev.get("sector_values", {}).get(sector) == marker:
+                sector_marker = (str(value), str(kind or ""))
+                if prev.get("sector_values", {}).get(sector) == sector_marker:
                     continue
-                prev.setdefault("sector_values", {})[sector] = marker
+                prev.setdefault("sector_values", {})[sector] = sector_marker
                 prev.setdefault("sectors", {})[sector] = {"value": str(value), "seconds": seconds, "kind": kind}
                 self.store.append_sector(self.id, {"row_id": row, "lap_number": laps + 1 if laps >= 0 else None, "received_at_ms": at, "team": driver.get("driver"), "kart": driver.get("apex"), "sector": sector, "value": str(value), "seconds": seconds, "kind": kind})
                 self.counters["sectors"] += 1
