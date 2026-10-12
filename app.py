@@ -2689,11 +2689,19 @@ def update_spotter_state():
     if str(snapshot.get("app_release") or "") != APP_VERSION:
         return jsonify(ok=False, error="Version Spotter obsolète", expected=APP_VERSION), 409
     clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
-    clean["updated_at_ms"] = int(time.time() * 1000)
-    clean["circuit_id"] = str(STATE.get("circuit_id") or "")
+    # V1803: optimistic concurrency. A stale phone/browser must never replace
+    # a more recent validation completed on another device.
     with SPOTTER_LOCK:
+        previous = STATE.get("spotter") or {}
+        current_revision = int(previous.get("revision") or 0)
+        base_revision = body.get("base_revision")
+        if base_revision is None or int(base_revision) != current_revision:
+            return jsonify(ok=False, error="État Spotter modifié sur un autre appareil", revision=current_revision), 409
+        clean["revision"] = current_revision + 1
+        clean["updated_at_ms"] = max(int(time.time() * 1000), int(previous.get("updated_at_ms") or 0) + 1)
+        clean["circuit_id"] = str(STATE.get("circuit_id") or "")
         STATE["spotter"] = clean
-    return jsonify(ok=True, updated_at_ms=clean["updated_at_ms"])
+    return jsonify(ok=True, updated_at_ms=clean["updated_at_ms"], revision=clean["revision"])
 
 
 @app.get("/api/spotter-state")

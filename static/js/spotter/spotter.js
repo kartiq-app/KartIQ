@@ -70,6 +70,7 @@ const SPOTTER_CLIENT_ID=sessionStorage.getItem(SPOTTER_CLIENT_STORAGE_KEY)||`spo
 sessionStorage.setItem(SPOTTER_CLIENT_STORAGE_KEY,SPOTTER_CLIENT_ID);
 let spotterApplyingRemote=false;
 let spotterLastRemoteUpdate=0;
+let spotterServerRevision=0;
 let spotterUiStep=null;
 let spotterSessionOpened=false;
 let spotterPushInFlight=false;
@@ -138,7 +139,7 @@ function spotterMergeProtectedMaintenance(remoteMaintenance){
  return remote.filter(item=>!recentReinserted.has(String(item?.cardId||'')));
 }
 // Les validations locales restent protégées contre les snapshots Render retardés.
-const SPOTTER_ACK_KEY=velocityWorkspaceStorageKey('velocity_spotter_acknowledged_v1802');
+const SPOTTER_ACK_KEY=velocityWorkspaceStorageKey('velocity_spotter_acknowledged_v1803');
 const spotterAcknowledgedIncoming=new Map();
 try{for(const entry of JSON.parse(localStorage.getItem(SPOTTER_ACK_KEY)||'[]')){
  if(entry?.id&&entry?.record&&Date.now()-Number(entry.record.at)<43200000)spotterAcknowledgedIncoming.set(entry.id,entry.record)
@@ -169,15 +170,17 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
  const currentCircuit=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
  if(remote.circuit_id&&currentCircuit&&String(remote.circuit_id)!==currentCircuit)return;
  const updated=Number(remote.updated_at_ms)||0;
- if(!force&&updated<=spotterLastRemoteUpdate)return;
+ if(!force&&updated<=spotterLastRemoteUpdate&&Number(remote.revision||0)<=spotterServerRevision)return;
  const remoteMutation=spotterRemoteMutationAt(remote);
- if(!force&&remoteMutation&&spotterLocalMutationAt&&remoteMutation<spotterLocalMutationAt)return;
+ // Once the pending local write is finished, a newer server revision wins.
+ // Comparing timestamps from two different devices can permanently block sync.
  if(!force&&(spotterPushInFlight||spotterPushQueued||Date.now()-spotterLocalMutationAt<1800))return;
  if(!force&&document.body.classList.contains('current-spotter')&&spotterUiIsInteractive()){
   spotterDeferredRemote=spotterClone(remote);
   return;
  }
  spotterLastRemoteUpdate=updated;
+ spotterServerRevision=Number(remote.revision)||0;
  spotterApplyingRemote=true;
  try{
   if(Number.isFinite(Number(remote.queue_mode)))spotterState.mode=Math.max(1,Math.min(3,Number(remote.queue_mode)));
@@ -269,10 +272,11 @@ async function spotterPushSharedState(){
  if(spotterPushInFlight){spotterPushQueued=true;return}
  spotterPushInFlight=true;spotterPushQueued=false;
  try{
-  const response=await fetch('/api/spotter-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({spotter:spotterSharedSnapshot()})});
+  const response=await fetch('/api/spotter-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({spotter:spotterSharedSnapshot(),base_revision:spotterServerRevision})});
   if(response.ok){
    const payload=await response.json();
    spotterLastRemoteUpdate=Math.max(spotterLastRemoteUpdate,Number(payload?.updated_at_ms)||0);
+   spotterServerRevision=Number(payload?.revision)||spotterServerRevision;
    const published=spotterSharedSnapshot();
    published.updated_at_ms=spotterLastRemoteUpdate;
    published.circuit_id=String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'');
@@ -280,7 +284,15 @@ async function spotterPushSharedState(){
   }else{
    const payload=await response.json().catch(()=>({}));
    console.warn('[Spotter] État partagé refusé',response.status,payload);
-   if(response.status===409)await spotterPullSharedState();
+   if(response.status===409){
+    // Refresh from the authoritative server on conflict. Never silently
+    // overwrite a recent validation from a different device.
+    spotterPushQueued=false;
+    const oldMutation=spotterLocalMutationAt;
+    spotterLocalMutationAt=0;
+    await spotterPullSharedState({force:true});
+    console.warn('[Spotter] Conflit multi-appareil: état serveur restauré',oldMutation);
+   }
   }
  }catch(error){console.warn('[Spotter] Synchronisation serveur impossible',error)}
  finally{spotterPushInFlight=false;if(spotterPushQueued)spotterScheduleSharedSync()}
@@ -423,7 +435,7 @@ async function spotterOpenKartRegistry(){
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel ${active?'wide':''}">${content}</div></div>`);
 }
 function spotterExportKartRegistry(){
- const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1802',registry:spotterClone(spotterState.kartRegistry||{})};
+ const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1803',registry:spotterClone(spotterState.kartRegistry||{})};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob);
  const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);

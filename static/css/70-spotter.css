@@ -1948,3 +1948,35 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-incoming-card{border:1.5px solid #f3f6fa!important}
 .spotter-queue-card.incoming{border-color:#f3f6fa!important}
 .spotter-incoming-info .spotter-score,.spotter-queue-card .spotter-score{white-space:nowrap!important;line-height:1.1!important}
+
+/* V7.2.1803 — couleurs plus distinctes et cartes entrantes accessibles sur iPhone. */
+.spotter-queue-card.available.score-orange:not(.waiting){
+ background:linear-gradient(145deg,rgb(255,115,0),rgb(176,65,0))!important;
+ border-color:rgb(255,115,0)!important;
+}
+.spotter-queue-card.available.score-gold:not(.waiting){
+ position:relative;
+ background:linear-gradient(125deg,#785008 0%,#c99825 21%,#fff2a4 38%,#deb244 53%,#8a5c0b 77%,#edc85e 100%)!important;
+ border-color:#ffdc79!important;
+ box-shadow:inset 0 1px 0 rgba(255,250,202,.7),inset 0 -7px 12px rgba(76,41,0,.28),0 0 16px rgba(255,196,57,.28)!important;
+ color:#241601!important;
+}
+.spotter-queue-card.available.score-gold:not(.waiting) :is(strong,span,small,.spotter-score,.spotter-kv-value){color:#201606!important;text-shadow:0 1px rgba(255,239,157,.5)}
+@media(max-width:700px){
+ body.current-spotter .spotter-incoming-grid{width:100%;min-width:0!important;overflow:visible!important}
+ body.current-spotter .spotter-incoming-card{
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  display:flex!important;flex-direction:column!important;overflow:visible!important;
+ }
+ body.current-spotter .spotter-incoming-info{
+  flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;
+  border-right:0!important;border-bottom:1px solid rgba(255,255,255,.12)!important;
+  padding:10px!important;gap:5px 12px!important;
+ }
+ body.current-spotter .spotter-incoming-info strong{width:auto!important;max-width:100%!important}
+ body.current-spotter .spotter-incoming-control{display:flex!important;flex-direction:column!important;width:100%!important;min-width:0!important;padding:10px!important;gap:10px!important}
+ body.current-spotter .spotter-file-choices{display:flex!important;justify-content:center!important;gap:clamp(5px,2vw,14px)!important;width:100%!important;min-width:0!important;flex-wrap:nowrap!important}
+ body.current-spotter .spotter-file-choice{flex:0 1 54px!important;width:min(12.8vw,54px)!important;min-width:0!important;font-size:clamp(16px,5vw,26px)!important}
+ body.current-spotter .spotter-incoming-buttons{display:grid!important;grid-template-columns:minmax(0,1fr) 48px!important;gap:8px!important;width:100%!important}
+ body.current-spotter .spotter-incoming-panel,.spotter-incoming-panel .spotter-card-body{min-width:0!important}
+}

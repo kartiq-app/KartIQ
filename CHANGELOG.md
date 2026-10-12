@@ -1,3 +1,11 @@
+## V7.2.1803 — synchronisation Spotter, mobile et couleurs
+- Contrôle de révision serveur sur toutes les écritures d’état Spotter; rejet 409 d’une écriture obsolète, puis relecture du serveur.
+- Suppression de la comparaison d’horloges entre appareils lors de l’application d’une mise à jour.
+- Entrants: disposition verticale sur écran mobile, accès aux files et à VALIDER / maintenance.
+- Orange RGB(255,115,0), fond Gold brillant pour les karts disponibles notés 98–100.
+- Préservation des fonctions de V1802.
+- À tester en situation réelle: flux Apex, synchro bidirectionnelle sur deux appareils, conflits simultanés.
+
 ## V7.2.1802 — Correctifs groupés (à valider en direct)
 - Downloader autonome remis en service avec exclusivité d'un Recorder par circuit.
 - Registre KV: scores absents non convertis en zéro; affichage POT. Analyzer via le moteur unique KARTS.
