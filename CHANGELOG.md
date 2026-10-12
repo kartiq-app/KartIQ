@@ -1,3 +1,8 @@
+## V7.2.1805 — Validation Spotter développeur synchronisée
+- Ne conserve plus indéfiniment un entrant de simulation local lorsqu’une validation distante l’a supprimé.
+- Protège les vrais entrants locaux très récents uniquement s’ils ne sont pas déjà enregistrés dans la file ou la maintenance distante.
+- Aucun changement FIFO, couleurs ou calcul Analyzer.
+
 ## V7.2.1804 — Potentiel Analyzer sur les cartes, lisibilité et registre KV
 
 - Couleur et note des cartes Spotter basées sur POT. Analyzer du KV, et non sur le score du relais.

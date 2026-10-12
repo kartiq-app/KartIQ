@@ -151,12 +151,24 @@ function spotterRememberAcknowledged(item){
  for(const [id,record] of spotterAcknowledgedIncoming)if(Date.now()-record.at>43200000)spotterAcknowledgedIncoming.delete(id);
  spotterPersistAcknowledged();
 }
-function spotterMergeProtectedIncoming(remoteIncoming){
- const remote=(Array.isArray(remoteIncoming)?spotterClone(remoteIncoming):[]).filter(item=>!spotterAcknowledgedIncoming.has(String(item?.id||''))&&!([...spotterAcknowledgedIncoming.values()].some(record=>record.team===String(item?.team||''))));
+function spotterMergeProtectedIncoming(remoteIncoming,remoteSnapshot=null){
+ const acknowledgements=[...spotterAcknowledgedIncoming.values()];
+ const acknowledged=item=>spotterAcknowledgedIncoming.has(String(item?.id||''))||acknowledgements.some(record=>record.team===String(item?.team||''));
+ const remote=(Array.isArray(remoteIncoming)?spotterClone(remoteIncoming):[]).filter(item=>!acknowledged(item));
  const ids=new Set(remote.map(item=>String(item?.id||'')));
+ // A validation on another device moves the returned kart into the queue or
+ // maintenance. Such an incoming kart must never be resurrected locally.
+ const validatedReturns=new Set([...(remoteSnapshot?.queue||[]),...(remoteSnapshot?.maintenance||[])].map(item=>String(item?.cardId||'')));
+ const recentValidations=new Set((remoteSnapshot?.movement_log||[])
+  .filter(entry=>['validate','validate_maintenance'].includes(String(entry?.action||entry?.type||'')))
+  .map(entry=>String(entry?.returnedKv||'')));
  const protectedLocal=(spotterState.incoming||[]).filter(item=>{
-  if(!item||ids.has(String(item.id||'')))return false;
-  if(item.source==='dev')return true;
+  if(!item||ids.has(String(item.id||''))||acknowledged(item))return false;
+  // Developer entries must obey the authoritative snapshot too. Previously
+  // they were retained indefinitely, causing the mobile/desktop double card.
+  if(item.source==='dev')return false;
+  if(validatedReturns.has(String(item.returnedCardId||'')))return false;
+  if(recentValidations.has(String(item.returnedKv||'')))return false;
   const age=Date.now()-Number(item.pitInAt||0);
   return age>=0&&age<5000;
  });
@@ -193,7 +205,7 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
    spotterState.queue=[...incomingQueue,...spotterClone(protectedReinserted)];
   }
   if(Array.isArray(remote.maintenance))spotterState.maintenance=spotterMergeProtectedMaintenance(remote.maintenance);
-  if(Array.isArray(remote.incoming))spotterState.incoming=spotterMergeProtectedIncoming(remote.incoming);
+  if(Array.isArray(remote.incoming))spotterState.incoming=spotterMergeProtectedIncoming(remote.incoming,remote);
   if(remote.assignments&&typeof remote.assignments==='object')spotterState.assignments=spotterClone(remote.assignments);
   if(Array.isArray(remote.movement_log))spotterState.movementLog=spotterClone(remote.movement_log);
   if(remote.incoming_queue_selections&&typeof remote.incoming_queue_selections==='object')spotterState.incomingQueueSelections=spotterClone(remote.incoming_queue_selections);
@@ -440,7 +452,7 @@ async function spotterOpenKartRegistry(){
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel ${active?'wide':''}">${content}</div></div>`);
 }
 function spotterExportKartRegistry(){
- const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1804',registry:spotterClone(spotterState.kartRegistry||{})};
+ const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1805',registry:spotterClone(spotterState.kartRegistry||{})};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob);
  const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
