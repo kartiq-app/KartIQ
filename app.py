@@ -2653,10 +2653,36 @@ def velocity_update_kart_setup():
         return jsonify(ok=True, mode=STATE["kart_setup_mode"], epoch=STATE["kart_scoring_epoch"])
 
 
+def _spotter_persistent_store():
+    """One shared source for all browsers and Render workers (Postgres on Render)."""
+    _get_recorder_manager()
+    if RECORDER_STORE is None:
+        raise RuntimeError("Stockage partagé indisponible")
+    return RECORDER_STORE
+
+
+def _spotter_shared_read(workspace_id):
+    store = _spotter_persistent_store()
+    row = store._execute(
+        "SELECT revision,snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?",
+        (workspace_id,), fetchone=True)
+    if not row:
+        return {}
+    data = json.loads(row["snapshot_json"])
+    data["revision"] = int(row["revision"])
+    return data
+
+
 @app.get("/api/spotter-registry")
 def get_spotter_registry():
-    with SPOTTER_LOCK:
-        return jsonify(ok=True, registry=deepcopy(STATE.get("spotter_registry") or {}))
+    try:
+        store = _spotter_persistent_store()
+        row = store._execute("SELECT registry_json FROM velocity_spotter_shared_registry WHERE workspace_id=?",
+                             (_current_workspace_id(),), fetchone=True)
+        registry = json.loads(row["registry_json"]) if row else {}
+        return jsonify(ok=True, registry=registry)
+    except Exception as exc:
+        return jsonify(ok=False, error="Registre partagé indisponible", detail=str(exc)), 503
 
 
 @app.post("/api/spotter-registry")
@@ -2674,9 +2700,29 @@ def update_spotter_registry():
         if isinstance(history, list):
             item["history"] = history[-80:]
         clean[str(kv)[:32]] = item
-    with SPOTTER_LOCK:
-        STATE["spotter_registry"] = clean
-    return jsonify(ok=True, count=len(clean))
+    try:
+        store = _spotter_persistent_store()
+        # Merge, do not replace another device's KV history with a partial local registry.
+        with store._lock:
+            prior = store._execute("SELECT registry_json FROM velocity_spotter_shared_registry WHERE workspace_id=?",
+                                   (_current_workspace_id(),), fetchone=True)
+            merged = json.loads(prior["registry_json"]) if prior else {}
+            for kv, row in clean.items():
+                old = merged.get(kv) or {}
+                previous_history = old.get("history") or []
+                incoming_history = row.get("history") or []
+                keyed = { (str(h.get('team')),str(h.get('at'))):h for h in previous_history if isinstance(h,dict) }
+                for entry in incoming_history:
+                    if isinstance(entry,dict):keyed[(str(entry.get('team')),str(entry.get('at')))]=entry
+                combined = sorted(keyed.values(), key=lambda item: int(item.get('at') or 0))[-80:]
+                merged[kv] = {**old, **row, "history":combined}
+            store._execute("""INSERT INTO velocity_spotter_shared_registry(workspace_id,registry_json,updated_at_ms)
+                VALUES(?,?,?) ON CONFLICT(workspace_id) DO UPDATE
+                SET registry_json=excluded.registry_json,updated_at_ms=excluded.updated_at_ms""",
+                (_current_workspace_id(),json.dumps(merged,ensure_ascii=False),int(time.time()*1000)))
+        return jsonify(ok=True, count=len(merged))
+    except Exception as exc:
+        return jsonify(ok=False, error="Sauvegarde registre impossible", detail=str(exc)), 503
 
 
 @app.post("/api/spotter-state")
@@ -2689,26 +2735,40 @@ def update_spotter_state():
     if str(snapshot.get("app_release") or "") != APP_VERSION:
         return jsonify(ok=False, error="Version Spotter obsolète", expected=APP_VERSION), 409
     clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
-    # V1803: optimistic concurrency. A stale phone/browser must never replace
-    # a more recent validation completed on another device.
-    with SPOTTER_LOCK:
-        previous = STATE.get("spotter") or {}
-        current_revision = int(previous.get("revision") or 0)
-        base_revision = body.get("base_revision")
-        if base_revision is None or int(base_revision) != current_revision:
-            return jsonify(ok=False, error="État Spotter modifié sur un autre appareil", revision=current_revision), 409
-        clean["revision"] = current_revision + 1
-        clean["updated_at_ms"] = max(int(time.time() * 1000), int(previous.get("updated_at_ms") or 0) + 1)
-        clean["circuit_id"] = str(STATE.get("circuit_id") or "")
-        STATE["spotter"] = clean
-    return jsonify(ok=True, updated_at_ms=clean["updated_at_ms"], revision=clean["revision"])
+    try:
+        revision = int(body.get("base_revision"))
+    except (TypeError,ValueError):
+        return jsonify(ok=False,error="Révision Spotter absente"),400
+    try:
+        store = _spotter_persistent_store()
+        workspace_id = _current_workspace_id()
+        now = int(time.time()*1000)
+        clean.update(revision=revision+1, updated_at_ms=now, circuit_id=str(STATE.get("circuit_id") or ""))
+        # Atomic compare-and-swap on Postgres/SQLite: two clients cannot overwrite
+        # a more recent mutation, even when handled by different server workers.
+        row = store._execute("""INSERT INTO velocity_spotter_shared_state
+            (workspace_id,revision,snapshot_json,updated_at_ms)
+            VALUES(?,?,?,?) ON CONFLICT(workspace_id) DO UPDATE
+            SET revision=excluded.revision,snapshot_json=excluded.snapshot_json,updated_at_ms=excluded.updated_at_ms
+            WHERE velocity_spotter_shared_state.revision=? RETURNING revision""",
+            (workspace_id,revision+1,json.dumps(clean,ensure_ascii=False),now,revision),fetchone=True)
+        if not row:
+            return jsonify(ok=False,error="État Spotter modifié sur un autre appareil",revision=_spotter_shared_read(workspace_id).get("revision",0)),409
+        with SPOTTER_LOCK:
+            STATE["spotter"] = clean
+        return jsonify(ok=True,revision=revision+1,updated_at_ms=now,workspace_id=workspace_id)
+    except Exception as exc:
+        return jsonify(ok=False,error="Synchronisation Spotter indisponible",detail=str(exc)),503
 
 
 @app.get("/api/spotter-state")
 def get_spotter_state():
-    with SPOTTER_LOCK:
-        return jsonify(ok=True, spotter=deepcopy(STATE.get("spotter") or {}))
-
+    try:
+        workspace_id = _current_workspace_id()
+        shared = _spotter_shared_read(workspace_id)
+        return jsonify(ok=True, spotter=shared, workspace_id=workspace_id)
+    except Exception as exc:
+        return jsonify(ok=False,error="Lecture Spotter indisponible",detail=str(exc)),503
 
 @app.post("/api/mode")
 def set_mode():

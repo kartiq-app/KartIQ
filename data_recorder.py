@@ -414,6 +414,13 @@ class RecorderStore:
             """CREATE TABLE IF NOT EXISTS velocity_race_team_state (
                 state_id TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
             )""",
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_shared_state (
+                workspace_id TEXT PRIMARY KEY, revision BIGINT NOT NULL,
+                snapshot_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
+            )""",
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_shared_registry (
+                workspace_id TEXT PRIMARY KEY, registry_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
+            )""",
         ]
         for sql in ddl:
             self._execute(sql)

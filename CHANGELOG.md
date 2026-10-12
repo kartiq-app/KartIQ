@@ -1,3 +1,13 @@
+## V7.2.1804 — Potentiel Analyzer sur les cartes, lisibilité et registre KV
+
+- Couleur et note des cartes Spotter basées sur POT. Analyzer du KV, et non sur le score du relais.
+- Score numérique seul ; potentiels absents affichés neutres.
+- Historique KV en retour à la ligne, sans navigation horizontale.
+- Ajustements de lisibilité des cartes.
+- Stockage partagé PostgreSQL/SQLite avec révisions atomiques et historique KV fusionné entre appareils.
+- Migration prudente du registre local au premier démarrage V1804.
+- Potentiel de vitesse du KV partagé par le registre pour cohérence entre appareils.
+
 ## V7.2.1803 — synchronisation Spotter, mobile et couleurs
 - Contrôle de révision serveur sur toutes les écritures d’état Spotter; rejet 409 d’une écriture obsolète, puis relecture du serveur.
 - Suppression de la comparaison d’horloges entre appareils lors de l’application d’une mise à jour.

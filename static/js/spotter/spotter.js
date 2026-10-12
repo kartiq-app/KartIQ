@@ -313,7 +313,12 @@ async function spotterPullRegistry(){
   const response=await fetch('/api/spotter-registry',{cache:'no-store'});
   if(!response.ok)return false;
   const payload=await response.json();
-  if(payload?.registry&&typeof payload.registry==='object'&&!Array.isArray(payload.registry)){
+  if(payload?.registry&&typeof payload.registry==='object'&&!Array.isArray(payload.registry)&&!spotterRegistryPushTimer){
+   // First V1804 connection: migrate a locally retained V1803 registry instead
+   // of wiping historical KV entries with a newly created empty DB row.
+   if(!Object.keys(payload.registry).length&&Object.keys(spotterState.kartRegistry||{}).length){
+    spotterScheduleRegistryPush();return true;
+   }
    spotterState.kartRegistry=spotterClone(payload.registry);
    if(typeof window.velocityKartScoreHydrateRegistry==='function'){
     Object.entries(spotterState.kartRegistry).forEach(([kv,row])=>{
@@ -420,9 +425,9 @@ function spotterRegistryRowsHtml(){
   const der=current?String(driver?.last||driver?.last_lap||'—'):'—';
   const speed=row.speed,valid=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(speed.potential);
   const scoreProfile=typeof window.velocityKartScoreRankings==='function'?(window.velocityKartScoreRankings()||[]).find(item=>item.kv===row.kv):null;
-  const analyzerPot=scoreProfile&&Number.isFinite(scoreProfile.potential)?scoreProfile.potential.toFixed(1):'—';
+  const analyzerPot=spotterDisplayPotential(row.kv);
   const cell=(label,value)=>`<span class="spotter-registry-stat">${label} ${spotterEscape(String(value))}</span>`;
-  const history=(row.history||[]).map(entry=>`<span class="spotter-registry-entry" title="${spotterEscape(spotterDisplayName(entry.team))}"><b>${spotterEscape(spotterDisplayName(entry.team))}</b><em class="${spotterScoreTone(entry.score)}">${entry.score==null?'—':entry.score}</em></span>`).join('<span class="spotter-registry-arrow">›</span>');
+  const history=(row.history||[]).map(entry=>`<span class="spotter-registry-entry" title="${spotterEscape(spotterDisplayName(entry.team))}"><b>${spotterEscape(spotterDisplayName(entry.team))}</b><em class="${spotterScoreTone(entry.score)}">${entry.score==null?'—':entry.score}</em></span>`).join('');
   return `<div class="spotter-registry-row"><strong>${spotterEscape(row.kv)}</strong><span class="spotter-registry-kart">${spotterEscape(kart)}</span><span class="spotter-registry-current" title="${spotterEscape(team)}">${spotterEscape(team)}</span>${cell('POT. ANALYZER',analyzerPot)}${cell('POT.',valid?Number(speed.potential).toFixed(3)+'s':'—')}${cell('RÉC.',valid&&Number.isFinite(speed.recent)?Number(speed.recent).toFixed(3)+'s':'—')}${cell('DER',der)}<span class="spotter-registry-stat">${valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—'}</span><div class="spotter-registry-history">${history||'<span class="spotter-registry-empty">Aucune affectation</span>'}${row.trace==='interrupted'?'<span class="spotter-registry-lost">TRACE INTERROMPUE</span>':''}</div></div>`;
  }).join('');
 }
@@ -435,7 +440,7 @@ async function spotterOpenKartRegistry(){
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel ${active?'wide':''}">${content}</div></div>`);
 }
 function spotterExportKartRegistry(){
- const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1803',registry:spotterClone(spotterState.kartRegistry||{})};
+ const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:'7.2.1804',registry:spotterClone(spotterState.kartRegistry||{})};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob);
  const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
@@ -1538,12 +1543,42 @@ function spotterValidateIncomingNoQuickChange(id){
  saveSpotterFoundation();renderSpotterFoundation('live');return true;
 }
 function spotterMaintenanceSelectionKey(cardId){return `maintenance:${String(cardId||'')}`}
-function spotterQueueColorClass(item){if(!spotterValidScore(item?.score))return 'score-unknown';const n=Number(item.score);return n>=98?'score-gold':n>=90?'score-green':n>=80?'score-orange':'score-red'}
+// Le potentiel Analyzer appartient au KV physique, pas au dernier relais.
+// L'absence de potentiel conserve la couleur neutre (jamais 0 par défaut).
+function spotterKartPotential(kv){
+ const key=String(kv||'').trim();
+ if(!key)return null;
+ const item=typeof window.velocityKartScoreRankings==='function'
+  ?(window.velocityKartScoreRankings()||[]).find(row=>String(row.kv||'')===key):null;
+ const live=item?.potential;
+ if(spotterValidScore(live))return Number(live);
+ const stored=spotterState.kartRegistry?.[key]?.analyzerPotential;
+ const epoch=spotterState.kartRegistry?.[key]?.analyzerPotentialEpoch;
+ if(String(epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&spotterValidScore(stored))return Number(stored);
+ return null;
+}
+function spotterSaveAnalyzerPotentials(){
+ if(!spotterState.kartTrackingEnabled||typeof window.velocityKartScoreRankings!=='function')return;
+ let changed=false;
+ const epoch=String(spotterLiveState()?.kart_scoring_epoch||'');
+ if(!epoch)return;
+ (window.velocityKartScoreRankings()||[]).forEach(item=>{
+  if(!item?.kv||!spotterValidScore(item.potential))return;
+  const row=spotterRegistryEnsure(item.kv);
+  const score=Math.round(Number(item.potential)*10)/10;
+  if(row.analyzerPotentialEpoch!==epoch||row.analyzerPotential!==score){
+   row.analyzerPotential=score;row.analyzerPotentialEpoch=epoch;changed=true;
+  }
+ });
+ if(changed)spotterScheduleRegistryPush();
+}
+function spotterDisplayPotential(kv){const value=spotterKartPotential(kv);return value===null?'—':String(Math.round(value*10)/10)}
+function spotterQueueColorClass(item){const n=spotterKartPotential(item?.kv);return n===null?'score-unknown':n>=98?'score-gold':n>=90?'score-green':n>=80?'score-orange':'score-red'}
 function spotterQueueCard(item,visualState='next'){
- const score=spotterValidScore(item.score)?item.score:'—';
- if(item.status==='reserved')return `<div class="spotter-queue-card reserved spotter-draggable ${item.estimated?'estimated':''}" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart attribué" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.reservedTeam}))}</span><strong>${spotterEscape(spotterDisplayName(item.reservedTeam))}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-score">Score : ${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
+ const score=spotterDisplayPotential(item.kv);
+ if(item.status==='reserved')return `<div class="spotter-queue-card reserved spotter-draggable ${item.estimated?'estimated':''}" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart attribué" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.reservedTeam}))}</span><strong>${spotterEscape(spotterDisplayName(item.reservedTeam))}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
  const waiting=visualState==='waiting';
- return `<div class="spotter-queue-card available ${waiting?'waiting ':''}${spotterQueueColorClass(item)} spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.lastTeam}))}</span><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-score">Score : ${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div></div>`;
+ return `<div class="spotter-queue-card available ${waiting?'waiting ':''}${spotterQueueColorClass(item)} spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.lastTeam}))}</span><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div></div>`;
 }
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
 function spotterTeamNumber(item){
@@ -1570,7 +1605,7 @@ function spotterIncomingCard(item){
   <div class="spotter-incoming-info">
    <span class="spotter-team-number">${spotterEscape(spotterTeamNumber(item))}</span>
    <strong>${spotterEscape(spotterDisplayName(item.name||item.team))}</strong>
-   <span class="spotter-score">Score : ${item.score??'—'}</span>
+   <span class="spotter-score">${spotterDisplayPotential(item.returnedKv)}</span>
    
    <span class="spotter-kv-value">${spotterEscape(item.returnedKv||'—')}</span>
    <div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div>
@@ -1596,7 +1631,7 @@ function spotterMaintenanceCard(item){
   <div class="spotter-incoming-info">
    <span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.lastTeam}))}</span>
    <strong>${spotterEscape(spotterOriginLabel(item))}</strong>
-   <span class="spotter-score">Score : ${item.score??'—'}</span>
+   <span class="spotter-score">${spotterDisplayPotential(item.kv)}</span>
    
    <span class="spotter-kv-value">${spotterEscape(item.kv||'—')}</span>
    <div class="spotter-pit-time" data-spotter-pit-start="${Number(item.enteredAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.enteredAt||Date.now()))}</div>
@@ -1611,4 +1646,4 @@ function spotterMaintenanceCard(item){
 }
 function spotterEscapeJs(value){return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function spotterEscape(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled)spotterPullRegistry()},15000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured&&spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()}},2000)});
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState();spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled)spotterPullRegistry()},15000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});

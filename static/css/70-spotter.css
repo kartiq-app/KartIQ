@@ -1980,3 +1980,41 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
  body.current-spotter .spotter-incoming-buttons{display:grid!important;grid-template-columns:minmax(0,1fr) 48px!important;gap:8px!important;width:100%!important}
  body.current-spotter .spotter-incoming-panel,.spotter-incoming-panel .spotter-card-body{min-width:0!important}
 }
+
+/* V7.2.1804 — Score POT. Analyzer visible, sans troncature ni scroll du registre. */
+.spotter-queue-card .spotter-score,
+.spotter-incoming-info .spotter-score{
+ display:block!important;max-width:100%!important;overflow:visible!important;
+ white-space:nowrap!important;text-overflow:clip!important;
+ font-size:clamp(17px,1.7vw,25px)!important;font-weight:900!important;
+ line-height:1.12!important;text-align:center!important;
+}
+.spotter-queue-card .spotter-card-stats{width:100%!important;min-width:0!important;display:flex!important;align-items:center!important;flex-direction:column!important}
+.spotter-queue-card strong,.spotter-queue-card small{
+ max-width:100%!important;overflow:visible!important;text-overflow:clip!important;
+ overflow-wrap:anywhere!important;word-break:normal!important;white-space:normal!important;
+ line-height:1.13!important;font-size:clamp(10px,1.1vw,13px)!important;
+}
+.spotter-queue-card .spotter-kv-value{white-space:nowrap!important;font-size:clamp(10px,1.15vw,13px)!important}
+.spotter-registry-row{
+ grid-template-columns:minmax(50px,65px) minmax(35px,55px) minmax(110px,1.1fr) repeat(4,minmax(80px,.7fr)) minmax(90px,.8fr)!important;
+ align-items:start!important;gap:9px!important;
+}
+.spotter-registry-row>span{min-width:0;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere}
+.spotter-registry-history{
+ grid-column:1/-1!important;display:flex!important;flex-wrap:wrap!important;gap:7px!important;
+ min-width:0!important;width:100%!important;overflow:visible!important;
+ padding-top:8px!important;border-top:1px solid #26303c!important;
+}
+.spotter-registry-entry{width:auto!important;min-width:0!important;max-width:100%!important;flex:0 1 auto!important;gap:9px!important}
+.spotter-registry-entry b{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere}
+@media(max-width:1000px){
+ .spotter-registry-row{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ .spotter-registry-row>.spotter-registry-current{grid-column:span 2!important}
+ .spotter-registry-history{grid-column:1/-1!important}
+}
+@media(max-width:520px){
+ .spotter-registry-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .spotter-registry-row>.spotter-registry-current{grid-column:span 2!important}
+ .spotter-queue-card .spotter-score{font-size:clamp(18px,5.2vw,24px)!important}
+}
