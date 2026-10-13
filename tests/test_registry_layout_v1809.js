@@ -16,8 +16,8 @@ const state = {
 };
 const escapes = x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const ctx = vm.createContext({
-  spotterState:state, spotterKvNumber:x=>Number(String(x).replace(/[^\d]/g,'')),
-  spotterFindDriver:id=>({apex:id==='u'?4:7,last:'35.347'}),
+  spotterRegistrySortMode:'default', spotterState:state, spotterKvNumber:x=>Number(String(x).replace(/[^\d]/g,'')),
+  spotterDriverByKey:key=>null, spotterFindDriver:id=>({apex:id==='u'?4:7,last:'35.347'}),
   spotterStableTeamLabel:(_,label)=>label, spotterLiveState:()=>({kart_scoring_epoch:'demo'}),
   spotterKartPotential:kv=>({KV01:99.2,KV02:85})[kv]??null,
   spotterDisplayPotential:kv=>({KV01:'99.2',KV02:'85'})[kv]??'—',

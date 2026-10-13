@@ -1861,6 +1861,7 @@ function analyzerRenderKartSpeedMarket(){
   target.innerHTML=`<div class="analyzer-empty">${detail}</div>`;return;
  }
  const drivers=(state?.drivers||[]);
+ const velocityKartColorTone=value=>!Number.isFinite(value)?'unknown':value>=98?'gold':value>=90?'green':value>=80?'orange':'red';
  const rows=rankings.map((entry,index)=>{
   const kv=entry.kv;
   const identity=kv&&typeof window.velocityKartDisplayAssignment==='function'?window.velocityKartDisplayAssignment(kv):null;
@@ -1872,7 +1873,7 @@ function analyzerRenderKartSpeedMarket(){
   const recent=entry.recentScore===null?'—':`${entry.recentScore.toFixed(1)}${entry.recentProvisional?'*':''}`;
   const potential=entry.potential===null?'—':entry.potential.toFixed(1);
   const clickTeam=driver?.driver?` onclick="followDriver(${JSON.stringify(driver.driver).replace(/"/g,'&quot;')})"`:'';
-  return `<tr${clickTeam}><td>${index+1}</td><td>${analyzerEscape(kartNumber)}</td><td title="${analyzerEscape(teamName)}">${analyzerEscape(teamName)}</td><td class="kart-speed-high">${potential}</td><td class="${entry.recentScore!==null&&entry.recentScore<entry.potential-10?'kart-speed-low':''}">${recent}</td><td>${Number.isFinite(entry.best?.seconds)?(entry.best.seconds-entry.reference).toFixed(3)+'s':'—'}</td><td title="${entry.totalValid} tours observés">${label}</td></tr>`;
+  return `<tr${clickTeam}><td>${index+1}</td><td>${analyzerEscape(kartNumber)}</td><td title="${analyzerEscape(teamName)}">${analyzerEscape(teamName)}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.potential)}">${potential}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.recentScore)}">${recent}</td><td>${Number.isFinite(entry.best?.seconds)?(entry.best.seconds-entry.reference).toFixed(3)+'s':'—'}</td><td title="${entry.totalValid} tours observés">${label}</td></tr>`;
  }).join('');
  target.innerHTML=`<div class="velocity-kart-speed-help">${mode==='quick'?'QUICK CHANGE · vitesse des équipes en piste sans KV identifié ; potentiel physique uniquement si KV confirmé':'KART FIXE · scores par machine de l’équipe'} · Potentiel = meilleure fenêtre connue (6 rapides / 10 tours). Récente = relais actuel. * provisoire. La régularité ne pénalise pas la vitesse.</div><table class="velocity-kart-speed-table"><thead><tr><th>P</th><th>KART</th><th>ÉQUIPE</th><th>POT.</th><th>RÉC.</th><th>Δ</th><th>PREUVE</th></tr></thead><tbody>${rows}</tbody></table>`;
 }

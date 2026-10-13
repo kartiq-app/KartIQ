@@ -1,3 +1,14 @@
+## V7.2.1810 — Registre en direct, tri et lisibilité
+
+- Un seul tableau KV global, une ligne par kart, défilement horizontal commun : disposition préservée.
+- NOTE immédiatement après KV, ÉQUIPE ACTUELLE et durée EN PISTE fournie par Apex dans la même cellule, sans confondre avec la durée totale de course.
+- CHRONO POT., CHRONO RÉC., DERNIER au format minutes:secondes.millièmes ; FIABILITÉ remplace STATUT.
+- Tri Par défaut (KV numérique croissant), Note (décroissant), Durée de relais (décroissante), sans modifier les machines ni leur historique.
+- Actualisation toutes les deux secondes du registre ouvert, préservant défilements horizontal/vertical et tri choisi.
+- Capture et résolution du vrai nom d'équipe dans chaque nouvel enregistrement de relais, en conservant la clé Apex en interne et sans inventer de nom pour les anciens identifiants non résolubles.
+- POT. et RÉC. de l'Analyzer utilisent les mêmes seuils de couleur que NOTE (Gold ≥98, vert ≥90, orange ≥80, rouge en dessous).
+- Aucun changement dans les formules de performance, le classement statistique, l'affectation physique KV ou le stockage Render.
+
 ## V7.2.1809 — Registre KV : tableau horizontal unifié et NOTE visible
 
 - Affichage compact : une ligne par machine KV, colonnes fixes et historique complet vers la droite.

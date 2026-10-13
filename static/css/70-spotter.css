@@ -2088,3 +2088,13 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
  .spotter-registry-grid td{padding-top:7px;padding-bottom:7px}
  .spotter-registry-table{max-height:calc(92vh - 195px)}
 }
+
+/* V7.2.1810 — registre, une seule ligne/TV, défilement global préservé. */
+.spotter-registry-head-tools{display:flex;align-items:center;gap:18px}
+.spotter-registry-sort{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#b6c0cf;white-space:nowrap}
+.spotter-registry-sort select{border:1px solid #3a4758;border-radius:8px;background:#161d29;color:#fff;padding:9px 11px;min-width:170px;font:700 12px Arial,sans-serif;cursor:pointer}
+.spotter-registry-grid th.spotter-registry-current-column,
+.spotter-registry-grid td.spotter-registry-current-column{width:calc(30ch + 170px);min-width:calc(30ch + 170px);max-width:calc(30ch + 170px);padding-left:8px;padding-right:8px}
+.spotter-registry-current-team{display:flex;align-items:center;justify-content:center;gap:12px;white-space:nowrap}
+.spotter-registry-track-time{font-size:12px;font-weight:800;color:#54bcff;font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+@media(max-width:700px){.spotter-registry-head{align-items:center}.spotter-registry-head-tools{gap:7px}.spotter-registry-sort{font-size:10px;gap:4px}.spotter-registry-sort select{min-width:120px;max-width:150px;padding:7px 5px}}
