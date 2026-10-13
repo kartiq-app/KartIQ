@@ -626,23 +626,52 @@ async function spotterSetKartTracking(enabled){
  saveSpotterFoundation();await spotterOpenKartRegistry();
 }
 function spotterRegistryCounts(){const rows=Object.values(spotterState.kartRegistry||{});return {active:rows.filter(row=>row?.trace==='active').length,total:rows.length}}
+// V7.2.1809 — Une ligne par KV ; un seul défilement horizontal pour tout le tableau.
+// Les valeurs et l'ordre chronologique du registre restent inchangés.
+function spotterRegistryShortTeam(value){
+ const full=spotterDisplayName(value);
+ const letters=Array.from(full);
+ return letters.length>30?letters.slice(0,29).join('')+'…':full;
+}
 function spotterRegistryRowsHtml(){
  const rows=Object.values(spotterState.kartRegistry||{}).sort((a,b)=>spotterKvNumber(a?.kv)-spotterKvNumber(b?.kv));
  if(!rows.length)return '<div class="spotter-registry-empty-block">Aucun kart enregistré.</div>';
- return rows.map(row=>{
+ const countHistory=Math.max(1,...rows.map(row=>Array.isArray(row.history)?row.history.length:0));
+ const head=['KV','KART','ÉQUIPE','NOTE','POT.','RÉC.','DER.','STATUT'];
+ const heading=head.map((label,i)=>`<th scope="col" class="${i===2?'spotter-registry-team-column':''}">${label}</th>`).join('')+
+  Array.from({length:countHistory},(_,i)=>`<th scope="col" class="spotter-registry-team-column">RELAIS ${i+1}</th>`).join('');
+ const body=rows.map(row=>{
   const current=Object.entries(spotterState.assignments||{}).find(([,a])=>a?.kv===row.kv&&a.status==='track'&&!a.pendingReplacementKv&&!a.estimated);
   const driver=current?spotterFindDriver(current[0]):null;
   const kart=current?String(driver?.apex||driver?.kart||current[1]?.apexKart||'—'):'—';
   const team=current?spotterStableTeamLabel(driver,current[1].teamLabel||current[0]):'—';
   const der=current?String(driver?.last||driver?.last_lap||'—'):'—';
   const speed=row.speed,valid=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(speed.potential);
-  const scoreProfile=typeof window.velocityKartScoreRankings==='function'?(window.velocityKartScoreRankings()||[]).find(item=>item.kv===row.kv):null;
-  const analyzerPot=spotterDisplayPotential(row.kv);
-  const cell=(label,value)=>`<span class="spotter-registry-stat">${label} ${spotterEscape(String(value))}</span>`;
-  const history=(row.history||[]).map(entry=>`<span class="spotter-registry-entry" title="${spotterEscape(spotterDisplayName(entry.team))}"><b>${spotterEscape(spotterDisplayName(entry.team))}</b><em class="${spotterScoreTone(entry.score)}">${entry.score==null?'—':entry.score}</em></span>`).join('');
-  return `<div class="spotter-registry-row"><strong>${spotterEscape(row.kv)}</strong><span class="spotter-registry-kart">${spotterEscape(kart)}</span><span class="spotter-registry-current" title="${spotterEscape(team)}">${spotterEscape(team)}</span>${cell('POT. ANALYZER',analyzerPot)}${cell('POT.',valid?Number(speed.potential).toFixed(3)+'s':'—')}${cell('RÉC.',valid&&Number.isFinite(speed.recent)?Number(speed.recent).toFixed(3)+'s':'—')}${cell('DER',der)}<span class="spotter-registry-stat">${valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—'}</span><div class="spotter-registry-history">${history||'<span class="spotter-registry-empty">Aucune affectation</span>'}${row.trace==='interrupted'?'<span class="spotter-registry-lost">TRACE INTERROMPUE</span>':''}</div></div>`;
+  const potential=spotterKartPotential(row.kv);
+  const displayedPotential=spotterDisplayPotential(row.kv);
+  const potentialTone=potential===null?'unknown':potential>=98?'gold':potential>=90?'green':potential>=80?'orange':'red';
+  const safe=(value)=>spotterEscape(String(value));
+  const name=(value)=>`<span class="spotter-registry-name" title="${safe(spotterDisplayName(value))}">${safe(spotterRegistryShortTeam(value))}</span>`;
+  const currentTeam=`<td class="spotter-registry-team-column">${name(team)}</td>`;
+  const note=`<td class="spotter-registry-note-cell"><span class="spotter-registry-rating ${potentialTone}">${safe(displayedPotential)}</span></td>`;
+  const status=valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—';
+  const interrupted=row.trace==='interrupted';
+  const base=`<td class="spotter-registry-kv">${safe(row.kv)}</td><td class="spotter-registry-kart">${safe(kart)}</td>${currentTeam}${note}`+
+   `<td>${safe(valid?Number(speed.potential).toFixed(3)+'s':'—')}</td>`+
+   `<td>${safe(valid&&Number.isFinite(speed.recent)?Number(speed.recent).toFixed(3)+'s':'—')}</td>`+
+   `<td>${safe(der)}</td><td class="spotter-registry-state">${safe(status)}${interrupted?'<span class="spotter-registry-trace">TRACE INTERROMPUE</span>':''}</td>`;
+  const entries=Array.isArray(row.history)?row.history:[];
+  const history=entries.map(entry=>{
+   const score=entry?.score==null?'—':safe(entry.score);
+   return `<td class="spotter-registry-team-column"><div class="spotter-registry-entry">${name(entry?.team)}<em class="${spotterScoreTone(entry?.score)}">${score}</em></div></td>`;
+  }).join('');
+  const remaining=countHistory-entries.length;
+  const blank=remaining>0?`<td colspan="${remaining}" class="spotter-registry-blank">${!entries.length?'Aucune affectation':''}</td>`:'';
+  return `<tr class="spotter-registry-grid-row">${base}${history}${blank}</tr>`;
  }).join('');
+ return `<table class="spotter-registry-grid"><thead><tr>${heading}</tr></thead><tbody>${body}</tbody></table>`;
 }
+
 async function spotterOpenKartRegistry(){
  document.getElementById('spotterRegistryOverlay')?.remove();await spotterPullRegistry();
  const active=Boolean(spotterState.kartTrackingEnabled),counts=spotterRegistryCounts();

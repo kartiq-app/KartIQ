@@ -2018,3 +2018,73 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
  .spotter-registry-row>.spotter-registry-current{grid-column:span 2!important}
  .spotter-queue-card .spotter-score{font-size:clamp(18px,5.2vw,24px)!important}
 }
+
+/* V7.2.1809 — Registre KV : scroll horizontal GLOBAL, 1 ligne par KV,
+   noms d'équipes sur une largeur de 30 caractères (centrés, tronqués). */
+.spotter-registry-panel.wide{width:95vw;max-width:none;overflow-x:hidden}
+.spotter-registry-table{
+ display:block!important;width:100%;min-width:0;max-width:100%;
+ overflow-x:auto!important;overflow-y:auto!important;
+ overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+ scrollbar-width:thin;max-height:calc(92vh - 175px);
+}
+.spotter-registry-grid{
+ width:max-content;min-width:100%;table-layout:auto;
+ border-collapse:separate;border-spacing:0 7px;
+ font-family:Arial,Helvetica,sans-serif;color:#e8edf5;font-size:12px;
+}
+.spotter-registry-grid thead th{
+ position:sticky;top:0;z-index:1;background:#171f2b;color:#abb7c7;
+ text-align:center;font-size:10px;font-weight:800;letter-spacing:.055em;
+ padding:8px 11px;white-space:nowrap;border-bottom:1px solid #394252;
+}
+.spotter-registry-grid td{
+ white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;
+ padding:8px 11px;height:43px;background:#10151d;
+ border-top:1px solid #242b36;border-bottom:1px solid #242b36;
+ text-align:center;vertical-align:middle;
+}
+.spotter-registry-grid td:first-child{border-left:1px solid #242b36;border-radius:9px 0 0 9px}
+.spotter-registry-grid td:last-child{border-right:1px solid #242b36;border-radius:0 9px 9px 0}
+.spotter-registry-grid td.spotter-registry-kv{font-family:'F1 Regular',Arial,sans-serif;font-weight:800;color:#fff;font-size:13px;min-width:66px}
+.spotter-registry-grid td.spotter-registry-kart{min-width:55px}
+.spotter-registry-grid th.spotter-registry-team-column,
+.spotter-registry-grid td.spotter-registry-team-column{
+ width:calc(30ch + 72px);min-width:calc(30ch + 72px);max-width:calc(30ch + 72px);
+ padding-left:8px;padding-right:8px;
+}
+.spotter-registry-name{
+ display:inline-block;width:30ch;max-width:30ch;min-width:30ch;
+ overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+ font-family:Arial,Helvetica,sans-serif;font-size:12px;
+ text-align:center;font-weight:700;vertical-align:middle;color:#fff;
+}
+.spotter-registry-note-cell{min-width:76px}
+.spotter-registry-rating{
+ display:inline-block;min-width:46px;border-radius:6px;padding:5px 7px;
+ font-family:'F1 Regular',Arial,sans-serif;font-size:14px;font-weight:900;
+ font-variant-numeric:tabular-nums;
+}
+.spotter-registry-rating.gold{background:linear-gradient(125deg,#b27b13 0%,#ffefa2 42%,#d3a02c 72%,#f6d46c 100%);color:#281902;box-shadow:inset 0 1px rgba(255,255,255,.75)}
+.spotter-registry-rating.green{background:#0c7146;color:#91ffbd}
+.spotter-registry-rating.orange{background:#ff7300;color:#fff}
+.spotter-registry-rating.red{background:#842533;color:#ffb0b9}
+.spotter-registry-rating.unknown{background:#283240;color:#c1c8d1}
+.spotter-registry-state{min-width:106px;font-size:11px}
+.spotter-registry-trace{display:inline-block;margin-left:6px;color:#ff8792;font-size:10px}
+.spotter-registry-grid .spotter-registry-entry{
+ display:flex!important;align-items:center;justify-content:center;gap:8px;
+ min-width:0!important;width:100%!important;max-width:none!important;
+ box-sizing:border-box;padding:4px 5px;
+}
+.spotter-registry-grid .spotter-registry-entry em{flex:0 0 auto;font-style:normal;font-family:'F1 Regular',Arial,sans-serif;font-size:12px;font-weight:800;border-radius:5px;padding:3px 6px}
+.spotter-registry-grid .spotter-registry-entry em.high{background:#0d6c3a;color:#8affbb}
+.spotter-registry-grid .spotter-registry-entry em.mid{background:#6b4d08;color:#ffd86a}
+.spotter-registry-grid .spotter-registry-entry em.low{background:#6d1c26;color:#ff8d99}
+.spotter-registry-grid .spotter-registry-entry em.unknown{background:#2b313b;color:#b9c0cb}
+.spotter-registry-grid .spotter-registry-blank{text-align:left;color:#788596;font-size:11px}
+@media(max-width:700px){
+ .spotter-registry-panel{padding:10px}
+ .spotter-registry-grid td{padding-top:7px;padding-bottom:7px}
+ .spotter-registry-table{max-height:calc(92vh - 195px)}
+}

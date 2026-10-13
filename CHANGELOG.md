@@ -1,3 +1,13 @@
+## V7.2.1809 — Registre KV : tableau horizontal unifié et NOTE visible
+
+- Affichage compact : une ligne par machine KV, colonnes fixes et historique complet vers la droite.
+- Défilement horizontal **global** (un seul mouvement pour toutes les lignes et colonnes) ; suppression du scroll par historique individuel.
+- Renommage de « POT. ANALYZER » en « NOTE » dans le registre uniquement ; valeurs issues du moteur Analyzer inchangées.
+- NOTE mise en valeur avec les seuils de potentiel déjà utilisés par Spotter (gold 98+, vert 90+, orange 80+, rouge en dessous, gris si indisponible).
+- Noms d'équipes actuelles et historiques : cellules de 30 caractères typographiques, centrées ; au-delà de 30 caractères, troncature avec ellipse et nom intégral accessible au survol.
+- Historique des relais conservé dans son ordre d'enregistrement, avec score et couleur historiques inchangés.
+- Aucun changement aux moteurs de calcul, au stockage Render, au protocole Apex, au Quick Change ni à la synchronisation multi-appareils.
+
 ## V7.2.1808 — Synchronisation Spotter multi-appareils : refonte et tests
 
 - **Cause racine** : les téléphones appairés sans Session Course pouvaient utiliser `LEGACY` pendant que le PC connecté utilisait son propre workspace ; chaque appareil écrivait dans une autre ligne SQL.
