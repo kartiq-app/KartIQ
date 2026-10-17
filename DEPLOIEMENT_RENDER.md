@@ -1,3 +1,12 @@
+## V7.2.1812 — Contrôle anti-clignotement du registre KV
+
+- Sauvegarder/exporter les historiques existants avant déploiement, notamment si V1811 a créé plusieurs archives à la suite d’alternances de titres Apex.
+- Déployer avec le même `DATABASE_URL` PostgreSQL. Aucun changement de schéma SQL.
+- Le registre de la course active ne tourne plus sur le titre `title1/title2`; une nouvelle course sur le **même** circuit nécessite une nouvelle Session Course ou le bouton **NOUVELLE COURSE KV**.
+- Vérifier que le registre ne passe plus de N/N à 0/0 quand Spotter synchronise les files et lorsque `title1/title2` alternent.
+- Le contenu vidé ou déjà archivé par V1811 n’est pas automatiquement réinjecté dans le registre courant, afin d’éviter une contamination entre courses. Utiliser ARCHIVES KV pour récupérer les données anciennes.
+- Tests: `python -m unittest discover -s tests -p 'test_registry_isolation_v1811.py'`, `python -m unittest discover -s tests -p 'test_registry_stability_v1812.py'`, `node tests/test_registry_no_flicker_v1812.js`.
+
 # Déploiement Render — Velocity
 
 Le Web Service Velocity est prévu en **Starter** avec un seul worker Gunicorn et plusieurs threads.

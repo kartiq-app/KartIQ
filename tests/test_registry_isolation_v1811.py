@@ -52,7 +52,7 @@ class IsolationTests(unittest.TestCase):
     def test_two_races_same_circuit_have_distinct_kv_history(self):
         first=self.runs.current('w',circuit_id='Dunois',session_title='RACE 1')
         self.assertTrue(self.runs.save('w',first['run_id'],{'KV03':{'history':[{'team':'ALPHA','at':1}]}},circuit_id='Dunois',session_title='RACE 1')[0])
-        second=self.runs.current('w',circuit_id='Dunois',session_title='RACE 2')
+        second=self.runs.current('w',circuit_id='Dunois',session_title='RACE 2',new_run=True)
         self.assertNotEqual(first['run_id'],second['run_id'])
         self.assertEqual(json.loads(second['registry_json']),{})
         self.assertFalse(self.runs.save('w',first['run_id'],{'KV03':{'history':[{'team':'ALPHA','at':1}]}},circuit_id='Dunois',session_title='RACE 2')[0])
@@ -68,7 +68,7 @@ class IsolationTests(unittest.TestCase):
     def test_title_observed_before_run_does_not_rotate_back(self):
         first=self.runs.current('w',circuit_id='Dunois',session_title='OLDER')
         second=self.runs.current('w',circuit_id='Dunois',session_title='NEWER',title_observed_at_ms=10**16)
-        self.assertNotEqual(first['run_id'],second['run_id'])
+        self.assertEqual(first['run_id'],second['run_id'])
         again=self.runs.current('w',circuit_id='Dunois',session_title='OLDER',title_observed_at_ms=1)
         self.assertEqual(second['run_id'],again['run_id'])
 

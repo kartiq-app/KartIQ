@@ -220,7 +220,10 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
    spotterState.queue=[];spotterState.maintenance=[];spotterState.incoming=[];
    spotterState.incomingQueueSelections={};spotterState.lastDriverStatus={};
    spotterState.monitorPrimed=false;spotterState.replacementRequest=null;
-   spotterState.undoSnapshot=null;spotterState.kartRegistry={};
+   // The Quick Change state and the race-scoped KV history are separate stores.
+   // A remote queue reset must NEVER erase a loaded KV table; only a new
+   // server run_id (or an explicit course change) can switch its history.
+   spotterState.undoSnapshot=null;
    spotterDeferredRemote=null;spotterSetupDraft=null;spotterSetupRequested=false;
    spotterAcknowledgedIncoming.clear();spotterPersistAcknowledged();
    clearTimeout(spotterSyncTimer);spotterPushQueued=false;
@@ -1172,7 +1175,7 @@ function resetSpotterFoundation(){
  if(!confirm('Réinitialiser la configuration Spotter ?'))return;
  spotterAcknowledgedIncoming.clear();spotterPersistAcknowledged();
  spotterDeferredRemote=null;spotterSetupDraft=null;spotterSetupRequested=false;
- Object.assign(spotterState,{mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,autoNextFile:1,configured:false,kartTrackingEnabled:false,kartRegistry:{}});
+ Object.assign(spotterState,{mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,autoNextFile:1,configured:false,kartTrackingEnabled:false});
  saveSpotterFoundation();spotterUiStep='mode';renderSpotterFoundation('mode');
 }
 function spotterAllocateKv(){const kv=spotterKvFromNumber(spotterState.nextKvNumber);spotterState.nextKvNumber+=1;return kv}

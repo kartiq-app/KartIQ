@@ -76,10 +76,11 @@ class RegistryRuns:
 
     def current(self, workspace, *, circuit_id="", session_id="", session_title="",
                 title_observed_at_ms=0, circuit_observed_at_ms=0, new_run=False):
-        """Resolve active course, safely archive on meaningful race changes.
+        """Resolve active course without inferring race identity from Apex titles.
 
-        Empty context values mean 'not yet received', not a new course. This
-        prevents app restarts / new browser tabs from rotating valid histories.
+        Empty context values mean 'not yet received', not a new course.
+        Only circuit changes, Session Course ids or an explicit reset rotate
+        the registry. Apex title1/title2 are descriptive and can alternate.
         """
         workspace = str(workspace or "LEGACY")
         circuit = str(circuit_id or "").strip()[:128]
@@ -109,12 +110,19 @@ class RegistryRuns:
             # An idle Render worker may still hold an old circuit/title. Never
             # let observations predating this run rotate the current register.
             since = int(row.get("started_at_ms") or 0)
-            if circuit and row.get("circuit_id") and circuit != row["circuit_id"] and (not circuit_seen or circuit_seen>=since):
+            # A second Render worker can retain an old circuit in its own
+            # process memory. Only a circuit selection observed AFTER this
+            # run began can trigger rotation; a zero/old timestamp must not.
+            if circuit and row.get("circuit_id") and circuit != row["circuit_id"] and circuit_seen >= since:
                 rotate = True
             if session and row.get("session_id") and session != row["session_id"]:
                 rotate = True
-            if title and row.get("session_title") and title.casefold()!=str(row["session_title"]).casefold() and (not title_seen or title_seen>=since):
-                rotate = True
+            # Apex emits title1 and title2 independently, and their labels may
+            # alternate during ONE race (e.g. "ENDURANCE 12H" / "ENDURANCE").
+            # A display title is metadata, not a stable race identifier: never
+            # rotate the active KV register merely because this text changes.
+            # Different races on the same circuit require a new Session Course
+            # or the explicit "Nouvelle course KV" command.
             if rotate:
                 self._archive(workspace,row)
                 return self._new(workspace,circuit or row.get("circuit_id") or "",session,title,expected_run_id=row["run_id"])

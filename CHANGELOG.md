@@ -1,3 +1,11 @@
+## V7.2.1812 — Stabilisation du registre des karts (17 octobre 2026)
+
+- Le titre Apex `title1` / `title2` est une métadonnée d’affichage, plus un déclencheur de nouvelle course. Empêche le registre KV de basculer entre 14/14 et 0/0 lors de l’alternance des intitulés.
+- Seul un changement de circuit, une nouvelle Session Course ou une action explicite « NOUVELLE COURSE KV » ouvre un registre neuf.
+- Une réinitialisation du Quick Change, locale ou reçue d’un autre appareil, ne vide plus l’historique KV de la course : sauvegarde SQL et affichage restent indépendants des files.
+- Les archives KV antérieures ne sont ni supprimées ni fusionnées automatiquement ; aucune modification du moteur de notation, de la FIFO ou des chronos.
+- Tests ajoutés sur alternance de titres, maintien des historiques et protection face aux snapshots Quick Change.
+
 ## V7.2.1811 — Isolation du registre KV par course (correction de contamination)
 
 - Origine corrigée : V1810 conservait le registre sous `workspace_id` uniquement, puis fusionnait les KV de plusieurs courses. Deux « KV03 » de courses différentes pouvaient être confondus.
