@@ -1,3 +1,11 @@
+## V7.2.1813 — Registre KV stable, présentation simple (17 octobre 2026)
+
+- Lecture SQL du registre **passive** : aucun changement de course déclenché par les `GET` ou sauvegardes de fond, même si deux workers Render ont des états Apex différents.
+- Les changements de circuit sont effectifs uniquement via une sélection explicite ; une nouvelle Session Course ou « NOUVELLE COURSE KV » démarre explicitement un historique séparé.
+- Affichage robuste inspiré de la V1799 : les 14 KV restent visibles en cas de réponse vide transitoire ou d'erreur réseau ; vérification d'un changement réel d'identifiant de course avant remplacement.
+- Rafraîchissement en place : les cellules changées sont mises à jour sans reconstruire tout le tableau ni déplacer le défilement global.
+- Aucun changement au potentiel Analyzer, aux notes, au FIFO, au registre PostgreSQL existant ni aux archives.
+
 ## V7.2.1812 — Stabilisation du registre des karts (17 octobre 2026)
 
 - Le titre Apex `title1` / `title2` est une métadonnée d’affichage, plus un déclencheur de nouvelle course. Empêche le registre KV de basculer entre 14/14 et 0/0 lors de l’alternance des intitulés.

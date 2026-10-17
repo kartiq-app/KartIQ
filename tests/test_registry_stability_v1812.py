@@ -29,7 +29,7 @@ class RegistryStability(unittest.TestCase):
         self.assertEqual(first['run_id'],stale['run_id'])
         self.assertEqual(len(self.runs.archives('w')),0)
         # A genuinely new circuit selection, observed after creation, still rotates.
-        fresh=self.runs.current('w',circuit_id='bresse',circuit_observed_at_ms=10**16)
+        fresh=self.runs.current('w',circuit_id='bresse',explicit_circuit_change=True)
         self.assertNotEqual(first['run_id'],fresh['run_id'])
 
     def test_explicit_new_course_still_archives(self):
@@ -42,7 +42,7 @@ class RegistryStability(unittest.TestCase):
 
     def test_new_session_is_real_boundary_even_when_title_identical(self):
         first=self.runs.current('w',circuit_id='dunois',session_id='race-1',session_title='ENDURANCE')
-        second=self.runs.current('w',circuit_id='dunois',session_id='race-2',session_title='ENDURANCE')
+        second=self.runs.current('w',circuit_id='dunois',session_id='race-2',session_title='ENDURANCE',new_run=True)
         self.assertNotEqual(first['run_id'],second['run_id'])
 
 

@@ -74,9 +74,9 @@ class IsolationTests(unittest.TestCase):
 
     def test_circuit_switch_and_session_id(self):
         first=self.runs.current('w',circuit_id='Dunois',session_id='S1')
-        second=self.runs.current('w',circuit_id='Bresse',session_id='S2',circuit_observed_at_ms=10**16)
+        second=self.runs.current('w',circuit_id='Bresse',session_id='S2',new_run=True)
         self.assertNotEqual(first['run_id'],second['run_id'])
-        third=self.runs.current('w',circuit_id='Bresse',session_id='S3')
+        third=self.runs.current('w',circuit_id='Bresse',session_id='S3',new_run=True)
         self.assertNotEqual(second['run_id'],third['run_id'])
 
     def test_explicit_new_race_same_name(self):

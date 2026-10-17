@@ -75,12 +75,14 @@ class RegistryRuns:
         return self._row(workspace)
 
     def current(self, workspace, *, circuit_id="", session_id="", session_title="",
-                title_observed_at_ms=0, circuit_observed_at_ms=0, new_run=False):
+                title_observed_at_ms=0, circuit_observed_at_ms=0, new_run=False,
+                explicit_circuit_change=False):
         """Resolve active course without inferring race identity from Apex titles.
 
         Empty context values mean 'not yet received', not a new course.
-        Only circuit changes, Session Course ids or an explicit reset rotate
-        the registry. Apex title1/title2 are descriptive and can alternate.
+        Only an explicit circuit selection, explicit Session Course creation or
+        explicit new course rotates the registry. Passive GETs or saves from
+        worker-local STATE can NEVER rotate a race. Apex titles are metadata.
         """
         workspace = str(workspace or "LEGACY")
         circuit = str(circuit_id or "").strip()[:128]
@@ -107,15 +109,14 @@ class RegistryRuns:
                     self._archive(workspace,old_run)
                 return self._new(workspace,circuit,session,title)
             rotate = bool(new_run)
-            # An idle Render worker may still hold an old circuit/title. Never
-            # let observations predating this run rotate the current register.
-            since = int(row.get("started_at_ms") or 0)
-            # A second Render worker can retain an old circuit in its own
-            # process memory. Only a circuit selection observed AFTER this
-            # run began can trigger rotation; a zero/old timestamp must not.
-            if circuit and row.get("circuit_id") and circuit != row["circuit_id"] and circuit_seen >= since:
-                rotate = True
-            if session and row.get("session_id") and session != row["session_id"]:
+            # V1813: passive requests must NEVER create a new run.  Render
+            # workers keep independent STATE and can briefly disagree about
+            # circuit_id or session_id, even with a shared PostgreSQL store.
+            # Only /api/circuit explicitly selecting a different circuit and
+            # /api/race-session/create explicitly creating a new Session may
+            # rotate the registered course. A GET cannot blank a live table.
+            if (explicit_circuit_change and circuit and row.get("circuit_id")
+                    and circuit != row["circuit_id"]):
                 rotate = True
             # Apex emits title1 and title2 independently, and their labels may
             # alternate during ONE race (e.g. "ENDURANCE 12H" / "ENDURANCE").

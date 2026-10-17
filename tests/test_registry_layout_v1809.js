@@ -27,7 +27,7 @@ const ctx = vm.createContext({
 vm.runInContext(src.slice(begin,end),ctx);
 const html = vm.runInContext('spotterRegistryRowsHtml()',ctx);
 assert(html.startsWith('<table class="spotter-registry-grid">'));
-assert.equal((html.match(/<tr class="spotter-registry-grid-row">/g)||[]).length,3);
+assert.equal((html.match(/<tr class="spotter-registry-grid-row"/g)||[]).length,3);
 assert.match(html,/>NOTE<\/th>/);
 assert.doesNotMatch(html,/POT\. ANALYZER/);
 assert.match(html,/spotter-registry-rating gold">99\.2/);

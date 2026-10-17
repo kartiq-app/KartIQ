@@ -15,7 +15,7 @@ const state={kartTrackingEnabled:true,
  KV09:{kv:'KV09',trace:'active',speed:{epoch:'race',potential:99.999,recent:100.9,confirmed:true},history:[]}
  }};
 const drivers={b:{apex:12,track_timer:'0:09',last:'62.373',team:'ÉQUIPE BLEUE',status:'track'},n:{apex:32,track_timer:'0:47',last:'1:40.456',team:'ÉQUIPE OR',status:'track'},r:{apex:42,track_timer:'1:02:33',last:'103.578',team:'ÉQUIPE ROUGE',status:'track'}};
-const ctx=vm.createContext({spotterRegistrySortMode:'default',spotterState:state,
+const ctx=vm.createContext({spotterRegistrySortMode:'default',spotterRegistryRunId:'RACE-DEMO',spotterState:state,
  spotterKvNumber:kv=>Number(String(kv).replace(/[^\d]/g,'')),spotterKartPotential:kv=>({KV02:80.3,KV09:99,KV10:95})[kv]??null,
  spotterDisplayPotential:kv=>String(({KV02:80.3,KV09:99,KV10:95})[kv]??'—'),spotterFindDriver:key=>drivers[key]||null,
  spotterDriverByKey:key=>key==='apex:21987'?{team:'HISTORIQUE BLEU'}:null,
@@ -38,7 +38,7 @@ for(const label of ['NOTE','KART','ÉQUIPE ACTUELLE','CHRONO POT.','CHRONO RÉC.
 assert.match(html,/1:02\.373/);assert.match(html,/1:43\.578/);assert.match(html,/0:47:00/);
 assert.match(html,/1:02:33/);assert.match(html,/HISTORIQUE BLEU/);assert.match(html,/ANCIENNE ÉQUIPE/);
 assert.match(html,/spotter-registry-rating gold">99/);assert.match(html,/spotter-registry-rating green">95/);assert.match(html,/spotter-registry-rating orange">80\.3/);
-assert.equal((html.match(/<tr class="spotter-registry-grid-row">/g)||[]).length,3);
+assert.equal((html.match(/<tr class="spotter-registry-grid-row"/g)||[]).length,3);
 const table={scrollLeft:321,scrollTop:104,dataset:{},innerHTML:'old'};
 const count={textContent:''};const overlay={querySelector:query=>query==='.spotter-registry-table'?table:query==='[data-spotter-registry-count]'?count:null};
 ctx.document={getElementById:id=>id==='spotterRegistryOverlay'?overlay:null};

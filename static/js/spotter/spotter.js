@@ -537,18 +537,35 @@ function spotterRegistryBackupLocal(previousId){
   localStorage.setItem(key,JSON.stringify({previousRunId:previousId||'ancien registre non identifié',savedAt:new Date().toISOString(),registry:content}));
  }catch(error){console.warn('[Spotter] Sauvegarde locale KV impossible',error)}
 }
+// V1813: like the stable V1799 registry, never replace a visible table with
+// a transient empty response. Only a VERIFIED new run may clear its history.
 async function spotterPullRegistry(){
  if(spotterRegistryLoading)return spotterRegistryLoading;
  spotterRegistryLoading=(async()=>{
   try{
-   const response=await fetch('/api/spotter-registry',{cache:'no-store'});
-   if(!response.ok)throw new Error('HTTP '+response.status);
-   const payload=await response.json();
-   if(!payload?.ok||!payload.run_id||!payload.registry||typeof payload.registry!=='object'||Array.isArray(payload.registry))throw new Error('Contexte course KV invalide');
-   const remoteRun=String(payload.run_id);
-   const newRun=spotterRegistryRunId!==remoteRun;
+   const read=async()=>{
+    const response=await fetch('/api/spotter-registry',{cache:'no-store'});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    const payload=await response.json();
+    if(!payload?.ok||!payload.run_id||!payload.registry||
+       typeof payload.registry!=='object'||Array.isArray(payload.registry))
+     throw new Error('Contexte course KV invalide');
+    return payload;
+   };
+   let payload=await read();
+   let remoteRun=String(payload.run_id);
+   let newRun=spotterRegistryRunId!==remoteRun;
+   if(newRun&&spotterRegistryRunId&&Object.keys(spotterState.kartRegistry||{}).length){
+    // An alternate Render worker must not make 14 KV / 0 KV oscillate.
+    // A real race change is stable on TWO independent SQL reads.
+    const verified=await read();
+    if(String(verified.run_id)!==remoteRun){
+     console.warn('[Spotter] Contexte KV incohérent, ancien tableau conservé');
+     return false;
+    }
+    payload=verified;
+   }
    if(newRun){
-    // First migration from V1810 or a new race. Old data is NOT part of this run.
     spotterRegistryBackupLocal(spotterRegistryRunId);
     spotterState.kartRegistry={};
     spotterRegistryRunId=remoteRun;
@@ -557,20 +574,30 @@ async function spotterPullRegistry(){
    }
    spotterRegistryReady=true;
    if(!spotterRegistryPushTimer){
-    spotterState.kartRegistry=spotterClone(payload.registry);
-    if(typeof window.velocityKartScoreHydrateRegistry==='function'){
-     Object.entries(spotterState.kartRegistry).forEach(([kv,row])=>{if(row?.speed)window.velocityKartScoreHydrateRegistry(kv,row.speed)});
+    const incoming=payload.registry;
+    const oldCount=Object.keys(spotterState.kartRegistry||{}).length;
+    const newCount=Object.keys(incoming).length;
+    if(!newRun&&oldCount>0&&newCount<oldCount){
+     // An empty snapshot with the SAME run_id is not a new race. SQL
+     // registry histories grow during a race; do not blank the table.
+     console.warn('[Spotter] Réponse KV incomplète ignorée (même course)');
+    }else{
+     spotterState.kartRegistry=spotterClone(incoming);
+     if(typeof window.velocityKartScoreHydrateRegistry==='function'){
+      Object.entries(spotterState.kartRegistry).forEach(([kv,row])=>{
+       if(row?.speed)window.velocityKartScoreHydrateRegistry(kv,row.speed)
+      });
+     }
+     localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({
+      version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState
+     }));
+     spotterRefreshKartRegistry();
     }
-    localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
-    // Never seed a new race from yesterday's KV assignments: the same team
-    // and Apex slot can use a different physical kart in another event.
-    // A race may change while the table remains open.
-    spotterRefreshKartRegistry(true);
    }
    return true;
   }catch(error){
-   spotterRegistryReady=false;
-   console.warn('[Spotter] Lecture du registre par course impossible',error);
+   // Network failures do not invalidate the last reliable registry.
+   console.warn('[Spotter] Registre KV non actualisé, dernier état conservé',error);
    return false;
   }finally{spotterRegistryLoading=null}
  })();
@@ -781,7 +808,7 @@ function spotterRegistryRowsHtml(){
   }).join('');
   const remaining=countHistory-historyEntries.length;
   const blank=remaining>0?`<td colspan="${remaining}" class="spotter-registry-blank">${!historyEntries.length?'Aucune affectation':''}</td>`:'';
-  return `<tr class="spotter-registry-grid-row">${base}${history}${blank}</tr>`;
+  return `<tr class="spotter-registry-grid-row" data-kv="${safe(row.kv)}">${base}${history}${blank}</tr>`;
  }).join('');
  return `<table class="spotter-registry-grid"><thead><tr>${heading}</tr></thead><tbody>${body}</tbody></table>`;
 }
@@ -795,8 +822,39 @@ function spotterRefreshKartRegistry({force=false}={}){
  if(!target||!spotterState.kartTrackingEnabled)return;
  const next=spotterRegistryRowsHtml();
  if(!force&&target.dataset.lastHtml===next)return;
+ // A transient empty read is NEVER allowed to destroy a nonempty table.
+ // A genuine new race has a new run_id and is handled separately below.
+ const blank=next.includes('spotter-registry-empty-block')||!next.includes('spotter-registry-grid-row');
+ if(blank&&target.querySelector?.('.spotter-registry-grid-row')&&
+    target.dataset.runId===spotterRegistryRunId)return;
  const left=target.scrollLeft,top=target.scrollTop;
- target.innerHTML=next;target.dataset.lastHtml=next;
+ const runChanged=target.dataset.runId&&target.dataset.runId!==spotterRegistryRunId;
+ const existing=target.querySelector?.('.spotter-registry-grid');
+ const template=(typeof document.createElement==='function')?document.createElement('template'):null;
+ if(template)template.innerHTML=next;
+ const incoming=template?.content?.querySelector?.('.spotter-registry-grid');
+ // V1799 rendered once. Preserve the existing table and only update cells
+ // whose text actually changed, so live chrono updates don't flicker.
+ let patched=false;
+ if(!force&&!runChanged&&existing&&incoming){
+  const before=[...existing.querySelectorAll('tbody tr')];
+  const after=[...incoming.querySelectorAll('tbody tr')];
+  const headBefore=existing.querySelector('thead')?.innerHTML;
+  const headAfter=incoming.querySelector('thead')?.innerHTML;
+  if(before.length===after.length&&headBefore===headAfter&&
+     before.every((tr,i)=>tr.dataset.kv===after[i].dataset.kv&&
+      tr.children.length===after[i].children.length&&
+      [...tr.children].every((td,j)=>td.colSpan===after[i].children[j].colSpan))){
+   before.forEach((tr,i)=>[...tr.children].forEach((td,j)=>{
+    const replacement=after[i].children[j];
+    if(td.innerHTML!==replacement.innerHTML)td.innerHTML=replacement.innerHTML;
+   }));
+   patched=true;
+  }
+ }
+ if(!patched)target.innerHTML=next;
+ target.dataset.lastHtml=next;
+ target.dataset.runId=spotterRegistryRunId||'';
  target.scrollLeft=left;target.scrollTop=top;
  const count=spotterRegistryCounts();
  const label=overlay.querySelector('[data-spotter-registry-count]');

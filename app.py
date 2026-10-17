@@ -2025,6 +2025,15 @@ def create_race_session():
         session["recorder_id"] = recording["id"]
         session["recorder_status"] = "recording"
         TEAM_DATA.setdefault("sessions",[]).append(session); _set_active_session_for_workspace(TEAM_DATA,workspace_id,sid); _save_team_data(TEAM_DATA, force_db=True)
+    # V1813: explicit Session creation is a real course boundary.  Never
+    # infer it during passive registry GETs from worker-local TEAM_DATA.
+    try:
+        RegistryRuns(_spotter_persistent_store()).current(
+            workspace_id,circuit_id=circuit_id,session_id=sid,
+            session_title=str(session.get("name") or ""),new_run=True)
+    except Exception:
+        app.logger.exception("Registre KV : nouvelle Session non initialisée")
+        # The recorded race must not be discarded after a successful start.
     # Miroir de compatibilité avec le verrouillage déjà présent côté V7.2.87.
     with RACE_SESSION_LOCK: RACE_SESSION=deepcopy(session)
     return jsonify(ok=True,session=_race_session_public(session))
@@ -3014,6 +3023,13 @@ def set_circuit():
         app.logger.exception("Erreur pendant la sélection du circuit %s", circuit_id)
         return jsonify(ok=False, error=f"Initialisation du circuit impossible : {error}"), 500
     STATE["circuit_selected_at_ms"] = int(time.time()*1000)
+    # V1813: only this explicit circuit-selection endpoint is allowed to
+    # rotate a KV run on circuit change. GET polling must remain read-only.
+    try:
+        RegistryRuns(_spotter_persistent_store()).current(
+            workspace_id,circuit_id=circuit_id,explicit_circuit_change=True)
+    except Exception:
+        app.logger.exception("Registre KV : sélection explicite du circuit %s",circuit_id)
     return jsonify(ok=True, circuit_id=circuit_id, circuit_name=circuits[circuit_id].get("name"))
 
 

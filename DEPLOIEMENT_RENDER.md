@@ -1,3 +1,20 @@
+## V7.2.1813 — Registre KV stable, inspiré de V1799
+
+Le registre garde les lignes visibles pendant l'actualisation et ignore une réponse serveur vide/incomplète pour la **même course**. Une course différente doit être identifiée explicitement : nouvelle Session Course, changement de circuit par `/api/circuit`, ou bouton **NOUVELLE COURSE KV**. Un worker Render ne peut plus vider les KV par une simple lecture de son circuit périmé.
+
+Tests locaux :
+
+```bash
+python -m unittest discover -s tests -p 'test_registry*.py'
+node tests/test_registry_simple_v1813.js
+node tests/test_registry_live_v1810.js
+node tests/test_registry_layout_v1809.js
+node tests/test_registry_no_flicker_v1812.js
+node tests/test_registry_client_scope_v1811.js
+```
+
+Aucune migration destructrice : les tables PostgreSQL, archives KV et historiques sont conservés. Le premier test sur Render doit vérifier un registre de 14+ KV ouvert pendant plusieurs minutes puis l'ouverture sur un second appareil, ainsi qu'une nouvelle course explicite. Ne pas réinitialiser le registre pendant une course active.
+
 ## V7.2.1812 — Contrôle anti-clignotement du registre KV
 
 - Sauvegarder/exporter les historiques existants avant déploiement, notamment si V1811 a créé plusieurs archives à la suite d’alternances de titres Apex.
