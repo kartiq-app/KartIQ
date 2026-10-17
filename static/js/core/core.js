@@ -668,14 +668,13 @@ async function velocitySetKartMode(mode){
 }
 async function velocityKartNewRace(){
  const mode=velocityKartScoreMode();if(!mode){alert('Choisissez d’abord Kart fixe ou Quick Change.');return}
- if(!confirm('Nouvelle course sur ce circuit : remettre à zéro les notes Potentiel et Vitesse récente ? Le registre KV de la course précédente sera archivé et un nouveau registre sera créé.'))return;
+ if(!confirm('Nouvelle course sur ce circuit : effacer les notes Potentiel et Vitesse récente de cette session ? Le registre Spotter reste intact.'))return;
  try{
   const response=await fetch('/api/kart-setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reset:true})});
   const payload=await response.json();if(!response.ok||!payload.ok)throw new Error(payload.error||'Réinitialisation impossible');
   state.kart_scoring_epoch=payload.epoch;velocityKartScoreEnsureScope();
   // Garder le marqueur du dernier tour connu : ne pas rejouer un ancien llp.
   if(typeof window.spotterRegistryClearSpeeds==='function')window.spotterRegistryClearSpeeds();
-  if(typeof spotterPullRegistry==='function')await spotterPullRegistry();
  }catch(error){alert(error.message||String(error))}
 }
 window.velocitySetKartMode=velocitySetKartMode;

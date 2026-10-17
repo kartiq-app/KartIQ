@@ -272,11 +272,3 @@ body.velocity-lab-open{overflow:hidden!important}
 .velocity-kart-speed-help{padding:8px;font-size:11px;color:#c4c4ca;line-height:1.4}
 @media(max-width:650px){.velocity-kart-speed-table{font-size:10px}.velocity-kart-speed-table th,.velocity-kart-speed-table td{padding:6px 2px}}
 
-
-/* V7.2.1810 — même échelle de couleur POT./RÉC. que NOTE dans le registre KV. */
-.velocity-kart-speed-table .kart-speed-rating{font-weight:900;font-variant-numeric:tabular-nums}
-.velocity-kart-speed-table .kart-speed-rating.gold{color:#f5cb5f;text-shadow:0 0 8px rgba(255,220,130,.28)}
-.velocity-kart-speed-table .kart-speed-rating.green{color:#42e998}
-.velocity-kart-speed-table .kart-speed-rating.orange{color:#ff7300}
-.velocity-kart-speed-table .kart-speed-rating.red{color:#ff6876}
-.velocity-kart-speed-table .kart-speed-rating.unknown{color:#a5b0c1}

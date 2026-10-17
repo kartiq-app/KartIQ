@@ -2954,9 +2954,3 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
  .relay-score-job-status.done .relay-score-job-progress{grid-column:2/5}
  .relay-score-job-close{width:20px;height:20px;font-size:14px}
 }
-
-/* V7.2.1800 — cinq colonnes, une ligne par équipe en radar grand écran */
-.analyzer-map-focus-ranking-body{overflow-y:auto;min-height:0;overscroll-behavior-y:contain}
-.map-focus-head,.map-focus-row{grid-template-columns:45px 42px minmax(105px,1fr) 78px 72px;gap:5px}
-.map-focus-row>span:nth-child(3){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.map-focus-row>span:nth-child(1),.map-focus-row>span:nth-child(2){white-space:nowrap}
