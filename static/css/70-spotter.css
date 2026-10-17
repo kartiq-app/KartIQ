@@ -2098,3 +2098,7 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-registry-current-team{display:flex;align-items:center;justify-content:center;gap:12px;white-space:nowrap}
 .spotter-registry-track-time{font-size:12px;font-weight:800;color:#54bcff;font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
 @media(max-width:700px){.spotter-registry-head{align-items:center}.spotter-registry-head-tools{gap:7px}.spotter-registry-sort{font-size:10px;gap:4px}.spotter-registry-sort select{min-width:120px;max-width:150px;padding:7px 5px}}
+
+/* V7.2.1811 — gestion des archives par course sans couper les actions sur mobile. */
+.spotter-registry-actions{flex-wrap:wrap}
+.spotter-registry-actions .spotter-primary{flex:1 1 200px}

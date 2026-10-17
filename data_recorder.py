@@ -421,6 +421,21 @@ class RecorderStore:
             """CREATE TABLE IF NOT EXISTS velocity_spotter_shared_registry (
                 workspace_id TEXT PRIMARY KEY, registry_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
             )""",
+            # V1811: KV histories are scoped per race; previous workspace-wide data
+            # remains intact and is archived on first access.
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_registry_runs (
+                workspace_id TEXT PRIMARY KEY, run_id TEXT NOT NULL,
+                circuit_id TEXT NOT NULL, session_id TEXT NOT NULL, session_title TEXT NOT NULL,
+                registry_json TEXT NOT NULL, started_at_ms BIGINT NOT NULL,
+                updated_at_ms BIGINT NOT NULL
+            )""",
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_registry_archive (
+                workspace_id TEXT NOT NULL, run_id TEXT NOT NULL,
+                circuit_id TEXT NOT NULL, session_id TEXT NOT NULL, session_title TEXT NOT NULL,
+                registry_json TEXT NOT NULL, started_at_ms BIGINT NOT NULL,
+                archived_at_ms BIGINT NOT NULL,
+                PRIMARY KEY(workspace_id,run_id)
+            )""",
             """CREATE TABLE IF NOT EXISTS velocity_workspaces_shared (
                 state_id TEXT PRIMARY KEY, revision BIGINT NOT NULL, payload_json TEXT NOT NULL,
                 updated_at_ms BIGINT NOT NULL

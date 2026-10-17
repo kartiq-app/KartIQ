@@ -1,3 +1,17 @@
+## V7.2.1811 — Isolation du registre KV par course (correction de contamination)
+
+- Origine corrigée : V1810 conservait le registre sous `workspace_id` uniquement, puis fusionnait les KV de plusieurs courses. Deux « KV03 » de courses différentes pouvaient être confondus.
+- Nouvelles tables SQL `velocity_spotter_registry_runs` et `velocity_spotter_registry_archive`, sans suppression de l’ancienne table ni altération du Recorder.
+- Première connexion : copie du registre V1810 potentiellement mélangé dans une archive « HISTORIQUE ANCIEN — COURSE NON IDENTIFIÉE ». **Aucune réattribution automatique de cette archive à la nouvelle course.** L'ancien enregistrement PostgreSQL reste lui-même inchangé.
+- Un identifiant unique accompagne le registre actif ; séparation automatique lors du changement de circuit, de Session Course ou du titre de session Apex. Les métadonnées temporairement absentes ne déclenchent aucune réinitialisation.
+- Même circuit et même titre Apex répétés : commande manuelle **NOUVELLE COURSE KV** pour archiver et ouvrir un registre vide. Le bouton existant « Nouvelle course » du calcul de kart ouvre également un nouveau registre.
+- Refus HTTP 409 des écritures d’anciens navigateurs/anciennes courses : impossible de fusionner leur historique dans le nouvel événement ; rechargement par le client.
+- Le navigateur conserve une sauvegarde locale temporaire de son ancien registre avant migration, puis recharge seulement le run actif depuis SQL. Les anciennes affectations KV ne sont pas recopiées automatiquement dans la nouvelle course.
+- Export `ARCHIVES KV` : ZIP distinct pour chaque course terminée, plus index de contexte, sans mélanger avec le live.
+- Aucun changement aux calculs POT. Analyzer, aux formules Score Relais, au FIFO ni à la présentation horizontale V1810.
+- Tests ajoutés : migration non destructive, courses successives sur le même circuit, changement de circuit/session, absence de contexte temporaire, séparation des espaces, refus d’une ancienne écriture et comportement navigateur.
+- Limites : si Apex réutilise exactement le même intitulé sans Session Course, utiliser « NOUVELLE COURSE KV » au départ ; une ancienne archive déjà contaminée ne peut pas être démêlée sans source de référence. Test réel sur Render non effectué.
+
 ## V7.2.1810 — Registre en direct, tri et lisibilité
 
 - Un seul tableau KV global, une ligne par kart, défilement horizontal commun : disposition préservée.

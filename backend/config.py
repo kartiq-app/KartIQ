@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1810"
-APP_RELEASE_NAME = "REGISTRE KV LIVE ET TRI"
+APP_VERSION = "7.2.1811"
+APP_RELEASE_NAME = "REGISTRE KV ISOLE PAR COURSE"
 
 
 def _circuit_sort_key(circuit):

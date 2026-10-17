@@ -39,6 +39,7 @@ from backend.network import local_ip
 from backend.services.race_state import RaceStateService
 from backend.services.relay_score_engine import fetch_and_compute
 from data_recorder import RecorderStore, RecorderManager
+from spotter_registry_scope import RegistryRuns
 
 app = Flask(__name__)
 
@@ -405,6 +406,8 @@ def _new_velocity_state():
         "version": APP_VERSION,
         "mode": "qualification",
         "circuit_id": "",
+        "circuit_selected_at_ms": 0,
+        "apex_session_title_seen_at_ms": 0,
         "connection": "HORS LIGNE",
         "live": {
             "status": "idle",
@@ -2746,7 +2749,11 @@ def velocity_update_kart_setup():
         STATE["kart_setup_mode"] = previous if reset else mode
         # Évite toute contamination par les karts d'une course précédente.
         STATE["kart_scoring_epoch"] = secrets.token_hex(8)
-        # Seules les anciennes notes de vitesse sont purgées, pas l'identité KV
+        if reset:
+            # A new kart-scoring race is also a new physical KV history.
+            workspace,ctx=_spotter_registry_run_context()
+            RegistryRuns(_spotter_persistent_store()).current(workspace,**ctx,new_run=True)
+        # Les anciennes évaluations sont purgées sans toucher aux autres courses archivées.
         # ni les affectations et l'historique Spotter.
         for row in (STATE.get("spotter_registry") or {}).values():
             if isinstance(row, dict):
@@ -2774,56 +2781,105 @@ def _spotter_shared_read(workspace_id):
     return data
 
 
+def _spotter_registry_run_context():
+    """Use current workspace's live circuit, active Session Course and Apex title.
+
+    A new run on the same circuit may also be started explicitly; the older
+    registry always remains in the archive. Unknown context never forces a reset.
+    """
+    workspace_id = _current_workspace_id()
+    with TEAM_DATA_LOCK:
+        active = deepcopy(_active_session_for_workspace(TEAM_DATA, workspace_id))
+    circuit_id = str((active or {}).get("circuit_id") or STATE.get("circuit_id") or "")
+    session_id = str((active or {}).get("id") or "")
+    title = str(STATE.get("apex_session_title") or "")
+    return workspace_id, {"circuit_id":circuit_id,"session_id":session_id,"session_title":title,
+                          "title_observed_at_ms":int(STATE.get("apex_session_title_seen_at_ms") or 0),
+                          "circuit_observed_at_ms":int(STATE.get("circuit_selected_at_ms") or 0)}
+
+
+def _spotter_registry_response(run):
+    return {"run_id":run["run_id"], "circuit_id":run.get("circuit_id") or "",
+            "session_id":run.get("session_id") or "",
+            "session_title":run.get("session_title") or "",
+            "started_at_ms":run.get("started_at_ms") or 0}
+
+
 @app.get("/api/spotter-registry")
 def get_spotter_registry():
     try:
-        store = _spotter_persistent_store()
-        row = store._execute("SELECT registry_json FROM velocity_spotter_shared_registry WHERE workspace_id=?",
-                             (_current_workspace_id(),), fetchone=True)
-        registry = json.loads(row["registry_json"]) if row else {}
-        return jsonify(ok=True, registry=registry)
+        workspace,context=_spotter_registry_run_context()
+        run=RegistryRuns(_spotter_persistent_store()).current(workspace,**context)
+        result=_spotter_registry_response(run)
+        result.update(ok=True,registry=json.loads(run["registry_json"]))
+        response=jsonify(result)
+        response.headers["Cache-Control"]="private, no-store"
+        return response
     except Exception as exc:
-        return jsonify(ok=False, error="Registre partagé indisponible", detail=str(exc)), 503
+        return jsonify(ok=False,error="Registre partagé indisponible",detail=str(exc)),503
 
 
 @app.post("/api/spotter-registry")
 def update_spotter_registry():
-    body = request.get_json(force=True, silent=True) or {}
-    registry = body.get("registry")
-    if not isinstance(registry, dict):
-        return jsonify(ok=False, error="Registre Spotter invalide"), 400
-    clean = {}
-    for kv, row in list(registry.items())[:250]:
-        if not isinstance(row, dict):
-            continue
-        item = deepcopy(row)
-        history = item.get("history")
-        if isinstance(history, list):
-            item["history"] = history[-80:]
-        clean[str(kv)[:32]] = item
+    body=request.get_json(force=True,silent=True) or {}
+    registry=body.get("registry")
+    if not isinstance(registry,dict):
+        return jsonify(ok=False,error="Registre Spotter invalide"),400
+    clean={}
+    for kv,row in list(registry.items())[:250]:
+        if not isinstance(row,dict):continue
+        item=deepcopy(row)
+        if isinstance(item.get("history"),list):item["history"]=item["history"][-80:]
+        clean[str(kv)[:32]]=item
     try:
-        store = _spotter_persistent_store()
-        # Merge, do not replace another device's KV history with a partial local registry.
-        with store._lock:
-            prior = store._execute("SELECT registry_json FROM velocity_spotter_shared_registry WHERE workspace_id=?",
-                                   (_current_workspace_id(),), fetchone=True)
-            merged = json.loads(prior["registry_json"]) if prior else {}
-            for kv, row in clean.items():
-                old = merged.get(kv) or {}
-                previous_history = old.get("history") or []
-                incoming_history = row.get("history") or []
-                keyed = { (str(h.get('team')),str(h.get('at'))):h for h in previous_history if isinstance(h,dict) }
-                for entry in incoming_history:
-                    if isinstance(entry,dict):keyed[(str(entry.get('team')),str(entry.get('at')))]=entry
-                combined = sorted(keyed.values(), key=lambda item: int(item.get('at') or 0))[-80:]
-                merged[kv] = {**old, **row, "history":combined}
-            store._execute("""INSERT INTO velocity_spotter_shared_registry(workspace_id,registry_json,updated_at_ms)
-                VALUES(?,?,?) ON CONFLICT(workspace_id) DO UPDATE
-                SET registry_json=excluded.registry_json,updated_at_ms=excluded.updated_at_ms""",
-                (_current_workspace_id(),json.dumps(merged,ensure_ascii=False),int(time.time()*1000)))
-        return jsonify(ok=True, count=len(merged))
+        workspace,context=_spotter_registry_run_context()
+        runs=RegistryRuns(_spotter_persistent_store())
+        success,run=runs.save(workspace,str(body.get("run_id") or ""),clean,**context)
+        if not success:
+            return jsonify(ok=False,error="Registre d’une autre course refusé : recharger le registre actuel",
+                           **_spotter_registry_response(run)),409
+        return jsonify(ok=True,count=len(json.loads(run["registry_json"])),**_spotter_registry_response(run))
     except Exception as exc:
-        return jsonify(ok=False, error="Sauvegarde registre impossible", detail=str(exc)), 503
+        return jsonify(ok=False,error="Sauvegarde registre impossible",detail=str(exc)),503
+
+
+@app.post("/api/spotter-registry/new-course")
+def new_spotter_registry_course():
+    """Manual race boundary for recurring events with an identical Apex title."""
+    try:
+        workspace,context=_spotter_registry_run_context()
+        runs=RegistryRuns(_spotter_persistent_store())
+        body=request.get_json(silent=True) or {}
+        current=runs.current(workspace,**context)
+        if str(body.get("run_id") or "")!=str(current["run_id"]):
+            return jsonify(ok=False,error="Le registre a déjà changé de course",**_spotter_registry_response(current)),409
+        next_run=runs.current(workspace,**context,new_run=True)
+        return jsonify(ok=True,registry={},**_spotter_registry_response(next_run))
+    except Exception as exc:
+        return jsonify(ok=False,error="Nouvelle course impossible",detail=str(exc)),503
+
+
+@app.get("/api/spotter-registry/archives/export")
+def spotter_registry_archives_export():
+    """Archives are downloadable, never merged into a live kart registry."""
+    try:
+        workspace,context=_spotter_registry_run_context()
+        runs=RegistryRuns(_spotter_persistent_store())
+        current=runs.current(workspace,**context)
+        archives=runs.archives(workspace)
+        memory=io.BytesIO()
+        with zipfile.ZipFile(memory,"w",zipfile.ZIP_DEFLATED) as bundle:
+            index=[]
+            for item in archives:
+                index.append({key:item.get(key) for key in ("run_id","circuit_id","session_id","session_title","started_at_ms","archived_at_ms")})
+                bundle.writestr("courses/"+str(item["run_id"])+".json",
+                    json.dumps({"metadata":index[-1],"registry":json.loads(item["registry_json"])},ensure_ascii=False,indent=2))
+            bundle.writestr("archives_index.json",json.dumps({"active_run":_spotter_registry_response(current),"archives":index},ensure_ascii=False,indent=2))
+        memory.seek(0)
+        return send_file(memory,mimetype="application/zip",as_attachment=True,
+            download_name="Velocity_Archives_KV_"+datetime.now().strftime("%Y%m%d")+".zip")
+    except Exception as exc:
+        return jsonify(ok=False,error="Export archives KV indisponible",detail=str(exc)),503
 
 
 @app.post("/api/spotter-monitor-lease")
@@ -2921,6 +2977,8 @@ def reset_race_state_for_new_circuit(circuit_id):
     with SPOTTER_LOCK:
         STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
         STATE["spotter_registry"] = {}
+        STATE["apex_session_title"] = ""
+        STATE["apex_session_title_seen_at_ms"] = 0
         STATE["kart_setup_mode"] = None
         STATE["kart_scoring_epoch"] = secrets.token_hex(8)
     with ANALYZER_STRATEGY_LOCK:
@@ -2955,6 +3013,7 @@ def set_circuit():
     except Exception as error:
         app.logger.exception("Erreur pendant la sélection du circuit %s", circuit_id)
         return jsonify(ok=False, error=f"Initialisation du circuit impossible : {error}"), 500
+    STATE["circuit_selected_at_ms"] = int(time.time()*1000)
     return jsonify(ok=True, circuit_id=circuit_id, circuit_name=circuits[circuit_id].get("name"))
 
 
@@ -3170,6 +3229,7 @@ def apex_frame():
     incoming_session_title = extract_apex_session_title(frame)
     if incoming_session_title:
         STATE["apex_session_title"] = incoming_session_title
+        STATE["apex_session_title_seen_at_ms"] = int(time.time()*1000)
     grid = parse_grid_frame(frame)
     initial_updates = grid.updates if grid else []
     grid_removed_rows = []

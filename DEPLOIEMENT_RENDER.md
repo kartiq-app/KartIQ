@@ -29,3 +29,16 @@ Les Recorders actifs sont enregistrés en base. Après un redémarrage du servic
 Tests hors Render : `python tests/test_spotter_sql_v1808.py` et `node tests/test_spotter_rebase_v1808.js`.
 
 **Limites connues :** sans flux Apex réel ni accès au service Render de production, le comportement de bout en bout sur deux appareils n'a pas été démontré ici. En cas de panne persistante ou d'état incompatiblement hérité, ne pas supprimer les données SQL sans export préalable.
+
+## V7.2.1811 — Registre KV séparé par course
+
+1. **Avant le déploiement**, exporter l'historique KV de la V1810 et conserver une sauvegarde PostgreSQL. Ne pas réinitialiser les files d'une course en cours uniquement pour tester l'archive.
+2. Déployer la V1811 avec `DATABASE_URL` pointant vers **le même PostgreSQL Render** que V1810. Les nouvelles tables sont créées automatiquement ; l'ancienne `velocity_spotter_shared_registry` n'est pas détruite.
+3. Au premier chargement de « SUIVI KARTS », l'ancien registre V1810 est **archivé, même s'il contient plusieurs courses mélangées**. Le registre de la course active repart sans l'ancien historique : ce comportement est intentionnel pour éviter de fausses affectations.
+4. Pour retrouver les données antérieures, cliquer **ARCHIVES KV** dans le registre. L'export ZIP contient un JSON par ancien contexte et l'index des courses.
+5. Pour des courses successives sur le même circuit avec des noms Apex différents, la nouvelle course reçoit automatiquement un identifiant distinct. Une Session Course différente provoque également une séparation.
+6. **Cas particulier :** sans Session Course et si Apex réutilise exactement le même titre pour deux courses, cliquer **NOUVELLE COURSE KV** au démarrage de la suivante. Cela archive le registre sans toucher aux files ; vérifier séparément le Quick Change et ses affectations physiques.
+7. Vérifier la séparation sur deux tests successifs (équipe A sur KV01 lors du test 1, équipe B sur KV01 lors du test 2), puis l'export des archives. Sur deux appareils, recharger V1811 des deux côtés : un ancien navigateur ne doit pas être autorisé à republier un registre de la course précédente.
+8. Important : si le Quick Change ou les affectations physiques ont été conservés d'une course antérieure, **les revalider/reconfigurer séparément** ; l'isolation des historiques ne garantit pas la justesse d'une identité physique réutilisée.
+
+Tests locaux : `python -m unittest discover -s tests -p 'test_registry_isolation_v1811.py'` et `node tests/test_registry_client_scope_v1811.js`.
