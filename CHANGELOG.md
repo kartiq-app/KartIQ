@@ -1,3 +1,12 @@
+## V7.2.1814 — Nouvelle course KV fiable, sans création de KV fantômes (17 octobre 2026)
+
+- Correctif ciblé du bouton « NOUVELLE COURSE KV » : sa réponse de succès est appliquée immédiatement au navigateur, même si une ancienne requête de lecture est encore en vol.
+- Retour utilisateur clair : confirmation de création d’une nouvelle course, compteur 0 KV, rappel que les files Quick Change ne sont pas réinitialisées ; erreur visible si le serveur refuse l’opération.
+- Le potentiel Analyzer ne crée plus de KV dans un registre neuf. Une machine n’apparaît qu’après une véritable affectation ou un mouvement Spotter suivi.
+- Le bouton est désactivé pendant la requête pour éviter deux créations accidentelles.
+- Conservation des archives de courses et du stockage SQL existant ; aucun changement aux notes, au calcul Analyzer, au Quick Change ou aux autres API.
+- Tests de non-régression du bouton, des anciennes réponses en vol et de l’absence de KV fantômes inclus.
+
 ## V7.2.1813 — Registre KV stable, présentation simple (17 octobre 2026)
 
 - Lecture SQL du registre **passive** : aucun changement de course déclenché par les `GET` ou sauvegardes de fond, même si deux workers Render ont des états Apex différents.

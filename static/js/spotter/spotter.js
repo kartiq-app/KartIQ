@@ -529,6 +529,8 @@ let spotterRegistryRunId=localStorage.getItem(SPOTTER_RUN_STORAGE_KEY)||'';
 let spotterRegistryReady=false;
 let spotterRegistryLoading=null;
 let spotterRegistrySortMode='default';
+// When a new course was explicitly created, ignore in-flight GETs from its predecessor.
+let spotterRegistryExplicitRunGuard='';
 function spotterRegistryBackupLocal(previousId){
  const content=spotterState.kartRegistry||{};
  if(!Object.keys(content).length)return;
@@ -554,6 +556,11 @@ async function spotterPullRegistry(){
    };
    let payload=await read();
    let remoteRun=String(payload.run_id);
+   if(spotterRegistryExplicitRunGuard&&remoteRun!==spotterRegistryExplicitRunGuard){
+    console.warn('[Spotter] Ancienne lecture KV ignoree apres creation de course');
+    return false;
+   }
+   if(remoteRun===spotterRegistryExplicitRunGuard)spotterRegistryExplicitRunGuard='';
    let newRun=spotterRegistryRunId!==remoteRun;
    if(newRun&&spotterRegistryRunId&&Object.keys(spotterState.kartRegistry||{}).length){
     // An alternate Render worker must not make 14 KV / 0 KV oscillate.
@@ -880,20 +887,52 @@ function spotterExportKartRegistry(){
  const url=URL.createObjectURL(blob);
  const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
+let spotterNewKartCourseInFlight=false;
+function spotterRegistryCourseMessage(message,error=false){
+ const overlay=document.getElementById('spotterRegistryOverlay');
+ if(!overlay)return;
+ let node=overlay.querySelector('[data-spotter-course-message]');
+ if(!node){node=document.createElement('div');node.setAttribute('data-spotter-course-message','');
+  const header=overlay.querySelector('.spotter-registry-head');header?.insertAdjacentElement('afterend',node);
+ }
+ node.textContent=message;
+ node.style.cssText='padding:8px 12px;margin:8px 0;border:1px solid '+(error?'#ef6a73':'#3fbd91')+';color:'+(error?'#ff9ba1':'#8de7c3')+';border-radius:6px;font-size:12px;font-weight:700';
+}
 async function spotterStartNewKartCourse(){
- if(!spotterRegistryReady||!spotterRegistryRunId){alert('Le registre serveur doit être chargé avant de changer de course.');return}
- if(!confirm('Nouvelle course KV ? Le registre actuel sera archivé et un nouveau registre vide sera créé. Les files Spotter ne sont pas réinitialisées par cette action.'))return;
+ if(spotterNewKartCourseInFlight)return;
+ if(!spotterRegistryReady||!spotterRegistryRunId){spotterRegistryCourseMessage('Le registre serveur n’est pas chargé. Réessaie après synchronisation.',true);return;}
+ if(!confirm('Archiver le registre de cette course et ouvrir un registre KV VIDE ? Les files du Quick Change seront conservées.'))return;
+ spotterNewKartCourseInFlight=true;
+ const button=document.querySelector('#spotterRegistryOverlay button[onclick="spotterStartNewKartCourse()"]');
+ if(button){button.disabled=true;button.textContent='CRÉATION EN COURS…';}
  try{
+  const oldRun=spotterRegistryRunId;
   const response=await fetch('/api/spotter-registry/new-course',{
-   method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({run_id:spotterRegistryRunId})
+   method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({run_id:oldRun})
   });
   const data=await response.json();if(!response.ok||!data.ok){
-   if(response.status===409){await spotterPullRegistry();return}
+   if(response.status===409){
+    await spotterPullRegistry();
+    spotterRegistryCourseMessage('Le registre a déjà changé sur un autre appareil. État serveur rechargé.',true);
+    return;
+   }
    throw Error(data.error||'Nouvelle course KV impossible');
   }
-  await spotterPullRegistry();
-  await spotterOpenKartRegistry();
- }catch(error){alert(error.message||String(error))}
+  if(!data.run_id||String(data.run_id)===oldRun)throw Error('Le serveur n’a pas confirmé un nouvel identifiant de course.');
+  // The server has COMMITTED the new race. Apply the response immediately,
+  // without waiting for another GET that may finish with an obsolete snapshot.
+  spotterRegistryBackupLocal(oldRun);
+  clearTimeout(spotterRegistryPushTimer);spotterRegistryPushTimer=null;
+  spotterRegistryRunId=String(data.run_id);
+  spotterRegistryExplicitRunGuard=spotterRegistryRunId;
+  spotterRegistryReady=true;
+  spotterState.kartRegistry={};
+  localStorage.setItem(SPOTTER_RUN_STORAGE_KEY,spotterRegistryRunId);
+  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
+  spotterRefreshKartRegistry({force:true});
+  spotterRegistryCourseMessage('NOUVELLE COURSE KV CRÉÉE · registre vidé (0 KV) · ancien historique archivé. Les files Quick Change sont conservées.');
+ }catch(error){spotterRegistryCourseMessage('Nouvelle course KV impossible : '+(error.message||String(error)),true);console.error('[Spotter] Création course KV',error);}
+ finally{spotterNewKartCourseInFlight=false;if(button){button.disabled=false;button.textContent='NOUVELLE COURSE KV';}}
 }
 function spotterExportKartArchives(){
  // The ZIP contains one isolated JSON per old run; its contents are never merged.
@@ -2021,7 +2060,10 @@ function spotterSaveAnalyzerPotentials(){
  if(!epoch)return;
  (window.velocityKartScoreRankings()||[]).forEach(item=>{
   if(!item?.kv||!spotterValidScore(item.potential))return;
-  const row=spotterRegistryEnsure(item.kv);
+  // A calculation in Analyzer does NOT establish a physical kart assignment.
+  // A blank new race must stay empty until the kart is actually followed in Spotter.
+  const row=spotterState.kartRegistry?.[String(item.kv)];
+  if(!row||row.trace==='interrupted')return;
   const score=Math.round(Number(item.potential)*10)/10;
   if(row.analyzerPotentialEpoch!==epoch||row.analyzerPotential!==score){
    row.analyzerPotential=score;row.analyzerPotentialEpoch=epoch;changed=true;

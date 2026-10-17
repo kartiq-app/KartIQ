@@ -1,3 +1,12 @@
+## V7.2.1814 — Réinitialisation fiable de « Nouvelle course KV »
+
+- Les anciennes courses restent archivées séparément dans PostgreSQL. Ne pas supprimer ou réinitialiser le stockage.
+- Nouveau contrôle visuel après « NOUVELLE COURSE KV » : message de confirmation et **0 KV** tant qu'aucun événement Spotter n'a créé de nouvelle affectation physique.
+- Le Quick Change existant **n'est pas effacé** par cette commande. Pour une course entièrement nouvelle, configurer séparément le Quick Change.
+- Cache Chrome/iPhone invalidé par version de service worker.
+- Tests : `node tests/test_registry_new_course_v1814.js` et tests des versions antérieures.
+- Aucun test de déploiement sur Render de production dans cet environnement. Vérifier après mise en ligne le nouveau numéro de version et le comportement du bouton avant une course.
+
 ## V7.2.1813 — Registre KV stable, inspiré de V1799
 
 Le registre garde les lignes visibles pendant l'actualisation et ignore une réponse serveur vide/incomplète pour la **même course**. Une course différente doit être identifiée explicitement : nouvelle Session Course, changement de circuit par `/api/circuit`, ou bouton **NOUVELLE COURSE KV**. Un worker Render ne peut plus vider les KV par une simple lecture de son circuit périmé.
