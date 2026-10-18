@@ -773,23 +773,29 @@ function spotterRegistryUpdateScore(kv,team,score){
 // Jamais de déduction d'un KV à partir du numéro affiché par Apex.
 function velocityKartIdentityForDriver(driver){
  const teamKey=spotterDriverKey(driver);
- if(!teamKey)return null;
- const shared=window.velocitySharedSpotterState||{};
- const local=spotterState.kartTrackingEnabled&&spotterState.configured;
- const remote=Boolean(shared.kart_tracking_enabled&&shared.configured);
- const assignment=(local&&spotterState.assignments?.[teamKey])||(remote&&shared.assignments?.[teamKey]);
+ if(!teamKey||!spotterRegistryReady||!spotterRegistryRunId)return null;
+ // The SQL registry for THIS run is the only source of KV identities.
+ // A cached Quick Change assignment from a previous run is not proof.
  const registry=spotterState.kartRegistry||{};
- // A single SQL-backed provisional slot is the display identity throughout
- // Spotter and Analyzer, regardless of the selected kart scoring mode.
- // Never infer physical identity from Apex's displayed kart/team number.
- const provisional=Object.entries(registry).find(([,row])=>
-  row?.autoTeamKey===teamKey&&row?.trace!=='interrupted');
- if(assignment?.kv&&(local||remote)){
-  const row=registry[assignment.kv];
-  const verified=assignment.status==='track'&&!assignment.pendingReplacementKv&&!assignment.estimated&&
-   Boolean(row)&&row.trace!=='interrupted';
-  return {kv:String(assignment.kv),teamKey,verified,provisional:!verified};
+ const shared=window.velocitySharedSpotterState||{};
+ const candidates=[];
+ const local=spotterState.assignments?.[teamKey];
+ const remote=shared.assignments?.[teamKey];
+ for(const assignment of [local,remote]){
+  if(!assignment?.kv)continue;
+  const kv=String(assignment.kv);
+  const row=registry[kv];
+  if(!row||row.trace==='interrupted')continue;
+  // An old assignment cannot claim a KV provisionally allocated to another team.
+  if(row.autoProvisional&&row.autoTeamKey&&row.autoTeamKey!==teamKey)continue;
+  const verified=assignment.status==='track'&&!assignment.pendingReplacementKv&&!assignment.estimated;
+  if(verified)candidates.push({kv,teamKey,verified:true,provisional:false});
  }
+ // A confirmed physical transfer wins, otherwise the SQL provisional
+ // allocation is authoritative for both the registry and Analyzer.
+ if(candidates.length)return candidates[0];
+ const provisional=Object.entries(registry).find(([,row])=>
+  row?.autoProvisional&&row.autoTeamKey===teamKey&&row.trace!=='interrupted');
  if(provisional)return {kv:String(provisional[0]),teamKey,verified:false,provisional:true};
  return null;
 }
@@ -1136,7 +1142,9 @@ async function spotterStartNewKartCourse(){
   localStorage.setItem(SPOTTER_RUN_STORAGE_KEY,spotterRegistryRunId);
   localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
   spotterRefreshKartRegistry({force:true});
-  spotterRegistryCourseMessage('NOUVELLE COURSE KV CRÉÉE · registre vidé (0 KV) · ancien historique archivé. Les files Quick Change sont conservées.');
+  spotterRegistryAutoSeedAt=0;
+  void spotterRegistrySeedLiveTeams();
+  spotterRegistryCourseMessage('NOUVELLE COURSE KV CRÉÉE · ancien historique archivé · KV attribués aux équipes live.');
  }catch(error){spotterRegistryCourseMessage('Nouvelle course KV impossible : '+(error.message||String(error)),true);console.error('[Spotter] Création course KV',error);}
  finally{spotterNewKartCourseInFlight=false;if(button){button.disabled=false;button.textContent='NOUVELLE COURSE KV';}}
 }
@@ -2375,4 +2383,4 @@ async function spotterRenewMonitorLease(){
   spotterLastMonitorLeaseWorkspace=data.workspace_id||'';
  }catch(_){spotterMonitorLeaseOwner=false;spotterMonitorLeaseUntil=0}
 }
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState({force:true});setInterval(spotterRenewMonitorLease,2000);spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled)spotterPullRegistry()},3000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(()=>{spotterRefreshKartRegistry();if(document.getElementById('spotterRegistryOverlay'))void spotterRegistrySeedLiveTeams()},2000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState({force:true});setInterval(spotterRenewMonitorLease,2000);spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled||document.getElementById('spotterRegistryOverlay'))spotterPullRegistry()},3000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(()=>{spotterRefreshKartRegistry();if(document.getElementById('spotterRegistryOverlay'))void spotterRegistrySeedLiveTeams()},2000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});

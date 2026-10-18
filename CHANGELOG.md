@@ -1,3 +1,9 @@
+## V7.2.1824 — Source KV unique par course
+- Identité KV Analyzer/Spotter : lecture du registre SQL actif, sans KV issu de cache hors course.
+- Attribution KV au redémarrage explicite d’une course depuis les équipes live.
+- Rafraîchissement du registre lorsque sa fenêtre est ouverte.
+- Aucun changement aux formules de chrono, de notes ou au moteur de score.
+
 ## V7.2.1821 — KV Analyzer et couleurs notes
 
 - Analyzer affiche le KV provisoire déjà attribué dans le registre SQL Spotter, sans le considérer comme une identité physique vérifiée.
