@@ -1,3 +1,24 @@
+## V7.2.1817 — Consolidation des écritures KV et du référentiel Analyzer (18 octobre 2026)
+
+- Registre KV : lorsqu’un second appareil travaille sur une révision périmée, le serveur peut désormais conserver les **nouveaux passages historiques** et les **KV créés indépendamment**, sans écraser les notes, chronos, statuts ou passages déjà enregistrés. Mise à jour atomique SQL par identifiant de course et révision.
+- Synchronisation du navigateur : en cas de fusion limitée des historiques, Velocity adopte l’état canonique retourné par le serveur ; les passages ajoutés localement pendant la requête et les observations de vitesse plus récentes du seul observateur Apex sont conservés pour nouvel envoi. Retour explicite `history_merge_only`.
+- Analyzer Quick Change : pendant le chargement du registre partagé, un profil KV local déjà connu peut encore apparaître avec le libellé **RÉF. EN CHARGEMENT** et un astérisque. Cette estimation est **provisoire et non autoritaire**, n’est pas utilisée comme NOTE officielle ou couleur des karts Spotter. Dès réception du registre, le classement partagé redevient la source de référence.
+- Formule POT./RÉC. inchangée ; paramètres Quick Change, FIFO, données du Recorder, calcul de Score Relais et décodage Apex inchangés.
+- Tests : écritures concurrentes sur KV différents avec et sans relais, ajout sur un KV existant sans écraser un score récent, dédoublonnage d’événements, séparation stricte des courses, comportement provisoire Analyzer, mise à jour du navigateur pendant un POST.
+- Validation de non-régression : inventaire des routes V1814/V1816/V1817, comparaison octet à octet des principaux moteurs, tests Python/JavaScript, simulation du démarrage de Home et des API stratégiques, registre, Spotter et configuration karts.
+- Aucun changement de schéma SQL ni suppression des archives. Révision/cache V1817.
+
+**Reste à valider avant usage course :** vrais clients ordinateur/iPhone avec PostgreSQL Render ; collisions métier autres que passages KV ; persistance intégrale des fenêtres Analyzer ; grille complète Recorder ; compensation temporelle des Score Relais.
+
+## V7.2.1816 — Correctif critique HTTP 500 au lancement (18 octobre 2026)
+
+- Correction d’une régression introduite dans `app.py` en V1815 : environ 200 lignes de routes et fonctions Flask avaient été supprimées par erreur. La fonction de stratégie Analyzer contenait accidentellement le code de synchronisation Spotter.
+- Restauration depuis V1814 de l’initialisation du stockage partagé, des endpoints Analyzer-strategy, configuration kart, registre KV (lecture/écriture/nouvelle course/archives), arbitrage Apex et état Spotter.
+- Conservation des corrections V1815 sur les snapshots Quick Change (invariants métier) et le verrouillage des révisions du registre KV. Le contrat client `registry_updated_at_ms` / `base_updated_at_ms` est bien servi par les API rétablies.
+- Version, service worker et cache web actualisés. **Aucune migration ou suppression SQL**.
+- Validation supplémentaire : test d’import et des fonctions de l’application avec simulation de Flask, rendu réel du template Jinja, appels réels des méthodes Python et stockage SQLite temporaire. Ce contrôle échouait sur V1815 avec `NameError: _spotter_persistent_store` et réussit sur V1816. Test statique de non-régression des routes.
+- Limite : environnement sans Flask installé ; test HTTP Flask/Gunicorn et Render de production non exécutés. Un test sur le Web Service Render reste nécessaire après déploiement.
+
 ## V7.2.1815 — Stabilisation prioritaire Analyzer / Spotter (18 octobre 2026)
 
 - Registre KV : révision SQL compare-and-swap via `registry_updated_at_ms` et `base_updated_at_ms`. Un navigateur avec état périmé reçoit 409 et doit se resynchroniser ; copie locale conservée en cas de conflit. Pas de migration destructrice ni de table supprimée.

@@ -606,6 +606,19 @@ function velocityKartLocalUnverifiedRankings(){
  return profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference,localReference:true}))
   .sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
 }
+// Fallback ONLY while SQL-backed scoring evidence has not arrived. These
+// values are explicitly provisional; they must not color Spotter cards or be
+// published as shared physical evaluations. The scoring formula is unchanged.
+function velocityKartLocalPendingRankings(){
+ const profiles=Object.values(velocityKartScoreStore.karts||{}).filter(p=>p.kv&&
+  ((p.best&&Number.isFinite(p.best.seconds))||Number.isFinite(p.recent)));
+ if(!profiles.length)return [];
+ const reference=Math.min(...profiles.map(p=>Number.isFinite(p.best?.seconds)?p.best.seconds:p.recent));
+ const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
+ return profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference,
+  localReference:true,referenceLoading:true,confirmed:false}))
+  .sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
+}
 function velocityKartScoreRankings(){
  if(!velocityKartScoreEnsureScope())return [];
  const mode=velocityKartScoreMode();
@@ -627,7 +640,7 @@ function velocityKartScoreRankings(){
     recent:recentOk?recent:null,confirmed:Boolean(speed.confirmed),
     recentProvisional:Boolean(speed.provisional),totalValid:Number(speed.validLaps)||0}];
   });
-  if(!profiles.length)return velocityKartLocalUnverifiedRankings();
+  if(!profiles.length)return velocityKartLocalPendingRankings().concat(velocityKartLocalUnverifiedRankings());
   const reference=Math.min(...profiles.map(p=>p.best?.seconds??p.recent));
   const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
   const physical=profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference}))
@@ -636,7 +649,7 @@ function velocityKartScoreRankings(){
   // physical reference used by all clients to score KV identities.
   return physical.concat(velocityKartLocalUnverifiedRankings());
  }
- if(mode==='quick')return velocityKartLocalUnverifiedRankings();
+ if(mode==='quick')return velocityKartLocalPendingRankings().concat(velocityKartLocalUnverifiedRankings());
  // Fixed-kart mode preserves its existing formula and complete local profiles.
  const profiles=Object.values(velocityKartScoreStore.karts).filter(p=>(p.best&&Number.isFinite(p.best.seconds))||Number.isFinite(p.recent));
  if(!profiles.length)return [];

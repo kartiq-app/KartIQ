@@ -76,3 +76,76 @@ class QueueSafetyTests(unittest.TestCase):
         self.assertIsNone(spotter_snapshot_error(snap))
 
 if __name__=='__main__':unittest.main()
+
+# V1817: independent new passages must survive an optimistic concurrency
+# conflict, without restoring stale values of speed/trace/existing scores.
+class RegistryConcurrentPassagesTests(unittest.TestCase):
+    def setUp(self):
+        self.store=SQLiteStore()
+        self.runs=RegistryRuns(self.store)
+        self.w='concurrent'
+        run=self.runs.current(self.w,circuit_id='dunois')
+        self.run=run['run_id']
+        self.base=run['updated_at_ms']
+
+    def test_two_clients_write_different_kvs_at_same_revision(self):
+        first={'KV01':{'currentTeam':'RED','trace':'active',
+                       'history':[{'team':'RED','teamLabel':'RED RACING','at':100,'score':88}]}}
+        second={'KV02':{'currentTeam':'BLUE','trace':'active',
+                        'history':[{'team':'BLUE','teamLabel':'BLUE RACING','at':101,'score':77}]}}
+        ok,a=self.runs.save(self.w,self.run,first,base_updated_at_ms=self.base)
+        self.assertTrue(ok)
+        ok,b=self.runs.save(self.w,self.run,second,base_updated_at_ms=self.base)
+        self.assertTrue(ok)
+        self.assertTrue(b.get('history_merge_only'))
+        self.assertEqual(b.get('history_events_added'),1)
+        saved=json.loads(self.runs.current(self.w)['registry_json'])
+        self.assertEqual(set(saved),{'KV01','KV02'})
+        self.assertEqual(saved['KV02']['currentTeam'],'BLUE')
+        self.assertEqual(saved['KV01']['history'][0]['score'],88)
+
+    def test_two_new_kv_without_a_relay_history_are_preserved(self):
+        # Initial tracking assignments can legitimately precede the first
+        # relay note. They must not be lost on the second client.
+        ok,_=self.runs.save(self.w,self.run,{'KV01':{'currentTeam':'RED','speed':{'potential':60},'history':[]}},
+                            base_updated_at_ms=self.base)
+        self.assertTrue(ok)
+        ok,merged=self.runs.save(self.w,self.run,{'KV02':{'currentTeam':'BLUE','speed':{'potential':59},'history':[]}},
+                                 base_updated_at_ms=self.base)
+        self.assertTrue(ok)
+        self.assertTrue(merged.get('history_merge_only'))
+        saved=json.loads(merged['registry_json'])
+        self.assertEqual(saved['KV02']['speed']['potential'],59)
+        self.assertEqual(saved['KV01']['speed']['potential'],60)
+
+    def test_stale_with_new_event_on_same_kv_keeps_server_speed_and_old_score(self):
+        ok,_=self.runs.save(self.w,self.run,{'KV01':{'trace':'interrupted',
+            'speed':{'potential':61.2},'history':[{'team':'RED','at':10,'score':88,'updatedAt':200}]}},
+            base_updated_at_ms=self.base)
+        self.assertTrue(ok)
+        stale={'KV01':{'trace':'active','speed':{'potential':78.0},
+            'history':[{'team':'RED','at':10,'score':44,'updatedAt':100},
+                       {'team':'BLUE','at':20,'score':66,'updatedAt':300}]}}
+        ok,result=self.runs.save(self.w,self.run,stale,base_updated_at_ms=self.base)
+        self.assertTrue(ok)
+        final=json.loads(result['registry_json'])['KV01']
+        self.assertEqual(final['trace'],'interrupted')
+        self.assertEqual(final['speed']['potential'],61.2)
+        self.assertEqual([(e['team'],e['score']) for e in final['history']],
+                         [('RED',88),('BLUE',66)])
+
+    def test_repeated_delivery_is_idempotent_and_run_boundary_remains_safe(self):
+        event={'KV02':{'history':[{'team':'BLUE','at':200,'score':90}]}}
+        ok,first=self.runs.save(self.w,self.run,{'KV01':{'history':[{'team':'RED','at':100}]}},
+                                base_updated_at_ms=self.base)
+        self.assertTrue(ok)
+        ok,merged=self.runs.save(self.w,self.run,event,base_updated_at_ms=self.base)
+        self.assertTrue(ok)
+        ok,unchanged=self.runs.save(self.w,self.run,event,base_updated_at_ms=self.base)
+        self.assertFalse(ok)
+        current=json.loads(unchanged['registry_json'])
+        self.assertEqual(len(current['KV02']['history']),1)
+        new=self.runs.current(self.w,new_run=True)
+        ok,_=self.runs.save(self.w,self.run,event,base_updated_at_ms=new['updated_at_ms'])
+        self.assertFalse(ok)
+        self.assertEqual(json.loads(self.runs.current(self.w)['registry_json']),{})

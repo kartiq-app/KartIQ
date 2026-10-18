@@ -658,9 +658,57 @@ async function spotterPushRegistry(){
    spotterLastSyncError='Conflit registre KV : serveur prioritaire';spotterUpdateSyncBadge();
   }else if(response.ok){
    spotterRegistryUpdatedAt=Number(payload.registry_updated_at_ms)||spotterRegistryUpdatedAt;
-   // A live lap can update the registry during an in-flight upload.
-   spotterPublishKartScoreReference();
-   if(!spotterSame(sentSnapshot,spotterState.kartRegistry||{}))spotterScheduleRegistryPush();
+   if(payload.history_merge_only){
+    // The server only appended previously unknown passage events. It kept
+    // authoritative NOTE, POT/REC and trace untouched. Do not put an old
+    // full snapshot back into the server after this reconciliation.
+    const latest=spotterClone(spotterState.kartRegistry||{});
+    const canonical=spotterClone(payload.registry||{});
+    let pendingNewEvents=0;
+    Object.entries(latest).forEach(([kv,row])=>{
+     const sent=sentSnapshot[kv]||{};
+     const sentIds=new Set((sent.history||[]).map(e=>`${e.team}|${e.at}`));
+     const additions=(row.history||[]).filter(e=>!sentIds.has(`${e.team}|${e.at}`));
+     if(!additions.length)return;
+     if(!canonical[kv])canonical[kv]={kv,trace:'active',history:[]};
+     const seen=new Set((canonical[kv].history||[]).map(e=>`${e.team}|${e.at}`));
+     additions.forEach(e=>{const key=`${e.team}|${e.at}`;if(!seen.has(key)){
+      canonical[kv].history.push(e);seen.add(key);pendingNewEvents++;
+     }});
+     canonical[kv].history.sort((a,b)=>(Number(a.at)||0)-(Number(b.at)||0));
+    });
+    // The designated Apex observer may receive newer scoring data while the
+    // POST is pending. Preserve only observations made AFTER the snapshot was
+    // sent and newer than the data already accepted by the server.
+    if(spotterMonitorLeaseOwner){
+     Object.entries(latest).forEach(([kv,row])=>{
+      const sentSpeed=sentSnapshot[kv]?.speed;
+      const currentSpeed=row?.speed;
+      const serverSpeed=canonical[kv]?.speed;
+      if(!canonical[kv]||!currentSpeed||spotterSame(currentSpeed,sentSpeed))return;
+      const currentAt=Number(currentSpeed.updatedAt)||0;
+      if(currentAt>(Number(sentSpeed?.updatedAt)||0)&&
+         currentAt>(Number(serverSpeed?.updatedAt)||0)){
+       canonical[kv].speed=spotterClone(currentSpeed);
+       pendingNewEvents++;
+      }
+     });
+    }
+    if(sentRun===spotterRegistryRunId){
+     spotterState.kartRegistry=canonical;
+     spotterPublishKartScoreReference();
+     spotterRefreshKartRegistry();
+     try{localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,
+      appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));}
+     catch(e){console.warn('[Spotter] Sauvegarde locale après fusion KV indisponible',e)}
+     if(pendingNewEvents)spotterScheduleRegistryPush();
+    }
+    console.info('[Spotter] Passages KV concurrents conservés sur Render',payload.history_events_added||0);
+   }else{
+    // A live lap can update the registry during an in-flight upload.
+    spotterPublishKartScoreReference();
+    if(!spotterSame(sentSnapshot,spotterState.kartRegistry||{}))spotterScheduleRegistryPush();
+   }
   }else{
    console.warn('[Spotter] Registre KV refusé',response.status,payload);
    spotterLastSyncError='Écriture registre refusée';spotterUpdateSyncBadge();

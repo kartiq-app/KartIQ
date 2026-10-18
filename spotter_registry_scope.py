@@ -7,6 +7,7 @@ registries are preserved as legacy archives, never merged into a new run.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 import time
 import uuid
 
@@ -158,7 +159,61 @@ class RegistryRuns:
             # requires the revision on every client write.
             baseline = int(current.get("updated_at_ms") or 0)
             if base_updated_at_ms is not None and int(base_updated_at_ms) != baseline:
-                return False, current
+                # V1817: a stale whole-registry snapshot must NEVER overwrite
+                # speeds, trace, team labels or previously recorded event scores.
+                # But NEW immutable history events are independent operations:
+                # preserve them even when another client published first.
+                authoritative = _read_json(current.get("registry_json"))
+                changes = 0
+                for kv, incoming_row in clean.items():
+                    if not isinstance(incoming_row, dict):
+                        continue
+                    previous_row = authoritative.get(kv)
+                    # A NEW independent KV is a valid concurrent creation,
+                    # including before its first relay has been scored.
+                    if previous_row is None:
+                        authoritative[kv] = deepcopy(incoming_row)
+                        changes += 1
+                        continue
+                    prior_history = previous_row.get("history") or []
+                    if not isinstance(prior_history, list):
+                        prior_history = []
+                    previous_ids = {(str(e.get("team")), str(e.get("at")))
+                                    for e in prior_history if isinstance(e, dict)}
+                    new_events = []
+                    for event in (incoming_row.get("history") or []):
+                        if not isinstance(event, dict) or not str(event.get("team") or "").strip():
+                            continue
+                        try:
+                            timestamp = int(event.get("at"))
+                        except (TypeError, ValueError):
+                            continue
+                        if timestamp <= 0:
+                            continue
+                        event_id = (str(event.get("team")), str(timestamp))
+                        if event_id in previous_ids:
+                            continue
+                        previous_ids.add(event_id)
+                        new_events.append(event)
+                    if not new_events:
+                        continue
+                    previous_row["history"] = sorted(prior_history + new_events,
+                        key=lambda h: int(h.get("at") or 0))
+                    changes += len(new_events)
+                if not changes:
+                    return False, current
+                # The lock protects both reads and CAS writes in this worker;
+                # SQL CAS still protects against writes by other workers.
+                now = max(int(time.time()*1000), baseline+1)
+                updated = self.store._execute(
+                    """UPDATE velocity_spotter_registry_runs SET registry_json=?,updated_at_ms=?
+                    WHERE workspace_id=? AND run_id=? AND updated_at_ms=? RETURNING run_id""",
+                    (_json(authoritative), now, workspace, run_id, baseline),fetchone=True)
+                if not updated:
+                    return False, self._row(workspace)
+                return True, {**current, "registry_json": _json(authoritative),
+                              "updated_at_ms": now, "history_merge_only": True,
+                              "history_events_added": changes}
             merged=_read_json(current.get("registry_json"))
             for kv,row in clean.items():
                 old=merged.get(kv) or {}

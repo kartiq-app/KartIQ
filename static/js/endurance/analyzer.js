@@ -1869,13 +1869,13 @@ function analyzerRenderKartSpeedMarket(){
   const driver=drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===teamKey)||null;
   const teamName=identity?.team||driver?.driver||String(entry.team||'').replace(/^apex:/,'Equipe ');
   const kartNumber=mode==='quick'?(kv||'—'):String(driver?.apex||driver?.kart||'—');
-  const label=!entry.kv&&mode==='quick'?'KV NON IDENTIFIÉ':entry.confirmed?'CONFIRMÉ':'PROVISOIRE';
+  const label=entry.referenceLoading?'RÉF. EN CHARGEMENT':(!entry.kv&&mode==='quick'?'KV NON IDENTIFIÉ':entry.confirmed?'CONFIRMÉ':'PROVISOIRE');
   const recent=entry.recentScore===null?'—':`${entry.recentScore.toFixed(1)}${entry.recentProvisional?'*':''}`;
-  const potential=entry.potential===null?'—':entry.potential.toFixed(1);
+  const potential=entry.potential===null?'—':entry.potential.toFixed(1)+(entry.referenceLoading?'*':'');
   const clickTeam=driver?.driver?` onclick="followDriver(${JSON.stringify(driver.driver).replace(/"/g,'&quot;')})"`:'';
   return `<tr${clickTeam}><td>${index+1}</td><td>${analyzerEscape(kartNumber)}</td><td title="${analyzerEscape(teamName)}">${analyzerEscape(teamName)}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.potential)}">${potential}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.recentScore)}">${recent}</td><td>${Number.isFinite(entry.best?.seconds)?(entry.best.seconds-entry.reference).toFixed(3)+'s':'—'}</td><td title="${entry.totalValid} tours observés">${label}</td></tr>`;
  }).join('');
- target.innerHTML=`<div class="velocity-kart-speed-help">${mode==='quick'?'QUICK CHANGE · vitesse des équipes en piste sans KV identifié ; potentiel physique uniquement si KV confirmé':'KART FIXE · scores par machine de l’équipe'} · Potentiel = meilleure fenêtre connue (6 rapides / 10 tours). Récente = relais actuel. * provisoire. La régularité ne pénalise pas la vitesse.</div><table class="velocity-kart-speed-table"><thead><tr><th>P</th><th>KART</th><th>ÉQUIPE</th><th>POT.</th><th>RÉC.</th><th>Δ</th><th>PREUVE</th></tr></thead><tbody>${rows}</tbody></table>`;
+ target.innerHTML=`<div class="velocity-kart-speed-help">${mode==='quick'?'QUICK CHANGE · vitesse des équipes en piste sans KV identifié ; potentiel physique uniquement si KV confirmé':'KART FIXE · scores par machine de l’équipe'} · Potentiel = meilleure fenêtre connue (6 rapides / 10 tours). Récente = relais actuel. * provisoire / référence partagée en chargement. La régularité ne pénalise pas la vitesse.</div><table class="velocity-kart-speed-table"><thead><tr><th>P</th><th>KART</th><th>ÉQUIPE</th><th>POT.</th><th>RÉC.</th><th>Δ</th><th>PREUVE</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function setAnalyzerVelocityView(view){

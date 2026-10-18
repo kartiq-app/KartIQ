@@ -2722,6 +2722,228 @@ def update_analyzer_strategy():
         return jsonify(ok=False, error="Stratégie Analyzer invalide"), 400
     allowed = {"followed_driver", "score", "confidence", "track", "delta", "impact", "capital", "targetLong", "pitCloseRemaining", "recommendation", "windowLabel", "kind", "kartWindow"}
     clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
+    clean["updated_at_ms"] = int(time.time() * 1000)
+    clean["circuit_id"] = str(STATE.get("circuit_id") or "")
+    clean["app_release"] = APP_VERSION
+    with ANALYZER_STRATEGY_LOCK:
+        STATE["analyzer_strategy"] = clean
+    return jsonify(ok=True, analyzer_strategy=deepcopy(clean))
+
+
+@app.get("/api/analyzer-strategy")
+def get_analyzer_strategy():
+    with ANALYZER_STRATEGY_LOCK:
+        return jsonify(ok=True, analyzer_strategy=deepcopy(STATE.get("analyzer_strategy")))
+
+
+@app.post("/api/kart-setup")
+def velocity_update_kart_setup():
+    """Mode de karts partagé par Session Velocity, indépendant du numéro Apex."""
+    body = request.get_json(force=True, silent=True) or {}
+    mode = body.get("mode")
+    reset = body.get("reset") is True
+    if not reset and mode not in {"fixed", "quick"}:
+        return jsonify(ok=False, error="Choisissez Kart fixe ou Quick Change"), 400
+    with TEAM_DATA_LOCK:
+        course = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
+    if course and course.get("status") == "active":
+        previous_mode = STATE.get("kart_setup_mode")
+        if reset or (previous_mode in {"fixed", "quick"} and mode != previous_mode):
+            return jsonify(ok=False, error="Terminez d’abord la Session Course avant de réinitialiser ou changer le mode kart : l’enregistrement Render continue pendant la session."), 409
+    with SPOTTER_LOCK:
+        previous = STATE.get("kart_setup_mode")
+        if reset and previous not in {"fixed", "quick"}:
+            return jsonify(ok=False, error="Choisissez d'abord un mode"), 400
+        if not reset and previous == mode:
+            return jsonify(ok=True, mode=mode, epoch=STATE.get("kart_scoring_epoch"))
+        STATE["kart_setup_mode"] = previous if reset else mode
+        # Évite toute contamination par les karts d'une course précédente.
+        STATE["kart_scoring_epoch"] = secrets.token_hex(8)
+        if reset:
+            # A new kart-scoring race is also a new physical KV history.
+            workspace,ctx=_spotter_registry_run_context()
+            RegistryRuns(_spotter_persistent_store()).current(workspace,**ctx,new_run=True)
+        # Les anciennes évaluations sont purgées sans toucher aux autres courses archivées.
+        # ni les affectations et l'historique Spotter.
+        for row in (STATE.get("spotter_registry") or {}).values():
+            if isinstance(row, dict):
+                row.pop("speed", None)
+        return jsonify(ok=True, mode=STATE["kart_setup_mode"], epoch=STATE["kart_scoring_epoch"])
+
+
+def _spotter_persistent_store():
+    """One shared source for all browsers and Render workers (Postgres on Render)."""
+    _get_recorder_manager()
+    if RECORDER_STORE is None:
+        raise RuntimeError("Stockage partagé indisponible")
+    return RECORDER_STORE
+
+
+def _spotter_shared_read(workspace_id):
+    store = _spotter_persistent_store()
+    row = store._execute(
+        "SELECT revision,snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?",
+        (workspace_id,), fetchone=True)
+    if not row:
+        return {}
+    data = json.loads(row["snapshot_json"])
+    data["revision"] = int(row["revision"])
+    return data
+
+
+def _spotter_registry_run_context():
+    """Use current workspace's live circuit, active Session Course and Apex title.
+
+    A new run on the same circuit may also be started explicitly; the older
+    registry always remains in the archive. Unknown context never forces a reset.
+    """
+    workspace_id = _current_workspace_id()
+    with TEAM_DATA_LOCK:
+        active = deepcopy(_active_session_for_workspace(TEAM_DATA, workspace_id))
+    circuit_id = str((active or {}).get("circuit_id") or STATE.get("circuit_id") or "")
+    session_id = str((active or {}).get("id") or "")
+    title = str(STATE.get("apex_session_title") or "")
+    return workspace_id, {"circuit_id":circuit_id,"session_id":session_id,"session_title":title,
+                          "title_observed_at_ms":int(STATE.get("apex_session_title_seen_at_ms") or 0),
+                          "circuit_observed_at_ms":int(STATE.get("circuit_selected_at_ms") or 0)}
+
+
+def _spotter_registry_response(run):
+    return {"run_id":run["run_id"], "circuit_id":run.get("circuit_id") or "",
+            "session_id":run.get("session_id") or "",
+            "session_title":run.get("session_title") or "",
+            "started_at_ms":run.get("started_at_ms") or 0}
+
+
+@app.get("/api/spotter-registry")
+def get_spotter_registry():
+    try:
+        workspace,context=_spotter_registry_run_context()
+        run=RegistryRuns(_spotter_persistent_store()).current(workspace,**context)
+        result=_spotter_registry_response(run)
+        result.update(ok=True,registry=json.loads(run["registry_json"]),
+                      registry_updated_at_ms=int(run.get("updated_at_ms") or 0))
+        response=jsonify(result)
+        response.headers["Cache-Control"]="private, no-store"
+        return response
+    except Exception as exc:
+        return jsonify(ok=False,error="Registre partagé indisponible",detail=str(exc)),503
+
+
+@app.post("/api/spotter-registry")
+def update_spotter_registry():
+    body=request.get_json(force=True,silent=True) or {}
+    registry=body.get("registry")
+    if not isinstance(registry,dict):
+        return jsonify(ok=False,error="Registre Spotter invalide"),400
+    clean={}
+    for kv,row in list(registry.items())[:250]:
+        if not isinstance(row,dict):continue
+        item=deepcopy(row)
+        clean[str(kv)[:32]]=item
+    try:
+        base_updated_at_ms = int(body.get("base_updated_at_ms"))
+    except (ValueError, TypeError):
+        return jsonify(ok=False,error="Révision du registre KV absente"),400
+    try:
+        workspace,context=_spotter_registry_run_context()
+        runs=RegistryRuns(_spotter_persistent_store())
+        success,run=runs.save(workspace,str(body.get("run_id") or ""),clean,
+                              base_updated_at_ms=base_updated_at_ms,**context)
+        if not success:
+            return jsonify(ok=False,error="Conflit de version KV : recharger le registre actuel",
+                           registry_updated_at_ms=int(run.get("updated_at_ms") or 0),
+                           **_spotter_registry_response(run)),409
+        merged_only=bool(run.get("history_merge_only"))
+        result=dict(ok=True,count=len(json.loads(run["registry_json"])),
+                    registry_updated_at_ms=int(run.get("updated_at_ms") or 0),
+                    history_merge_only=merged_only,
+                    history_events_added=int(run.get("history_events_added") or 0),
+                    **_spotter_registry_response(run))
+        if merged_only:
+            # Client must replace its stale snapshot with the authoritative
+            # registry without silently discarding new in-flight edits.
+            result["registry"]=json.loads(run["registry_json"])
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify(ok=False,error="Sauvegarde registre impossible",detail=str(exc)),503
+
+
+@app.post("/api/spotter-registry/new-course")
+def new_spotter_registry_course():
+    """Manual race boundary for recurring events with an identical Apex title."""
+    try:
+        workspace,context=_spotter_registry_run_context()
+        runs=RegistryRuns(_spotter_persistent_store())
+        body=request.get_json(silent=True) or {}
+        current=runs.current(workspace,**context)
+        if str(body.get("run_id") or "")!=str(current["run_id"]):
+            return jsonify(ok=False,error="Le registre a déjà changé de course",**_spotter_registry_response(current)),409
+        next_run=runs.current(workspace,**context,new_run=True)
+        return jsonify(ok=True,registry={},registry_updated_at_ms=int(next_run.get("updated_at_ms") or 0),
+                       **_spotter_registry_response(next_run))
+    except Exception as exc:
+        return jsonify(ok=False,error="Nouvelle course impossible",detail=str(exc)),503
+
+
+@app.get("/api/spotter-registry/archives/export")
+def spotter_registry_archives_export():
+    """Archives are downloadable, never merged into a live kart registry."""
+    try:
+        workspace,context=_spotter_registry_run_context()
+        runs=RegistryRuns(_spotter_persistent_store())
+        current=runs.current(workspace,**context)
+        archives=runs.archives(workspace)
+        memory=io.BytesIO()
+        with zipfile.ZipFile(memory,"w",zipfile.ZIP_DEFLATED) as bundle:
+            index=[]
+            for item in archives:
+                index.append({key:item.get(key) for key in ("run_id","circuit_id","session_id","session_title","started_at_ms","archived_at_ms")})
+                bundle.writestr("courses/"+str(item["run_id"])+".json",
+                    json.dumps({"metadata":index[-1],"registry":json.loads(item["registry_json"])},ensure_ascii=False,indent=2))
+            bundle.writestr("archives_index.json",json.dumps({"active_run":_spotter_registry_response(current),"archives":index},ensure_ascii=False,indent=2))
+        memory.seek(0)
+        return send_file(memory,mimetype="application/zip",as_attachment=True,
+            download_name="Velocity_Archives_KV_"+datetime.now().strftime("%Y%m%d")+".zip")
+    except Exception as exc:
+        return jsonify(ok=False,error="Export archives KV indisponible",detail=str(exc)),503
+
+
+@app.post("/api/spotter-monitor-lease")
+def spotter_monitor_lease():
+    """Only one Spotter browser may translate Apex transitions into events."""
+    body = request.get_json(silent=True) or {}
+    client_id = str(body.get("client_id") or "").strip()[:110]
+    if not client_id:
+        return jsonify(ok=False,error="Identifiant Spotter manquant"),400
+    try:
+        store = _spotter_persistent_store()
+        wid = _current_workspace_id()
+        now = int(time.time()*1000)
+        expires = now + 5000
+        row = store._execute("""INSERT INTO velocity_spotter_monitor_lease
+            (workspace_id,client_id,expires_at_ms) VALUES(?,?,?)
+            ON CONFLICT(workspace_id) DO UPDATE
+            SET client_id=excluded.client_id,expires_at_ms=excluded.expires_at_ms
+            WHERE velocity_spotter_monitor_lease.client_id=excluded.client_id
+               OR velocity_spotter_monitor_lease.expires_at_ms<?
+            RETURNING client_id,expires_at_ms""",
+            (wid,client_id,expires,now),fetchone=True)
+        return jsonify(ok=True,owner=bool(row and row['client_id']==client_id),
+                       workspace_id=wid,lease_until_ms=int(row['expires_at_ms']) if row else None)
+    except Exception as exc:
+        return jsonify(ok=False,error="Arbitrage Apex indisponible",detail=str(exc)),503
+
+@app.post("/api/spotter-state")
+def update_spotter_state():
+    body = request.get_json(force=True, silent=True) or {}
+    snapshot = body.get("spotter")
+    if not isinstance(snapshot, dict):
+        return jsonify(ok=False, error="État Spotter invalide"), 400
+    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "kart_tracking_enabled", "mutation_at_ms", "setup_karts", "setup_queue_files", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release", "next_kv_number", "monitor_primed", "last_driver_status", "circuit_id"}
+    if str(snapshot.get("app_release") or "") != APP_VERSION:
+        return jsonify(ok=False, error="Version Spotter obsolète", expected=APP_VERSION), 409
+    clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
     violation=spotter_snapshot_error(clean)
     if violation:
         return jsonify(ok=False,error=violation),422

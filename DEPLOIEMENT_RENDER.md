@@ -1,3 +1,14 @@
+## Urgence V7.2.1816 — Correction de la page HTTP 500
+
+1. Redéployer **tous les fichiers V1816** ; ne pas redéployer le `app.py` défectueux de la V1815.
+2. **Conserver la base PostgreSQL et les variables d’environnement Render.** Aucune table à vider, aucune migration SQL à déclencher manuellement.
+3. Vérifier dans les logs Render que Gunicorn démarre, puis que `GET /` répond HTTP 200 (et non 500).
+4. Rafraîchir ordinateur et iPhone ; la Home doit afficher **V7.2.1816**. Le cache PWA passe de `v7-2-1815` à `v7-2-1816`.
+5. Tester successivement l’ouverture d’Analyzer, de Spotter, du registre KV et le chargement des espaces partagés, **hors course active**.
+6. Si le 500 persiste, relever **le traceback exact** de Render (`Logs`) ; ne pas effacer PostgreSQL ni réinitialiser le Quick Change.
+
+Cette version restaure le code manquant mais ne remplace pas la validation finale de la synchronisation sur Render.
+
 ## V7.2.1815 — Déploiement prudent (stabilisation Analyzer / Spotter)
 
 1. Effectuer un export du registre KV actif et une sauvegarde PostgreSQL avant déploiement. Conserver l'archive V1814 comme retour arrière **code uniquement** (les données PostgreSQL ne sont jamais automatiquement restaurées par un redéploiement GitHub).
