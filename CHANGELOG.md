@@ -1,3 +1,16 @@
+## V7.2.1818 — Registre LIVE et NOTE KART (18 octobre 2026)
+
+- Le registre affiche dès son ouverture les équipes du live Apex, leurs numéros Apex, tours, durée du relais en piste et dernier chrono, **sans attendre un enregistrement historique ni une réponse PostgreSQL**.
+- Les lignes d'équipes sans KV vérifié sont **temporaires en lecture seule** (KV `—`) ; aucune nouvelle machine physique n'est créée, aucune attribution artificielle ni écriture dans l'historique.
+- Les vrais KV confirmés fusionnent dans la même ligne les mesures Apex et le potentiel du registre ; l'historique par course existant est préservé. Tri et défilement horizontal global inchangés.
+- L'estimation REC est calculée provisoirement dès le premier tour valide reçu. La fenêtre POT officielle existante reste celle des **8 tours valides et 6 meilleurs** ; aucune formule de note confirmée n'a été changée.
+- Les estimations précoces sont marquées `*` et affichées neutres, jamais enregistrées comme potentiel confirmé.
+- Dans le classement général Analyzer, `KART V.` devient `KV` (identification physique vérifiée, sinon tiret), `NOTE` devient `NOTE KART` (potentiel physique officiel ou estimation provisoire signalée). Le Velocity Score demeure dans ses cartes dédiées.
+- Note du kart : seuils Gold 98+, vert 90+, orange #FF7300 80+, rouge en-dessous. Les tris « Note » d'Analyzer suivent le potentiel affiché.
+- Conserve les protections de concurrence, routes HTTP, FIFO, Recorder et moteur Score Relais V1817, aucune modification de base SQL.
+- Tests: `tests/test_live_kart_registry_v1818.js` et suite historique, test de démarrage des routes, comparaison des moteurs inchangés.
+- Limite: si le KV physique n'est pas encore établi par Spotter, Velocity peut afficher l'équipe Apex mais ne lui attribue pas de note de kart physique. Les notes sur premier tour restent provisoires et relatives aux profils réellement disponibles.
+
 ## V7.2.1817 — Consolidation des écritures KV et du référentiel Analyzer (18 octobre 2026)
 
 - Registre KV : lorsqu’un second appareil travaille sur une révision périmée, le serveur peut désormais conserver les **nouveaux passages historiques** et les **KV créés indépendamment**, sans écraser les notes, chronos, statuts ou passages déjà enregistrés. Mise à jour atomique SQL par identifiant de course et révision.

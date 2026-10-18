@@ -1,3 +1,7 @@
+Velocity V7.2.1818 — registre LIVE dès ouverture et NOTE KART physique dans Analyzer.
+
+Velocity V7.2.1818 — registre LIVE dès ouverture et NOTE KART physique dans Analyzer.
+
 ## Velocity V7.2.1797 — Scores Relais persistants sur Render
 
 - Une Session Course active déclenche **un seul** Recorder partagé (jamais un collecteur par téléphone).

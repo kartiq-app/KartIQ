@@ -2783,8 +2783,42 @@ function analyzerTrackClass(seconds){
  return 'green';
 }
 function analyzerScoreClass(score){return score>=82?'high':score>=65?'mid':'low'}
+// Note physique et identité KV: aucune déduction depuis le numéro Apex.
+// En Quick Change, NOTE KART = POT confirmé, ou REC* provisoire.
+function analyzerPhysicalKartForDriverLabel(driver){
+ const identity=typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver):null;
+ return identity?.verified?'KV confirmé par Spotter':'KV non identifié physiquement';
+}
+function analyzerPhysicalKartRating(driver,providedRankings=null){
+ const identity=typeof velocityKartScoreIdentity==='function'?velocityKartScoreIdentity(driver):null;
+ if(!identity)return {kv:null,value:null,provisional:false};
+ const rankings=providedRankings||((typeof window!=='undefined'&&typeof window.velocityKartScoreRankings==='function')?window.velocityKartScoreRankings():
+  typeof velocityKartScoreRankings==='function'?velocityKartScoreRankings():[]);
+ if(identity.unverified){
+  const live=rankings.filter(item=>String(item.id||'').startsWith('LIVE:')&&
+   item.recentScore!==null&&item.recentScore!==undefined&&Number.isFinite(Number(item.recentScore)));
+  const match=live.length>=2?live.find(item=>item.id===identity.id):null;
+  return {kv:null,value:match?Number(match.recentScore):null,provisional:Boolean(match),liveOnly:Boolean(match)};
+ }
+ const entry=rankings.find(item=>item.id===identity.id);
+ if(!entry)return {kv:identity.kv||null,value:null,provisional:false};
+ const official=entry.potential;
+ if(!entry.localReference&&official!==null&&official!==undefined&&Number.isFinite(Number(official)))
+  return {kv:identity.kv||null,value:Number(official),provisional:false};
+ const estimate=entry.recentScore??entry.potential;
+ if(estimate!==null&&estimate!==undefined&&Number.isFinite(Number(estimate)))
+  return {kv:identity.kv||null,value:Number(estimate),provisional:true};
+ return {kv:identity.kv||null,value:null,provisional:false};
+}
+function analyzerKartRatingTone(rating){
+ if(rating.value===null)return 'unknown';
+ if(rating.provisional)return 'provisional';
+ return typeof velocityKartColorTone==='function'?velocityKartColorTone(rating.value):
+  rating.value>=98?'gold':rating.value>=90?'green':rating.value>=80?'orange':'red';
+}
 function analyzerRows(){
- return (state.drivers||[]).map(d=>{const f=analyzerForecastFor(d);return {driver:d,forecast:f,score:analyzerKartScore(d),confidence:analyzerConfidence(d),history:analyzerTeamHistory(d)}});
+ const rankings=typeof window!=='undefined'&&typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
+ return (state.drivers||[]).map(d=>{const f=analyzerForecastFor(d);return {driver:d,forecast:f,score:analyzerKartScore(d),kartRating:analyzerPhysicalKartRating(d,rankings),confidence:analyzerConfidence(d),history:analyzerTeamHistory(d)}});
 }
 function analyzerAverageSortValue(row){
  const value=analyzerCurrentStintAverage(row?.driver);
@@ -2797,7 +2831,7 @@ function analyzerSortComparator(sort=analyzerSort){
   average:(a,b)=>analyzerAverageSortValue(a)-analyzerAverageSortValue(b)||position(a,b),
   track_desc:(a,b)=>(b.forecast.track??-1)-(a.forecast.track??-1)||position(a,b),
   forecast:(a,b)=>(a.forecast.seconds??999999)-(b.forecast.seconds??999999)||position(a,b),
-  score:(a,b)=>b.score-a.score||position(a,b),
+  score:(a,b)=>(b.kartRating?.value??-1)-(a.kartRating?.value??-1)||position(a,b),
   stops:(a,b)=>analyzerNumeric(b.driver.pit_stops,-1)-analyzerNumeric(a.driver.pit_stops,-1)||position(a,b)
  };
  return sorters[sort]||position;
@@ -3487,7 +3521,7 @@ function analyzerSectorRankingHeader(sectorCount){
  return cells.join('');
 }
 function analyzerGeneralRankingHeader(){
- return '<th>POS</th><th>IN</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>CHRONOS</th><th>TOURS</th><th>EN PISTE</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>T.MOYEN</th><th>ÉCART</th><th>PÉNA.</th><th>ARRÊT PRÉVU</th><th>KART V.</th><th>NOTE</th>';
+ return '<th>POS</th><th>IN</th><th>KART</th><th>ÉQUIPE / PILOTE</th><th>CHRONOS</th><th>TOURS</th><th>EN PISTE</th><th>STANDS</th><th>DERNIER</th><th>MEILLEUR</th><th>T.MOYEN</th><th>ÉCART</th><th>PÉNA.</th><th>ARRÊT PRÉVU</th><th>KV</th><th>NOTE KART</th>';
 }
 function analyzerSyncRankingSortControl(rows=[]){
  const select=document.getElementById('analyzerSort');if(!select)return;
@@ -3856,7 +3890,7 @@ function renderAnalyzer(){
  if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');if(sectorBtn)sectorBtn.classList.toggle('active',analyzerRankingMode==='sectors');
  const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');rankingTable.classList.toggle('sector-ranking-mode',analyzerRankingMode==='sectors');}
  const rankingHead=document.getElementById('analyzerRankingHead');if(rankingHead&&analyzerRankingMode!=='sectors')rankingHead.innerHTML=analyzerGeneralRankingHeader();
- if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(analyzerVirtualLoading?'Calcul des temps d’arrêts virtuels en cours…':'Même nombre d’arrêts pour toutes les équipes — moyenne des 3 meilleurs arrêts propres à chaque équipe'):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity';
+ if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(analyzerVirtualLoading?'Calcul des temps d’arrêts virtuels en cours…':'Même nombre d’arrêts pour toutes les équipes — moyenne des 3 meilleurs arrêts propres à chaque équipe'):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity · NOTE KART* : estimation provisoire, KV non confirmé si —';
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver)||state.followed||(state.drivers||[])[0]||null;
  const ownForecast=followed?analyzerForecastFor(followed):{};const stops=analyzerStopsInfo(followed);
  document.getElementById('analyzerFollowedName').textContent=followed?.driver||'—';
@@ -3948,7 +3982,7 @@ function renderAnalyzer(){
    const gapValue=isVirtual?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):analyzerEscape(d.gap);
    const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Moyenne ${virtual.pitAverage.samples||0} arrêt(s)">+${analyzerFormatDuration(virtual.extra)}${virtual.pitAverage.estimated?' estimé':''}</small>`:'';
    const rankingFlash=typeof rankingFlashMeta==='function'?rankingFlashMeta(d):{className:'',style:''};
-   return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerSpotterStatusLabel(analyzerSpotterAssignmentForTeam(d.driver)))}">${analyzerEscape(analyzerSpotterKvLabel(d.driver,x.history.virtualKart))}</td><td class="a-note ${analyzerScoreClass(x.score)}">${x.score}</td></tr>`;
+   return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerPhysicalKartForDriverLabel(d))}">${analyzerEscape(x.kartRating?.kv||'—')}</td><td class="a-note kart-potential ${analyzerKartRatingTone(x.kartRating)}" title="${x.kartRating?.liveOnly?'Estimation LIVE de la machine actuelle, KV non identifié (non historisée)':x.kartRating?.provisional?'Estimation provisoire des premiers tours':'Potentiel du kart physique'}">${x.kartRating?.value==null?'—':x.kartRating.value.toFixed(1)+(x.kartRating.provisional?'*':'')}</td></tr>`;
   }).join('');
   if(typeof rankingAnimateRows==='function'&&analyzerRankingMode==='general')rankingAnimateRows(analyzerRankingBody,analyzerPreviousRows);
   analyzerRenderRankingProgressLines(sorted);

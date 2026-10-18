@@ -2102,3 +2102,11 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 /* V7.2.1811 — gestion des archives par course sans couper les actions sur mobile. */
 .spotter-registry-actions{flex-wrap:wrap}
 .spotter-registry-actions .spotter-primary{flex:1 1 200px}
+
+/* V7.2.1818 — registre live toujours rempli ; lignes sans KV purement visuelles. */
+.spotter-registry-grid td.spotter-registry-laps,
+.spotter-registry-grid td.spotter-registry-on-track{font-variant-numeric:tabular-nums;font-weight:800;min-width:75px}
+.spotter-registry-grid td.spotter-registry-on-track{color:#55baff;min-width:105px}
+.spotter-registry-grid .spotter-registry-unidentified td.spotter-registry-kv{color:#8391a5}
+.spotter-registry-live-hint{display:block;margin-top:4px;color:#8aa3b6;font-size:10px}
+.spotter-registry-rating.provisional{color:#d6e1ed;background:#2d3e51;border:1px dashed #5e82a2}

@@ -22,17 +22,17 @@ const ctx = vm.createContext({
   spotterKartPotential:kv=>({KV01:99.2,KV02:85})[kv]??null,
   spotterDisplayPotential:kv=>({KV01:'99.2',KV02:'85'})[kv]??'—',
   spotterDisplayName:v=>String(v||'—'), spotterEscape:escapes,
-  spotterScoreTone:v=>v>=82?'high':v>=65?'mid':'low'
+  spotterValidScore:v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))&&Number(v)>=0&&Number(v)<=100,spotterScoreTone:v=>v>=82?'high':v>=65?'mid':'low'
 });
 vm.runInContext(src.slice(begin,end),ctx);
 const html = vm.runInContext('spotterRegistryRowsHtml()',ctx);
 assert(html.startsWith('<table class="spotter-registry-grid">'));
 assert.equal((html.match(/<tr class="spotter-registry-grid-row"/g)||[]).length,3);
-assert.match(html,/>NOTE<\/th>/);
+assert.match(html,/>NOTE KART<\/th>/);
 assert.doesNotMatch(html,/POT\. ANALYZER/);
-assert.match(html,/spotter-registry-rating gold">99\.2/);
-assert.match(html,/spotter-registry-rating orange">85/);
-assert.match(html,/spotter-registry-rating unknown">—/);
+assert.match(html,/spotter-registry-rating gold"[^>]*>99\.2/);
+assert.match(html,/spotter-registry-rating orange"[^>]*>85/);
+assert.match(html,/spotter-registry-rating unknown"[^>]*>—/);
 assert.equal((html.match(/<th scope="col" class="spotter-registry-team-column">RELAIS /g)||[]).length,2);
 assert.match(html,/colspan="2" class="spotter-registry-blank">Aucune affectation/);
 assert.match(html,/TRACE INTERROMPUE/);

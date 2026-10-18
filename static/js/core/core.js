@@ -553,8 +553,10 @@ function velocityKartScoreEvaluate(profile){
   if(profile.windows.some(w=>(w.end<best.start||w.start>best.end)&&Math.abs(w.seconds-best.seconds)<=best.seconds*0.003))profile.confirmed=true;
  }else{
   const clean=velocityKartScoreFiltered(recent.slice(-10));
-  if(clean.length>=4){
-   const count=Math.max(3,Math.floor(clean.length*0.6));
+  // Estimation dès le premier tour valide ; le potentiel OFFICIEL conserve
+  // son seuil de 8 tours/6 meilleurs. Avant ce seuil, uniquement REC provisoire.
+  if(clean.length>=1){
+   const count=Math.max(1,Math.ceil(clean.length*0.6));
    const fast=clean.map(v=>v.seconds).sort((a,b)=>a-b).slice(0,count);
    profile.recent=fast.reduce((a,b)=>a+b,0)/fast.length;
    profile.recentProvisional=true;

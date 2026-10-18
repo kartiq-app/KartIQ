@@ -2960,3 +2960,11 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 .map-focus-head,.map-focus-row{grid-template-columns:45px 42px minmax(105px,1fr) 78px 72px;gap:5px}
 .map-focus-row>span:nth-child(3){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .map-focus-row>span:nth-child(1),.map-focus-row>span:nth-child(2){white-space:nowrap}
+
+/* V1818: NOTE KART identique au potentiel physique du registre KV. */
+.analyzer-ranking-table .a-note.kart-potential.gold{color:#f6cd5c}
+.analyzer-ranking-table .a-note.kart-potential.green{color:#48d98f}
+.analyzer-ranking-table .a-note.kart-potential.orange{color:#ff7300}
+.analyzer-ranking-table .a-note.kart-potential.red{color:#ff6475}
+.analyzer-ranking-table .a-note.kart-potential.provisional{color:#a9c9e8}
+.analyzer-ranking-table .a-note.kart-potential.unknown{color:#798696}

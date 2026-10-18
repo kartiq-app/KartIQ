@@ -20,7 +20,7 @@ const ctx=vm.createContext({spotterRegistrySortMode:'default',spotterRegistryRun
  spotterDisplayPotential:kv=>String(({KV02:80.3,KV09:99,KV10:95})[kv]??'—'),spotterFindDriver:key=>drivers[key]||null,
  spotterDriverByKey:key=>key==='apex:21987'?{team:'HISTORIQUE BLEU'}:null,
  spotterStableTeamLabel:(d,previous)=>d?.team||previous,spotterLiveState:()=>({kart_scoring_epoch:'race'}),
- spotterDisplayName:v=>String(v??'—'),spotterRegistryCounts:()=>({active:3,total:3}),spotterEscape:escapeHtml,spotterScoreTone:score=>score>=82?'high':score>=65?'mid':'low',
+ spotterDisplayName:v=>String(v??'—'),spotterRegistryCounts:()=>({active:3,total:3}),spotterEscape:escapeHtml,spotterValidScore:v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))&&Number(v)>=0&&Number(v)<=100,spotterScoreTone:score=>score>=82?'high':score>=65?'mid':'low',
  document:null});
 vm.runInContext(src.slice(begin,end),ctx);
 const evaluate=code=>vm.runInContext(code,ctx);
@@ -34,10 +34,10 @@ assert.equal(evaluate('spotterRegistryTrackLabel(2820)'),'0:47:00');
 const ids=html=>[...html.matchAll(/<td class="spotter-registry-kv">(KV\d+)/g)].map(m=>m[1]).join(',');
 let html=evaluate('spotterRegistryRowsHtml()');
 assert.equal(ids(html),'KV02,KV09,KV10');
-for(const label of ['NOTE','KART','ÉQUIPE ACTUELLE','CHRONO POT.','CHRONO RÉC.','DERNIER','FIABILITÉ'])assert(html.includes('>'+label+'</th>'));
+for(const label of ['NOTE KART','KART APEX','ÉQUIPE ACTUELLE','TOURS','EN PISTE','CHRONO POT.','CHRONO RÉC.','DERNIER','FIABILITÉ'])assert(html.includes('>'+label+'</th>'));
 assert.match(html,/1:02\.373/);assert.match(html,/1:43\.578/);assert.match(html,/0:47:00/);
 assert.match(html,/1:02:33/);assert.match(html,/HISTORIQUE BLEU/);assert.match(html,/ANCIENNE ÉQUIPE/);
-assert.match(html,/spotter-registry-rating gold">99/);assert.match(html,/spotter-registry-rating green">95/);assert.match(html,/spotter-registry-rating orange">80\.3/);
+assert.match(html,/spotter-registry-rating gold"[^>]*>99/);assert.match(html,/spotter-registry-rating green"[^>]*>95/);assert.match(html,/spotter-registry-rating orange"[^>]*>80\.3/);
 assert.equal((html.match(/<tr class="spotter-registry-grid-row"/g)||[]).length,3);
 const table={scrollLeft:321,scrollTop:104,dataset:{},innerHTML:'old'};
 const count={textContent:''};const overlay={querySelector:query=>query==='.spotter-registry-table'?table:query==='[data-spotter-registry-count]'?count:null};
