@@ -1,3 +1,9 @@
+## V7.2.1825 — Initialisation STATS du registre
+- A l'ouverture du registre et apres Nouvelle course KV, prechargement non bloquant des 30 derniers tours Apex STATS de chaque equipe (2 requetes simultanees maximum).
+- Chrono POT./REC. : le moteur KV reste prioritaire; en l'absence de reference KV, affichage provisoire des statistiques historiques de l'equipe.
+- Les tours anterieurs ne sont jamais attribues retroactivement a un kart physique, ni injectes dans son score : les changements de machine restent fiables.
+- Aucun changement aux formules de calcul, aux routes backend ni a la persistence SQL.
+
 ## V7.2.1824 — Source KV unique par course
 - Identité KV Analyzer/Spotter : lecture du registre SQL actif, sans KV issu de cache hors course.
 - Attribution KV au redémarrage explicite d’une course depuis les équipes live.
