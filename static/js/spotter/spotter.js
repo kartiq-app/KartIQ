@@ -780,15 +780,13 @@ function spotterRegistryAppend(kv,team,score=null,{source='spotter'}={}){
  spotterScheduleRegistryPush();
 }
 function spotterRegistryUpdateScore(kv,team,score){
- if(!spotterState.kartTrackingEnabled||!spotterRegistryReady||!spotterValidScore(score))return;
- const row=spotterRegistryEnsure(kv);if(!row)return;
- const raw=String(team||'');
- const last=[...(row.history||[])].reverse().find(entry=>entry.team===raw);
- if(last){
-  last.score=Math.round(Number(score));
-  const label=spotterRegistryHistoricalStoredLabel(raw);if(label)last.teamLabel=label;
-  last.updatedAt=Date.now();spotterScheduleRegistryPush();
- }
+ // Legacy external hook: only the live relay can be updated.
+ const row=spotterState.kartRegistry?.[String(kv)];
+ const last=row?.history?.[row.history.length-1];
+ if(!spotterState.kartTrackingEnabled||!spotterRegistryReady||!last||
+    String(last.team)!==String(team)||!spotterValidScore(score))return;
+ last.score=Math.round(Number(score)*10)/10;
+ last.updatedAt=Date.now();spotterScheduleRegistryPush();
 }
 // V7.2.1794 — pont Spotter / notes par machine physique.
 // Jamais de déduction d'un KV à partir du numéro affiché par Apex.
@@ -883,7 +881,7 @@ function spotterRegistryClearSpeeds(){
 window.spotterRegistryClearSpeeds=spotterRegistryClearSpeeds;
 function spotterRegistrySeedCurrent(){
  if(!spotterState.kartTrackingEnabled||!spotterRegistryReady)return;
- Object.entries(spotterState.assignments||{}).forEach(([team,item])=>{if(item?.kv)spotterRegistryAppend(item.kv,team,item.score,{source:'activation'})});
+ Object.entries(spotterState.assignments||{}).forEach(([team,item])=>{if(item?.kv)spotterRegistryAppend(item.kv,team,null,{source:'activation'})});
  [...(spotterState.queue||[]),...(spotterState.maintenance||[])].forEach(item=>{if(item?.kv)spotterRegistryEnsure(item.kv)});
  spotterScheduleRegistryPush();
 }
@@ -1008,11 +1006,14 @@ function spotterRegistryRating(kv){
  return {value:spotterValidScore(persisted)?Number(persisted):null,provisional:false};
 }
 
-// V1829: the active relay follows the same KART rating already displayed
-// in the registry. A past relay is immutable: only the last event for the
-// currently observed team may receive the provisional live score.
+// V1831: NOTE KART is historical potential; NOTE RELAIS is the current
+// relay's recent pace, evaluated against the SAME physical-kart reference.
+// A relay never inherits the best-ever kart rating.
 function spotterRegistrySyncLiveRelayScores(observed){
  if(!spotterRegistryReady||!spotterState.kartTrackingEnabled)return;
+ const rankings=typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
+ const byKv=new Map(rankings.filter(x=>x.kv).map(x=>[String(x.kv),x]));
+ const epoch=String(spotterLiveState()?.kart_scoring_epoch||'');
  let changed=false;
  for(const item of observed){
   if(!item.kv||!item.driver)continue;
@@ -1022,12 +1023,18 @@ function spotterRegistrySyncLiveRelayScores(observed){
   const latest=history[history.length-1];
   const teamKey=spotterDriverKey(item.driver);
   if(!teamKey||String(latest.team)!==String(teamKey))continue;
-  const rating=row.autoProvisional&&item.rating?.value!=null?item.rating:spotterRegistryRating(item.kv);
-  if(!spotterValidScore(rating.value))continue;
-  const next=Math.round(Number(rating.value)*10)/10;
-  if(latest.score===next&&latest.scoreProvisional===Boolean(rating.provisional))continue;
+  const entry=byKv.get(String(item.kv));
+  const speed=row.speed;
+  // Never carry a prior team's pace into a freshly assigned kart.
+  if(latest.source==='pit_out'&&Number(speed?.updatedAt||0)<Number(latest.at||0))continue;
+  if(speed&&String(speed.epoch||'')!==epoch)continue;
+  const recent=entry&&spotterValidScore(entry.recentScore)?Number(entry.recentScore):null;
+  if(recent===null)continue;
+  const next=Math.round(recent*10)/10;
+  const provisional=Boolean(entry.recentProvisional);
+  if(latest.score===next&&latest.scoreProvisional===provisional)continue;
   latest.score=next;
-  latest.scoreProvisional=Boolean(rating.provisional);
+  latest.scoreProvisional=provisional;
   latest.updatedAt=Date.now();
   changed=true;
  }

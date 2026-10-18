@@ -1,3 +1,11 @@
+## V7.2.1831 — Notes de relais indépendantes
+
+- NOTE KART conserve son potentiel historique.
+- La note du relais actif utilise exclusivement le rythme récent de ce relais et la même référence de comparaison que les karts.
+- Les relais terminés ne sont pas modifiés par les actualisations suivantes.
+- Nouveau relais : aucune note héritée de la machine précédente ; attente de nouveaux tours.
+- Palette et défilement horizontal conservés.
+
 ## V7.2.1830 — Palette unifiée des notes de relais
 - Notes RELAIS : mêmes seuils et couleurs que NOTE KART (or ≥98, vert ≥90, orange ≥80, rouge <80, gris sans note).
 - Défilement horizontal du registre et conservation de la position au rafraîchissement inchangés.
