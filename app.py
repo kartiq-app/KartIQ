@@ -2869,6 +2869,23 @@ def update_spotter_registry():
         return jsonify(ok=False,error="Sauvegarde registre impossible",detail=str(exc)),503
 
 
+@app.post("/api/spotter-registry/seed-live")
+def seed_spotter_registry_live():
+    """Server-authoritative initial KV labels, provisional until Spotter confirms."""
+    body=request.get_json(silent=True) or {}
+    try:
+        workspace,context=_spotter_registry_run_context()
+        ok,run=RegistryRuns(_spotter_persistent_store()).seed_live(
+            workspace,str(body.get('run_id') or ''),body.get('teams') or [],**context)
+        result=dict(ok=ok,registry=json.loads(run['registry_json']),
+                    registry_updated_at_ms=int(run.get('updated_at_ms') or 0),
+                    **_spotter_registry_response(run))
+        response=jsonify(result);response.headers['Cache-Control']='private, no-store'
+        return response,200 if ok else 409
+    except Exception as exc:
+        return jsonify(ok=False,error='Attribution KV indisponible',detail=str(exc)),503
+
+
 @app.post("/api/spotter-registry/new-course")
 def new_spotter_registry_course():
     """Manual race boundary for recurring events with an identical Apex title."""

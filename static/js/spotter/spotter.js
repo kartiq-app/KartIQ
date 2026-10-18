@@ -878,6 +878,30 @@ function spotterRegistryCurrent(kv){
 // Les lignes LIVE sont une VUE EPHEMERE du flux Apex : elles ne créent
 // aucun KV, aucune affectation, et ne sont jamais envoyées au registre SQL.
 // Seul un KV déjà lié et vérifié par Spotter peut être associé au pilote.
+let spotterRegistryAutoSeedAt=0;
+let spotterRegistryAutoSeedBusy=false;
+async function spotterRegistrySeedLiveTeams(){
+ if(!spotterRegistryReady||!spotterRegistryRunId||spotterRegistryAutoSeedBusy||
+    Date.now()-spotterRegistryAutoSeedAt<5000)return;
+ const drivers=spotterLiveState()?.drivers||[];
+ if(!Array.isArray(drivers)||!drivers.length)return;
+ const teams=drivers.map(driver=>({key:spotterDriverKey(driver),kart:String(driver.apex||driver.kart||'')}))
+  .filter(item=>item.key);
+ if(!teams.length)return;
+ spotterRegistryAutoSeedAt=Date.now();spotterRegistryAutoSeedBusy=true;
+ try{
+  const response=await fetch('/api/spotter-registry/seed-live',{method:'POST',
+   headers:{'Content-Type':'application/json'},body:JSON.stringify({run_id:spotterRegistryRunId,teams})});
+  if(response.ok){const payload=await response.json();
+   if(payload.ok&&payload.run_id===spotterRegistryRunId&&!spotterRegistryPushTimer&&!spotterRegistryWriteInFlight){
+    spotterState.kartRegistry=payload.registry;
+    spotterRegistryUpdatedAt=Number(payload.registry_updated_at_ms)||spotterRegistryUpdatedAt;
+    spotterPublishKartScoreReference();spotterRefreshKartRegistry();
+   }
+  }
+ }catch(error){console.warn('[Spotter] Attribution KV provisoire différée',error)}
+ finally{spotterRegistryAutoSeedBusy=false}
+}
 function spotterRegistryLiveRows(){
  const live=spotterLiveState();
  const drivers=Array.isArray(live?.drivers)?live.drivers:[];
@@ -894,10 +918,13 @@ function spotterRegistryLiveRows(){
   used.add(key);return true;
  }).map(driver=>{
   const identity=typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver):null;
-  const kv=identity?.verified&&identity?.kv&&spotterState.kartRegistry?.[identity.kv]?identity.kv:null;
+  const confirmedKv=identity?.verified&&identity?.kv&&spotterState.kartRegistry?.[identity.kv]?identity.kv:null;
+  const autoKv=Object.entries(spotterState.kartRegistry||{}).find(([,row])=>
+   row?.autoProvisional&&row.autoTeamKey===spotterDriverKey(driver))?.[0]||null;
+  const kv=confirmedKv||autoKv;
   const current={driver,team:spotterStableTeamLabel(driver,''),kart:String(driver.apex||driver.kart||'—'),
    last:String(driver.last||driver.last_lap||'—'),laps:driver.laps??null,seconds:spotterRegistryTrackSeconds(driver)};
-  const liveEstimate=!kv&&comparable?liveByKey.get(`LIVE:${spotterDriverKey(driver)}`):null;
+  const liveEstimate=!confirmedKv&&comparable?liveByKey.get(`LIVE:${spotterDriverKey(driver)}`):null;
   const rating=liveEstimate?{value:Number(liveEstimate.recentScore),provisional:true,liveOnly:true}:null;
   return {key:`LIVE:${spotterDriverKey(driver)}`,kv,driver,current,position:Number(driver.pos)||99999,rating};
  });
@@ -937,7 +964,7 @@ function spotterRegistryRowsHtml(){
  const registered=Object.values(registry).map(row=>({
   row,current:liveByKv.get(row.kv)?.current||spotterRegistryCurrent(row.kv),
   kv:row.kv,key:row.kv,position:liveByKv.get(row.kv)?.position??99999,
-  rating:spotterRegistryRating(row.kv),isLive:Boolean(liveByKv.has(row.kv))
+  rating:row.autoProvisional&&liveByKv.get(row.kv)?.rating?.value!=null?liveByKv.get(row.kv).rating:spotterRegistryRating(row.kv),isLive:Boolean(liveByKv.has(row.kv))
  }));
  const unmatched=observed.filter(item=>!item.kv).map(item=>({
   row:{kv:null,history:[],trace:'live'},current:item.current,kv:null,key:item.key,
@@ -963,15 +990,15 @@ function spotterRegistryRowsHtml(){
   const speed=row.speed,valid=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.potential))&&speed.potential!==null;
   const tone=rating.value===null?'unknown':rating.provisional?'provisional':rating.value>=98?'gold':rating.value>=90?'green':rating.value>=80?'orange':'red';
   const displayed=rating.value===null?'—':String(Math.round(rating.value*10)/10)+(rating.provisional?'*':'');
-  const status=rating.provisional?'PROVISOIRE*':valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—';
+  const status=row.autoProvisional?'KV PROVISOIRE':rating.provisional?'PROVISOIRE*':valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—';
   const interrupted=row.trace==='interrupted';
   const currentTeam=`<td class="spotter-registry-current-column"><div class="spotter-registry-current-team">${name(team)}</div></td>`;
   const note=`<td class="spotter-registry-note-cell"><span class="spotter-registry-rating ${tone}" title="${rating.liveOnly?'Estimation LIVE des tours de l’équipe, KV physique non identifié et historique non modifié':rating.provisional?'Estimation sur les premiers tours, non confirmée':'Potentiel de vitesse du kart physique'}">${safe(displayed)}</span></td>`;
   const base=`<td class="spotter-registry-kv">${safe(kv||'—')}</td>${note}<td class="spotter-registry-kart">${safe(kart)}</td>${currentTeam}`+
    `<td class="spotter-registry-laps">${safe(laps===null||laps===undefined?'—':laps)}</td>`+
    `<td class="spotter-registry-on-track">${safe(spotterRegistryTrackLabel(seconds))}</td>`+
-   `<td>${safe(valid?spotterRegistryFormatChrono(speed.potential):'—')}</td>`+
-   `<td>${safe(speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.recent))&&speed.recent!==null?spotterRegistryFormatChrono(speed.recent):'—')}</td>`+
+   `<td title="${row.autoProvisional?'Estimation équipe live, non confirmée':'Potentiel du KV'}">${safe(valid?spotterRegistryFormatChrono(speed.potential):row.autoProvisional?spotterRegistryFormatChrono(current.driver?.best||current.driver?.best_lap):'—')}</td>`+
+   `<td>${safe(speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.recent))&&speed.recent!==null?spotterRegistryFormatChrono(speed.recent):row.autoProvisional?spotterRegistryFormatChrono(current.driver?.last||current.driver?.last_lap):'—')}</td>`+
    `<td>${safe(spotterRegistryFormatChrono(last))}</td><td class="spotter-registry-state">${safe(status)}${interrupted?'<span class="spotter-registry-trace">TRACE INTERROMPUE</span>':''}</td>`;
   const historyEntries=Array.isArray(row.history)?row.history:[];
   const history=historyEntries.map(entry=>{
@@ -1046,7 +1073,7 @@ async function spotterOpenKartRegistry(){
   ? `${heading}<div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterExportKartRegistry()">EXPORTER HISTORIQUE KV</button><button class="spotter-secondary" type="button" onclick="spotterExportKartArchives()">ARCHIVES KV</button><button class="spotter-secondary" type="button" onclick="spotterStartNewKartCourse()" title="Archiver ce registre et en commencer un nouveau pour une nouvelle course">NOUVELLE COURSE KV</button><button class="spotter-secondary danger" type="button" onclick="spotterSetKartTracking(false)">ARRÊTER LE SUIVI</button><button class="spotter-primary" type="button" onclick="spotterCloseKartRegistry()">FERMER</button></div>`
   : `<div class="spotter-registry-title">SUIVI KARTS</div><p class="spotter-registry-warning">Le suivi n’est fiable que si chaque échange est compté. Une interruption conserve l’historique connu mais Velocity ne reconstitue jamais une filiation incertaine.</p><div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterExportKartRegistry()">EXPORTER HISTORIQUE KV</button><button class="spotter-secondary" type="button" onclick="spotterExportKartArchives()">ARCHIVES KV</button><button class="spotter-secondary" type="button" onclick="spotterStartNewKartCourse()" title="Archiver ce registre et en commencer un nouveau pour une nouvelle course">NOUVELLE COURSE KV</button><button class="spotter-secondary" type="button" onclick="spotterCloseKartRegistry()">ANNULER</button><button class="spotter-primary" type="button" onclick="spotterSetKartTracking(true)">ACTIVER LE SUIVI</button></div>`;
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel wide">${content}</div></div>`);
- void spotterPullRegistry().then(()=>spotterRefreshKartRegistry({force:true})).catch(error=>console.warn('[Spotter] Registre live ouvert sans cache SQL',error));
+ void spotterPullRegistry().then(()=>{spotterRefreshKartRegistry({force:true});void spotterRegistrySeedLiveTeams()}).catch(error=>console.warn('[Spotter] Registre live ouvert sans cache SQL',error));
 }
 
 function spotterExportKartRegistry(){
@@ -2339,4 +2366,4 @@ async function spotterRenewMonitorLease(){
   spotterLastMonitorLeaseWorkspace=data.workspace_id||'';
  }catch(_){spotterMonitorLeaseOwner=false;spotterMonitorLeaseUntil=0}
 }
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState({force:true});setInterval(spotterRenewMonitorLease,2000);spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled)spotterPullRegistry()},3000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(spotterRefreshKartRegistry,2000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState({force:true});setInterval(spotterRenewMonitorLease,2000);spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled)spotterPullRegistry()},3000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(()=>{spotterRefreshKartRegistry();if(document.getElementById('spotterRegistryOverlay'))void spotterRegistrySeedLiveTeams()},2000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});

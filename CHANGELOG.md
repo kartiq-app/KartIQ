@@ -2319,3 +2319,10 @@
 - Priorité absolue au compteur `otr` fourni par la colonne Apex « En piste ».
 - Les durées `[H:MM]` extraites du nom du pilote ne sont plus autorisées à écraser ce compteur.
 - Le correctif est appliqué à la source des données pour tous les affichages utilisant `track_timer`.
+
+
+## V7.2.1820 — KV provisoires centralisés et chronos initiaux
+- Attribution de KV provisoires côté SQL, par course et équipe live, via une écriture atomique.
+- Le registre affiche ces KV immédiatement, sans les confondre avec une identité physique confirmée par Spotter.
+- CHRONO POT./RÉC. utilise les temps best/last déjà présents dans les données Analyzer pour les KV provisoires.
+- Conservation du moteur de calcul, des affectations physiques Spotter et des archives.

@@ -239,6 +239,47 @@ class RegistryRuns:
             if not result:return False,self._row(workspace)
             return True,{**current,"registry_json":_json(merged),"updated_at_ms":now}
 
+    def seed_live(self, workspace, run_id, teams, **context):
+        """CAS-safe provisional KV slots. Never asserts a physical kart identity."""
+        with self.store._lock:
+            current=self.current(workspace, **context)
+            if str(run_id)!=str(current['run_id']):
+                return False,current
+            registry=_read_json(current.get('registry_json'))
+            seen={str(row.get('autoTeamKey')):kv for kv,row in registry.items()
+                  if isinstance(row,dict) and row.get('autoTeamKey')}
+            occupied={str(row.get('autoTeamKey')) for row in registry.values()
+                      if isinstance(row,dict) and row.get('autoTeamKey')}
+            changed=False
+            for team in teams[:150]:
+                if not isinstance(team,dict):continue
+                key=str(team.get('key') or '').strip()[:128]
+                if not key or key in occupied:continue
+                # Reuse an empty KV slot only; never steal an actual relay history.
+                candidate=None
+                for number in range(1,251):
+                    kv=f'KV{number:02d}'
+                    row=registry.get(kv)
+                    if row is None or (not row.get('history') and not row.get('autoTeamKey')
+                                       and not row.get('currentTeam') and not row.get('speed')):
+                        candidate=kv;break
+                if candidate is None:break
+                row=registry.get(candidate) or {'kv':candidate,'history':[],'trace':'active'}
+                row['autoTeamKey']=key
+                row['autoApex']=str(team.get('kart') or '')[:32]
+                row['autoProvisional']=True
+                registry[candidate]=row
+                occupied.add(key);changed=True
+            if not changed:return True,current
+            baseline=int(current.get('updated_at_ms') or 0)
+            now=max(int(time.time()*1000),baseline+1)
+            result=self.store._execute(
+                """UPDATE velocity_spotter_registry_runs SET registry_json=?,updated_at_ms=?
+                WHERE workspace_id=? AND run_id=? AND updated_at_ms=? RETURNING run_id""",
+                (_json(registry),now,workspace,run_id,baseline),fetchone=True)
+            if not result:return False,self._row(workspace)
+            return True,{**current,'registry_json':_json(registry),'updated_at_ms':now}
+
     def archives(self, workspace):
         return self.store._execute(
             """SELECT * FROM velocity_spotter_registry_archive
