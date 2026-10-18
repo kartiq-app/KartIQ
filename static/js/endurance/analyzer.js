@@ -1865,11 +1865,12 @@ function analyzerRenderKartSpeedMarket(){
  const rows=rankings.map((entry,index)=>{
   const kv=entry.kv;
   const identity=kv&&typeof window.velocityKartDisplayAssignment==='function'?window.velocityKartDisplayAssignment(kv):null;
-  const teamKey=identity?.team||entry.team;
+  const teamKey=entry.teamKey||identity?.team||entry.team;
   const driver=drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===teamKey)||null;
-  const teamName=identity?.team||driver?.driver||String(entry.team||'').replace(/^apex:/,'Equipe ');
-  const kartNumber=mode==='quick'?(kv||'—'):String(driver?.apex||driver?.kart||'—');
-  const label=entry.referenceLoading?'RÉF. EN CHARGEMENT':(!entry.kv&&mode==='quick'?'KV NON IDENTIFIÉ':entry.confirmed?'CONFIRMÉ':'PROVISOIRE');
+  const teamName=driver?.driver||identity?.team||String(entry.team||'').replace(/^apex:/,'Equipe ');
+  const displayKv=kv||(driver&&typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null)||(entry.teamKey&&typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===entry.teamKey))?.kv:null);
+  const kartNumber=mode==='quick'?(displayKv||'—'):String(driver?.apex||driver?.kart||'—');
+  const label=entry.referenceLoading?'RÉF. EN CHARGEMENT':(!displayKv&&mode==='quick'?'KV NON IDENTIFIÉ':entry.confirmed?'CONFIRMÉ':'KV PROVISOIRE');
   const recent=entry.recentScore===null?'—':`${entry.recentScore.toFixed(1)}${entry.recentProvisional?'*':''}`;
   const potential=entry.potential===null?'—':entry.potential.toFixed(1)+(entry.referenceLoading?'*':'');
   const clickTeam=driver?.driver?` onclick="followDriver(${JSON.stringify(driver.driver).replace(/"/g,'&quot;')})"`:'';
@@ -2798,7 +2799,7 @@ function analyzerPhysicalKartRating(driver,providedRankings=null){
   const live=rankings.filter(item=>String(item.id||'').startsWith('LIVE:')&&
    item.recentScore!==null&&item.recentScore!==undefined&&Number.isFinite(Number(item.recentScore)));
   const match=live.length>=2?live.find(item=>item.id===identity.id):null;
-  return {kv:identity.kv||null,value:match?Number(match.recentScore):null,provisional:Boolean(match),liveOnly:Boolean(match)};
+  return {kv:(typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null)||identity.kv||null,value:match?Number(match.recentScore):null,provisional:Boolean(match),liveOnly:Boolean(match)};
  }
  const entry=rankings.find(item=>item.id===identity.id);
  if(!entry)return {kv:identity.kv||null,value:null,provisional:false};
@@ -3796,7 +3797,7 @@ function analyzerRenderMapFocus(){
  const overlay=document.getElementById('analyzerMapFocus');if(!overlay?.classList.contains('show'))return;analyzerMapFocusControls();
  const radarHost=document.getElementById('analyzerMapFocusRadar'),ranking=document.getElementById('analyzerMapFocusRanking');const source=document.querySelector('#pitSimulatorTrack .map-radar-pane');if(radarHost)radarHost.innerHTML=source?source.innerHTML:'<div class="analyzer-empty">Radar indisponible</div>';
  const drivers=(state.drivers||[]).filter(d=>d&&d.driver),pace=analyzerMapPaceData(drivers),order=['fastest','excellent','good','medium','average','slow'],labels={fastest:'🔥 LES PLUS RAPIDES',excellent:'🟢 EXCELLENT RYTHME',good:'🟡 BON RYTHME',medium:'🟠 MOYEN',average:'🔴 TRÈS MOYEN',slow:'⚫ LENT'};
- if(ranking)ranking.innerHTML=order.map(cat=>{const rows=drivers.filter(d=>(pace.map.get(d)?.category||'slow')===cat).sort((a,b)=>(pace.map.get(a)?.lap??9999)-(pace.map.get(b)?.lap??9999));return `<section class="map-focus-group"><h3>${labels[cat]}</h3><div class="map-focus-head"><span>KV</span><span>KART</span><span>ÉQUIPE</span><span>DERNIER</span><span>EN PISTE</span></div>${rows.map(d=>`<div class="map-focus-row${d.driver===state.followed_driver?' followed':''}"><span>${analyzerEscape((typeof window.velocityKartIdentityForDriver==='function'&&window.velocityKartIdentityForDriver(d)?.verified)?window.velocityKartIdentityForDriver(d).kv:'—')}</span><span>${analyzerEscape(String(d.apex||d.kart||'—'))}</span><span title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</span><b>${analyzerEscape(d.last||'—')}</b><b>${analyzerEscape(d.track_timer||'—')}</b></div>`).join('')||'<div class="map-focus-empty">—</div>'}</section>`}).join('');
+ if(ranking)ranking.innerHTML=order.map(cat=>{const rows=drivers.filter(d=>(pace.map.get(d)?.category||'slow')===cat).sort((a,b)=>(pace.map.get(a)?.lap??9999)-(pace.map.get(b)?.lap??9999));return `<section class="map-focus-group"><h3>${labels[cat]}</h3><div class="map-focus-head"><span>KV</span><span>KART</span><span>ÉQUIPE</span><span>DERNIER</span><span>EN PISTE</span></div>${rows.map(d=>`<div class="map-focus-row${d.driver===state.followed_driver?' followed':''}"><span>${analyzerEscape((typeof window.velocityKartIdentityForDriver==='function'&&window.velocityKartIdentityForDriver(d)?.kv)?window.velocityKartIdentityForDriver(d).kv:'—')}</span><span>${analyzerEscape(String(d.apex||d.kart||'—'))}</span><span title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}</span><b>${analyzerEscape(d.last||'—')}</b><b>${analyzerEscape(d.track_timer||'—')}</b></div>`).join('')||'<div class="map-focus-empty">—</div>'}</section>`}).join('');
 }
 function analyzerPenaltyTimeLabel(p){
  const direct=String(p?.time||'').trim();if(direct)return direct.slice(0,5);

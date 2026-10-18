@@ -2333,3 +2333,13 @@
 - Le registre affiche ces KV immédiatement, sans les confondre avec une identité physique confirmée par Spotter.
 - CHRONO POT./RÉC. utilise les temps best/last déjà présents dans les données Analyzer pour les KV provisoires.
 - Conservation du moteur de calcul, des affectations physiques Spotter et des archives.
+
+## V7.2.1822 — KV provisoires visibles dans Analyzer
+- Le classement Analyzer affiche le KV de suivi provisoire transmis par Spotter sans le confondre avec une identité physique confirmée.
+- La carte KARTS affiche le KV provisoire associé à l'équipe, sans modifier les calculs POT/RÉC ni les règles Quick Change.
+- Aucun changement aux routes Render, au SQL ou aux calculs des chronos.
+
+## V7.2.1823 — KV Spotter affichés dans Analyzer
+- Identité KV provisoire lue du registre SQL par clé équipe, indépendamment du mode kart.
+- Colonne KV du classement et carte KARTS alignées sur Spotter; aucun changement des calculs de notes/chronos.
+- Les KV provisoires restent distincts des identités physiques confirmées.

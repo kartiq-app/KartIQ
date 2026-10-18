@@ -773,22 +773,25 @@ function spotterRegistryUpdateScore(kv,team,score){
 // Jamais de déduction d'un KV à partir du numéro affiché par Apex.
 function velocityKartIdentityForDriver(driver){
  const teamKey=spotterDriverKey(driver);
- // Radar / Analyzer can read the last confirmed shared Spotter snapshot when
- // the local card has not yet hydrated, without guessing from Apex kart number.
+ if(!teamKey)return null;
  const shared=window.velocitySharedSpotterState||{};
  const local=spotterState.kartTrackingEnabled&&spotterState.configured;
  const remote=Boolean(shared.kart_tracking_enabled&&shared.configured);
  const assignment=(local&&spotterState.assignments?.[teamKey])||(remote&&shared.assignments?.[teamKey]);
- // Le KV auto-attribué par le registre SQL est visible dans Analyzer,
- // mais ne constitue jamais une preuve d'identité physique Quick Change.
- if(!assignment?.kv||(!local&&!remote)){
-  const auto=Object.entries(spotterState.kartRegistry||{}).find(([,row])=>
-   row?.autoProvisional&&row.autoTeamKey===teamKey);
-  return auto?{kv:String(auto[0]),teamKey,verified:false,provisional:true}:null;
+ const registry=spotterState.kartRegistry||{};
+ // A single SQL-backed provisional slot is the display identity throughout
+ // Spotter and Analyzer, regardless of the selected kart scoring mode.
+ // Never infer physical identity from Apex's displayed kart/team number.
+ const provisional=Object.entries(registry).find(([,row])=>
+  row?.autoTeamKey===teamKey&&row?.trace!=='interrupted');
+ if(assignment?.kv&&(local||remote)){
+  const row=registry[assignment.kv];
+  const verified=assignment.status==='track'&&!assignment.pendingReplacementKv&&!assignment.estimated&&
+   Boolean(row)&&row.trace!=='interrupted';
+  return {kv:String(assignment.kv),teamKey,verified,provisional:!verified};
  }
- const registry=spotterState.kartRegistry?.[assignment.kv];
- const verified=assignment.status==='track'&&!assignment.pendingReplacementKv&&!assignment.estimated&&Boolean(registry)&&registry.trace!=='interrupted';
- return {kv:String(assignment.kv),teamKey,verified};
+ if(provisional)return {kv:String(provisional[0]),teamKey,verified:false,provisional:true};
+ return null;
 }
 window.velocityKartIdentityForDriver=velocityKartIdentityForDriver;
 function velocityKartDisplayAssignment(kv){

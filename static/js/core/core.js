@@ -510,14 +510,14 @@ function velocityKartScoreIdentity(driver){
  const row=Number(driver.apex_row);
  const teamKey=Number.isFinite(row)&&row>0?`apex:${row}`:String(driver.driver||'').trim();
  if(!teamKey)return null;
- if(mode==='fixed')return {id:`FIX:${teamKey}`,teamKey,kv:null,mode};
+ if(mode==='fixed')return {id:`FIX:${teamKey}`,teamKey,kv:(typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null)||null,mode};
  // En Quick Change, seul Spotter sait quelle machine physique a été attribuée.
  // Le numéro Apex est un numéro d'équipe et NE DOIT JAMAIS être utilisé comme KV.
  const spotter=typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver):null;
  if(!spotter?.kv||spotter.teamKey!==teamKey||spotter.verified!==true){
   // Observation de relais par équipe, sans prétendre identifier la machine physique.
   // Jamais de transfert automatique de ce profil vers un KV ultérieur.
-  return {id:`LIVE:${teamKey}`,teamKey,kv:null,mode,unverified:true};
+  return {id:`LIVE:${teamKey}`,teamKey,kv:spotter?.teamKey===teamKey?(spotter.kv||null):null,mode,unverified:true};
  }
  return {id:`KV:${spotter.kv}`,teamKey,kv:spotter.kv,mode,unverified:false};
 }
