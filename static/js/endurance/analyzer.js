@@ -2798,7 +2798,7 @@ function analyzerPhysicalKartRating(driver,providedRankings=null){
   const live=rankings.filter(item=>String(item.id||'').startsWith('LIVE:')&&
    item.recentScore!==null&&item.recentScore!==undefined&&Number.isFinite(Number(item.recentScore)));
   const match=live.length>=2?live.find(item=>item.id===identity.id):null;
-  return {kv:null,value:match?Number(match.recentScore):null,provisional:Boolean(match),liveOnly:Boolean(match)};
+  return {kv:identity.kv||null,value:match?Number(match.recentScore):null,provisional:Boolean(match),liveOnly:Boolean(match)};
  }
  const entry=rankings.find(item=>item.id===identity.id);
  if(!entry)return {kv:identity.kv||null,value:null,provisional:false};
@@ -2812,7 +2812,6 @@ function analyzerPhysicalKartRating(driver,providedRankings=null){
 }
 function analyzerKartRatingTone(rating){
  if(rating.value===null)return 'unknown';
- if(rating.provisional)return 'provisional';
  return typeof velocityKartColorTone==='function'?velocityKartColorTone(rating.value):
   rating.value>=98?'gold':rating.value>=90?'green':rating.value>=80?'orange':'red';
 }

@@ -779,7 +779,13 @@ function velocityKartIdentityForDriver(driver){
  const local=spotterState.kartTrackingEnabled&&spotterState.configured;
  const remote=Boolean(shared.kart_tracking_enabled&&shared.configured);
  const assignment=(local&&spotterState.assignments?.[teamKey])||(remote&&shared.assignments?.[teamKey]);
- if(!assignment?.kv||(!local&&!remote))return null;
+ // Le KV auto-attribué par le registre SQL est visible dans Analyzer,
+ // mais ne constitue jamais une preuve d'identité physique Quick Change.
+ if(!assignment?.kv||(!local&&!remote)){
+  const auto=Object.entries(spotterState.kartRegistry||{}).find(([,row])=>
+   row?.autoProvisional&&row.autoTeamKey===teamKey);
+  return auto?{kv:String(auto[0]),teamKey,verified:false,provisional:true}:null;
+ }
  const registry=spotterState.kartRegistry?.[assignment.kv];
  const verified=assignment.status==='track'&&!assignment.pendingReplacementKv&&!assignment.estimated&&Boolean(registry)&&registry.trace!=='interrupted';
  return {kv:String(assignment.kv),teamKey,verified};
@@ -988,7 +994,7 @@ function spotterRegistryRowsHtml(){
  const body=rows.map(({row,current,kv,key,rating,isLive})=>{
   const {team,kart,last,seconds,laps}=current;
   const speed=row.speed,valid=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.potential))&&speed.potential!==null;
-  const tone=rating.value===null?'unknown':rating.provisional?'provisional':rating.value>=98?'gold':rating.value>=90?'green':rating.value>=80?'orange':'red';
+  const tone=rating.value===null?'unknown':rating.value>=98?'gold':rating.value>=90?'green':rating.value>=80?'orange':'red';
   const displayed=rating.value===null?'—':String(Math.round(rating.value*10)/10)+(rating.provisional?'*':'');
   const status=row.autoProvisional?'KV PROVISOIRE':rating.provisional?'PROVISOIRE*':valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—';
   const interrupted=row.trace==='interrupted';

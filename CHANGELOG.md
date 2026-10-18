@@ -1,3 +1,10 @@
+## V7.2.1821 — KV Analyzer et couleurs notes
+
+- Analyzer affiche le KV provisoire déjà attribué dans le registre SQL Spotter, sans le considérer comme une identité physique vérifiée.
+- Le moteur de scores continue de traiter ces associations comme LIVE non vérifiées : aucun transfert vers un profil de kart physique.
+- Les notes provisoires conservent leur astérisque mais prennent les couleurs des seuils du registre (or/vert/orange/rouge), dans Analyzer et Spotter.
+- Aucun changement des formules de chrono, de score, des routes ni du schéma SQL.
+
 ## V7.2.1819 — Registre : live prioritaire (18 octobre 2026)
 
 - Correction de l’ordre d’affichage : les équipes Apex actives sont affichées avant les KV historiques sans équipe active.
