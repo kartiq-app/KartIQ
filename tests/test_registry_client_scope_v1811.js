@@ -7,7 +7,7 @@ assert(begin>0&&end>begin);
 const storage=new Map();
 const store={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
 const context={spotterState:{kartRegistry:{KV03:{history:[{team:'OLD RACE',at:1}]}},kartTrackingEnabled:true},
- localStorage:store,velocityWorkspaceStorageKey:k=>k,spotterClone:v=>JSON.parse(JSON.stringify(v)),
+ localStorage:store,velocityWorkspaceStorageKey:k=>k,spotterClone:v=>JSON.parse(JSON.stringify(v)),spotterSame:(a,b)=>JSON.stringify(a??null)===JSON.stringify(b??null),
  spotterRefreshKartRegistry:()=>{},spotterLiveState:()=>({drivers:[]}),spotterRegistrySeedVerifiedLive:()=>{},
  SPOTTER_STORAGE_KEY:'spotter-state',SPOTTER_APP_RELEASE:'7.2.1811',document:{},window:{},console,setTimeout:()=>123,clearTimeout:()=>{},Date,JSON,
  fetch:()=>{},};
@@ -17,7 +17,7 @@ let active='A',posted=[];
 context.fetch=async(url,opts)=>{
  if(!opts||opts.method!=="POST"){return {ok:true,json:async()=>({ok:true,run_id:active,registry:active==='A'?{}:{KV01:{history:[{team:'BETA',at:2}]}}})}}
  posted.push(JSON.parse(opts.body));
- return {ok:posted.at(-1).run_id===active,status:posted.at(-1).run_id===active?200:409};
+ return {ok:posted.at(-1).run_id===active,status:posted.at(-1).run_id===active?200:409,json:async()=>({ok:posted.at(-1).run_id===active,run_id:active,registry_updated_at_ms:Date.now()})};
 };
 (async()=>{
  assert.equal(await execute('spotterPullRegistry()'),true);

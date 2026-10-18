@@ -39,6 +39,8 @@ from backend.network import local_ip
 from backend.services.race_state import RaceStateService
 from backend.services.relay_score_engine import fetch_and_compute
 from data_recorder import RecorderStore, RecorderManager
+from spotter_registry_scope import RegistryRuns
+from spotter_invariants import spotter_snapshot_error
 
 app = Flask(__name__)
 
@@ -104,9 +106,12 @@ def _reap_session_recorders():
     for rec in manager.store.active_recordings():
         rid = str(rec.get("id") or "")
         name = str(rec.get("name") or "")
-        # V1796 migration: stop old orphan Lab recorders as well, otherwise
-        # Render could keep collecting despite zero active Session Course.
-        if rid not in active:
+        # Only session-owned recorders are reaped automatically. Autonomous Lab
+        # recorders have their own hard time limit in the guard below.
+        created_ms = int(rec.get("created_at_ms") or rec.get("started_at_ms") or 0)
+        lab_expired = (not name.startswith(VELOCITY_SESSION_RECORDER_PREFIX) and created_ms > 0
+                       and int(time.time() * 1000) - created_ms > VELOCITY_RECORDER_MAX_HOURS * 3600 * 1000)
+        if (name.startswith(VELOCITY_SESSION_RECORDER_PREFIX) and rid not in active) or lab_expired:
             manager.store.request_stop(rid)
             try:
                 manager.stop(rid)
@@ -187,16 +192,64 @@ def _load_workspace_data():
 
 
 def _save_workspace_data(data):
+    # SQL commit first. Never accept a local-only workspace change on Render.
+    _save_workspaces_persistent(data)
     try:
         WORKSPACE_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp = WORKSPACE_DATA_PATH.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
         tmp.replace(WORKSPACE_DATA_PATH)
     except Exception:
-        app.logger.exception("Sauvegarde des Sessions Velocity impossible")
+        app.logger.warning("Copie locale Sessions Velocity indisponible ; Postgres reste à jour")
 
 
 WORKSPACE_DATA = _load_workspace_data()
+WORKSPACE_DATA_REVISION = None
+WORKSPACE_DATA_LAST_LOAD = 0.0
+
+
+def _refresh_workspace_data(force=False):
+    """V1808: PostgreSQL is authoritative, even after Render redeploy or across workers.
+
+    Safely seeds from the old disk file only when no DB document exists. The
+    old file remains a local backup, not an authoritative source on Render.
+    """
+    global WORKSPACE_DATA, WORKSPACE_DATA_REVISION, WORKSPACE_DATA_LAST_LOAD
+    if not force and WORKSPACE_DATA_REVISION is not None and time.monotonic()-WORKSPACE_DATA_LAST_LOAD < 2.0:
+        return WORKSPACE_DATA
+    with WORKSPACE_DATA_LOCK:
+        if not force and WORKSPACE_DATA_REVISION is not None and time.monotonic()-WORKSPACE_DATA_LAST_LOAD < 2.0:
+            return WORKSPACE_DATA
+        store = _spotter_persistent_store()
+        if WORKSPACE_DATA_REVISION is None:
+            old = json.dumps(WORKSPACE_DATA, ensure_ascii=False)
+            store._execute("""INSERT INTO velocity_workspaces_shared
+                (state_id,revision,payload_json,updated_at_ms) VALUES('global',0,?,?)
+                ON CONFLICT(state_id) DO NOTHING""", (old, int(time.time()*1000)))
+        row = store._execute("SELECT revision,payload_json FROM velocity_workspaces_shared WHERE state_id='global'", fetchone=True)
+        if not row:
+            raise RuntimeError('Session Velocity : PostgreSQL indisponible')
+        WORKSPACE_DATA = json.loads(row['payload_json'])
+        WORKSPACE_DATA_REVISION = int(row['revision'])
+        WORKSPACE_DATA_LAST_LOAD = time.monotonic()
+        return WORKSPACE_DATA
+
+
+def _save_workspaces_persistent(data):
+    """CAS prevents an outdated Render worker from erasing new memberships."""
+    global WORKSPACE_DATA_REVISION, WORKSPACE_DATA_LAST_LOAD
+    store = _spotter_persistent_store()
+    revision = WORKSPACE_DATA_REVISION
+    if revision is None:
+        raise RuntimeError('Session Velocity : révision SQL non chargée')
+    row = store._execute("""UPDATE velocity_workspaces_shared SET revision=?,payload_json=?,updated_at_ms=?
+        WHERE state_id='global' AND revision=? RETURNING revision""",
+        (revision+1,json.dumps(data,ensure_ascii=False),int(time.time()*1000),revision),fetchone=True)
+    if not row:
+        _refresh_workspace_data(force=True)
+        raise RuntimeError('Session Velocity modifiée sur un autre appareil ; réessayez.')
+    WORKSPACE_DATA_REVISION = int(row['revision'])
+
 
 
 def _workspace_member_emails(workspace):
@@ -261,6 +314,7 @@ def _workspace_for_authorized_email(create=True):
     if not email:
         return None
     selected = str(session.get("velocity_workspace_id") or "").strip()
+    _refresh_workspace_data()
     with WORKSPACE_DATA_LOCK:
         if selected:
             current = _workspace_by_id_unlocked(selected)
@@ -283,33 +337,33 @@ def _workspace_for_authorized_email(create=True):
 
 
 def _paired_device_workspace_id():
-    """Rattache un appareil Spotter/Pilote à la Session Velocity de sa Session Course."""
+    """Return the workspace explicitly assigned to this trusted device.
+
+    Legacy devices can still use a Session Course assignment. Otherwise
+    do not guess: LEGACY is exposed as a diagnostic so users can re-pair.
+    """
     if not has_request_context() or "TEAM_DATA" not in globals():
         return None
     device_id = str(request.headers.get("X-Velocity-Device") or request.cookies.get("velocity_device_id") or "").strip()
     if not device_id:
         return None
-    lock = globals().get("TEAM_DATA_LOCK")
-    data = globals().get("TEAM_DATA")
-    if lock is None or not isinstance(data, dict):
-        return None
-    with lock:
-        dev = data.get("devices", {}).get(device_id)
+    _refresh_team_data()
+    with TEAM_DATA_LOCK:
+        dev = TEAM_DATA.get("devices", {}).get(device_id)
         if not dev:
             return None
+        permanent = str(dev.get("workspace_id") or "").strip()
+        if permanent:
+            return permanent
         member_id = str(dev.get("member_id") or "")
-        candidates = [
-            item for item in data.get("sessions", [])
-            if item.get("status") == "active" and item.get("workspace_id")
-        ]
+        candidates = [item for item in TEAM_DATA.get("sessions", [])
+                      if item.get("status") == "active" and item.get("workspace_id")]
         candidates.sort(key=lambda item: int(item.get("created_at_ms") or 0), reverse=True)
-        for race_session in candidates:
-            assignments = race_session.get("assignments") or {}
-            if any(
-                member_id in {str(mid) for mid in (assignments.get(role) or [])}
-                for role in ("team_manager", "spotter", "pilot")
-            ):
-                return str(race_session.get("workspace_id") or "").strip() or None
+        for race in candidates:
+            assignments = race.get("assignments") or {}
+            if any(member_id in {str(mid) for mid in (assignments.get(role) or [])}
+                   for role in ("team_manager", "spotter", "pilot")):
+                return str(race.get("workspace_id") or "").strip() or None
     return None
 
 
@@ -353,6 +407,8 @@ def _new_velocity_state():
         "version": APP_VERSION,
         "mode": "qualification",
         "circuit_id": "",
+        "circuit_selected_at_ms": 0,
+        "apex_session_title_seen_at_ms": 0,
         "connection": "HORS LIGNE",
         "live": {
             "status": "idle",
@@ -557,6 +613,25 @@ def _save_team_data(data, force_db=False):
         app.logger.exception("Sessions Course : sauvegarde Postgres impossible")
 
 TEAM_DATA = _load_team_data()
+TEAM_DATA_LAST_READ_AT = 0.0
+
+
+def _refresh_team_data():
+    global TEAM_DATA, TEAM_DATA_LAST_DB_HASH, TEAM_DATA_LAST_READ_AT
+    if time.monotonic()-TEAM_DATA_LAST_READ_AT < 2.0:
+        return
+    with TEAM_DATA_LOCK:
+        if time.monotonic()-TEAM_DATA_LAST_READ_AT < 2.0:
+            return
+        try:
+            data = _spotter_persistent_store().get_race_team_state()
+            if data and isinstance(data.get('sessions'),list):
+                TEAM_DATA = data
+                TEAM_DATA_LAST_DB_HASH = hashlib.sha256(json.dumps(data,ensure_ascii=False,separators=(',',':'),sort_keys=True).encode()).hexdigest()
+        except Exception:
+            app.logger.warning('Device/workspace refresh could not reach shared state')
+        TEAM_DATA_LAST_READ_AT = time.monotonic()
+
 WEATHER_TTL_SECONDS = 300
 WEATHER_LOCATION_TTL_SECONDS = 86400
 
@@ -1349,6 +1424,7 @@ def get_workspaces():
 
 @app.post("/api/workspaces/create")
 def create_workspace():
+    _refresh_workspace_data(force=True)
     if not _velocity_is_authorized():
         return jsonify(ok=False, error="Compte Velocity requis."), 403
     body = request.get_json(force=True, silent=True) or {}
@@ -1362,6 +1438,7 @@ def create_workspace():
 
 @app.post("/api/workspaces/join")
 def join_workspace():
+    _refresh_workspace_data(force=True)
     if not _velocity_is_authorized():
         return jsonify(ok=False, error="Compte Velocity requis."), 403
     body = request.get_json(force=True, silent=True) or {}
@@ -1385,6 +1462,7 @@ def join_workspace():
 
 @app.post("/api/workspaces/select")
 def select_workspace():
+    _refresh_workspace_data(force=True)
     if not _velocity_is_authorized():
         return jsonify(ok=False, error="Compte Velocity requis."), 403
     body = request.get_json(force=True, silent=True) or {}
@@ -1410,6 +1488,7 @@ def _select_fallback_workspace_for_email(email: str):
 
 @app.delete("/api/workspaces/<workspace_id>")
 def delete_workspace(workspace_id):
+    _refresh_workspace_data(force=True)
     if not _velocity_is_authorized():
         return jsonify(ok=False, error="Compte Velocity requis."), 403
     email = str(session.get("velocity_email") or "").strip().lower()
@@ -1440,6 +1519,7 @@ def delete_workspace(workspace_id):
 
 @app.post("/api/workspaces/<workspace_id>/leave")
 def leave_workspace(workspace_id):
+    _refresh_workspace_data(force=True)
     if not _velocity_is_authorized():
         return jsonify(ok=False, error="Compte Velocity requis."), 403
     email = str(session.get("velocity_email") or "").strip().lower()
@@ -1463,7 +1543,7 @@ def race_join(token):
     access = _race_access_for_token(token)
     if not access:
         return render_template("index.html", app_version=APP_VERSION, race_access_role="expired", race_access_token="", velocity_invite_token=""), 410
-    return render_template("index.html", app_version=APP_VERSION, race_access_role=access["role"], race_access_token=str(token), velocity_invite_token="")
+    return render_template("index.html", app_version=APP_VERSION, race_access_role=access["role"], race_access_token=str(token), velocity_invite_token="", velocity_workspace_id=str((access.get("session") or {}).get("workspace_id") or LEGACY_WORKSPACE_ID))
 
 
 @app.get("/invite/<token>")
@@ -1474,7 +1554,7 @@ def team_invite(token):
         session.pop("velocity_invite_token", None)
         return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token="expired"), 410
     session["velocity_invite_token"] = str(token)
-    return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token=str(token))
+    return render_template("index.html", app_version=APP_VERSION, race_access_role="", race_access_token="", velocity_invite_token=str(token), velocity_workspace_id=str(invite.get("workspace_id") or LEGACY_WORKSPACE_ID))
 
 
 
@@ -1715,11 +1795,12 @@ def delete_team_member(member_id):
 
 @app.post("/api/members/<member_id>/invite")
 def create_member_invite(member_id):
+    invitation_workspace_id = _current_workspace_id()
     with TEAM_DATA_LOCK:
         team,member=_member_by_id(TEAM_DATA,member_id)
         if not member:return jsonify(ok=False,error="Membre introuvable."),404
         token=secrets.token_urlsafe(18); code=secrets.token_hex(3).upper()
-        TEAM_DATA.setdefault("invites",{})[token]={"token":token,"code":code,"team_id":team.get("id"),"team_name":team.get("name"),"member_id":member.get("id"),"member_name":member.get("name"),"roles":deepcopy(member.get("roles") or []),"created_at_ms":int(time.time()*1000),"revoked":False}
+        TEAM_DATA.setdefault("invites",{})[token]={"token":token,"code":code,"team_id":team.get("id"),"team_name":team.get("name"),"member_id":member.get("id"),"member_name":member.get("name"),"roles":deepcopy(member.get("roles") or []),"workspace_id":invitation_workspace_id,"created_at_ms":int(time.time()*1000),"revoked":False}
         _save_team_data(TEAM_DATA)
     return jsonify(ok=True,link=f"{request.host_url.rstrip('/')}/invite/{token}",code=code)
 
@@ -1763,14 +1844,41 @@ def claim_invite(token):
         team,member=_member_by_id(TEAM_DATA,invite.get("member_id"))
         if not member:return jsonify(ok=False,error="Membre introuvable."),404
         if device_id not in member.setdefault("device_ids",[]): member["device_ids"].append(device_id)
-        TEAM_DATA.setdefault("devices",{})[device_id]={"id":device_id,"member_id":member.get("id"),"member_name":member.get("name"),"team_id":team.get("id"),"team_name":team.get("name"),"name":device_name,"last_seen_ms":int(time.time()*1000),"version":APP_VERSION}
+        TEAM_DATA.setdefault("devices",{})[device_id]={"id":device_id,"member_id":member.get("id"),"member_name":member.get("name"),"team_id":team.get("id"),"team_name":team.get("name"),"name":device_name,"workspace_id":str(invite.get("workspace_id") or ""),"last_seen_ms":int(time.time()*1000),"version":APP_VERSION}
         invite["claimed_device_id"]=device_id; invite["claimed_at_ms"]=int(time.time()*1000)
         session.pop("velocity_invite_token", None)
-        _save_team_data(TEAM_DATA)
+        _save_team_data(TEAM_DATA, force_db=True)
     resp=jsonify(ok=True,device_id=device_id,member={"id":member.get("id"),"name":member.get("name"),"team_name":team.get("name"),"roles":member.get("roles",[])})
     resp.set_cookie("velocity_device_id",device_id,max_age=60*60*24*365*3,samesite="Lax",secure=request.is_secure)
     return resp
 
+
+
+@app.post("/api/device/workspace")
+def assign_existing_device_workspace():
+    """Admin associates devices of a known Team member to selected workspace."""
+    if not _velocity_is_authorized():
+        return jsonify(ok=False,error="Compte administrateur requis"),403
+    workspace_id = _current_workspace_id()
+    body = request.get_json(silent=True) or {}
+    member_id = str(body.get("member_id") or "").strip()
+    if not member_id:
+        return jsonify(ok=False,error="Membre non renseigné"),400
+    _refresh_team_data()
+    with TEAM_DATA_LOCK:
+        _team, member = _member_by_id(TEAM_DATA,member_id)
+        if not member:
+            return jsonify(ok=False,error="Membre introuvable"),404
+        count = 0
+        for device_id in member.get("device_ids") or []:
+            device = TEAM_DATA.get("devices",{}).get(str(device_id))
+            if not device or str(device.get("member_id") or "") != member_id:
+                continue
+            device["workspace_id"] = workspace_id
+            count += 1
+        if count:
+            _save_team_data(TEAM_DATA,force_db=True)
+    return jsonify(ok=True,workspace_id=workspace_id,updated=count)
 
 @app.get("/api/device/me")
 def device_me():
@@ -1819,6 +1927,9 @@ def get_race_session():
     return jsonify(ok=True,session=_race_session_public(session) if session else None,teams=teams)
 
 
+_RELAY_REPAIR_CHECKED_AT = {}
+_RELAY_REPAIR_LOCK = threading.Lock()
+
 @app.get("/api/race-session/score-snapshot")
 def race_session_score_snapshot():
     # Read-only: does not connect to Apex or start a score job.
@@ -1839,6 +1950,21 @@ def race_session_score_snapshot():
         recording = manager.store.get_recording(rid)
         if not recording:
             return jsonify(ok=False, error="Enregistrement introuvable"), 404
+        # Rattrapage local limité à une fois par minute et par session.
+        # Aucun appel STATS/Apex supplémentaire, aucun calcul sans session.
+        # Ne jamais bloquer le flux live : le traitement s'exécute hors du thread Apex.
+        with _RELAY_REPAIR_LOCK:
+            due = time.monotonic() - _RELAY_REPAIR_CHECKED_AT.get(rid, -1e12) >= 60
+            if due:
+                _RELAY_REPAIR_CHECKED_AT[rid] = time.monotonic()
+        if due:
+            def _repair_saved_relays():
+                try:
+                    manager.store.repair_session_relay_matrix(rid)
+                except Exception:
+                    app.logger.exception("Relay matrix repair failed for %s", rid)
+            threading.Thread(target=_repair_saved_relays, daemon=True,
+                             name="relay-repair-" + rid[:8]).start()
         # Si rien n'a changé, économiser les données mobiles : réponse 304.
         updated, count = manager.store.session_relay_matrix_version(rid)
         etag = f'"velocity-relays-{rid}-{updated}-{count}"' if count else None
@@ -1900,6 +2026,15 @@ def create_race_session():
         session["recorder_id"] = recording["id"]
         session["recorder_status"] = "recording"
         TEAM_DATA.setdefault("sessions",[]).append(session); _set_active_session_for_workspace(TEAM_DATA,workspace_id,sid); _save_team_data(TEAM_DATA, force_db=True)
+    # V1813: explicit Session creation is a real course boundary.  Never
+    # infer it during passive registry GETs from worker-local TEAM_DATA.
+    try:
+        RegistryRuns(_spotter_persistent_store()).current(
+            workspace_id,circuit_id=circuit_id,session_id=sid,
+            session_title=str(session.get("name") or ""),new_run=True)
+    except Exception:
+        app.logger.exception("Registre KV : nouvelle Session non initialisée")
+        # The recorded race must not be discarded after a successful start.
     # Miroir de compatibilité avec le verrouillage déjà présent côté V7.2.87.
     with RACE_SESSION_LOCK: RACE_SESSION=deepcopy(session)
     return jsonify(ok=True,session=_race_session_public(session))
@@ -2465,13 +2600,23 @@ def lab_recorder_create():
     name = str(body.get("name") or "").strip()
     if not circuit_id:
         return jsonify(ok=False, error="Sélectionnez un circuit Apex."), 400
-    # Lab can inspect/stop existing recordings but never creates an autonomous
-    # background calculation without an explicitly active Session Course.
-    with TEAM_DATA_LOCK:
-        active = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
-    if not active or active.get("status") != "active":
-        return jsonify(ok=False, error="Créez d'abord une Session Course pour lancer le Recorder."), 409
-    return jsonify(ok=False, error="Le Recorder de cette Session Course est déjà géré automatiquement. Aucun second collecteur n'est autorisé."), 409
+    # Autonomous one-shot Lab Recorder, mutually exclusive with race-session collector.
+    # RecorderManager.create also rejects a concurrent collector on this circuit.
+    try:
+        circuit = next((c for c in load_circuits() if str(c.get("id")) == circuit_id), None)
+        if not circuit:
+            return jsonify(ok=False, error="Circuit Apex inconnu."), 404
+        with TEAM_DATA_LOCK:
+            active = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
+        if active and active.get("status") == "active" and str(active.get("circuit_id") or "") == circuit_id:
+            return jsonify(ok=False, error="Le Recorder de cette Session Course fonctionne déjà ; utilisez son export."), 409
+        recording = manager.create(name or "Velocity Lab", circuit_id)
+        return jsonify(ok=True, recording=recording), 201
+    except ValueError as exc:
+        return jsonify(ok=False, error=str(exc)), 409
+    except Exception as exc:
+        app.logger.exception("Démarrage Recorder Velocity Lab")
+        return jsonify(ok=False, error=str(exc)), 500
 
 
 @app.post("/api/lab/recorders/<recording_id>/stop")
@@ -2577,99 +2722,50 @@ def update_analyzer_strategy():
         return jsonify(ok=False, error="Stratégie Analyzer invalide"), 400
     allowed = {"followed_driver", "score", "confidence", "track", "delta", "impact", "capital", "targetLong", "pitCloseRemaining", "recommendation", "windowLabel", "kind", "kartWindow"}
     clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
-    clean["updated_at_ms"] = int(time.time() * 1000)
-    clean["circuit_id"] = str(STATE.get("circuit_id") or "")
-    clean["app_release"] = APP_VERSION
-    with ANALYZER_STRATEGY_LOCK:
-        STATE["analyzer_strategy"] = clean
-    return jsonify(ok=True, analyzer_strategy=deepcopy(clean))
-
-
-@app.get("/api/analyzer-strategy")
-def get_analyzer_strategy():
-    with ANALYZER_STRATEGY_LOCK:
-        return jsonify(ok=True, analyzer_strategy=deepcopy(STATE.get("analyzer_strategy")))
-
-
-@app.post("/api/kart-setup")
-def velocity_update_kart_setup():
-    """Mode de karts partagé par Session Velocity, indépendant du numéro Apex."""
-    body = request.get_json(force=True, silent=True) or {}
-    mode = body.get("mode")
-    reset = body.get("reset") is True
-    if not reset and mode not in {"fixed", "quick"}:
-        return jsonify(ok=False, error="Choisissez Kart fixe ou Quick Change"), 400
-    with TEAM_DATA_LOCK:
-        course = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
-    if course and course.get("status") == "active":
-        previous_mode = STATE.get("kart_setup_mode")
-        if reset or (previous_mode in {"fixed", "quick"} and mode != previous_mode):
-            return jsonify(ok=False, error="Terminez d’abord la Session Course avant de réinitialiser ou changer le mode kart : l’enregistrement Render continue pendant la session."), 409
-    with SPOTTER_LOCK:
-        previous = STATE.get("kart_setup_mode")
-        if reset and previous not in {"fixed", "quick"}:
-            return jsonify(ok=False, error="Choisissez d'abord un mode"), 400
-        if not reset and previous == mode:
-            return jsonify(ok=True, mode=mode, epoch=STATE.get("kart_scoring_epoch"))
-        STATE["kart_setup_mode"] = previous if reset else mode
-        # Évite toute contamination par les karts d'une course précédente.
-        STATE["kart_scoring_epoch"] = secrets.token_hex(8)
-        # Seules les anciennes notes de vitesse sont purgées, pas l'identité KV
-        # ni les affectations et l'historique Spotter.
-        for row in (STATE.get("spotter_registry") or {}).values():
-            if isinstance(row, dict):
-                row.pop("speed", None)
-        return jsonify(ok=True, mode=STATE["kart_setup_mode"], epoch=STATE["kart_scoring_epoch"])
-
-
-@app.get("/api/spotter-registry")
-def get_spotter_registry():
-    with SPOTTER_LOCK:
-        return jsonify(ok=True, registry=deepcopy(STATE.get("spotter_registry") or {}))
-
-
-@app.post("/api/spotter-registry")
-def update_spotter_registry():
-    body = request.get_json(force=True, silent=True) or {}
-    registry = body.get("registry")
-    if not isinstance(registry, dict):
-        return jsonify(ok=False, error="Registre Spotter invalide"), 400
-    clean = {}
-    for kv, row in list(registry.items())[:250]:
-        if not isinstance(row, dict):
-            continue
-        item = deepcopy(row)
-        history = item.get("history")
-        if isinstance(history, list):
-            item["history"] = history[-80:]
-        clean[str(kv)[:32]] = item
-    with SPOTTER_LOCK:
-        STATE["spotter_registry"] = clean
-    return jsonify(ok=True, count=len(clean))
-
-
-@app.post("/api/spotter-state")
-def update_spotter_state():
-    body = request.get_json(force=True, silent=True) or {}
-    snapshot = body.get("spotter")
-    if not isinstance(snapshot, dict):
-        return jsonify(ok=False, error="État Spotter invalide"), 400
-    allowed = {"configured", "mode", "queue_mode", "queue", "maintenance", "incoming", "assignments", "movement_log", "incoming_queue_selections", "kart_tracking_enabled", "mutation_at_ms", "setup_karts", "setup_queue_files", "free_started_at", "pit_ins", "pit_outs", "recalibrating", "client_id", "app_release"}
-    if str(snapshot.get("app_release") or "") != APP_VERSION:
-        return jsonify(ok=False, error="Version Spotter obsolète", expected=APP_VERSION), 409
-    clean = {key: deepcopy(value) for key, value in snapshot.items() if key in allowed}
-    clean["updated_at_ms"] = int(time.time() * 1000)
-    clean["circuit_id"] = str(STATE.get("circuit_id") or "")
-    with SPOTTER_LOCK:
-        STATE["spotter"] = clean
-    return jsonify(ok=True, updated_at_ms=clean["updated_at_ms"])
+    violation=spotter_snapshot_error(clean)
+    if violation:
+        return jsonify(ok=False,error=violation),422
+    try:
+        revision = int(body.get("base_revision"))
+    except (TypeError,ValueError):
+        return jsonify(ok=False,error="Révision Spotter absente"),400
+    try:
+        store = _spotter_persistent_store()
+        workspace_id = _current_workspace_id()
+        now = int(time.time()*1000)
+        if revision != 0 and not _spotter_shared_read(workspace_id):
+            return jsonify(ok=False,error="Nouvel espace Spotter : révision 0 attendue",
+                           empty_workspace=True,workspace_id=workspace_id,revision=0),409
+        clean.update(revision=revision+1, updated_at_ms=now,
+                     circuit_id=str(snapshot.get("circuit_id") or STATE.get("circuit_id") or ""))
+        # Atomic compare-and-swap on Postgres/SQLite: two clients cannot overwrite
+        # a more recent mutation, even when handled by different server workers.
+        row = store._execute("""INSERT INTO velocity_spotter_shared_state
+            (workspace_id,revision,snapshot_json,updated_at_ms)
+            VALUES(?,?,?,?) ON CONFLICT(workspace_id) DO UPDATE
+            SET revision=excluded.revision,snapshot_json=excluded.snapshot_json,updated_at_ms=excluded.updated_at_ms
+            WHERE velocity_spotter_shared_state.revision=? RETURNING revision""",
+            (workspace_id,revision+1,json.dumps(clean,ensure_ascii=False),now,revision),fetchone=True)
+        if not row:
+            return jsonify(ok=False,error="État Spotter modifié sur un autre appareil",
+                           spotter=_spotter_shared_read(workspace_id),workspace_id=workspace_id),409
+        with SPOTTER_LOCK:
+            STATE["spotter"] = clean
+        return jsonify(ok=True,revision=revision+1,updated_at_ms=now,workspace_id=workspace_id)
+    except Exception as exc:
+        return jsonify(ok=False,error="Synchronisation Spotter indisponible",detail=str(exc)),503
 
 
 @app.get("/api/spotter-state")
 def get_spotter_state():
-    with SPOTTER_LOCK:
-        return jsonify(ok=True, spotter=deepcopy(STATE.get("spotter") or {}))
-
+    try:
+        workspace_id = _current_workspace_id()
+        shared = _spotter_shared_read(workspace_id)
+        response=jsonify(ok=True, spotter=shared, workspace_id=workspace_id,server_version=APP_VERSION,storage_backend=_spotter_persistent_store().backend)
+        response.headers["Cache-Control"]="private, no-store"
+        return response
+    except Exception as exc:
+        return jsonify(ok=False,error="Lecture Spotter indisponible",detail=str(exc)),503
 
 @app.post("/api/mode")
 def set_mode():
@@ -2689,6 +2785,8 @@ def reset_race_state_for_new_circuit(circuit_id):
     with SPOTTER_LOCK:
         STATE["spotter"] = {"configured": False, "updated_at_ms": int(time.time() * 1000), "queue_mode": 1, "setup_karts": ["X"], "setup_queue_files": [1], "queue": [], "maintenance": [], "incoming": [], "assignments": {}, "mode": "live", "app_release": APP_VERSION, "client_id": "server-reset", "circuit_id": str(circuit_id or "")}
         STATE["spotter_registry"] = {}
+        STATE["apex_session_title"] = ""
+        STATE["apex_session_title_seen_at_ms"] = 0
         STATE["kart_setup_mode"] = None
         STATE["kart_scoring_epoch"] = secrets.token_hex(8)
     with ANALYZER_STRATEGY_LOCK:
@@ -2723,6 +2821,14 @@ def set_circuit():
     except Exception as error:
         app.logger.exception("Erreur pendant la sélection du circuit %s", circuit_id)
         return jsonify(ok=False, error=f"Initialisation du circuit impossible : {error}"), 500
+    STATE["circuit_selected_at_ms"] = int(time.time()*1000)
+    # V1813: only this explicit circuit-selection endpoint is allowed to
+    # rotate a KV run on circuit change. GET polling must remain read-only.
+    try:
+        RegistryRuns(_spotter_persistent_store()).current(
+            workspace_id,circuit_id=circuit_id,explicit_circuit_change=True)
+    except Exception:
+        app.logger.exception("Registre KV : sélection explicite du circuit %s",circuit_id)
     return jsonify(ok=True, circuit_id=circuit_id, circuit_name=circuits[circuit_id].get("name"))
 
 
@@ -2938,6 +3044,7 @@ def apex_frame():
     incoming_session_title = extract_apex_session_title(frame)
     if incoming_session_title:
         STATE["apex_session_title"] = incoming_session_title
+        STATE["apex_session_title_seen_at_ms"] = int(time.time()*1000)
     grid = parse_grid_frame(frame)
     initial_updates = grid.updates if grid else []
     grid_removed_rows = []

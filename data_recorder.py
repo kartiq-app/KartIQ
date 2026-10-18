@@ -414,6 +414,36 @@ class RecorderStore:
             """CREATE TABLE IF NOT EXISTS velocity_race_team_state (
                 state_id TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
             )""",
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_shared_state (
+                workspace_id TEXT PRIMARY KEY, revision BIGINT NOT NULL,
+                snapshot_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
+            )""",
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_shared_registry (
+                workspace_id TEXT PRIMARY KEY, registry_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
+            )""",
+            # V1811: KV histories are scoped per race; previous workspace-wide data
+            # remains intact and is archived on first access.
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_registry_runs (
+                workspace_id TEXT PRIMARY KEY, run_id TEXT NOT NULL,
+                circuit_id TEXT NOT NULL, session_id TEXT NOT NULL, session_title TEXT NOT NULL,
+                registry_json TEXT NOT NULL, started_at_ms BIGINT NOT NULL,
+                updated_at_ms BIGINT NOT NULL
+            )""",
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_registry_archive (
+                workspace_id TEXT NOT NULL, run_id TEXT NOT NULL,
+                circuit_id TEXT NOT NULL, session_id TEXT NOT NULL, session_title TEXT NOT NULL,
+                registry_json TEXT NOT NULL, started_at_ms BIGINT NOT NULL,
+                archived_at_ms BIGINT NOT NULL,
+                PRIMARY KEY(workspace_id,run_id)
+            )""",
+            """CREATE TABLE IF NOT EXISTS velocity_workspaces_shared (
+                state_id TEXT PRIMARY KEY, revision BIGINT NOT NULL, payload_json TEXT NOT NULL,
+                updated_at_ms BIGINT NOT NULL
+            )""",
+            """CREATE TABLE IF NOT EXISTS velocity_spotter_monitor_lease (
+                workspace_id TEXT PRIMARY KEY, client_id TEXT NOT NULL,
+                expires_at_ms BIGINT NOT NULL
+            )""",
         ]
         for sql in ddl:
             self._execute(sql)
@@ -632,6 +662,40 @@ class RecorderStore:
             last_update = max(last_update, int(row.get("updated_at_ms") or 0))
         return {"maxRelay": max_relay, "teams": list(by_team.values()),
                 "updated_at_ms": last_update, "source": "recorder-persisted"}
+
+    def repair_session_relay_matrix(self, rid: str) -> int:
+        """Rebuild missing relay cells from persisted laps/pits; never contact Apex.
+
+        Called only for an existing Session Course, and does not start a worker.
+        The matrix upsert preserves previously stored cells.
+        """
+        recording = self.get_recording(rid)
+        if not recording or not str(recording.get("name") or "").startswith("SESSION_V1796:"):
+            return 0
+        laps, pits = self.worker_history(rid)
+        if not laps:
+            return 0
+        buckets = {}
+        for lap in laps:
+            row = int(lap.get("row_id") or 0)
+            number = int(lap.get("lap_number") or 0)
+            seconds = float(lap.get("lap_seconds") or 0)
+            if row <= 0 or number <= 0 or seconds <= 0:
+                continue
+            item = buckets.setdefault(row, {"team": lap.get("team"), "kart": lap.get("kart"), "pilot": lap.get("pilot"), "laps": [], "pits": []})
+            item["laps"].append({"lap": number, "seconds": seconds})
+        for pit in pits:
+            if str(pit.get("event") or "").upper() != "IN":
+                continue
+            row = int(pit.get("row_id") or 0)
+            if row not in buckets:
+                continue
+            buckets[row]["pits"].append({"lap": int(pit.get("lap_number") or 0),
+                                           "stop": int(pit.get("stop_number") or 0),
+                                           "pilot": pit.get("pilot"), "event": "IN"})
+        if not buckets:
+            return 0
+        return self.save_session_relay_matrix(rid, compute_recorder_relay_matrix(buckets))
 
     def score_matrix_snapshot(self, rid: str) -> dict[str, Any]:
         """Small, saved, read-only score matrix for mobile; never triggers Apex calls.
@@ -1831,10 +1895,10 @@ class DataRecorderWorker:
                 seconds = _sector_seconds(value)
                 if seconds is None:
                     continue
-                marker = (str(value), str(kind or ""))
-                if prev.get("sector_values", {}).get(sector) == marker:
+                sector_marker = (str(value), str(kind or ""))
+                if prev.get("sector_values", {}).get(sector) == sector_marker:
                     continue
-                prev.setdefault("sector_values", {})[sector] = marker
+                prev.setdefault("sector_values", {})[sector] = sector_marker
                 prev.setdefault("sectors", {})[sector] = {"value": str(value), "seconds": seconds, "kind": kind}
                 self.store.append_sector(self.id, {"row_id": row, "lap_number": laps + 1 if laps >= 0 else None, "received_at_ms": at, "team": driver.get("driver"), "kart": driver.get("apex"), "sector": sector, "value": str(value), "seconds": seconds, "kind": kind})
                 self.counters["sectors"] += 1

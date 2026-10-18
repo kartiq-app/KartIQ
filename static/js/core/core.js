@@ -597,8 +597,47 @@ function velocityKartScoreOnLap(driver,seconds,marker){
  }
  velocityKartScorePersist();
 }
+function velocityKartLocalUnverifiedRankings(){
+ const profiles=Object.values(velocityKartScoreStore.karts).filter(p=>!p.kv&&
+  ((p.best&&Number.isFinite(p.best.seconds))||Number.isFinite(p.recent)));
+ if(!profiles.length)return [];
+ const reference=Math.min(...profiles.map(p=>p.best?.seconds??p.recent));
+ const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
+ return profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference,localReference:true}))
+  .sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
+}
 function velocityKartScoreRankings(){
  if(!velocityKartScoreEnsureScope())return [];
+ const mode=velocityKartScoreMode();
+ // V1815: In Quick Change, every physical KV must use the same set of
+ // performance evidence obtained from the SQL-backed race registry. Never
+ // rank a physical machine against a browser-only LIVE profile: two phones
+ // can have different LIVE histories and otherwise award different scores.
+ const shared=window.velocityKartScoreSharedSnapshot;
+ const epoch=String(state?.kart_scoring_epoch||'');
+ if(mode==='quick'&&shared?.runId&&shared.epoch===epoch){
+  const profiles=Object.entries(shared.registry||{}).flatMap(([kv,row])=>{
+   const speed=row?.speed;
+   if(!speed||String(speed.epoch||'')!==epoch)return [];
+   const best=Number(speed.potential),recent=Number(speed.recent);
+   const bestOk=speed.potential!==null&&speed.potential!==undefined&&Number.isFinite(best)&&best>20&&best<400;
+   const recentOk=speed.recent!==null&&speed.recent!==undefined&&Number.isFinite(recent)&&recent>20&&recent<400;
+   if(!bestOk&&!recentOk)return [];
+   return [{id:`KV:${kv}`,kv,team:row.currentTeam||'',best:bestOk?{seconds:best}:null,
+    recent:recentOk?recent:null,confirmed:Boolean(speed.confirmed),
+    recentProvisional:Boolean(speed.provisional),totalValid:Number(speed.validLaps)||0}];
+  });
+  if(!profiles.length)return velocityKartLocalUnverifiedRankings();
+  const reference=Math.min(...profiles.map(p=>p.best?.seconds??p.recent));
+  const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
+  const physical=profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference}))
+   .sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
+  // Unverified LIVE pilots may still be shown, but never influence the
+  // physical reference used by all clients to score KV identities.
+  return physical.concat(velocityKartLocalUnverifiedRankings());
+ }
+ if(mode==='quick')return velocityKartLocalUnverifiedRankings();
+ // Fixed-kart mode preserves its existing formula and complete local profiles.
  const profiles=Object.values(velocityKartScoreStore.karts).filter(p=>(p.best&&Number.isFinite(p.best.seconds))||Number.isFinite(p.recent));
  if(!profiles.length)return [];
  const reference=Math.min(...profiles.map(p=>Number.isFinite(p.best?.seconds)?p.best.seconds:p.recent));
@@ -668,13 +707,14 @@ async function velocitySetKartMode(mode){
 }
 async function velocityKartNewRace(){
  const mode=velocityKartScoreMode();if(!mode){alert('Choisissez d’abord Kart fixe ou Quick Change.');return}
- if(!confirm('Nouvelle course sur ce circuit : effacer les notes Potentiel et Vitesse récente de cette session ? Le registre Spotter reste intact.'))return;
+ if(!confirm('Nouvelle course sur ce circuit : remettre à zéro les notes Potentiel et Vitesse récente ? Le registre KV de la course précédente sera archivé et un nouveau registre sera créé.'))return;
  try{
   const response=await fetch('/api/kart-setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reset:true})});
   const payload=await response.json();if(!response.ok||!payload.ok)throw new Error(payload.error||'Réinitialisation impossible');
   state.kart_scoring_epoch=payload.epoch;velocityKartScoreEnsureScope();
   // Garder le marqueur du dernier tour connu : ne pas rejouer un ancien llp.
   if(typeof window.spotterRegistryClearSpeeds==='function')window.spotterRegistryClearSpeeds();
+  if(typeof spotterPullRegistry==='function')await spotterPullRegistry();
  }catch(error){alert(error.message||String(error))}
 }
 window.velocitySetKartMode=velocitySetKartMode;

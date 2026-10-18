@@ -54,7 +54,7 @@ vm.runInContext("spotterRefreshKartRegistry=()=>{renderCalls++}",Object.assign(c
  const start=source.indexOf('function spotterSaveAnalyzerPotentials()');
  const stop=source.indexOf('function spotterDisplayPotential(',start);
  assert(start>0&&stop>start);
- const analyzerCtx={spotterState:state,window:{velocityKartScoreRankings:()=>[{kv:'KV01',potential:98.8},{kv:'KV02',potential:77.2}]},
+ const analyzerCtx={spotterState:state,spotterMonitorLeaseOwner:true,window:{velocityKartScoreRankings:()=>[{kv:'KV01',potential:98.8},{kv:'KV02',potential:77.2}]},
  spotterLiveState:()=>({kart_scoring_epoch:'abc'}),spotterValidScore:x=>Number.isFinite(Number(x)),
  spotterRegistryEnsure:()=>{throw Error('Analyzer must not create a KV')},spotterScheduleRegistryPush:()=>{},Math,String,Number};
  vm.createContext(analyzerCtx);vm.runInContext(source.slice(start,stop),analyzerCtx);

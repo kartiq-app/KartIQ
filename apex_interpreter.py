@@ -46,6 +46,16 @@ FIELD_BY_APEX_TYPE = {
 }
 
 
+def normalize_apex_track_duration(value: str) -> str:
+    """Apex otr uses H:MM for elapsed on-track time (not M:SS)."""
+    raw = str(value or "").strip()
+    if re.fullmatch(r"\d{1,3}:\d{2}", raw):
+        hours, minutes = map(int, raw.split(":"))
+        if minutes < 60:
+            return f"{hours:02d}:{minutes:02d}:00"
+    return raw
+
+
 def lap_seconds(value: str) -> float | None:
     m = LAP_RE.match((value or "").strip())
     if not m:
@@ -105,7 +115,7 @@ class ApexInterpreter:
             "sector_1_kind": None, "sector_2_kind": None, "sector_3_kind": None,
             "sector_1_updated_at": None, "sector_2_updated_at": None, "sector_3_updated_at": None,
             "interval": None, "laps": None, "timer": None,
-            "pit_timer": None, "track_timer": None,
+            "pit_timer": None, "track_timer": None, "track_timer_source": None,
             "pit_stops": None, "penalty": None, "status": "unknown", "status_source": None, "last_lap_kind": None,
             "last_lap_updated_at": None, "updated_at": None,
         })
@@ -219,8 +229,12 @@ class ApexInterpreter:
                 normalized_driver_time = f"{int(parts[0]):02d}:{int(parts[1]):02d}:00" if len(parts) == 2 else driver_time
                 row["name"] = pilot_name or None
                 row["pilot"] = pilot_name or row.get("pilot")
-                if row.get("status") != "pit":
+                # Le suffixe [H:MM] du pilote est un repli uniquement.
+                # La colonne Apex EN PISTE (otr) est prioritaire, y compris
+                # lorsque le nom du pilote est actualisé après le compteur.
+                if row.get("status") != "pit" and row.get("track_timer_source") != "otr":
                     row["track_timer"] = normalized_driver_time
+                    row["track_timer_source"] = "pilot_name"
                     row["timer"] = normalized_driver_time
             else:
                 row["name"] = cleaned or None
@@ -299,7 +313,9 @@ class ApexInterpreter:
                 # désormais la source de vérité.
                 row["status"] = "track"
                 row["status_source"] = "otr"
-                row["track_timer"] = value or row.get("track_timer")
+                if value:
+                    row["track_timer"] = normalize_apex_track_duration(value)
+                    row["track_timer_source"] = "otr"
                 row["timer"] = row.get("track_timer")
                 if not initial and old == "pit":
                     self._emit(update.row, "pit_out", "Sortie des stands", "Reprise du compteur Apex EN PISTE", row.get("pit_timer") or "", "track")

@@ -1922,3 +1922,183 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-kart-mode-reset:hover,.spotter-kart-mode-done:hover{border-color:#ff8a32}
 @media(max-width:899px){.spotter-kart-mode-overlay{padding:12px}.spotter-kart-mode-panel{padding:16px}.spotter-kart-mode-options{grid-template-columns:1fr}.spotter-kart-mode-choice{min-height:75px}}
 @media(min-width:900px){.spotter-mobile-kart-mode-link{display:none!important}}
+
+/* V7.2.1800 — registre une ligne / KV, historique défilant */
+.spotter-registry-panel.wide{width:95vw;max-width:none}
+.spotter-registry-row{grid-template-columns:55px 48px minmax(125px,180px) 105px 105px 105px 105px minmax(0,1fr);gap:8px}
+.spotter-registry-kart,.spotter-registry-current,.spotter-registry-stat{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8edf5}
+.spotter-registry-current{font-weight:800}
+.spotter-registry-history{min-width:0;overscroll-behavior-x:contain;scrollbar-width:thin}
+.spotter-registry-entry{width:235px;min-width:235px;max-width:235px;justify-content:space-between}
+.spotter-registry-entry b{overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* V7.2.1802 — labels de files personnalisables et codes couleur des karts. */
+.spotter-file-title{position:relative;gap:5px}
+.spotter-file-title-color{height:15px;width:17px;min-width:17px;padding:0;border:0;background:transparent;cursor:pointer;border-radius:3px}
+.spotter-queue-card.available.score-gold:not(.waiting){background:linear-gradient(145deg,#a87d1e,#67480e)!important;border-color:#dfb949!important}
+.spotter-queue-card.available.score-green:not(.waiting){background:linear-gradient(145deg,#0a7542,#064d30)!important;border-color:#44d790!important}
+.spotter-queue-card.available.score-orange:not(.waiting){background:linear-gradient(145deg,#ae5b1c,#68330d)!important;border-color:#f49b44!important}
+.spotter-queue-card.available.score-red:not(.waiting){background:linear-gradient(145deg,#9c2631,#5b1724)!important;border-color:#ee5967!important}
+.spotter-queue-card.available.score-unknown:not(.waiting){background:linear-gradient(145deg,#3c4656,#1b2431)!important;border-color:#8f9bad!important}
+.spotter-queue-card.available.waiting{border-color:#f3f5f8!important;box-shadow:0 0 0 1px rgba(255,255,255,.14),0 9px 22px rgba(0,0,0,.38)!important}
+.spotter-queue-card.reserved{border-color:#ef3349!important}
+.spotter-queue-card .spotter-card-stats{display:flex!important;gap:2px!important;align-items:center!important;justify-content:center!important;flex-direction:column!important}
+.spotter-queue-card .spotter-score{white-space:nowrap!important;display:inline-block!important}
+
+.spotter-incoming-card{border:1.5px solid #f3f6fa!important}
+.spotter-queue-card.incoming{border-color:#f3f6fa!important}
+.spotter-incoming-info .spotter-score,.spotter-queue-card .spotter-score{white-space:nowrap!important;line-height:1.1!important}
+
+/* V7.2.1803 — couleurs plus distinctes et cartes entrantes accessibles sur iPhone. */
+.spotter-queue-card.available.score-orange:not(.waiting){
+ background:linear-gradient(145deg,rgb(255,115,0),rgb(176,65,0))!important;
+ border-color:rgb(255,115,0)!important;
+}
+.spotter-queue-card.available.score-gold:not(.waiting){
+ position:relative;
+ background:linear-gradient(125deg,#785008 0%,#c99825 21%,#fff2a4 38%,#deb244 53%,#8a5c0b 77%,#edc85e 100%)!important;
+ border-color:#ffdc79!important;
+ box-shadow:inset 0 1px 0 rgba(255,250,202,.7),inset 0 -7px 12px rgba(76,41,0,.28),0 0 16px rgba(255,196,57,.28)!important;
+ color:#241601!important;
+}
+.spotter-queue-card.available.score-gold:not(.waiting) :is(strong,span,small,.spotter-score,.spotter-kv-value){color:#201606!important;text-shadow:0 1px rgba(255,239,157,.5)}
+@media(max-width:700px){
+ body.current-spotter .spotter-incoming-grid{width:100%;min-width:0!important;overflow:visible!important}
+ body.current-spotter .spotter-incoming-card{
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  display:flex!important;flex-direction:column!important;overflow:visible!important;
+ }
+ body.current-spotter .spotter-incoming-info{
+  flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;
+  border-right:0!important;border-bottom:1px solid rgba(255,255,255,.12)!important;
+  padding:10px!important;gap:5px 12px!important;
+ }
+ body.current-spotter .spotter-incoming-info strong{width:auto!important;max-width:100%!important}
+ body.current-spotter .spotter-incoming-control{display:flex!important;flex-direction:column!important;width:100%!important;min-width:0!important;padding:10px!important;gap:10px!important}
+ body.current-spotter .spotter-file-choices{display:flex!important;justify-content:center!important;gap:clamp(5px,2vw,14px)!important;width:100%!important;min-width:0!important;flex-wrap:nowrap!important}
+ body.current-spotter .spotter-file-choice{flex:0 1 54px!important;width:min(12.8vw,54px)!important;min-width:0!important;font-size:clamp(16px,5vw,26px)!important}
+ body.current-spotter .spotter-incoming-buttons{display:grid!important;grid-template-columns:minmax(0,1fr) 48px!important;gap:8px!important;width:100%!important}
+ body.current-spotter .spotter-incoming-panel,.spotter-incoming-panel .spotter-card-body{min-width:0!important}
+}
+
+/* V7.2.1804 — Score POT. Analyzer visible, sans troncature ni scroll du registre. */
+.spotter-queue-card .spotter-score,
+.spotter-incoming-info .spotter-score{
+ display:block!important;max-width:100%!important;overflow:visible!important;
+ white-space:nowrap!important;text-overflow:clip!important;
+ font-size:clamp(17px,1.7vw,25px)!important;font-weight:900!important;
+ line-height:1.12!important;text-align:center!important;
+}
+.spotter-queue-card .spotter-card-stats{width:100%!important;min-width:0!important;display:flex!important;align-items:center!important;flex-direction:column!important}
+.spotter-queue-card strong,.spotter-queue-card small{
+ max-width:100%!important;overflow:visible!important;text-overflow:clip!important;
+ overflow-wrap:anywhere!important;word-break:normal!important;white-space:normal!important;
+ line-height:1.13!important;font-size:clamp(10px,1.1vw,13px)!important;
+}
+.spotter-queue-card .spotter-kv-value{white-space:nowrap!important;font-size:clamp(10px,1.15vw,13px)!important}
+.spotter-registry-row{
+ grid-template-columns:minmax(50px,65px) minmax(35px,55px) minmax(110px,1.1fr) repeat(4,minmax(80px,.7fr)) minmax(90px,.8fr)!important;
+ align-items:start!important;gap:9px!important;
+}
+.spotter-registry-row>span{min-width:0;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere}
+.spotter-registry-history{
+ grid-column:1/-1!important;display:flex!important;flex-wrap:wrap!important;gap:7px!important;
+ min-width:0!important;width:100%!important;overflow:visible!important;
+ padding-top:8px!important;border-top:1px solid #26303c!important;
+}
+.spotter-registry-entry{width:auto!important;min-width:0!important;max-width:100%!important;flex:0 1 auto!important;gap:9px!important}
+.spotter-registry-entry b{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere}
+@media(max-width:1000px){
+ .spotter-registry-row{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ .spotter-registry-row>.spotter-registry-current{grid-column:span 2!important}
+ .spotter-registry-history{grid-column:1/-1!important}
+}
+@media(max-width:520px){
+ .spotter-registry-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .spotter-registry-row>.spotter-registry-current{grid-column:span 2!important}
+ .spotter-queue-card .spotter-score{font-size:clamp(18px,5.2vw,24px)!important}
+}
+
+/* V7.2.1809 — Registre KV : scroll horizontal GLOBAL, 1 ligne par KV,
+   noms d'équipes sur une largeur de 30 caractères (centrés, tronqués). */
+.spotter-registry-panel.wide{width:95vw;max-width:none;overflow-x:hidden}
+.spotter-registry-table{
+ display:block!important;width:100%;min-width:0;max-width:100%;
+ overflow-x:auto!important;overflow-y:auto!important;
+ overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+ scrollbar-width:thin;max-height:calc(92vh - 175px);
+}
+.spotter-registry-grid{
+ width:max-content;min-width:100%;table-layout:auto;
+ border-collapse:separate;border-spacing:0 7px;
+ font-family:Arial,Helvetica,sans-serif;color:#e8edf5;font-size:12px;
+}
+.spotter-registry-grid thead th{
+ position:sticky;top:0;z-index:1;background:#171f2b;color:#abb7c7;
+ text-align:center;font-size:10px;font-weight:800;letter-spacing:.055em;
+ padding:8px 11px;white-space:nowrap;border-bottom:1px solid #394252;
+}
+.spotter-registry-grid td{
+ white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;
+ padding:8px 11px;height:43px;background:#10151d;
+ border-top:1px solid #242b36;border-bottom:1px solid #242b36;
+ text-align:center;vertical-align:middle;
+}
+.spotter-registry-grid td:first-child{border-left:1px solid #242b36;border-radius:9px 0 0 9px}
+.spotter-registry-grid td:last-child{border-right:1px solid #242b36;border-radius:0 9px 9px 0}
+.spotter-registry-grid td.spotter-registry-kv{font-family:'F1 Regular',Arial,sans-serif;font-weight:800;color:#fff;font-size:13px;min-width:66px}
+.spotter-registry-grid td.spotter-registry-kart{min-width:55px}
+.spotter-registry-grid th.spotter-registry-team-column,
+.spotter-registry-grid td.spotter-registry-team-column{
+ width:calc(30ch + 72px);min-width:calc(30ch + 72px);max-width:calc(30ch + 72px);
+ padding-left:8px;padding-right:8px;
+}
+.spotter-registry-name{
+ display:inline-block;width:30ch;max-width:30ch;min-width:30ch;
+ overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+ font-family:Arial,Helvetica,sans-serif;font-size:12px;
+ text-align:center;font-weight:700;vertical-align:middle;color:#fff;
+}
+.spotter-registry-note-cell{min-width:76px}
+.spotter-registry-rating{
+ display:inline-block;min-width:46px;border-radius:6px;padding:5px 7px;
+ font-family:'F1 Regular',Arial,sans-serif;font-size:14px;font-weight:900;
+ font-variant-numeric:tabular-nums;
+}
+.spotter-registry-rating.gold{background:linear-gradient(125deg,#b27b13 0%,#ffefa2 42%,#d3a02c 72%,#f6d46c 100%);color:#281902;box-shadow:inset 0 1px rgba(255,255,255,.75)}
+.spotter-registry-rating.green{background:#0c7146;color:#91ffbd}
+.spotter-registry-rating.orange{background:#ff7300;color:#fff}
+.spotter-registry-rating.red{background:#842533;color:#ffb0b9}
+.spotter-registry-rating.unknown{background:#283240;color:#c1c8d1}
+.spotter-registry-state{min-width:106px;font-size:11px}
+.spotter-registry-trace{display:inline-block;margin-left:6px;color:#ff8792;font-size:10px}
+.spotter-registry-grid .spotter-registry-entry{
+ display:flex!important;align-items:center;justify-content:center;gap:8px;
+ min-width:0!important;width:100%!important;max-width:none!important;
+ box-sizing:border-box;padding:4px 5px;
+}
+.spotter-registry-grid .spotter-registry-entry em{flex:0 0 auto;font-style:normal;font-family:'F1 Regular',Arial,sans-serif;font-size:12px;font-weight:800;border-radius:5px;padding:3px 6px}
+.spotter-registry-grid .spotter-registry-entry em.high{background:#0d6c3a;color:#8affbb}
+.spotter-registry-grid .spotter-registry-entry em.mid{background:#6b4d08;color:#ffd86a}
+.spotter-registry-grid .spotter-registry-entry em.low{background:#6d1c26;color:#ff8d99}
+.spotter-registry-grid .spotter-registry-entry em.unknown{background:#2b313b;color:#b9c0cb}
+.spotter-registry-grid .spotter-registry-blank{text-align:left;color:#788596;font-size:11px}
+@media(max-width:700px){
+ .spotter-registry-panel{padding:10px}
+ .spotter-registry-grid td{padding-top:7px;padding-bottom:7px}
+ .spotter-registry-table{max-height:calc(92vh - 195px)}
+}
+
+/* V7.2.1810 — registre, une seule ligne/TV, défilement global préservé. */
+.spotter-registry-head-tools{display:flex;align-items:center;gap:18px}
+.spotter-registry-sort{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#b6c0cf;white-space:nowrap}
+.spotter-registry-sort select{border:1px solid #3a4758;border-radius:8px;background:#161d29;color:#fff;padding:9px 11px;min-width:170px;font:700 12px Arial,sans-serif;cursor:pointer}
+.spotter-registry-grid th.spotter-registry-current-column,
+.spotter-registry-grid td.spotter-registry-current-column{width:calc(30ch + 170px);min-width:calc(30ch + 170px);max-width:calc(30ch + 170px);padding-left:8px;padding-right:8px}
+.spotter-registry-current-team{display:flex;align-items:center;justify-content:center;gap:12px;white-space:nowrap}
+.spotter-registry-track-time{font-size:12px;font-weight:800;color:#54bcff;font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+@media(max-width:700px){.spotter-registry-head{align-items:center}.spotter-registry-head-tools{gap:7px}.spotter-registry-sort{font-size:10px;gap:4px}.spotter-registry-sort select{min-width:120px;max-width:150px;padding:7px 5px}}
+
+/* V7.2.1811 — gestion des archives par course sans couper les actions sur mobile. */
+.spotter-registry-actions{flex-wrap:wrap}
+.spotter-registry-actions .spotter-primary{flex:1 1 200px}

@@ -143,7 +143,7 @@ class RegistryRuns:
                 )
             return row
 
-    def save(self, workspace, run_id, clean, *, circuit_id="", session_id="", session_title="",
+    def save(self, workspace, run_id, clean, *, base_updated_at_ms=None, circuit_id="", session_id="", session_title="",
              title_observed_at_ms=0, circuit_observed_at_ms=0):
         """No data from another run can enter the current registry."""
         with self.store._lock:
@@ -151,6 +151,14 @@ class RegistryRuns:
                                  title_observed_at_ms=title_observed_at_ms,circuit_observed_at_ms=circuit_observed_at_ms)
             if not run_id or str(run_id)!=str(current["run_id"]):
                 return False,current
+            # The run identifier protects race isolation; the server revision
+            # additionally protects all fields inside an individual KV against
+            # stale mobile/desktop snapshots. Existing internal callers without
+            # a revision remain supported for migrations/tests, while the API
+            # requires the revision on every client write.
+            baseline = int(current.get("updated_at_ms") or 0)
+            if base_updated_at_ms is not None and int(base_updated_at_ms) != baseline:
+                return False, current
             merged=_read_json(current.get("registry_json"))
             for kv,row in clean.items():
                 old=merged.get(kv) or {}
@@ -159,14 +167,19 @@ class RegistryRuns:
                 keyed={(str(h.get("team")),str(h.get("at"))):h for h in previous if isinstance(h,dict)}
                 for event in incoming:
                     if isinstance(event,dict):
-                        keyed[(str(event.get("team")),str(event.get("at")))]=event
-                combined=sorted(keyed.values(),key=lambda h:int(h.get("at") or 0))[-80:]
+                        key=(str(event.get("team")),str(event.get("at")))
+                        prior=keyed.get(key)
+                        if prior is None or int(event.get("updatedAt") or event.get("at") or 0) >= int(prior.get("updatedAt") or prior.get("at") or 0):
+                            keyed[key]=event
+                # Archive every recorded passage; any UI limit belongs solely
+                # to the renderer, never to the authoritative SQL JSON.
+                combined=sorted(keyed.values(),key=lambda h:int(h.get("at") or 0))
                 merged[kv]={**old,**row,"history":combined}
-            now=int(time.time()*1000)
+            now=max(int(time.time()*1000),baseline+1)
             result=self.store._execute(
                 """UPDATE velocity_spotter_registry_runs SET registry_json=?,updated_at_ms=?
-                WHERE workspace_id=? AND run_id=? RETURNING run_id""",
-                (_json(merged),now,workspace,run_id),fetchone=True,
+                WHERE workspace_id=? AND run_id=? AND updated_at_ms=? RETURNING run_id""",
+                (_json(merged),now,workspace,run_id,baseline),fetchone=True,
             )
             if not result:return False,self._row(workspace)
             return True,{**current,"registry_json":_json(merged),"updated_at_ms":now}
