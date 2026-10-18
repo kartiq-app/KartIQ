@@ -1,3 +1,8 @@
+## V7.2.1830 — Palette unifiée des notes de relais
+- Notes RELAIS : mêmes seuils et couleurs que NOTE KART (or ≥98, vert ≥90, orange ≥80, rouge <80, gris sans note).
+- Défilement horizontal du registre et conservation de la position au rafraîchissement inchangés.
+- Aucun changement du moteur de score ni de la collecte Apex.
+
 ## V7.2.1829 — Notes des relais en temps réel
 
 - RELAIS actif : mise à jour de la note depuis la même évaluation de kart que NOTE KART, avec statut provisoire.

@@ -735,7 +735,7 @@ function spotterScheduleRegistryPush(){
  spotterRegistryPushTimer=setTimeout(spotterPushRegistry,180);
 }
 function spotterValidScore(score){return score!==null&&score!==undefined&&String(score).trim()!==''&&Number.isFinite(Number(score))&&Number(score)>=0&&Number(score)<=100}
-function spotterScoreTone(score){const value=spotterValidScore(score)?Number(score):NaN;return !Number.isFinite(value)?'unknown':value>=82?'high':value>=65?'mid':'low'}
+function spotterScoreTone(score){const value=spotterValidScore(score)?Number(score):NaN;return !Number.isFinite(value)?'unknown':value>=98?'gold':value>=90?'green':value>=80?'orange':'red'}
 function spotterRegistryEnsure(kv){if(!spotterRegistryReady)return null;const key=String(kv||'').trim();if(!key)return null;if(!spotterState.kartRegistry[key])spotterState.kartRegistry[key]={kv:key,history:[],trace:'active',createdAt:Date.now()};return spotterState.kartRegistry[key]}
 function spotterRegistryHistoricalStoredLabel(team){
  const raw=String(team||'').trim();

@@ -2082,6 +2082,11 @@ body.spotter-drag-active .spotter-queue-card.available.spotter-draggable{
 .spotter-registry-grid .spotter-registry-entry em.mid{background:#6b4d08;color:#ffd86a}
 .spotter-registry-grid .spotter-registry-entry em.low{background:#6d1c26;color:#ff8d99}
 .spotter-registry-grid .spotter-registry-entry em.unknown{background:#2b313b;color:#b9c0cb}
+/* V7.2.1830 — même palette pour NOTE KART et notes des relais. */
+.spotter-registry-grid .spotter-registry-entry em.gold{background:linear-gradient(125deg,#b27b13 0%,#ffefa2 42%,#d3a02c 72%,#f6d46c 100%);color:#281902;box-shadow:inset 0 1px rgba(255,255,255,.75)}
+.spotter-registry-grid .spotter-registry-entry em.green{background:#0c7146;color:#91ffbd}
+.spotter-registry-grid .spotter-registry-entry em.orange{background:#ff7300;color:#fff}
+.spotter-registry-grid .spotter-registry-entry em.red{background:#842533;color:#ffb0b9}
 .spotter-registry-grid .spotter-registry-blank{text-align:left;color:#788596;font-size:11px}
 @media(max-width:700px){
  .spotter-registry-panel{padding:10px}
