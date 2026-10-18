@@ -1855,7 +1855,10 @@ function analyzerRenderKartSpeedMarket(){
  const target=document.getElementById('analyzerKartMarket');if(!target)return;
  const mode=typeof window.velocityKartScoreMode==='function'?window.velocityKartScoreMode():null;
  if(!mode){target.innerHTML='<div class="analyzer-empty">Choisissez Kart fixe ou Quick Change dans Spotter → MODE KARTS avant de noter les machines.</div>';return}
- const rankings=typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
+ const allRankings=typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
+ const rankings=mode==='quick'&&typeof window.velocityKartRegistryLiveAssignment==='function'
+  ?allRankings.filter(entry=>entry.kv&&window.velocityKartRegistryLiveAssignment(entry.kv))
+  :allRankings;
  if(!rankings.length){
   const detail='En attente des premiers tours valides : vitesse récente provisoire après 4 tours, potentiel après 8 tours.';
   target.innerHTML=`<div class="analyzer-empty">${detail}</div>`;return;
@@ -1865,10 +1868,11 @@ function analyzerRenderKartSpeedMarket(){
  const rows=rankings.map((entry,index)=>{
   const kv=entry.kv;
   const identity=kv&&typeof window.velocityKartDisplayAssignment==='function'?window.velocityKartDisplayAssignment(kv):null;
+  const liveAssignment=kv&&typeof window.velocityKartRegistryLiveAssignment==='function'?window.velocityKartRegistryLiveAssignment(kv):null;
   const teamKey=entry.teamKey||identity?.team||entry.team;
-  const driver=drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===teamKey)||null;
-  const teamName=driver?.driver||identity?.team||String(entry.team||'').replace(/^apex:/,'Equipe ');
-  const displayKv=kv||(driver&&typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null)||(entry.teamKey&&typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===entry.teamKey))?.kv:null);
+  const driver=liveAssignment?.driver||drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===teamKey)||null;
+  const teamName=liveAssignment?.team||driver?.driver||String(entry.team||'').replace(/^apex:/,'Equipe ');
+  const displayKv=kv||(driver&&typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null);
   const kartNumber=mode==='quick'?(displayKv||'—'):String(driver?.apex||driver?.kart||'—');
   const label=entry.referenceLoading?'RÉF. EN CHARGEMENT':(!displayKv&&mode==='quick'?'KV NON IDENTIFIÉ':entry.confirmed?'CONFIRMÉ':'KV PROVISOIRE');
   const recent=entry.recentScore===null?'—':`${entry.recentScore.toFixed(1)}${entry.recentProvisional?'*':''}`;
@@ -2791,25 +2795,11 @@ function analyzerPhysicalKartForDriverLabel(driver){
  return identity?.verified?'KV confirmé par Spotter':'KV non identifié physiquement';
 }
 function analyzerPhysicalKartRating(driver,providedRankings=null){
- const identity=typeof velocityKartScoreIdentity==='function'?velocityKartScoreIdentity(driver):null;
- if(!identity)return {kv:null,value:null,provisional:false};
- const rankings=providedRankings||((typeof window!=='undefined'&&typeof window.velocityKartScoreRankings==='function')?window.velocityKartScoreRankings():
-  typeof velocityKartScoreRankings==='function'?velocityKartScoreRankings():[]);
- if(identity.unverified){
-  const live=rankings.filter(item=>String(item.id||'').startsWith('LIVE:')&&
-   item.recentScore!==null&&item.recentScore!==undefined&&Number.isFinite(Number(item.recentScore)));
-  const match=live.length>=2?live.find(item=>item.id===identity.id):null;
-  return {kv:(typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null)||identity.kv||null,value:match?Number(match.recentScore):null,provisional:Boolean(match),liveOnly:Boolean(match)};
+ // Source identique au registre Spotter : aucun second calcul d'identite ou de note.
+ if(typeof window.velocityKartUnifiedRating==='function'){
+  return window.velocityKartUnifiedRating(driver,providedRankings);
  }
- const entry=rankings.find(item=>item.id===identity.id);
- if(!entry)return {kv:identity.kv||null,value:null,provisional:false};
- const official=entry.potential;
- if(!entry.localReference&&official!==null&&official!==undefined&&Number.isFinite(Number(official)))
-  return {kv:identity.kv||null,value:Number(official),provisional:false};
- const estimate=entry.recentScore??entry.potential;
- if(estimate!==null&&estimate!==undefined&&Number.isFinite(Number(estimate)))
-  return {kv:identity.kv||null,value:Number(estimate),provisional:true};
- return {kv:identity.kv||null,value:null,provisional:false};
+ return {kv:null,value:null,provisional:false};
 }
 function analyzerKartRatingTone(rating){
  if(rating.value===null)return 'unknown';

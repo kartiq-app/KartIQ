@@ -800,6 +800,33 @@ function velocityKartIdentityForDriver(driver){
  return null;
 }
 window.velocityKartIdentityForDriver=velocityKartIdentityForDriver;
+// V1826 : une seule resolution de note pour le registre et Analyzer.
+// Les KV provisoires sont identifies par le registre SQL de la course active.
+function velocityKartUnifiedRating(driver,rankings=null){
+ const identity=velocityKartIdentityForDriver(driver);
+ if(!identity?.kv)return {kv:null,value:null,provisional:false};
+ const kv=String(identity.kv);
+ const row=spotterState.kartRegistry?.[kv];
+ if(!row||row.trace==='interrupted')return {kv:null,value:null,provisional:false};
+ const list=rankings||((typeof window.velocityKartScoreRankings==='function')?window.velocityKartScoreRankings():[]);
+ const entry=list.find(item=>String(item.kv||'')===kv&&String(item.id||'').startsWith('KV:'));
+ const official=entry&&!entry.localReference&&spotterValidScore(entry.potential)?Number(entry.potential):null;
+ if(official!==null)return {kv,value:official,provisional:!identity.verified||Boolean(entry.recentProvisional)};
+ const recent=entry&&spotterValidScore(entry.recentScore)?Number(entry.recentScore):null;
+ if(recent!==null)return {kv,value:recent,provisional:true};
+ // Même secours que Spotter, sans modifier le moteur de notation.
+ const stored=spotterKartPotential(kv);
+ return {kv,value:spotterValidScore(stored)?Number(stored):null,provisional:!identity.verified};
+}
+window.velocityKartUnifiedRating=velocityKartUnifiedRating;
+window.velocityKartRegistryLiveAssignment=function(kv){
+ const row=spotterState.kartRegistry?.[String(kv)];
+ if(!row||row.trace==='interrupted')return null;
+ const drivers=(typeof spotterLiveState==='function'?spotterLiveState()?.drivers:null)||[];
+ const driver=drivers.find(d=>velocityKartIdentityForDriver(d)?.kv===String(kv));
+ return driver?{driver,team:driver.driver||'',kv:String(kv)}:null;
+};
+
 function velocityKartDisplayAssignment(kv){
  const team=Object.entries(spotterState.assignments||{}).find(([,item])=>item?.kv===kv&&item.status==='track');
  if(team)return {team:spotterStableTeamLabel(spotterFindDriver(team[0]),team[1].teamLabel||team[0]),status:'EN PISTE'};
@@ -1027,7 +1054,11 @@ function spotterRegistryRowsHtml(){
  const registry=spotterState.kartRegistry||{};
  const observed=spotterRegistryLiveRows();
  const liveByKv=new Map(observed.filter(item=>item.kv).map(item=>[item.kv,item]));
- const registered=Object.values(registry).map(row=>({
+ const registered=Object.values(registry).filter(row=>{
+  // La liste active ne montre que les machines actuellement associees au live.
+  // L'historique complet reste disponible dans Archives KV / export.
+  return Boolean(row?.kv&&liveByKv.has(row.kv));
+ }).map(row=>({
   row,current:liveByKv.get(row.kv)?.current||spotterRegistryCurrent(row.kv),
   kv:row.kv,key:row.kv,position:liveByKv.get(row.kv)?.position??99999,
   rating:row.autoProvisional&&liveByKv.get(row.kv)?.rating?.value!=null?liveByKv.get(row.kv).rating:spotterRegistryRating(row.kv),isLive:Boolean(liveByKv.has(row.kv))

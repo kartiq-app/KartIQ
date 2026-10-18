@@ -1,3 +1,12 @@
+## V7.2.1826 — Stabilisation des identites KV et notes (18 octobre 2026)
+
+- Registre Spotter, classement Analyzer et tableau Karts : resolution du KV et de la note via le registre partage de la course en cours.
+- Tableau Karts : equipe courante issue de l'affectation live KV ; exclusion des KV non actifs de la vue Quick Change.
+- Registre actif : masquage des KV sans affectation live, sans suppression de leur historique archive.
+- Moteurs de calcul, routes backend, SQL et STATS Apex inchanges.
+- Cache navigateur et numero de version mis a jour.
+- A valider en conditions live : quick changes, plusieurs appareils, redemarrage de course.
+
 ## V7.2.1825 — Initialisation STATS du registre
 - A l'ouverture du registre et apres Nouvelle course KV, prechargement non bloquant des 30 derniers tours Apex STATS de chaque equipe (2 requetes simultanees maximum).
 - Chrono POT./REC. : le moteur KV reste prioritaire; en l'absence de reference KV, affichage provisoire des statistiques historiques de l'equipe.
