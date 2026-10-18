@@ -756,7 +756,7 @@ function spotterRegistryAppend(kv,team,score=null,{source='spotter'}={}){
  const explicitTransfer=source==='pit_out';
  const last=row.history[row.history.length-1];
  if(last&&last.team===raw){
-  if(spotterValidScore(score))last.score=Math.round(Number(score));
+  // Keep the physical kart score authoritative for an existing relay.
   if(teamLabel)last.teamLabel=teamLabel;
   last.updatedAt=Date.now();spotterScheduleRegistryPush();return;
  }
@@ -1008,6 +1008,31 @@ function spotterRegistryRating(kv){
  return {value:spotterValidScore(persisted)?Number(persisted):null,provisional:false};
 }
 
+// V1829: the active relay follows the same KART rating already displayed
+// in the registry. A past relay is immutable: only the last event for the
+// currently observed team may receive the provisional live score.
+function spotterRegistrySyncLiveRelayScores(observed){
+ if(!spotterRegistryReady||!spotterState.kartTrackingEnabled)return;
+ let changed=false;
+ for(const item of observed){
+  if(!item.kv||!item.driver)continue;
+  const row=spotterState.kartRegistry?.[item.kv];
+  const history=row?.history;
+  if(!Array.isArray(history)||!history.length)continue;
+  const latest=history[history.length-1];
+  const teamKey=spotterDriverKey(item.driver);
+  if(!teamKey||String(latest.team)!==String(teamKey))continue;
+  const rating=row.autoProvisional&&item.rating?.value!=null?item.rating:spotterRegistryRating(item.kv);
+  if(!spotterValidScore(rating.value))continue;
+  const next=Math.round(Number(rating.value)*10)/10;
+  if(latest.score===next&&latest.scoreProvisional===Boolean(rating.provisional))continue;
+  latest.score=next;
+  latest.scoreProvisional=Boolean(rating.provisional);
+  latest.updatedAt=Date.now();
+  changed=true;
+ }
+ if(changed)spotterScheduleRegistryPush();
+}
 function spotterRegistryHistoricalName(entry){
  const raw=String(entry?.team||'').trim();
  const saved=String(entry?.teamLabel||'').trim();
@@ -1075,6 +1100,7 @@ async function spotterWarmRegistryStats(){
 function spotterRegistryRowsHtml(){
  const registry=spotterState.kartRegistry||{};
  const observed=spotterRegistryLiveRows();
+ spotterRegistrySyncLiveRelayScores(observed);
  const liveByKv=new Map(observed.filter(item=>item.kv).map(item=>[item.kv,item]));
  const registered=Object.values(registry).filter(row=>{
   // La liste active ne montre que les machines actuellement associees au live.
@@ -1640,7 +1666,7 @@ function spotterAddIncoming(team,driver=null,{source='apex'}={}){
  if(occupied.has(assignment.kv))assignment.kv=spotterAllocateKv();
  const metrics=spotterMetricsForDriver(driver||spotterFindDriver(key));
  assignment.score=metrics.score??assignment.score;assignment.confidence=metrics.confidence??assignment.confidence;
- spotterRegistryUpdateScore(assignment.kv,key,assignment.score);
+ // Physical relay score is synced from the kart rating.
  const incoming={id:`${source}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,team:key,name:spotterStableTeamLabel(driver||spotterFindDriver(key),assignment.teamLabel||key),teamNumber:assignment.teamNumber||spotterStableTeamNumber(driver),returnedCardId:assignment.cardId||spotterCardId('track'),returnedKv:assignment.kv,returnedKart:assignment.apexKart,score:assignment.score,confidence:assignment.confidence,pitInAt:Date.now(),status:'incoming',source,estimated:Boolean(spotterState.freeMode)};
  spotterState.incoming.push(incoming);
  if(spotterState.freeMode){spotterState.freePitIns+=1;spotterState.freeNeedsRecalibration=true;}
@@ -1752,7 +1778,7 @@ function spotterProcessPitOut(team,{source='apex'}={}){
  if(index>=0){
   const [assigned]=spotterState.queue.splice(index,1);
   spotterState.assignments[key]={...assigned,currentTeam:key,lastTeam:assigned.sourceLastTeam||assigned.lastTeam,teamLabel:spotterStableTeamLabel(driver,spotterAssignmentLabel(key)),teamNumber:assigned.teamNumber||spotterStableTeamNumber(driver),status:'track',reservedTeam:null,pitInAt:null,reservedAt:null,score:assigned.score??metrics.score,confidence:assigned.confidence??metrics.confidence,apexKart:String(driver?.apex||driver?.kart||assigned.apexKart||'—')};
-  spotterRegistryAppend(assigned.kv,key,spotterState.assignments[key].score,{source:'pit_out'});
+  spotterRegistryAppend(assigned.kv,key,null,{source:'pit_out'});
   if(spotterState.freeMode){spotterState.freePitOuts+=1;spotterState.freeNeedsRecalibration=true;}
   spotterLogMovement('pit_out',{team:key,kv:assigned.kv,source,estimated:Boolean(spotterState.freeMode||assigned.estimated)});
   saveSpotterFoundation();renderSpotterFoundation('live');return true;
@@ -1770,7 +1796,7 @@ function spotterProcessPitOut(team,{source='apex'}={}){
   if(metrics.score!==null)retained.score=metrics.score;
   if(metrics.confidence!==null)retained.confidence=metrics.confidence;
   retained.apexKart=String(driver?.apex||driver?.kart||retained.apexKart||'—');
-  spotterRegistryAppend(retained.kv,key,retained.score,{source:'pit_out_no_quick_change'});
+  spotterRegistryAppend(retained.kv,key,null,{source:'pit_out_no_quick_change'});
   if(spotterState.freeMode){spotterState.freePitOuts+=1;spotterState.freeNeedsRecalibration=true;}
   spotterLogMovement('pit_out_no_quick_change',{team:key,kv:retained.kv,source});
   saveSpotterFoundation();renderSpotterFoundation('live');return true;
@@ -1782,7 +1808,7 @@ function spotterProcessPitOut(team,{source='apex'}={}){
  if(metrics.score!==null)current.score=metrics.score;
  if(metrics.confidence!==null)current.confidence=metrics.confidence;
  current.apexKart=String(driver?.apex||driver?.kart||current.apexKart||incoming.returnedKart||'—');
- spotterRegistryUpdateScore(current.kv,key,current.score);
+ // Physical relay score is synced from the kart rating.
  if(spotterState.freeMode){spotterState.freePitOuts+=1;spotterState.freeNeedsRecalibration=true;}
  spotterLogMovement('pit_out_unvalidated',{team:key,kv:current.kv,source});
  saveSpotterFoundation();renderSpotterFoundation('live');return true;
@@ -1794,7 +1820,7 @@ function spotterRefreshVelocityMetrics(){
   const driver=spotterFindDriver(team);if(!driver)return;
   const metrics=spotterMetricsForDriver(driver);
   if(metrics.score!==null&&metrics.score!==item.score){item.score=metrics.score;changed=true}
-  spotterRegistryUpdateScore(item.kv,team,item.score);
+  // Relay history score is synchronized from the kart rating, not Velocity.
   if(metrics.confidence!==null&&metrics.confidence!==item.confidence){item.confidence=metrics.confidence;changed=true}
   item.apexKart=String(driver.apex||driver.kart||item.apexKart||'—');item.currentTeam=team;item.lastTeam=team;item.teamLabel=spotterStableTeamLabel(driver,item.teamLabel);item.teamNumber=spotterStableTeamNumber(driver,item.teamNumber);
  });
@@ -2492,4 +2518,4 @@ async function spotterRenewMonitorLease(){
   spotterLastMonitorLeaseWorkspace=data.workspace_id||'';
  }catch(_){spotterMonitorLeaseOwner=false;spotterMonitorLeaseUntil=0}
 }
-document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState({force:true});setInterval(spotterRenewMonitorLease,2000);spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled||document.getElementById('spotterRegistryOverlay'))spotterPullRegistry()},3000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(()=>{spotterRefreshKartRegistry();if(document.getElementById('spotterRegistryOverlay'))void spotterRegistrySeedLiveTeams()},2000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});
+document.addEventListener('DOMContentLoaded',()=>{loadSpotterFoundation();spotterPullSharedState({force:true});setInterval(spotterRenewMonitorLease,2000);spotterPullRegistry();setInterval(()=>{if(spotterState.kartTrackingEnabled||document.getElementById('spotterRegistryOverlay'))spotterPullRegistry()},3000);setInterval(spotterPullSharedState,750);setInterval(updateSpotterLiveTimers,1000);setInterval(()=>{if(spotterRegistryReady&&spotterState.kartTrackingEnabled)spotterRegistrySyncLiveRelayScores(spotterRegistryLiveRows());spotterRefreshKartRegistry();if(document.getElementById('spotterRegistryOverlay'))void spotterRegistrySeedLiveTeams()},2000);setInterval(spotterMonitorApex,750);setInterval(()=>{if(spotterState.configured){spotterSaveAnalyzerPotentials();if(spotterRefreshVelocityMetrics()){spotterPublishSharedState();localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive())spotterRenderCurrent()} }},2000)});

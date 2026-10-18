@@ -1,3 +1,9 @@
+## V7.2.1829 — Notes des relais en temps réel
+
+- RELAIS actif : mise à jour de la note depuis la même évaluation de kart que NOTE KART, avec statut provisoire.
+- Un relais terminé conserve sa dernière note ; aucun écrasement des anciens relais par les scores Velocity des équipes.
+- Aucun changement des formules de calcul, des routes ni du schéma SQL.
+
 ## V7.2.1828 — Chronologie KV et relais confirmés
 
 - Lors d’un pit-out confirmé, une observation initial-live devenue obsolète pour cette même équipe est remplacée par le relais réel en fin d’historique.
