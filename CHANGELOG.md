@@ -1,3 +1,10 @@
+## V7.2.1828 — Chronologie KV et relais confirmés
+
+- Lors d’un pit-out confirmé, une observation initial-live devenue obsolète pour cette même équipe est remplacée par le relais réel en fin d’historique.
+- Les fusions SQL concurrentes empêchent le retour d’une observation initiale supplantée.
+- Aucun reclassement automatique en l’absence d’un événement de transfert confirmé.
+- Aucun changement au moteur de calcul des chronos, notes ou statistiques Analyzer.
+
 ## V7.2.1827 — RELAIS 1 dès la première observation KV (18 octobre 2026)
 - Initialisation atomique SQL du premier relais avec l’équipe live, sans inférer de relais antérieurs depuis STATS.
 - Rattrapage des KV provisoires existants dont l’historique est vide, sans toucher aux historiques déjà renseignés.

@@ -28,6 +28,20 @@ def _title(value):
     return " ".join(str(value or "").split())[:180]
 
 
+def _chronological_history(events):
+    """Keep real events in time order; suppress synthetic events superseded by pit-out.
+
+    The supersedesInitialAt marker survives concurrent SQL merges, so a stale
+    client cannot resurrect an initial-live observation as RELAIS 1.
+    """
+    ordered = sorted((e for e in events if isinstance(e, dict)),
+                     key=lambda e: int(e.get('at') or 0))
+    superseded = {(str(e.get('team')), str(e.get('supersedesInitialAt')))
+                  for e in ordered if e.get('supersedesInitialAt') is not None}
+    return [e for e in ordered if not (e.get('source') == 'initial-live' and
+            (str(e.get('team')), str(e.get('at'))) in superseded)]
+
+
 class RegistryRuns:
     """Atomic within a RecorderStore connection; all data lives in SQL."""
 
@@ -197,8 +211,7 @@ class RegistryRuns:
                         new_events.append(event)
                     if not new_events:
                         continue
-                    previous_row["history"] = sorted(prior_history + new_events,
-                        key=lambda h: int(h.get("at") or 0))
+                    previous_row["history"] = _chronological_history(prior_history + new_events)
                     changes += len(new_events)
                 if not changes:
                     return False, current
@@ -228,7 +241,7 @@ class RegistryRuns:
                             keyed[key]=event
                 # Archive every recorded passage; any UI limit belongs solely
                 # to the renderer, never to the authoritative SQL JSON.
-                combined=sorted(keyed.values(),key=lambda h:int(h.get("at") or 0))
+                combined=_chronological_history(keyed.values())
                 merged[kv]={**old,**row,"history":combined}
             now=max(int(time.time()*1000),baseline+1)
             result=self.store._execute(

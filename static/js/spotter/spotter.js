@@ -743,19 +743,40 @@ function spotterRegistryHistoricalStoredLabel(team){
  const candidate=String((driver?spotterStableTeamLabel(driver,''):'')||spotterState.assignments?.[raw]?.teamLabel||'').trim();
  return candidate&&!/^apex:\d+$/.test(candidate)&&candidate!=='—'?candidate:null;
 }
+// V1828 : an initial-live event describes the team at observation start,
+// not an immutable proof of the kart's first-ever relay. Only an explicit
+// confirmed pit-out can supersede this synthetic event.
 function spotterRegistryAppend(kv,team,score=null,{source='spotter'}={}){
  if(!spotterState.kartTrackingEnabled||!spotterRegistryReady)return;
  const row=spotterRegistryEnsure(kv);if(!row)return;
  row.trace='active';delete row.interruptedAt;
  const raw=String(team||'').trim();if(!raw||raw==='Initialisation')return;
  const teamLabel=spotterRegistryHistoricalStoredLabel(raw);
+ if(!Array.isArray(row.history))row.history=[];
+ const explicitTransfer=source==='pit_out';
  const last=row.history[row.history.length-1];
  if(last&&last.team===raw){
   if(spotterValidScore(score))last.score=Math.round(Number(score));
   if(teamLabel)last.teamLabel=teamLabel;
   last.updatedAt=Date.now();spotterScheduleRegistryPush();return;
  }
+ // If a synthetic observation of this team was written before another
+ // confirmed relay, don't leave it as RELAIS 1 when a genuine pit-out of
+ // this same team has subsequently been recorded. Never rewrite real events.
+ if(explicitTransfer){
+  const syntheticIndex=row.history.findIndex(e=>e?.team===raw&&e?.source==='initial-live');
+  if(syntheticIndex>=0&&syntheticIndex<row.history.length-1){
+   const synthetic=row.history.splice(syntheticIndex,1)[0];
+   row.history.push({team:raw,teamLabel:teamLabel||synthetic.teamLabel||null,
+    score:spotterValidScore(score)?Math.round(Number(score)):synthetic.score??null,
+    at:Date.now(),source:'pit_out',supersedesInitialAt:synthetic.at});
+   // A new physical assignment invalidates the old provisional owner.
+   if(row.autoProvisional){row.autoTeamKey=raw;row.autoProvisional=false;}
+   spotterScheduleRegistryPush();return;
+  }
+ }
  row.history.push({team:raw,teamLabel,score:spotterValidScore(score)?Math.round(Number(score)):null,at:Date.now(),source});
+ if(explicitTransfer&&row.autoProvisional){row.autoTeamKey=raw;row.autoProvisional=false;}
  spotterScheduleRegistryPush();
 }
 function spotterRegistryUpdateScore(kv,team,score){
