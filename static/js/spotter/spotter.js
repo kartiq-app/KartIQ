@@ -927,7 +927,8 @@ async function spotterRegistrySeedLiveTeams(){
     Date.now()-spotterRegistryAutoSeedAt<5000)return;
  const drivers=spotterLiveState()?.drivers||[];
  if(!Array.isArray(drivers)||!drivers.length)return;
- const teams=drivers.map(driver=>({key:spotterDriverKey(driver),kart:String(driver.apex||driver.kart||'')}))
+ const teams=drivers.map(driver=>({key:spotterDriverKey(driver),
+  label:spotterStableTeamLabel(driver,''),kart:String(driver.apex||driver.kart||'')}))
   .filter(item=>item.key);
  if(!teams.length)return;
  spotterRegistryAutoSeedAt=Date.now();spotterRegistryAutoSeedBusy=true;

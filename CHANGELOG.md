@@ -1,3 +1,9 @@
+## V7.2.1827 — RELAIS 1 dès la première observation KV (18 octobre 2026)
+- Initialisation atomique SQL du premier relais avec l’équipe live, sans inférer de relais antérieurs depuis STATS.
+- Rattrapage des KV provisoires existants dont l’historique est vide, sans toucher aux historiques déjà renseignés.
+- Fermeture/réouverture : historique conservé ; Nouvelle course KV : nouvelle séquence.
+- Aucun changement des moteurs de calcul, des routes ou des données Apex.
+
 ## V7.2.1826 — Stabilisation des identites KV et notes (18 octobre 2026)
 
 - Registre Spotter, classement Analyzer et tableau Karts : resolution du KV et de la note via le registre partage de la course en cours.

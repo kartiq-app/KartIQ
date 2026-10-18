@@ -251,10 +251,25 @@ class RegistryRuns:
             occupied={str(row.get('autoTeamKey')) for row in registry.values()
                       if isinstance(row,dict) and row.get('autoTeamKey')}
             changed=False
+            now_event=int(time.time()*1000)
+            # A provisional slot represents the first OBSERVED team in this run.
+            # Historical STATS laps never create physical kart transfers.
             for team in teams[:150]:
                 if not isinstance(team,dict):continue
                 key=str(team.get('key') or '').strip()[:128]
-                if not key or key in occupied:continue
+                if not key:continue
+                if key in occupied:
+                    # Backfill only an empty provisional history (previous releases).
+                    # Never rewrite an existing physical/Quick Change history.
+                    old_kv=seen.get(key)
+                    old=registry.get(old_kv) if old_kv else None
+                    if (isinstance(old,dict) and old.get('autoProvisional')
+                            and not old.get('history') and old.get('trace')!='interrupted'):
+                        label=_title(team.get('label')) or key
+                        old['history']=[{'team':key,'teamLabel':label,'score':None,
+                                         'at':now_event,'source':'initial-live'}]
+                        changed=True
+                    continue
                 # Reuse an empty KV slot only; never steal an actual relay history.
                 candidate=None
                 for number in range(1,251):
@@ -265,6 +280,9 @@ class RegistryRuns:
                         candidate=kv;break
                 if candidate is None:break
                 row=registry.get(candidate) or {'kv':candidate,'history':[],'trace':'active'}
+                # RELAIS 1 is the current team at the start of observation.
+                row['history']=[{'team':key,'teamLabel':_title(team.get('label')) or key,
+                                 'score':None,'at':now_event,'source':'initial-live'}]
                 row['autoTeamKey']=key
                 row['autoApex']=str(team.get('kart') or '')[:32]
                 row['autoProvisional']=True
