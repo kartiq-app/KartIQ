@@ -943,11 +943,14 @@ function spotterRegistryRowsHtml(){
   row:{kv:null,history:[],trace:'live'},current:item.current,kv:null,key:item.key,
   position:item.position,rating:item.rating||{value:null,provisional:false},isLive:true
  }));
- const rows=registered.concat(unmatched);
+ // Les lignes Apex doivent être visibles EN PREMIER : les KV historiques non
+ // associés à une équipe active ne doivent pas masquer le live sous le scroll.
+ // Aucune association physique KV n’est inventée ici.
+ const rows=unmatched.concat(registered);
  const byKv=(a,b)=>a.kv&&b.kv?spotterKvNumber(a.kv)-spotterKvNumber(b.kv):a.kv?-1:b.kv?1:a.position-b.position;
  if(spotterRegistrySortMode==='note')rows.sort((a,b)=>(b.rating.value??-1)-(a.rating.value??-1)||byKv(a,b));
  else if(spotterRegistrySortMode==='relay')rows.sort((a,b)=>(b.current.seconds??-1)-(a.current.seconds??-1)||byKv(a,b));
- else rows.sort(byKv);
+ else rows.sort((a,b)=>Number(b.isLive)-Number(a.isLive)||a.position-b.position||byKv(a,b));
  if(!rows.length)return '<div class="spotter-registry-empty-block">En attente du premier état Apex : aucune équipe ni machine disponible.</div>';
  const countHistory=Math.max(1,...rows.map(item=>Array.isArray(item.row.history)?item.row.history.length:0));
  const head=['KV','NOTE KART','KART APEX','ÉQUIPE ACTUELLE','TOURS','EN PISTE','CHRONO POT.','CHRONO RÉC.','DERNIER','FIABILITÉ'];

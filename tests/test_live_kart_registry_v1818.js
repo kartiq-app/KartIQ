@@ -21,6 +21,7 @@ assert.match(html,/BLEU/);assert.match(html,/ROUGE/);assert.match(html,/0:08:00/
 assert.match(html,/1:02\.373/);assert.match(html,/1:01\.777/);
 assert.match(html,/88\.7\*/,'provisional from first observed lap');
 assert.match(html,/data-kv="LIVE:apex:9"/);
+assert.ok(html.indexOf('data-kv="LIVE:apex:9"')>html.indexOf('data-kv="KV02"'),'live rows follow live position');
 assert.match(html,/spotter-registry-kv">—<\/td>/,'never invent a physical KV');
 assert.equal(Object.keys(state.kartRegistry).length,1,'LIVE display must not insert database registry rows');
 ctx.spotterState.kartRegistry={};ctx.spotterState.assignments={};
@@ -74,3 +75,10 @@ assert.match(analyzer,/kartRating:analyzerPhysicalKartRating\(d,rankings\)/);
 assert.match(analyzer,/x\.kartRating\?\.kv\|\|'—'/);
 assert.doesNotMatch(analyzer,/<th>KART V\.<\/th>/);
 console.log('V1818: Apex registry instant, no fake KV, live on-track+last, provisional first lap, confirmed threshold untouched, Analyzer physical NOTE OK');
+
+// Regression V1819: old registry rows must not hide the current Apex drivers.
+ctx.spotterState.kartRegistry={KV99:{kv:'KV99',history:[{team:'ANCIENNE EQUIPE',score:90}]}};
+ctx.window.velocityKartIdentityForDriver=()=>null;
+html=vm.runInContext('spotterRegistryRowsHtml()',ctx);
+assert.ok(html.indexOf('data-kv="LIVE:apex:7"')<html.indexOf('data-kv="KV99"'));
+assert.ok(html.indexOf('data-kv="LIVE:apex:9"')<html.indexOf('data-kv="KV99"'));

@@ -1,3 +1,10 @@
+## V7.2.1819 — Registre : live prioritaire (18 octobre 2026)
+
+- Correction de l’ordre d’affichage : les équipes Apex actives sont affichées avant les KV historiques sans équipe active.
+- Les données Apex (kart, équipe, tours, en piste, dernier) sont immédiatement visibles, même sans KV physique vérifié.
+- Conservation des historiques, des scores et de la logique de vérification physique KV ; aucun changement aux moteurs Analyzer ou Spotter.
+- Test de non-régression : anciennes lignes KV ne masquent plus les équipes live.
+
 ## V7.2.1818 — Registre LIVE et NOTE KART (18 octobre 2026)
 
 - Le registre affiche dès son ouverture les équipes du live Apex, leurs numéros Apex, tours, durée du relais en piste et dernier chrono, **sans attendre un enregistrement historique ni une réponse PostgreSQL**.
