@@ -1,3 +1,10 @@
+## V7.2.1834 — Transparence de la chronologie des relais KV
+
+- Les observations initiales sont signalées comme provisoires : elles ne constituent pas la preuve d'un premier relais physique.
+- Le dernier relais n'est marqué actif que s'il correspond à l'équipe live ; sinon un avertissement indique qu'une affectation doit être vérifiée, sans inventer de Quick Change ni réécrire l'historique SQL.
+- Un compteur TOURS à zéro sans preuve de tours Apex est affiché « — » plutôt que comme une mesure certaine (le flux de Cormeilles n'expose pas de colonne Tours).
+- Aucun changement au parseur Apex, à la réception WebSocket, aux scores ou à la persistance SQL.
+
 ## V7.2.1833 — Préservation des équipes face aux mises à jour `drteam` Apex
 
 - Le `grid` initial fournit le nom de l'équipe dans la colonne Équipe (`c4`).

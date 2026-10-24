@@ -1176,19 +1176,29 @@ function spotterRegistryRowsHtml(){
   const currentTeam=`<td class="spotter-registry-current-column"><div class="spotter-registry-current-team">${name(team)}</div></td>`;
   const note=`<td class="spotter-registry-note-cell"><span class="spotter-registry-rating ${tone}" title="${rating.liveOnly?'Estimation LIVE des tours de l’équipe, KV physique non identifié et historique non modifié':rating.provisional?'Estimation sur les premiers tours, non confirmée':'Potentiel de vitesse du kart physique'}">${safe(displayed)}</span></td>`;
   const base=`<td class="spotter-registry-kv">${safe(kv||'—')}</td>${note}<td class="spotter-registry-kart">${safe(kart)}</td>${currentTeam}`+
-   `<td class="spotter-registry-laps">${safe(laps===null||laps===undefined?'—':laps)}</td>`+
+   `<td class="spotter-registry-laps">${safe(laps===null||laps===undefined||Number(laps)===0?'—':laps)}</td>`+
    `<td class="spotter-registry-on-track">${safe(spotterRegistryTrackLabel(seconds))}</td>`+
    `<td title="${valid?'Potentiel moteur KV':stats?'Meilleur tour STATS Apex, estimation équipe provisoire':'Estimation live provisoire'}">${safe(valid?spotterRegistryFormatChrono(speed.potential):spotterRegistryFormatChrono(potFallback))}</td>`+
    `<td>${safe(speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.recent))&&speed.recent!==null?spotterRegistryFormatChrono(speed.recent):spotterRegistryFormatChrono(recFallback))}</td>`+
    `<td>${safe(spotterRegistryFormatChrono(last))}</td><td class="spotter-registry-state">${safe(status)}${interrupted?'<span class="spotter-registry-trace">TRACE INTERROMPUE</span>':''}</td>`;
+  // V1834: show history in SQL event order; do not present an initial observation
+  // as the currently active relay after a later confirmed transfer.
   const historyEntries=Array.isArray(row.history)?row.history:[];
-  const history=historyEntries.map(entry=>{
+  const liveTeamKey=current.driver?spotterDriverKey(current.driver):'';
+  const latestRelay=historyEntries[historyEntries.length-1];
+  const relayMismatch=Boolean(kv&&liveTeamKey&&latestRelay&&String(latestRelay.team)!==String(liveTeamKey));
+  const history=historyEntries.map((entry,index)=>{
    const score=entry?.score==null?'—':safe(entry.score);
-   return `<td class="spotter-registry-team-column"><div class="spotter-registry-entry">${name(spotterRegistryHistoricalName(entry))}<em class="${spotterScoreTone(entry?.score)}">${score}</em></div></td>`;
+   const isLast=index===historyEntries.length-1;
+   const active=isLast&&!relayMismatch&&liveTeamKey&&String(entry.team)===String(liveTeamKey);
+   const observation=entry?.source==='initial-live';
+   const detail=observation?'Observation initiale, affectation physique non confirmée':active?'Relais actif confirmé par le live':'Relais historique';
+   return `<td class="spotter-registry-team-column" title="${safe(detail)}"><div class="spotter-registry-entry">${name(spotterRegistryHistoricalName(entry))}${active?'<small title="Relais actuel"> ●</small>':''}${observation?'<small title="Observation initiale, pas un transfert confirmé"> *</small>':''}<em class="${spotterScoreTone(entry?.score)}">${score}</em></div></td>`;
   }).join('');
   const remaining=countHistory-historyEntries.length;
   const blank=remaining>0?`<td colspan="${remaining}" class="spotter-registry-blank">${!historyEntries.length&&!isLive?'Aucune affectation':''}</td>`:'';
-  return `<tr class="spotter-registry-grid-row${!kv?' spotter-registry-unidentified':''}" data-kv="${safe(key)}">${base}${history}${blank}</tr>`;
+  const mismatchHint=relayMismatch?'<span title="Le live ne correspond pas au dernier relais enregistré : changement non confirmé, historique préservé"> ⚠ À vérifier</span>':'';
+  return `<tr class="spotter-registry-grid-row${!kv?' spotter-registry-unidentified':''}" data-kv="${safe(key)}">${base.replace('</td><td class="spotter-registry-laps">',mismatchHint+'</td><td class="spotter-registry-laps">')}${history}${blank}</tr>`;
  }).join('');
  return `<table class="spotter-registry-grid"><thead><tr>${heading}</tr></thead><tbody>${body}</tbody></table>`;
 }
