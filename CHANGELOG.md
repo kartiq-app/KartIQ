@@ -1,3 +1,20 @@
+## V7.2.1836 — Consolidation structurelle Spotter / KV, notation Recorder serveur
+
+- **Audit poussé** et documentation dans `AUDIT_SPOTTER_V1836.md` ; couches de score navigateur retirées, résultat SQL de Recorder seul officiel.
+- **Une seule identité de course** : `run_id` SQL sert aussi d'epoch pour toutes les notes. Le mode kart survit au redémarrage Render via `velocity_kart_scoring_scope`.
+- **Nouvelle course KV** : rotation atomique du registre, de la portée de notation et archivage ; suppression du risque de restituer une note de la course précédente.
+- **Scores KV côté Render** : calcul hors live WebSocket, seulement sur Session Course active, stockés par KV et relais dans SQL, préservés contre les mises à jour concurrentes des navigateurs.
+- **Backfill Apex sécurisé** : ajout idempotent de la provenance `origin` des tours ; un tour historique sans horodatage de passage n'est jamais affecté à un nouveau relais physique d'après son heure de téléchargement.
+- **UI Spotter** : lecture des scores SQL, chronologie persistante, nombre de tours du relais issu du Recorder et message diagnostique si le moteur attend mode/session/tours.
+- **Tests** : 48 Python verts ; 5 scripts JavaScript verts et 5 tests historiques JavaScript encore à reprendre. Validation Render + Apex réel indispensable avant course.
+
+## V7.2.1835 — Première consolidation sans changement fonctionnel
+
+- Suppression de l'écriture des notes de relais depuis le rendu HTML du registre : la synchronisation reste assurée par le cycle dédié de 2 secondes, y compris quand le tableau est fermé.
+- Regroupement et nommage des tâches périodiques du Spotter pour faciliter leur audit. Fréquences préservées (750 ms, 1 s, 2 s, 3 s).
+- Aucune modification du décodage Apex, des formules de notation, du schéma SQL, des routes de nouvelle course ou des identités KV.
+- Cette consolidation **ne corrige pas encore** la perte des notes après une nouvelle course KV ; ce diagnostic doit faire l'objet d'une correction distincte et testée.
+
 ## V7.2.1834 — Transparence de la chronologie des relais KV
 
 - Les observations initiales sont signalées comme provisoires : elles ne constituent pas la preuve d'un premier relais physique.

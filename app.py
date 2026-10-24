@@ -40,6 +40,7 @@ from backend.services.race_state import RaceStateService
 from backend.services.relay_score_engine import fetch_and_compute
 from data_recorder import RecorderStore, RecorderManager
 from spotter_registry_scope import RegistryRuns
+from backend.services.kart_scoring_scope import KartScoringScope
 from spotter_invariants import spotter_snapshot_error
 
 app = Flask(__name__)
@@ -2029,9 +2030,11 @@ def create_race_session():
     # V1813: explicit Session creation is a real course boundary.  Never
     # infer it during passive registry GETs from worker-local TEAM_DATA.
     try:
-        RegistryRuns(_spotter_persistent_store()).current(
-            workspace_id,circuit_id=circuit_id,session_id=sid,
-            session_title=str(session.get("name") or ""),new_run=True)
+        session_context={"circuit_id":circuit_id,"session_id":sid,
+                         "session_title":str(session.get("name") or "")}
+        service=KartScoringScope(_spotter_persistent_store())
+        current=service.read(workspace_id,session_context)
+        service.rotate(workspace_id,session_context,expected_run_id=current['run_id'])
     except Exception:
         app.logger.exception("Registre KV : nouvelle Session non initialisée")
         # The recorded race must not be discarded after a successful start.
@@ -2738,37 +2741,38 @@ def get_analyzer_strategy():
 
 @app.post("/api/kart-setup")
 def velocity_update_kart_setup():
-    """Mode de karts partagé par Session Velocity, indépendant du numéro Apex."""
+    """Single SQL-backed mode/epoch, shared by every Render process.
+
+    Selecting the initial mode preserves the existing KV registry. Resetting
+    or changing mode rotates both the registry AND the scoring epoch together.
+    """
     body = request.get_json(force=True, silent=True) or {}
     mode = body.get("mode")
     reset = body.get("reset") is True
-    if not reset and mode not in {"fixed", "quick"}:
-        return jsonify(ok=False, error="Choisissez Kart fixe ou Quick Change"), 400
-    with TEAM_DATA_LOCK:
-        course = _active_session_for_workspace(TEAM_DATA, _current_workspace_id())
-    if course and course.get("status") == "active":
-        previous_mode = STATE.get("kart_setup_mode")
-        if reset or (previous_mode in {"fixed", "quick"} and mode != previous_mode):
-            return jsonify(ok=False, error="Terminez d’abord la Session Course avant de réinitialiser ou changer le mode kart : l’enregistrement Render continue pendant la session."), 409
-    with SPOTTER_LOCK:
-        previous = STATE.get("kart_setup_mode")
-        if reset and previous not in {"fixed", "quick"}:
-            return jsonify(ok=False, error="Choisissez d'abord un mode"), 400
-        if not reset and previous == mode:
-            return jsonify(ok=True, mode=mode, epoch=STATE.get("kart_scoring_epoch"))
-        STATE["kart_setup_mode"] = previous if reset else mode
-        # Évite toute contamination par les karts d'une course précédente.
-        STATE["kart_scoring_epoch"] = secrets.token_hex(8)
-        if reset:
-            # A new kart-scoring race is also a new physical KV history.
-            workspace,ctx=_spotter_registry_run_context()
-            RegistryRuns(_spotter_persistent_store()).current(workspace,**ctx,new_run=True)
-        # Les anciennes évaluations sont purgées sans toucher aux autres courses archivées.
-        # ni les affectations et l'historique Spotter.
-        for row in (STATE.get("spotter_registry") or {}).values():
-            if isinstance(row, dict):
-                row.pop("speed", None)
-        return jsonify(ok=True, mode=STATE["kart_setup_mode"], epoch=STATE["kart_scoring_epoch"])
+    try:
+        workspace, context = _spotter_registry_run_context()
+        service = KartScoringScope(_spotter_persistent_store())
+        current = service.read(workspace, context)
+        with TEAM_DATA_LOCK:
+            course = _active_session_for_workspace(TEAM_DATA, workspace)
+        if course and course.get('status') == 'active':
+            if reset or (current['mode'] and current['mode'] != mode):
+                return jsonify(ok=False,error='Terminez la Session Course avant de réinitialiser les notes ou changer le mode kart.'),409
+        selected, prior = service.select(workspace,context,mode=mode,reset=reset,
+                                          expected_run_id=body.get('run_id'))
+        if selected is None:
+            return jsonify(ok=False,error='La course a changé sur un autre appareil',
+                           mode=prior['mode'],epoch=prior['epoch'],run_id=prior['run_id']),409
+        # Compatibility mirror only. It is NEVER an authority for SQL scores.
+        STATE['kart_setup_mode'] = selected['mode']
+        STATE['kart_scoring_epoch'] = selected['epoch']
+        return jsonify(ok=True,mode=selected['mode'],epoch=selected['epoch'],
+                       run_id=selected['run_id'])
+    except ValueError as exc:
+        return jsonify(ok=False,error=str(exc)),400
+    except Exception as exc:
+        app.logger.exception('Configuration kart SQL indisponible')
+        return jsonify(ok=False,error='Configuration kart indisponible',detail=str(exc)),503
 
 
 def _spotter_persistent_store():
@@ -2821,7 +2825,21 @@ def get_spotter_registry():
         workspace,context=_spotter_registry_run_context()
         run=RegistryRuns(_spotter_persistent_store()).current(workspace,**context)
         result=_spotter_registry_response(run)
-        result.update(ok=True,registry=json.loads(run["registry_json"]),
+        setup=KartScoringScope(_spotter_persistent_store()).read(workspace,context)
+        registry=json.loads(run['registry_json'])
+        with TEAM_DATA_LOCK:
+            active_course=_active_session_for_workspace(TEAM_DATA,workspace)
+        num_server_scores=sum(1 for row in registry.values() if isinstance(row,dict)
+           and (row.get('speed') or {}).get('source')=='server-recorder'
+           and (row.get('speed') or {}).get('epoch')==setup['epoch'])
+        scoring_status=('mode_not_selected' if not setup['mode'] else
+           'no_active_session' if not active_course else
+           'waiting_for_kv' if not registry else
+           'waiting_for_recorder_laps' if not num_server_scores else 'scoring')
+        result.update(kart_mode=setup['mode'],kart_scoring_epoch=setup['epoch'],
+                      kart_scoring_status=scoring_status,kart_scored_count=num_server_scores,
+                      workspace_id=workspace,
+                      ok=True,registry=registry,
                       registry_updated_at_ms=int(run.get("updated_at_ms") or 0))
         response=jsonify(result)
         response.headers["Cache-Control"]="private, no-store"
@@ -2896,8 +2914,15 @@ def new_spotter_registry_course():
         current=runs.current(workspace,**context)
         if str(body.get("run_id") or "")!=str(current["run_id"]):
             return jsonify(ok=False,error="Le registre a déjà changé de course",**_spotter_registry_response(current)),409
-        next_run=runs.current(workspace,**context,new_run=True)
+        selected, _prior=KartScoringScope(_spotter_persistent_store()).rotate(
+            workspace,context,expected_run_id=current['run_id'])
+        if selected is None:
+            return jsonify(ok=False,error='Course KV modifiée entre-temps'),409
+        next_run=selected['registry']
+        STATE['kart_setup_mode']=selected['mode']
+        STATE['kart_scoring_epoch']=selected['epoch']
         return jsonify(ok=True,registry={},registry_updated_at_ms=int(next_run.get("updated_at_ms") or 0),
+                       kart_mode=selected['mode'],kart_scoring_epoch=selected['epoch'],
                        **_spotter_registry_response(next_run))
     except Exception as exc:
         return jsonify(ok=False,error="Nouvelle course impossible",detail=str(exc)),503

@@ -242,7 +242,21 @@ class RegistryRuns:
                 # Archive every recorded passage; any UI limit belongs solely
                 # to the renderer, never to the authoritative SQL JSON.
                 combined=_chronological_history(keyed.values())
-                merged[kv]={**old,**row,"history":combined}
+                # The active Session Course scorer owns score fields. A stale
+                # browser may append movement events, never overwrite scoring.
+                server_scores={(str(h.get('team')),str(h.get('at'))):h
+                               for h in previous if isinstance(h,dict)
+                               and h.get('scoreOrigin')=='server-recorder'}
+                for event in combined:
+                    official=server_scores.get((str(event.get('team')),str(event.get('at'))))
+                    if official:
+                        for field in ('score','scoreProvisional','scoreOrigin','updatedAt'):
+                            event[field]=official.get(field)
+                record={**old,**row,'history':combined}
+                if isinstance(old.get('speed'),dict) and old['speed'].get('source')=='server-recorder':
+                    for field in ('speed','analyzerPotential','analyzerPotentialEpoch','scoreHistory'):
+                        if field in old:record[field]=deepcopy(old[field])
+                merged[kv]=record
             now=max(int(time.time()*1000),baseline+1)
             result=self.store._execute(
                 """UPDATE velocity_spotter_registry_runs SET registry_json=?,updated_at_ms=?

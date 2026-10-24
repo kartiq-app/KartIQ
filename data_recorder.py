@@ -365,7 +365,7 @@ class RecorderStore:
                 received_at_ms BIGINT NOT NULL, team TEXT, pilot TEXT, kart TEXT, position BIGINT,
                 lap_time TEXT, lap_seconds DOUBLE PRECISION, sector_1 TEXT, sector_1_seconds DOUBLE PRECISION,
                 sector_2 TEXT, sector_2_seconds DOUBLE PRECISION, sector_3 TEXT, sector_3_seconds DOUBLE PRECISION,
-                pit_stops BIGINT, relay_index BIGINT, PRIMARY KEY(recording_id,row_id,lap_number)
+                pit_stops BIGINT, relay_index BIGINT, origin TEXT NOT NULL DEFAULT 'legacy', PRIMARY KEY(recording_id,row_id,lap_number)
             )""",
             """CREATE TABLE IF NOT EXISTS velocity_recorder_sectors (
                 recording_id TEXT NOT NULL, row_id BIGINT NOT NULL, lap_number BIGINT,
@@ -429,6 +429,10 @@ class RecorderStore:
                 registry_json TEXT NOT NULL, started_at_ms BIGINT NOT NULL,
                 updated_at_ms BIGINT NOT NULL
             )""",
+            """CREATE TABLE IF NOT EXISTS velocity_kart_scoring_scope (
+                workspace_id TEXT PRIMARY KEY, run_id TEXT NOT NULL,
+                mode TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
+            )""",
             """CREATE TABLE IF NOT EXISTS velocity_spotter_registry_archive (
                 workspace_id TEXT NOT NULL, run_id TEXT NOT NULL,
                 circuit_id TEXT NOT NULL, session_id TEXT NOT NULL, session_title TEXT NOT NULL,
@@ -448,6 +452,24 @@ class RecorderStore:
         for sql in ddl:
             self._execute(sql)
         self._ensure_recording_control_columns()
+        self._ensure_lap_origin_column()
+
+    def _ensure_lap_origin_column(self):
+        """Track whether a lap really happened live or came from an Apex backfill.
+
+        Backfill retrieval times cannot reliably locate a lap in a KV relay.
+        """
+        if self.backend == "postgres":
+            rows = self._execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema=current_schema() AND table_name='velocity_recorder_laps'",
+                fetchall=True) or []
+            columns = {str(row.get("column_name") or "") for row in rows}
+        else:
+            rows = self._execute("PRAGMA table_info(velocity_recorder_laps)", fetchall=True) or []
+            columns = {str(row.get("name") or "") for row in rows}
+        if "origin" not in columns:
+            self._execute("ALTER TABLE velocity_recorder_laps ADD COLUMN origin TEXT NOT NULL DEFAULT 'legacy'")
 
     def _ensure_recording_control_columns(self):
         """Migration idempotente V7.2.1764 pour les bases déjà existantes.
@@ -910,19 +932,20 @@ class RecorderStore:
         """
         with self._lock:
             existing = self._execute(
-                "SELECT received_at_ms FROM velocity_recorder_laps WHERE recording_id=? AND row_id=? AND lap_number=?",
+                "SELECT received_at_ms,origin FROM velocity_recorder_laps WHERE recording_id=? AND row_id=? AND lap_number=?",
                 (rid, lap["row_id"], lap["lap_number"]), fetchone=True,
             )
             params = (
                 rid, lap["row_id"], lap["lap_number"], lap["received_at_ms"], lap.get("team"), lap.get("pilot"), lap.get("kart"), lap.get("position"),
                 lap.get("lap_time"), lap.get("lap_seconds"), lap.get("sector_1"), lap.get("sector_1_seconds"), lap.get("sector_2"), lap.get("sector_2_seconds"),
                 lap.get("sector_3"), lap.get("sector_3_seconds"), lap.get("pit_stops"), lap.get("relay_index"),
+                "backfill" if preserve_existing_timestamp else "live",
             )
-            timestamp_update = "received_at_ms=velocity_recorder_laps.received_at_ms," if preserve_existing_timestamp else "received_at_ms=excluded.received_at_ms,"
+            timestamp_update = "received_at_ms=velocity_recorder_laps.received_at_ms,origin=velocity_recorder_laps.origin," if preserve_existing_timestamp else "received_at_ms=excluded.received_at_ms,origin=excluded.origin,"
             self._execute(
                 f"""INSERT INTO velocity_recorder_laps
-                   (recording_id,row_id,lap_number,received_at_ms,team,pilot,kart,position,lap_time,lap_seconds,sector_1,sector_1_seconds,sector_2,sector_2_seconds,sector_3,sector_3_seconds,pit_stops,relay_index)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   (recording_id,row_id,lap_number,received_at_ms,team,pilot,kart,position,lap_time,lap_seconds,sector_1,sector_1_seconds,sector_2,sector_2_seconds,sector_3,sector_3_seconds,pit_stops,relay_index,origin)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(recording_id,row_id,lap_number) DO UPDATE SET
                    {timestamp_update}team=COALESCE(NULLIF(excluded.team,''),velocity_recorder_laps.team),pilot=COALESCE(NULLIF(excluded.pilot,''),velocity_recorder_laps.pilot),kart=COALESCE(NULLIF(excluded.kart,''),velocity_recorder_laps.kart),position=COALESCE(excluded.position,velocity_recorder_laps.position),
                    lap_time=excluded.lap_time,lap_seconds=excluded.lap_seconds,sector_1=COALESCE(excluded.sector_1,velocity_recorder_laps.sector_1),sector_1_seconds=COALESCE(excluded.sector_1_seconds,velocity_recorder_laps.sector_1_seconds),
@@ -1476,7 +1499,8 @@ class DataRecorderWorker:
                                            "sector1": round(float(lap.get("sector_1_seconds") or 0) * 1000),
                                            "sector2": round(float(lap.get("sector_2_seconds") or 0) * 1000),
                                            "sector3": round(float(lap.get("sector_3_seconds") or 0) * 1000),
-                                           "received_at_ms": int(lap.get("received_at_ms") or 0)})
+                                           "received_at_ms": int(lap.get("received_at_ms") or 0),
+                                           "origin": str(lap.get("origin") or "legacy")})
             for pit in pits:
                 if str(pit.get("event") or "").upper() != "IN":
                     continue
@@ -1749,8 +1773,14 @@ class DataRecorderWorker:
                 }
                 if self.store.upsert_lap(self.id, record, preserve_existing_timestamp=True):
                     self.counters["laps"] += 1; new["laps"] += 1
+                # A live lap retains its real passage timestamp and provenance.
+                # Apex backfill has *no absolute passage time*, so marking it
+                # prevents assigning old history to a newly created KV run.
+                previous = existing_laps.get(lap_no) or {}
                 existing_laps[lap_no] = {"lap": lap_no, "seconds": lap_ms / 1000,
-                                         "sector1": s1, "sector2": s2, "sector3": s3, "received_at_ms": at}
+                                         "sector1": s1, "sector2": s2, "sector3": s3,
+                                         "received_at_ms": previous.get("received_at_ms", at),
+                                         "origin": previous.get("origin", "backfill")}
                 for sector, value in ((1, s1), (2, s2), (3, s3)):
                     if value <= 0:
                         continue
@@ -1876,7 +1906,7 @@ class DataRecorderWorker:
                                             "sector1": round(float((sectors.get(1) or {}).get("seconds") or 0) * 1000),
                                             "sector2": round(float((sectors.get(2) or {}).get("seconds") or 0) * 1000),
                                             "sector3": round(float((sectors.get(3) or {}).get("seconds") or 0) * 1000),
-                                            "received_at_ms": at}
+                                            "received_at_ms": at, "origin": "live"}
                     bucket["laps"] = [existing[k] for k in sorted(existing)]
                     if inserted:
                         self.counters["laps"] += 1
@@ -1957,6 +1987,17 @@ class DataRecorderWorker:
                     if str(self.recording.get("name") or "").startswith("SESSION_V1796:"):
                         matrix = compute_recorder_relay_matrix(teams)
                         self.store.save_session_relay_matrix(self.id, matrix)
+                        # Off the Apex WebSocket path: physical KV scores are
+                        # produced on Render, even if every browser is closed.
+                        # Never infer KV from an Apex kart/team number alone.
+                        try:
+                            from backend.services.spotter_kv_scores import apply_recorder_scores
+                            apply_recorder_scores(self.store, self.id, teams)
+                        except Exception:
+                            # The existing session score matrix must survive a
+                            # broken KV scorer; report without delaying live.
+                            import logging
+                            logging.getLogger(__name__).exception('KV recorder scoring failed')
                     # L'ancien Velocity Score reste enregistré séparément pour
                     # compatibilité et comparaison avec la matrice STATS complète.
                     now = _now_ms()

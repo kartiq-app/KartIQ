@@ -337,6 +337,12 @@ async function load(){
   // Pendant un changement de circuit, ignorer les anciens états encore en transit.
   if(circuitChangeInProgress&&pendingCircuitId&&String(nextState?.circuit_id||'')!==String(pendingCircuitId))return;
   if(newTag)velocityStateETag=newTag;
+  const durable=window.velocityKartServerScope;
+  if(durable&&String(durable.circuitId||'')===String(nextState.circuit_id||'')&&
+     String(durable.workspaceId||'')===String(nextState.workspace?.id||window.VELOCITY_WORKSPACE_ID||'')){
+   nextState.kart_scoring_epoch=durable.epoch;
+   nextState.kart_setup_mode=durable.mode||null;
+  }
   syncRemainingFromState(nextState);
   state=nextState;
   if(!(state.drivers||[]).length){autoBriceFollowApplied=false;manualFollowOverride=false}
@@ -475,35 +481,14 @@ window.velocityKartIsInPit=velocityKartIsInPit;
 // V7.2.1794 — Vitesse démontrée par machine et vitesse du relais en cours.
 // Pilote non identifié != kart lent : on ne retire pas de points de régularité.
 // Les notes restent des preuves de VITESSE OBSERVÉE, jamais un potentiel mécanique inféré.
-let velocityKartScoreStore={karts:{},markers:{}};
-let velocityKartScoreScope='';
-let velocityKartScoreSaveTimer=null;
+// V1836: kart configuration and score epoch are read from the SQL-backed
+// KV course; browser storage is not a scoring authority.
 function velocityKartScoreMode(){
  const value=String(state?.kart_setup_mode||'');
  return value==='fixed'||value==='quick'?value:null;
 }
 function velocityKartScoreEnsureScope(){
- const mode=velocityKartScoreMode(),circuit=String(state?.circuit_id||'');
- const epoch=String(state?.kart_scoring_epoch||'');
- if(!mode||!circuit||!epoch){velocityKartScoreScope='';velocityKartScoreStore={karts:{},markers:{}};return false}
- const scope=`${velocityWorkspaceStorageKey('velocity_kart_scores_1794')}:${circuit}:${epoch}:${mode}`;
- if(scope!==velocityKartScoreScope){
-  if(velocityKartScoreSaveTimer){clearTimeout(velocityKartScoreSaveTimer);velocityKartScoreSaveTimer=null}
-  velocityKartScoreScope=scope;
-  try{
-   const stored=JSON.parse(localStorage.getItem(scope)||'null');
-   velocityKartScoreStore=stored&&stored.karts&&stored.markers?stored:{karts:{},markers:{}};
-  }catch(_){velocityKartScoreStore={karts:{},markers:{}}}
- }
- return true;
-}
-function velocityKartScorePersist(){
- if(!velocityKartScoreScope)return;
- if(velocityKartScoreSaveTimer)return;
- velocityKartScoreSaveTimer=setTimeout(()=>{
-  velocityKartScoreSaveTimer=null;
-  try{localStorage.setItem(velocityKartScoreScope,JSON.stringify(velocityKartScoreStore))}catch(e){console.warn('[Velocity] Sauvegarde des scores karts indisponible',e)}
- },600);
+ return Boolean(velocityKartScoreMode()&&state?.kart_scoring_epoch&&state?.circuit_id);
 }
 function velocityKartScoreIdentity(driver){
  const mode=velocityKartScoreMode();if(!driver||!mode)return null;
@@ -563,120 +548,36 @@ function velocityKartScoreEvaluate(profile){
   }else{profile.recent=null;profile.recentProvisional=true}
  }
 }
-function velocityKartScoreProfile(identity){
- const karts=velocityKartScoreStore.karts;
- if(!karts[identity.id])karts[identity.id]={id:identity.id,kv:identity.kv,team:identity.teamKey,relay:0,lapSerial:0,recentRaw:[],windows:[],best:null,recent:null,recentProvisional:true,confirmed:false,stops:null,wasPit:false,totalValid:0};
- return karts[identity.id];
-}
-function velocityKartScoreMarkPit(driver){
- if(!velocityKartScoreEnsureScope())return;
- const identity=velocityKartScoreIdentity(driver);if(!identity)return;
- const profile=velocityKartScoreStore.karts[identity.id];
- if(profile&&!profile.wasPit){profile.wasPit=true;profile.recent=null;profile.recentProvisional=true;velocityKartScorePersist()}
-}
-function velocityKartScoreOnLap(driver,seconds,marker){
- if(!velocityKartScoreEnsureScope()||!Number.isFinite(seconds)||seconds<=20||seconds>=400)return;
- const identity=velocityKartScoreIdentity(driver);if(!identity)return;
- const m=String(marker||'').trim();if(!m)return;
- // Dédoublonnage persistant des impulsions llp à travers rechargements du navigateur.
- // Il faut aussi conserver la machine : un changement de KV ne rejoue pas l'ancien tour.
- const last=velocityKartScoreStore.markers[identity.teamKey];
- if(last===m)return;
- velocityKartScoreStore.markers[identity.teamKey]=m;
- const profile=velocityKartScoreProfile(identity);
- const rawStops=driver?.pit_stops;
- const stops=(rawStops===null||rawStops===undefined||String(rawStops).trim()==='')?null:Number(rawStops);
- const stopCount=Number.isFinite(stops)?stops:null;
- const newRelay=profile.relay===0||profile.team!==identity.teamKey||profile.wasPit||(stopCount!==null&&profile.stops!==null&&stopCount!==profile.stops);
- if(newRelay){profile.relay+=1;profile.recentRaw=[];profile.recent=null;profile.recentProvisional=true}
- profile.team=identity.teamKey;profile.kv=identity.kv;profile.stops=stopCount;profile.wasPit=false;
- profile.lapSerial+=1;profile.totalValid+=1;
- profile.recentRaw.push({serial:profile.lapSerial,seconds});
- profile.recentRaw=profile.recentRaw.slice(-20);
- velocityKartScoreEvaluate(profile);
- if(identity.kv&&typeof window.spotterRegistryUpdateSpeed==='function'){
-  window.spotterRegistryUpdateSpeed(identity.kv,{potential:profile.best?.seconds??null,recent:profile.recent,confirmed:profile.confirmed,provisional:profile.recentProvisional,validLaps:profile.totalValid,updatedAt:Date.now(),epoch:String(state.kart_scoring_epoch||'')});
- }
- velocityKartScorePersist();
-}
-function velocityKartLocalUnverifiedRankings(){
- const profiles=Object.values(velocityKartScoreStore.karts).filter(p=>!p.kv&&
-  ((p.best&&Number.isFinite(p.best.seconds))||Number.isFinite(p.recent)));
- if(!profiles.length)return [];
- const reference=Math.min(...profiles.map(p=>p.best?.seconds??p.recent));
- const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
- return profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference,localReference:true}))
-  .sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
-}
-// Fallback ONLY while SQL-backed scoring evidence has not arrived. These
-// values are explicitly provisional; they must not color Spotter cards or be
-// published as shared physical evaluations. The scoring formula is unchanged.
-function velocityKartLocalPendingRankings(){
- const profiles=Object.values(velocityKartScoreStore.karts||{}).filter(p=>p.kv&&
-  ((p.best&&Number.isFinite(p.best.seconds))||Number.isFinite(p.recent)));
- if(!profiles.length)return [];
- const reference=Math.min(...profiles.map(p=>Number.isFinite(p.best?.seconds)?p.best.seconds:p.recent));
- const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
- return profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference,
-  localReference:true,referenceLoading:true,confirmed:false}))
-  .sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
-}
+// Current physical scores are computed by the Session Course Recorder, not
+// reconstructed from browser-local laps or saved localStorage profiles.
 function velocityKartScoreRankings(){
  if(!velocityKartScoreEnsureScope())return [];
- const mode=velocityKartScoreMode();
- // V1815: In Quick Change, every physical KV must use the same set of
- // performance evidence obtained from the SQL-backed race registry. Never
- // rank a physical machine against a browser-only LIVE profile: two phones
- // can have different LIVE histories and otherwise award different scores.
  const shared=window.velocityKartScoreSharedSnapshot;
  const epoch=String(state?.kart_scoring_epoch||'');
- if(mode==='quick'&&shared?.runId&&shared.epoch===epoch){
-  const profiles=Object.entries(shared.registry||{}).flatMap(([kv,row])=>{
-   const speed=row?.speed;
-   if(!speed||String(speed.epoch||'')!==epoch)return [];
-   const best=Number(speed.potential),recent=Number(speed.recent);
-   const bestOk=speed.potential!==null&&speed.potential!==undefined&&Number.isFinite(best)&&best>20&&best<400;
-   const recentOk=speed.recent!==null&&speed.recent!==undefined&&Number.isFinite(recent)&&recent>20&&recent<400;
-   if(!bestOk&&!recentOk)return [];
-   return [{id:`KV:${kv}`,kv,team:row.currentTeam||'',best:bestOk?{seconds:best}:null,
-    recent:recentOk?recent:null,confirmed:Boolean(speed.confirmed),
-    recentProvisional:Boolean(speed.provisional),totalValid:Number(speed.validLaps)||0}];
-  });
-  if(!profiles.length)return velocityKartLocalPendingRankings().concat(velocityKartLocalUnverifiedRankings());
-  const reference=Math.min(...profiles.map(p=>p.best?.seconds??p.recent));
-  const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
-  const physical=profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference}))
-   .sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
-  // Unverified LIVE pilots may still be shown, but never influence the
-  // physical reference used by all clients to score KV identities.
-  return physical.concat(velocityKartLocalUnverifiedRankings());
- }
- if(mode==='quick')return velocityKartLocalPendingRankings().concat(velocityKartLocalUnverifiedRankings());
- // Fixed-kart mode preserves its existing formula and complete local profiles.
- const profiles=Object.values(velocityKartScoreStore.karts).filter(p=>(p.best&&Number.isFinite(p.best.seconds))||Number.isFinite(p.recent));
+ if(!shared?.runId||shared.epoch!==epoch)return [];
+ const profiles=Object.entries(shared.registry||{}).flatMap(([kv,row])=>{
+  if(row?.trace==='interrupted')return [];
+  const speed=row?.speed;
+  if(!speed||speed.epoch!==epoch||speed.source!=='server-recorder')return [];
+  const best=Number(speed.potential),recent=Number(speed.recent);
+  const bestOk=speed.potential!=null&&Number.isFinite(best)&&best>20&&best<400;
+  const recentOk=speed.recent!=null&&Number.isFinite(recent)&&recent>20&&recent<400;
+  if(!bestOk&&!recentOk)return [];
+  const current=row.history?.[row.history.length-1];
+  const fresh=Number(speed.updatedAt||0)>=Number(current?.at||0);
+  return [{id:`KV:${kv}`,kv,team:row.currentTeam||current?.team||'',
+   best:bestOk?{seconds:best}:null,recent:recentOk&&fresh?recent:null,
+   confirmed:Boolean(speed.confirmed),recentProvisional:Boolean(speed.provisional),
+   totalValid:Number(speed.validLaps)||0,verified:!row.autoProvisional}];
+ });
  if(!profiles.length)return [];
- const reference=Math.min(...profiles.map(p=>Number.isFinite(p.best?.seconds)?p.best.seconds:p.recent));
- return profiles.map(p=>{
-  const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
-  return {...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference};
- }).sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
+ const baseline=profiles.filter(p=>p.verified);
+ const reference=Math.min(...(baseline.length?baseline:profiles).map(p=>p.best?.seconds??p.recent).filter(Number.isFinite));
+ if(!Number.isFinite(reference)||reference<=0)return [];
+ const score=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round((100-1000*(value/reference-1))*10)/10)):null;
+ return profiles.map(p=>({...p,potential:score(p.best?.seconds),recentScore:score(p.recent),reference}))
+  .sort((a,b)=>(b.potential??b.recentScore??-1)-(a.potential??a.recentScore??-1));
 }
-// Récupération facultative des meilleurs chronos KV depuis le registre partagé.
-// Le numéro Apex / une éventuelle vitesse récente d'un autre relais ne sont jamais réutilisés.
-function velocityKartScoreHydrateRegistry(kv,speed){
- if(!velocityKartScoreEnsureScope()||velocityKartScoreMode()!=='quick')return;
- if(!kv||!speed||String(speed.epoch||'')!==String(state?.kart_scoring_epoch||''))return;
- const seconds=Number(speed.potential);if(!Number.isFinite(seconds)||seconds<=20||seconds>=400)return;
- const identity={id:`KV:${kv}`,kv,teamKey:''};
- const profile=velocityKartScoreProfile(identity);
- if(!profile.best||seconds<profile.best.seconds){
-  profile.best={seconds,relay:0,start:-1,end:-1,at:Number(speed.updatedAt)||0};
- }
- profile.confirmed=Boolean(profile.confirmed||speed.confirmed);
- profile.totalValid=Math.max(Number(profile.totalValid)||0,Number(speed.validLaps)||0);
- velocityKartScorePersist();
-}
-window.velocityKartScoreHydrateRegistry=velocityKartScoreHydrateRegistry;
 window.velocityKartScoreRankings=velocityKartScoreRankings;
 window.velocityKartScoreMode=velocityKartScoreMode;
 function velocityRenderKartModeChoice(){
@@ -751,7 +652,7 @@ function velocitySyncLastValidLaps(){
   let item=velocityLastValidLapByTeam.get(key)||{lap:null,sec:null,label:'—',driver:'',lastMarker:'',wasPit:false,skipOutLap:false};
   // Nouvelle session explicite lorsqu'un circuit fournit encore un compteur Tours.
   if(Number.isFinite(lap)&&lap>0&&Number.isFinite(item.lap)&&item.lap>0&&lap<item.lap)item={lap:null,sec:null,label:'—',driver:'',lastMarker:'',wasPit:false,skipOutLap:false};
-  if(inPit){item.wasPit=true;item.skipOutLap=true;if(marker)item.lastMarker=marker;velocityLastValidLapByTeam.set(key,item);velocityKartScoreMarkPit(driver);continue}
+  if(inPit){item.wasPit=true;item.skipOutLap=true;if(marker)item.lastMarker=marker;velocityLastValidLapByTeam.set(key,item);continue}
   // `last_lap_updated_at` change à chaque vraie update Apex de la cellule llp,
   // y compris lorsque deux tours consécutifs ont exactement le même chrono.
   // Fallback valeur/compteur uniquement pour compatibilité avec un ancien backend.
@@ -761,7 +662,7 @@ function velocitySyncLastValidLaps(){
    if(marker)item.lastMarker=marker;
    if(Number.isFinite(lap))item.observedLap=lap;
    if(item.skipOutLap){item.skipOutLap=false;item.wasPit=false;velocityLastValidLapByTeam.set(key,item);continue}
-   if(Number.isFinite(sec)&&sec>0){item.lap=Number.isFinite(lap)&&lap>0?lap:null;item.sec=sec;item.label=String(driver?.last||'—');item.driver=String(driver?.driver||'');velocityKartScoreOnLap(driver,sec,marker)}
+   if(Number.isFinite(sec)&&sec>0){item.lap=Number.isFinite(lap)&&lap>0?lap:null;item.sec=sec;item.label=String(driver?.last||'—');item.driver=String(driver?.driver||'')}
   }
   item.wasPit=false;velocityLastValidLapByTeam.set(key,item);
  }
