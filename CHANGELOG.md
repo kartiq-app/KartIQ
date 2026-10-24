@@ -1,3 +1,18 @@
+## V7.2.1833 — Préservation des équipes face aux mises à jour `drteam` Apex
+
+- Le `grid` initial fournit le nom de l'équipe dans la colonne Équipe (`c4`).
+- Les messages `drteam` suivants contiennent le pilote courant et son temps de relais dans cette même cellule.
+- Le parseur conserve désormais `name` (équipe) et actualise uniquement `pilot` et, si nécessaire, le compteur de relais.
+- Aucun changement à la réception WebSocket, aux chronos ou au classement Apex.
+- Version applicative synchronisée avec le correctif.
+
+## V7.2.1832 — Stabilité des noms des équipes dans le registre
+
+- Mémorise le dernier nom fiable par identifiant d’équipe Apex pendant la course active.
+- Une trame Apex sans libellé ne remplace plus le nom par un tiret.
+- Le relais actif récupère son nom depuis l’identité live ou son historique correspondant.
+- Les relais terminés et les calculs des scores restent inchangés.
+
 ## V7.2.1831 — Notes de relais indépendantes
 
 - NOTE KART conserve son potentiel historique.

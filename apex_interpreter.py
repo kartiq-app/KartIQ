@@ -227,7 +227,9 @@ class ApexInterpreter:
                 # On normalise en HH:MM:SS pour les calculateurs Analyzer.
                 parts = driver_time.split(":")
                 normalized_driver_time = f"{int(parts[0]):02d}:{int(parts[1]):02d}:00" if len(parts) == 2 else driver_time
-                row["name"] = pilot_name or None
+                # Apex drteam updates the current PILOT in the same c4 cell
+                # whose initial grid value is the TEAM. Never overwrite the
+                # persistent team identity with the transient pilot name.
                 row["pilot"] = pilot_name or row.get("pilot")
                 # Le suffixe [H:MM] du pilote est un repli uniquement.
                 # La colonne Apex EN PISTE (otr) est prioritaire, y compris
@@ -236,8 +238,12 @@ class ApexInterpreter:
                     row["track_timer"] = normalized_driver_time
                     row["track_timer_source"] = "pilot_name"
                     row["timer"] = normalized_driver_time
-            else:
-                row["name"] = cleaned or None
+            elif code == "drteam":
+                # A pilot-only frame without a bracketed stint timer still
+                # must not erase the team captured from the initial grid.
+                row["pilot"] = cleaned or row.get("pilot")
+            elif cleaned:
+                row["name"] = cleaned
         elif field == "pilot":
             row["pilot"] = value.strip() or None
         elif field == "penalty":

@@ -947,7 +947,7 @@ async function spotterRegistrySeedLiveTeams(){
  const drivers=spotterLiveState()?.drivers||[];
  if(!Array.isArray(drivers)||!drivers.length)return;
  const teams=drivers.map(driver=>({key:spotterDriverKey(driver),
-  label:spotterStableTeamLabel(driver,''),kart:String(driver.apex||driver.kart||'')}))
+  label:spotterRegistryLiveTeamName(driver,null),kart:String(driver.apex||driver.kart||'')}))
   .filter(item=>item.key);
  if(!teams.length)return;
  spotterRegistryAutoSeedAt=Date.now();spotterRegistryAutoSeedBusy=true;
@@ -963,6 +963,28 @@ async function spotterRegistrySeedLiveTeams(){
   }
  }catch(error){console.warn('[Spotter] Attribution KV provisoire différée',error)}
  finally{spotterRegistryAutoSeedBusy=false}
+}
+// V1832: names are presentation metadata. A partial Apex frame must not
+// erase the last reliable team name for the same row within this registry run.
+const spotterRegistryTeamNames=new Map();
+let spotterRegistryTeamNamesRun=null;
+function spotterRegistryReliableName(value){
+ const name=String(value||'').trim();
+ return name&&name!=='—'&&!/^apex:\d+$/i.test(name)?name:'';
+}
+function spotterRegistryLiveTeamName(driver,kv){
+ if(spotterRegistryTeamNamesRun!==spotterRegistryRunId){
+  spotterRegistryTeamNames.clear();spotterRegistryTeamNamesRun=spotterRegistryRunId;
+ }
+ const key=spotterDriverKey(driver);
+ const fresh=spotterRegistryReliableName(spotterStableTeamLabel(driver,''));
+ const history=kv?spotterState.kartRegistry?.[kv]?.history:[];
+ const latest=Array.isArray(history)?history[history.length-1]:null;
+ const saved=latest&&String(latest.team)===String(key)
+  ?spotterRegistryReliableName(latest.teamLabel):'';
+ const name=fresh||spotterRegistryTeamNames.get(key)||saved||'—';
+ if(name!=='—'&&key)spotterRegistryTeamNames.set(key,name);
+ return name;
 }
 function spotterRegistryLiveRows(){
  const live=spotterLiveState();
@@ -984,7 +1006,7 @@ function spotterRegistryLiveRows(){
   const autoKv=Object.entries(spotterState.kartRegistry||{}).find(([,row])=>
    row?.autoProvisional&&row.autoTeamKey===spotterDriverKey(driver))?.[0]||null;
   const kv=confirmedKv||autoKv;
-  const current={driver,team:spotterStableTeamLabel(driver,''),kart:String(driver.apex||driver.kart||'—'),
+  const current={driver,team:spotterRegistryLiveTeamName(driver,kv),kart:String(driver.apex||driver.kart||'—'),
    last:String(driver.last||driver.last_lap||'—'),laps:driver.laps??null,seconds:spotterRegistryTrackSeconds(driver)};
   const liveEstimate=!confirmedKv&&comparable?liveByKey.get(`LIVE:${spotterDriverKey(driver)}`):null;
   const rating=liveEstimate?{value:Number(liveEstimate.recentScore),provisional:true,liveOnly:true}:null;
@@ -1023,6 +1045,10 @@ function spotterRegistrySyncLiveRelayScores(observed){
   const latest=history[history.length-1];
   const teamKey=spotterDriverKey(item.driver);
   if(!teamKey||String(latest.team)!==String(teamKey))continue;
+  const liveLabel=spotterRegistryReliableName(item.current?.team);
+  if(liveLabel&&!spotterRegistryReliableName(latest.teamLabel)){
+   latest.teamLabel=liveLabel;changed=true;
+  }
   const entry=byKv.get(String(item.kv));
   const speed=row.speed;
   // Never carry a prior team's pace into a freshly assigned kart.
