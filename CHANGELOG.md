@@ -1,3 +1,11 @@
+## V7.2.1837 — Ajout KCE Misanino Kart Circuit (Italie)
+
+- Nouveau circuit dans `config/circuits.json` : page Apex officielle `https://www.apex-timing.com/live-timing/misanino-kart/` et WebSocket fourni `wss://live-data.apex-timing.com:8043/`.
+- Fuseau Europe/Rome et coordonnées géographiques publiées par Misanino pour la météo.
+- Statut `testing` : réception des trames live à confirmer pendant une session active.
+- Aucun changement aux moteurs Apex, Spotter, KV, Recorder et notation.
+- Cache service worker et version applicative incrémentés.
+
 ## V7.2.1836 — Consolidation structurelle Spotter / KV, notation Recorder serveur
 
 - **Audit poussé** et documentation dans `AUDIT_SPOTTER_V1836.md` ; couches de score navigateur retirées, résultat SQL de Recorder seul officiel.

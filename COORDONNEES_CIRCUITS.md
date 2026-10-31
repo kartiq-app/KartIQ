@@ -1,6 +1,6 @@
-# Coordonnées météo des circuits — V6.9.3
+# Coordonnées météo des circuits — V7.2.1837
 
-29 circuits disposent désormais de coordonnées GPS locales utilisées en priorité par le module météo.
+37 circuits disposent désormais de coordonnées GPS locales utilisées en priorité par le module météo.
 
 | Circuit | Latitude | Longitude | Fuseau | Libellé |
 |---|---:|---:|---|---|
@@ -36,6 +36,7 @@
 | Karting des Fagnes Mariembourg | 50.094900 | 4.506900 | Europe/Brussels | Mariembourg / Couvin |
 | KartCenter Campillos | 37.038437 | -4.913829 | Europe/Madrid | Ctra A-384, km 101, Campillos, Málaga |
 | Circuito Internazionale Triscina | 37.579800 | 12.795600 | Europe/Rome | Triscina, Castelvetrano |
+| KCE Misanino Kart Circuit | 43.966694 | 12.684833 | Europe/Rome | Via Marco Simoncelli, 19, Misano Adriatico (RN) |
 | Lignano Circuit | 45.790900 | 13.070700 | Europe/Rome | Lignano Sabbiadoro / Precenicco |
 | South Garda Karting | 45.462900 | 10.484400 | Europe/Rome | Lonato del Garda |
 | Harbor Circuit Makuhari | 35.653900 | 140.034700 | Asia/Tokyo | Makuhari, Chiba |
