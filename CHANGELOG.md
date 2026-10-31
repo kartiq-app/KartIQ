@@ -2443,3 +2443,9 @@
 - Identité KV provisoire lue du registre SQL par clé équipe, indépendamment du mode kart.
 - Colonne KV du classement et carte KARTS alignées sur Spotter; aucun changement des calculs de notes/chronos.
 - Les KV provisoires restent distincts des identités physiques confirmées.
+
+## V7.2.1838 — Focus Endurance : affichage des arrêts aux stands
+- Ajout dans la case gauche du Focus Endurance de la ligne `Arrêts : X`, sous la position du dernier chrono.
+- Libellé en bleu (même teinte que le temps de sortie des stands).
+- Même taille que le nom de l’équipe, sans modifier la taille des autres textes.
+- Resserrement léger des espacements internes pour conserver le gabarit initial de la case.

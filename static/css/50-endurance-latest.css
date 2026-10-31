@@ -310,14 +310,14 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:clamp(1px,.22vh,4px);
+  gap:clamp(0px,.16vh,3px);
   width:100%;
   max-width:100%;
   min-width:0;
   max-height:100%;
   overflow:hidden;
   box-sizing:border-box;
-  padding:clamp(2px,.45vh,8px) clamp(4px,1vw,14px)
+  padding:clamp(2px,.35vh,7px) clamp(4px,1vw,14px)
 }
 #enduranceFocus .endurance-focus-driver .sprint-focus-position{
   order:1;
@@ -346,6 +346,25 @@ body[data-app-mode="endurance"] #endurance .position-cell{
   overflow:hidden;
   text-overflow:ellipsis;
   box-sizing:border-box
+}
+#enduranceFocus .endurance-focus-pit-stops{
+  order:4;
+  flex:0 1 auto;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  padding:0 .2em;
+  font-family:var(--font-driver);
+  font-size:clamp(20px,4.5vh,54px);
+  font-weight:850;
+  line-height:1;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  box-sizing:border-box;
+  color:var(--blue,#58a6ff)
 }
 #enduranceFocus .endurance-focus-last-rank{
   order:3;
@@ -1047,6 +1066,10 @@ body.iphone-focus-virtual-landscape #enduranceFocus .sprint-focus-header>i{
     font-size:110%!important;
     max-width:100%!important;
   }
+  #enduranceFocus .endurance-focus-pit-stops{
+    font-size:110%!important;
+    max-width:100%!important;
+  }
   #enduranceFocus .endurance-focus-neighbour-name{
     font-size:clamp(19.8px,3.432vh,39.6px)!important;
   }
@@ -1072,6 +1095,9 @@ body.iphone-focus-virtual-landscape #sprintFocus .sprint-focus-deltas-v1766 .spr
   font-size:clamp(69.7px,17dvw,187px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-driver .sprint-focus-name{
+  font-size:clamp(18px,5.1dvw,38px)!important;
+}
+body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-pit-stops{
   font-size:clamp(18px,5.1dvw,38px)!important;
 }
 body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-neighbour-name{

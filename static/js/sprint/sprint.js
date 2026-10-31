@@ -366,6 +366,14 @@ function renderEndurancePitState(f){
 }
 
 
+function enduranceFocusPitStopsValue(f){
+ const liveStops=Number(f?.pit_stops);
+ if(Number.isFinite(liveStops)&&liveStops>=0)return Math.trunc(liveStops);
+ const simulatedStops=Number(endurancePitPassageCount);
+ if(Number.isFinite(simulatedStops)&&simulatedStops>=0)return Math.trunc(simulatedStops);
+ return 0;
+}
+
 function enduranceTrackTimeValue(f){
  const status=String(f?.status||'unknown').toLowerCase();
  if(status!=='track')return '—';
@@ -543,8 +551,10 @@ function renderEnduranceFocus(){
  const behindNameEl=document.getElementById('enduranceFocusBehindName');
  const timeEl=document.getElementById('enduranceFocusTime');
  const lastLapEl=document.getElementById('enduranceFocusLastLap');
+ const pitStopsEl=document.getElementById('enduranceFocusPitStops');
  if(position)position.textContent=f.pos?'P'+f.pos:'—';
  if(name)name.textContent=f.driver||state.followed_driver||'—';
+ if(pitStopsEl)pitStopsEl.textContent=`Arrêts : ${enduranceFocusPitStopsValue(f)}`;
  const lastRank=sprintLastLapRanking(f);if(lastRankEl)lastRankEl.innerHTML=lastRank?enduranceOrdinalMarkup(lastRank.rank):'—';
  const aheadDriver=sprintDriverAhead(f);const behindDriver=sprintDriverBehind(f);
  const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(behindDriver);
