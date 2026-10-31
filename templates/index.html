@@ -7,14 +7,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Velocity">
-<link rel="manifest" href="{% if race_access_temporary|default(false) and race_access_role|default('') == 'pilot' and race_access_token|default('') %}/join/{{ race_access_token }}/manifest.webmanifest{% else %}/static/manifest.json?v={{ app_version }}{% endif %}">
+<link rel="manifest" href="/static/manifest.json?v={{ app_version }}">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png?v=7.2.1742">
 <title>Velocity V{{ app_version }} — Architecture 5 modes</title>
 <link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
-<script>window.VELOCITY_APP_VERSION={{ app_version|tojson }};window.VELOCITY_WORKSPACE_ID={{ velocity_workspace_id|default('LEGACY')|tojson }};window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};window.VELOCITY_INVITE_TOKEN={{ velocity_invite_token|tojson }};</script>
+<script>window.VELOCITY_APP_VERSION={{ app_version|tojson }};window.VELOCITY_WORKSPACE_ID={{ velocity_workspace_id|default('LEGACY')|tojson }};window.VELOCITY_RACE_ACCESS={role:{{ race_access_role|tojson }},token:{{ race_access_token|tojson }}};window.VELOCITY_INVITE_TOKEN={{ velocity_invite_token|tojson }};window.VELOCITY_INVITED_ACCESS={{ velocity_grant|default(none)|tojson }};</script>
 </head>
-<body>
-<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleVelocityFullscreen()" title="Plein écran" aria-label="Afficher Velocity en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="spotter" onclick="showMode('spotter')">Spotter</button><button class="mode-btn" data-mode="analyzer" onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<body{% if velocity_grant %} class="velocity-invited-user"{% endif %}>
+<header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleVelocityFullscreen()" title="Plein écran" aria-label="Afficher Velocity en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" {% if velocity_grant and 'qualification' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" {% if velocity_grant and 'sprint' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" {% if velocity_grant and 'endurance' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="spotter" {% if velocity_grant and 'spotter' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('spotter')">Spotter</button><button class="mode-btn" data-mode="analyzer" {% if velocity_grant and 'analyzer' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
+<button id="velocityAccessRedeemButton" class="velocity-access-redeem-button" type="button" onclick="velocityOpenRedeem()" hidden>ACTIVER UN LIEN</button>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitVelocityFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -35,35 +36,35 @@
       </div>
 
       <div class="race-mode-cards">
-        <button class="race-mode-card" data-home-mode="qualification" onclick="showMode('qualification')" aria-label="Ouvrir le mode Qualification">
+        <button class="race-mode-card" data-home-mode="qualification" {% if velocity_grant and 'qualification' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('qualification')" aria-label="Ouvrir le mode Qualification">
           <span class="race-icon" aria-hidden="true">
             <svg viewBox="0 0 64 64"><circle cx="32" cy="35" r="20"/><path d="M25 7h14M32 7v8M46 18l5-5M32 35l10-8"/><circle cx="32" cy="35" r="2"/></svg>
           </span>
           <span class="race-mode-label">Qualification</span>
           <span class="race-chevron">›</span>
         </button>
-        <button class="race-mode-card" data-home-mode="sprint" onclick="showMode('sprint')" aria-label="Ouvrir le mode Sprint">
+        <button class="race-mode-card" data-home-mode="sprint" {% if velocity_grant and 'sprint' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('sprint')" aria-label="Ouvrir le mode Sprint">
           <span class="race-icon" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M15 56V9"/><path d="M17 12c10-7 19 7 31 0v24c-12 7-21-7-31 0z"/><path d="M17 12l31 24M48 12L17 36"/></svg>
           </span>
           <span class="race-mode-label">Sprint</span>
           <span class="race-chevron">›</span>
         </button>
-        <button class="race-mode-card" data-home-mode="endurance" onclick="showMode('endurance')" aria-label="Ouvrir le mode Endurance">
+        <button class="race-mode-card" data-home-mode="endurance" {% if velocity_grant and 'endurance' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('endurance')" aria-label="Ouvrir le mode Endurance">
           <span class="race-icon" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M20 7h24M20 57h24"/><path d="M23 9c0 12 3 17 9 23-6 6-9 11-9 23M41 9c0 12-3 17-9 23 6 6 9 11 9 23"/><path d="M25 18h14M25 46h14"/></svg>
           </span>
           <span class="race-mode-label">Endurance</span>
           <span class="race-chevron">›</span>
         </button>
-        <button class="race-mode-card" data-home-mode="spotter" onclick="showMode('spotter')" aria-label="Ouvrir le mode Spotter">
+        <button class="race-mode-card" data-home-mode="spotter" {% if velocity_grant and 'spotter' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('spotter')" aria-label="Ouvrir le mode Spotter">
           <span class="race-icon" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M18 10h28v44H18z"/><path d="M24 18h16M24 26h16M24 34h10"/><circle cx="39" cy="45" r="6"/><path d="M39 42v6M36 45h6"/></svg>
           </span>
           <span class="race-mode-label">Spotter</span>
           <span class="race-chevron">›</span>
         </button>
-        <button class="race-mode-card" data-home-mode="analyzer" onclick="showMode('analyzer')" aria-label="Ouvrir le mode Analyzer">
+        <button class="race-mode-card" data-home-mode="analyzer" {% if velocity_grant and 'analyzer' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('analyzer')" aria-label="Ouvrir le mode Analyzer">
           <span class="race-icon" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M10 54h44"/><rect x="14" y="34" width="8" height="16" rx="1"/><rect x="28" y="23" width="8" height="27" rx="1"/><rect x="42" y="11" width="8" height="39" rx="1"/></svg>
           </span>
@@ -359,27 +360,41 @@
       <button type="button" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
       <button type="button" class="analyzer-test-launch" onclick="openAnalyzerEnduranceTest()">🧪 MODE TEST ENDURANCE</button>
       <button type="button" class="velocity-workspace-launch" onclick="openVelocityWorkspaceManager()">⇄ SESSIONS VELOCITY</button>
-      <button type="button" class="race-pilot-link-launch" onclick="velocityOpenPilotGuestModal()">🔗 ACCÈS PILOTE</button>
+      <button type="button" class="race-pilot-link-launch" onclick="velocityOpenAccessModal()">🔗 GÉRER LES ACCÈS</button>
       <button type="button" class="velocity-lab-launch" onclick="openVelocityLab()">⚙ VELOCITY LAB</button>
       <button type="button" class="race-session-launch" data-race-session-launch onclick="openRaceSessionManager()"><span>CRÉER UNE SESSION</span></button>
     </footer>
   </div>
 
-  <div id="velocityPilotGuestModal" class="velocity-pilot-link-overlay" hidden role="dialog" aria-modal="true" aria-label="Accès pilote temporaire">
+  <div id="velocityAccessModal" class="velocity-pilot-link-overlay" hidden role="dialog" aria-modal="true" aria-label="Gestion des accès Velocity">
     <section class="race-pilot-guest-box velocity-pilot-link-card">
-      <div class="velocity-pilot-link-head"><strong>ACCÈS PILOTE TEMPORAIRE</strong><button type="button" onclick="velocityClosePilotGuestModal()" aria-label="Fermer">×</button></div>
-      <p>Partage un accès au Focus Endurance, sans adresse mail ni compte Google. Le pilote installe Velocity sur iPhone ou Android depuis ce lien, puis ouvre directement le Focus Endurance. Accès en lecture seule, limité à un circuit, une équipe et une durée choisie.</p>
-      <label class="velocity-pilot-link-label">ÉQUIPE À SUIVRE<select id="racePilotGuestTarget" aria-label="Équipe à suivre"></select></label>
-      <div class="race-pilot-guest-actions">
-        <select id="racePilotGuestHours" aria-label="Durée du lien"><option value="1">1 heure</option><option value="3" selected>3 heures</option><option value="6">6 heures</option><option value="12">12 heures</option><option value="24">24 heures</option></select>
-        <button type="button" class="race-ui-btn primary" id="racePilotGuestCreate" onclick="velocityCreatePilotGuest()">GÉNÉRER LE LIEN</button>
+      <div class="velocity-pilot-link-head"><strong>ACCÈS VELOCITY</strong><button type="button" onclick="velocityCloseAccessModal()" aria-label="Fermer">×</button></div>
+      <p>Une seule application Velocity. Choisis les modes accessibles en lecture seule. Un nouveau lien pour le même nom remplace immédiatement l'ancien.</p>
+      <label class="velocity-pilot-link-label">NOM DE L’UTILISATEUR<input id="velocityAccessName" maxlength="80" placeholder="Ex. Pilote 1" autocomplete="off"></label>
+      <div class="velocity-access-modes" id="velocityAccessModeList">
+        <label><input type="checkbox" value="qualification"> Qualification</label>
+        <label><input type="checkbox" value="sprint"> Sprint</label>
+        <label><input type="checkbox" value="endurance" checked> Endurance</label>
+        <label><input type="checkbox" value="spotter"> Spotter</label>
+        <label><input type="checkbox" value="analyzer"> Analyzer</label>
       </div>
-      <div class="race-pilot-guest-actions"><input id="racePilotGuestLink" readonly hidden aria-label="Lien pilote généré"><button id="racePilotGuestCopy" class="race-ui-btn" type="button" hidden onclick="velocityCopyPilotGuest()">COPIER LE LIEN</button></div>
-      <div id="racePilotGuestList" class="race-pilot-guest-list"></div>
-      <p id="racePilotGuestFeedback" class="velocity-pilot-link-feedback" role="status"></p>
+      <label class="velocity-pilot-link-label">ÉQUIPE À SUIVRE (FACULTATIF)<select id="velocityAccessTarget"><option value="">Aucune équipe imposée</option></select></label>
+      <div class="race-pilot-guest-actions">
+        <select id="velocityAccessHours" aria-label="Durée du lien"><option value="1">1 heure</option><option value="3" selected>3 heures</option><option value="6">6 heures</option><option value="12">12 heures</option><option value="24">24 heures</option><option value="48">48 heures</option><option value="72">72 heures</option><option value="168">7 jours</option></select>
+        <button type="button" class="race-ui-btn primary" id="velocityAccessCreate" onclick="velocityCreateAccess()">GÉNÉRER LE LIEN</button>
+      </div>
+      <div class="race-pilot-guest-actions"><input id="velocityAccessLink" readonly hidden aria-label="Lien d'invitation"><button id="velocityAccessCopy" class="race-ui-btn" type="button" hidden onclick="velocityCopyAccess()">COPIER LE LIEN</button></div>
+      <div id="velocityAccessList" class="race-pilot-guest-list"></div>
+      <p id="velocityAccessFeedback" class="velocity-pilot-link-feedback" role="status"></p>
     </section>
   </div>
 
+  <div id="velocityAccessRedeem" class="velocity-access-redeem" hidden role="dialog" aria-label="Activer un accès Velocity">
+    <section><h2>ACCÈS VELOCITY</h2><p>Ouvre ton lien d'invitation sur ce téléphone ou colle-le ici pour actualiser tes modes sans réinstaller l'application.</p>
+      <input id="velocityAccessRedeemInput" type="text" placeholder="Coller le lien d’invitation" autocomplete="off" autocapitalize="off">
+      <button type="button" onclick="velocityRedeemAccess()">ACTIVER LE LIEN</button><p id="velocityAccessRedeemFeedback" role="status"></p>
+      <button type="button" class="velocity-access-redeem-close" onclick="velocityCloseRedeem()">FERMER</button></section>
+  </div>
   <div class="analyzer-rules-modal race-session-modal" id="raceSessionModal" role="dialog" aria-modal="true" aria-labelledby="raceSessionTitle">
     <div class="analyzer-rules-card race-session-card">
       <div class="analyzer-rules-head"><div><span>TEAM MANAGEMENT</span><h2 id="raceSessionTitle">Session Course</h2></div><button type="button" onclick="closeRaceSessionManager()" aria-label="Fermer">×</button></div>

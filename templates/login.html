@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Velocity">
-<link rel="manifest" href="/static/manifest.json?v=7.2.1846">
+<link rel="manifest" href="/static/manifest.json?v=7.2.1847">
 <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/kartiq-180.png?v=7.2.1742">
 
 <style>
@@ -37,7 +37,11 @@ a.google{display:block;text-decoration:none;background:#fff;color:#151515;border
   {% else %}
     <div class="msg">Google OAuth doit encore être configuré sur Render avant d'activer la connexion.</div>
   {% endif %}
+  <div class="invitebox"><strong>INVITATION SANS EMAIL</strong><p>Tu as reçu un lien Velocity ? Ouvre-le ou colle-le ici pour activer tes modes, y compris dans la webapp déjà installée.</p>
+    <input id="accessLinkInput" type="text" placeholder="Coller le lien Velocity" autocomplete="off" autocapitalize="off" aria-label="Lien d'invitation Velocity">
+    <button type="button" onclick="activateVelocityLink()">ACTIVER MON ACCÈS</button><p id="accessLinkFeedback" role="status"></p></div>
   <div class="small">Velocity · Private Access</div>
+<script>async function activateVelocityLink(){const feedback=document.getElementById('accessLinkFeedback');feedback.textContent='Activation…';try{const r=await fetch('/api/access/activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:document.getElementById('accessLinkInput').value.trim()})});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Invitation refusée');location.replace('/')}catch(e){feedback.textContent=e.message||String(e)}}</script>
 </main>
 </body>
 </html>

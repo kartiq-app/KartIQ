@@ -1,3 +1,12 @@
+# V7.2.1847 — Gestion universelle des accès
+- Suppression de Velocity Pilote (routes /join, manifest dédié, page et interface).
+- Invitation par nom, cinq modes indépendants, durée 1 h à 7 jours, équipe Apex facultative.
+- Nouveau lien pour le même nom : révocation atomique des anciens droits.
+- Association persistante du lien à un navigateur/appareil et vérification de chaque requête côté serveur.
+- Accès invité lecture seule et cloisonné par workspace ; Live Apex inchangé.
+- PWA Velocity unique ; activation du lien via invitation, ou saisie dans la PWA quand le système n'ouvre pas directement l'application.
+- Les anciennes associations de rôles n'accordent plus un accès implicite aux APIs de course : nouvelle invitation requise.
+
 ## V7.2.1846 — Correction du bouton Installer Velocity Pilote (iPhone / Android)
 - Corrige le bouton visible par erreur malgré `hidden` (surcharge de `display:block` CSS).
 - Le bouton est désormais toujours actionnable : invite native Android si disponible, instructions détaillées sinon.

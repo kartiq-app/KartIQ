@@ -1,7 +1,6 @@
-const CACHE = 'velocity-v7-2-1846';
+const CACHE = 'velocity-v7-2-1847';
 
 const ASSETS = [
-  '/',
   '/static/css/kartiq.css',
   '/static/css/00-foundations.css',
   '/static/css/10-components-live.css',
@@ -64,6 +63,7 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  if (event.request.mode === 'navigate') return; // pages privées toujours depuis le serveur
   if (event.request.url.includes('/api/')) return; // jamais servir un faux live depuis SW
   event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });

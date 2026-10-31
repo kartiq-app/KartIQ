@@ -770,9 +770,9 @@ function closeApexBrowserSocket(){
   try{socket.close()}catch(e){}
  }
 }
-function ensureApexBrowserConnection(){if(window.VELOCITY_RACE_ACCESS?.token)return;if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
+function ensureApexBrowserConnection(){if(window.VELOCITY_RACE_ACCESS?.token||window.VELOCITY_INVITED_ACCESS)return;if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
 function connectApexBrowser(force=false){
- if(window.VELOCITY_RACE_ACCESS?.token)return;
+ if(window.VELOCITY_RACE_ACCESS?.token||window.VELOCITY_INVITED_ACCESS)return;
  const circuit=(state?.circuits||[]).find(c=>c.id===state.circuit_id);
  if(!circuit?.websocket_url)return;
  if(!force&&apexBrowserSocket&&apexBrowserCircuitId===circuit.id&&[0,1].includes(apexBrowserSocket.readyState))return;
@@ -959,6 +959,7 @@ window.joinVelocityWorkspace=joinVelocityWorkspace;
 
 function showHome(){currentMode='home';setModeClass('home');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('home').classList.add('active');document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'))}
 function showMode(mode){
+ if(window.VELOCITY_INVITED_ACCESS && Array.isArray(window.VELOCITY_ACCESS_MODES) && !window.VELOCITY_ACCESS_MODES.includes(mode))return;
  if(mode!=='home'&&!state?.circuit_id){
   const picker=document.getElementById('homeCircuit');
   picker?.classList.remove('needs-selection');
@@ -972,7 +973,7 @@ function showMode(mode){
  // un clone de Qualification pour le dashboard, mais son bouton Focus ouvre
  // le Focus Sprint dédié à Endurance.
  const screen=document.getElementById(mode);
- screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode==='spotter'&&typeof spotterEnterMode==='function')spotterEnterMode();if(mode!=='home'&&mode!=='spotter')api('/api/mode',{mode:mode==='analyzer'?'endurance':mode});if(VELOCITY_MOBILE_4G&&typeof render==='function')render();
+ screen.classList.add('active','screen-enter');setTimeout(()=>screen.classList.remove('screen-enter'),220);document.querySelectorAll('.mode-btn').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));if(mode==='spotter'&&typeof spotterEnterMode==='function')spotterEnterMode();if(mode!=='home'&&mode!=='spotter'&&!window.VELOCITY_INVITED_ACCESS)api('/api/mode',{mode:mode==='analyzer'?'endurance':mode});if(VELOCITY_MOBILE_4G&&typeof render==='function')render();
  if(mode==='analyzer'&&typeof refreshRaceSessionManager==='function'){
   void refreshRaceSessionManager().then(()=>{
    if(currentMode==='analyzer'&&typeof analyzerFetchRecorderScores==='function'&&window.velocityRaceSession?.recorder_id){

@@ -2992,3 +2992,19 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 .velocity-pilot-link-label{display:grid;gap:7px;color:#9fb8d5;font-size:12px;font-weight:850}
 .velocity-pilot-link-label select{width:100%;min-width:0;border:1px solid #395677;border-radius:7px;background:#101e31;color:#fff;padding:10px;font-size:12px}
 .velocity-pilot-link-feedback{margin:0;color:#a9e7c7;font-size:12px}.velocity-pilot-link-feedback.error{color:#ff9090}
+
+/* V1847 — universal invited users; UI only, API guard remains authoritative. */
+.velocity-access-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+.velocity-access-modes label{display:flex;gap:8px;align-items:center;color:#dce7f5;padding:10px;background:#111b28;border:1px solid #31435c;border-radius:8px}
+.velocity-pilot-link-label input{width:100%;padding:11px;border:1px solid #395677;border-radius:8px;background:#101e31;color:#fff}
+.velocity-invited-user [data-mode][hidden],.velocity-invited-user [data-home-mode][hidden]{display:none!important}
+.velocity-invited-user .race-session-launch,.velocity-invited-user .velocity-lab-launch,.velocity-invited-user .race-pilot-link-launch,.velocity-invited-user .testbar,.velocity-invited-user #reconnectLive{display:none!important}
+.velocity-access-redeem-button{position:fixed;z-index:91000;right:10px;bottom:12px;color:#fff;background:#c2192d;padding:9px 12px;border-radius:8px;border:1px solid #ed5260;font-weight:850}
+.velocity-access-redeem-button[hidden],.velocity-access-redeem[hidden]{display:none!important}
+.velocity-access-redeem{position:fixed;inset:0;z-index:200001;background:rgba(0,0,0,.9);display:grid;place-items:center;padding:20px}
+.velocity-access-redeem section{width:min(480px,100%);display:grid;gap:15px;padding:25px;border:1px solid #35485e;border-radius:15px;background:#101926;color:#fff}
+.velocity-access-redeem input{padding:13px;border:1px solid #4a678b;border-radius:8px;color:#fff;background:#080e16}
+.velocity-access-redeem button{padding:12px;border:0;border-radius:8px;color:#fff;background:#bb2438;font-weight:800}
+.velocity-access-redeem .velocity-access-redeem-close{background:#26374b}
+
+.velocity-invited-user .home-circuit{display:none!important}

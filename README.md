@@ -1,3 +1,27 @@
+## V7.2.1847 — Accès universels (remplace Velocity Pilote)
+
+Depuis **Analyzer → GÉRER LES ACCÈS** (administrateur Google), choisir un nom stable
+pour le destinataire, les cinq modes à autoriser, la durée et une équipe éventuelle.
+Cliquer **GÉNÉRER LE LIEN** puis partager l'invitation. Un deuxième lien créé pour
+le même nom dans le même workspace révoque le premier et **remplace** les modes.
+
+Le destinataire ouvre le lien `/access/<token>`, puis **ACTIVER MON ACCÈS**. Une
+seule PWA Velocity (`/static/manifest.json`) suffit, iPhone et Android. L'installation
+est manuelle si le navigateur ne propose pas l'invite native. Selon le navigateur,
+l'ouverture automatique de la PWA depuis WhatsApp/Safari/Chrome n'est pas garantie.
+Si la PWA possède un stockage/cookie séparé (iOS) ou si le précédent lien a expiré,
+ouvrir la PWA puis **ACTIVER UN LIEN**, ou la page de connexion, et coller le nouveau
+lien. Aucune réinstallation n'est requise.
+
+Invités : lecture seule, droits vérifiés côté serveur sur chaque requête, état
+live `/api/state` sans accès aux APIs administratives. Anciennes URLs `/join/*`
+invalidées et page « Velocity Pilote » supprimée. Les appairages d'anciens membres
+restent conservés pour les Sessions Course, mais ne contournent pas la nouvelle
+politique : un accès universel est nécessaire pour consulter le live.
+
+IMPORTANT : test iOS/Android après déploiement recommandé. Des déclenchements
+POST depuis certaines cartes (Spotter/Analyzer) peuvent être réservés aux administrateurs.
+
 Velocity V7.2.1818 — registre LIVE dès ouverture et NOTE KART physique dans Analyzer.
 
 Velocity V7.2.1818 — registre LIVE dès ouverture et NOTE KART physique dans Analyzer.
