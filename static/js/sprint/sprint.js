@@ -186,6 +186,11 @@ let enduranceTrackStartedAt=0;
 let endurancePitPassageCount=0;
 let endurancePitTeamKey='';
 let endurancePitOfficialLookupToken=0;
+const ENDURANCE_PIT_OUT_DISPLAY_MS=8000;
+// Une seconde de stand n'avance jamais avant confirmation du compteur Apex.
+// Seule sa fraction est animee depuis la derniere valeur officielle recue.
+let endurancePitLiveClock={raw:'',baseMs:null,receivedAt:0};
+let endurancePitDisplayTicker=null;
 
 // V7.2.1751 — Focus Endurance : la couleur vert/orange est propre au pilote
 // du relais en cours. Elle est réinitialisée à chaque sortie des stands.
@@ -252,6 +257,52 @@ function formatEndurancePitClock(value){
  return `${String(fullMinutes).padStart(2,'0')}:${String(secondWhole).padStart(2,'0')}${fractional}`;
 }
 
+// V7.2.1841 — Fraction animee, mais seconde ENTIERE autoritaire Apex.
+// Les millisecondes interpolees ne sont pas un temps officiel du circuit.
+function endurancePitClockNow(){
+ return typeof performance!=='undefined'&&typeof performance.now==='function'?performance.now():Date.now();
+}
+function endurancePitClockReset(){
+ endurancePitLiveClock={raw:'',baseMs:null,receivedAt:0};
+}
+function endurancePitClockObserve(raw){
+ const normalized=formatEndurancePitClock(raw);
+ if(normalized==='—')return false;
+ if(normalized===endurancePitLiveClock.raw)return true;
+ const match=normalized.match(/^(\d+):(\d{2})(?:\.(\d{3}))?$/);
+ if(!match)return false;
+ const officialMs=(Number(match[1])*60+Number(match[2]))*1000+Number(match[3]||0);
+ // Les anciennes trames du meme PIT IN ne doivent pas remonter le chrono.
+ if(Number.isFinite(endurancePitLiveClock.baseMs)&&officialMs<endurancePitLiveClock.baseMs)return false;
+ endurancePitLiveClock={raw:normalized,baseMs:officialMs,receivedAt:endurancePitClockNow()};
+ return true;
+}
+function endurancePitClockAnimated(){
+ const clock=endurancePitLiveClock;
+ if(!Number.isFinite(clock.baseMs))return formatEndurancePitClock(endurancePitLastTime);
+ // Le flux Apex peut se figer : cap a .999, jamais la seconde suivante.
+ const fraction=clock.baseMs%1000;
+ const elapsed=Math.max(0,Math.floor(endurancePitClockNow()-clock.receivedAt));
+ return formatEndurancePitDuration(clock.baseMs+Math.min(999-fraction,elapsed));
+}
+function endurancePitClockStopTicker(){
+ if(endurancePitDisplayTicker!==null){clearInterval(endurancePitDisplayTicker);endurancePitDisplayTicker=null}
+}
+function endurancePitClockStartTicker(){
+ if(endurancePitDisplayTicker!==null)return;
+ // Rafraichit uniquement le texte visible ; aucune requete ni calcul serveur.
+ endurancePitDisplayTicker=setInterval(()=>{
+  const overlay=document.getElementById('endurancePitOverlay');
+  if(!overlay||!overlay.classList.contains('pit-in-active')||
+     !document.getElementById('enduranceFocus')?.classList.contains('show')){
+   endurancePitClockStopTicker();return;
+  }
+  const target=document.getElementById('endurancePitInTime');
+  const value=endurancePitClockAnimated();
+  if(target&&target.textContent!==value)target.textContent=value;
+ },40);
+}
+
 // Affichage HH:MM uniquement : les valeurs brutes Apex sont conservees pour
 // tous les calculs (reglement, previsions et deltas de relais).
 function velocityTrackHoursMinutes(value){
@@ -280,7 +331,9 @@ function setEndurancePitOverlay(mode,timeValue='—',passageCount=endurancePitPa
  overlay.classList.toggle('show',Boolean(mode));
  overlay.classList.toggle('pit-in-active',mode==='in');
  overlay.classList.toggle('pit-out-active',mode==='out');
- if(inTime)inTime.textContent=formatEndurancePitClock(timeValue);
+ if(mode==='in'&&!endurancePitSimulation)endurancePitClockStartTicker();
+ else endurancePitClockStopTicker();
+ if(inTime)inTime.textContent=mode==='in'&&!endurancePitSimulation?endurancePitClockAnimated():formatEndurancePitClock(timeValue);
  if(outPassage)outPassage.textContent=endurancePitPassageLabel(passageCount);
  if(outTime)outTime.textContent=formatEndurancePitClock(timeValue);
  if(outMessage)outMessage.setAttribute('aria-hidden',mode==='out'?'false':'true');
@@ -300,7 +353,7 @@ function simulateEndurancePitOut(){
  endurancePitSimulation={mode:'out',startedAt:now,duration:endurancePitLastTime,passageCount:endurancePitPassageCount};
  resetEnduranceRelayLapColor(enduranceFocusSelectedDriver());
  enduranceTrackStartedAt=now;
- endurancePitOutUntil=now+5000;
+ endurancePitOutUntil=now+ENDURANCE_PIT_OUT_DISPLAY_MS;
  renderEnduranceFocus();
 }
 function resetEndurancePitSimulation(){
@@ -310,6 +363,8 @@ function resetEndurancePitSimulation(){
  endurancePitTeamKey='';
  endurancePitOfficialLookupToken++;
  endurancePitLastTime='—';
+ endurancePitClockReset();
+ endurancePitClockStopTicker();
  enduranceTrackStartedAt=0;
  setEndurancePitOverlay(null);
 }
@@ -357,6 +412,8 @@ function renderEndurancePitState(f){
   endurancePitPreviousStatus='unknown';
   endurancePitLastTime='—';
   endurancePitOutUntil=0;
+  endurancePitClockReset();
+  endurancePitClockStopTicker();
   enduranceTrackStartedAt=0;
   endurancePitPassageCount=0;
  }
@@ -382,9 +439,12 @@ function renderEndurancePitState(f){
   // locale ne peut prendre une seconde d'avance sur le live timing.
   if(endurancePitPreviousStatus!=='pit'){
    endurancePitLastTime='—';
+   endurancePitClockReset();
    endurancePitOfficialLookupToken++;
   }
-  if(formatEndurancePitClock(apexPitTime)!=='—')endurancePitLastTime=apexPitTime;
+  if(formatEndurancePitClock(apexPitTime)!=='—'){
+   if(endurancePitClockObserve(apexPitTime))endurancePitLastTime=apexPitTime;
+  }
   enduranceTrackStartedAt=0;
   endurancePitPreviousStatus='pit';
   endurancePitOutUntil=0;
@@ -394,7 +454,7 @@ function renderEndurancePitState(f){
  if(status==='track'&&endurancePitPreviousStatus==='pit'){
   // Conserver le dernier compteur Apex sans le recalculer par Date.now().
   if(formatEndurancePitClock(apexPitTime)!=='—')endurancePitLastTime=apexPitTime;
-  endurancePitOutUntil=now+5000;
+  endurancePitOutUntil=now+ENDURANCE_PIT_OUT_DISPLAY_MS;
   resetEnduranceRelayLapColor(f);
   enduranceTrackStartedAt=now;
   const token=++endurancePitOfficialLookupToken;

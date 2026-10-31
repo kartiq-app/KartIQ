@@ -17,10 +17,13 @@ function pick(name){
 const funcs=[
  'formatEndurancePitClock','formatEndurancePitDuration','velocityTrackHoursMinutes',
  'enduranceElapsedTrackHoursMinutes','enduranceFocusTeamIdentity','enduranceFetchOfficialFinishedPit',
+ 'endurancePitClockNow','endurancePitClockReset','endurancePitClockObserve','endurancePitClockAnimated',
  'renderEndurancePitState'
 ].map(pick).join('\n');
 const ctx={
  console,Date,setTimeout,Promise,Number,Math,String,
+ mockNow:10000,performance:{now:()=>ctx.mockNow},
+ endurancePitClockStopTicker:()=>{},
  state:{circuit_id:'misanino',session_name:'Race1'},
  endurancePitPreviousStatus:'unknown',endurancePitLastTime:'—',endurancePitOutUntil:0,
  endurancePitSimulation:null,enduranceTrackStartedAt:0,endurancePitPassageCount:0,
@@ -32,7 +35,7 @@ const ctx={
  parseApexPitLine:()=>null,
 };
 vm.createContext(ctx);
-vm.runInContext('let endurancePitPreviousStatus="unknown",endurancePitLastTime="—",endurancePitOutUntil=0,endurancePitSimulation=null,enduranceTrackStartedAt=0,endurancePitPassageCount=0,endurancePitTeamKey="",endurancePitOfficialLookupToken=0;\n'+funcs,ctx);
+vm.runInContext('const ENDURANCE_PIT_OUT_DISPLAY_MS=8000;let endurancePitPreviousStatus="unknown",endurancePitLastTime="—",endurancePitOutUntil=0,endurancePitSimulation=null,enduranceTrackStartedAt=0,endurancePitPassageCount=0,endurancePitTeamKey="",endurancePitOfficialLookupToken=0,endurancePitLiveClock={raw:"",baseMs:null,receivedAt:0};\n'+funcs,ctx);
 const evalIn=s=>vm.runInContext(s,ctx);
 // Les millièmes exacts reçus sont conservés ; pas d'invention de .000.
 assert.equal(evalIn('formatEndurancePitClock("01:23.847")'),'01:23.847');
@@ -51,6 +54,34 @@ assert.equal(evalIn('velocityTrackHoursMinutes("01:13:00")'),'01:13');
 assert.equal(evalIn('enduranceElapsedTrackHoursMinutes(8*60000)'),'00:08');
 assert.equal(evalIn('enduranceElapsedTrackHoursMinutes(3600000+8*60000)'),'01:08');
 assert(analyzer.includes('velocityTrackHoursMinutes(followed?.track_timer)'));
+// V1841 : animation interpolee dans la seconde Apex, sans jamais devancer
+// l'autorite du live. Une actualisation identique ne redemarre pas l'horloge.
+assert.equal(evalIn('endurancePitClockObserve("00:35")'),true);
+ctx.mockNow=10853;
+assert.equal(evalIn('endurancePitClockAnimated()'),'00:35.853');
+ctx.mockNow=10900;
+assert.equal(evalIn('endurancePitClockObserve("00:35")'),true);
+ctx.mockNow=11060;
+assert.equal(evalIn('endurancePitClockAnimated()'),'00:35.999');
+assert.equal(evalIn('endurancePitClockObserve("00:34")'),false);
+assert.equal(evalIn('endurancePitClockAnimated()'),'00:35.999');
+assert.equal(evalIn('endurancePitClockObserve("00:36")'),true);
+ctx.mockNow=11313;
+assert.equal(evalIn('endurancePitClockAnimated()'),'00:36.253');
+assert.equal(evalIn('endurancePitClockObserve("00:37.640")'),true);
+ctx.mockNow=11403;
+assert.equal(evalIn('endurancePitClockAnimated()'),'00:37.730');
+ctx.mockNow=11903;
+assert.equal(evalIn('endurancePitClockAnimated()'),'00:37.999');
+evalIn('endurancePitClockReset()');
+assert.equal(evalIn('endurancePitClockAnimated()'),'—');
+// Les deux transitions PIT OUT (live et simulation) attendent 8 secondes.
+const renderPitSource=pick('renderEndurancePitState');
+const simPitSource=pick('simulateEndurancePitOut');
+assert(renderPitSource.includes('now+ENDURANCE_PIT_OUT_DISPLAY_MS'));
+assert(simPitSource.includes('now+ENDURANCE_PIT_OUT_DISPLAY_MS'));
+assert.equal(evalIn('ENDURANCE_PIT_OUT_DISPLAY_MS'),8000);
+
 // Validation de la transition live PIT IN / PIT OUT et isolation d'equipe.
 vm.runInContext('enduranceFetchOfficialFinishedPit=async ()=>{}',ctx);
 const team={apex_row:17,driver:'RED RACING SPIRIT',status:'pit',pit_stops:1,pit_timer:'01:23.847'};
@@ -62,6 +93,8 @@ ctx.liveTeam={...team,status:'track'};
 evalIn('renderEndurancePitState(liveTeam)');
 assert.equal(ctx.sets.at(-1)[0],'out');
 assert.equal(ctx.sets.at(-1)[1],'01:23.847');
+assert(evalIn('endurancePitOutUntil-Date.now()')<=8000);
+assert(evalIn('endurancePitOutUntil-Date.now()')>7600);
 ctx.liveTeam={...team,apex_row:18,driver:'OTHER TEAM',status:'pit',pit_timer:'12'};
 evalIn('renderEndurancePitState(liveTeam)');
 assert.equal(evalIn('endurancePitLastTime'),'12');
@@ -85,5 +118,5 @@ query.then(()=>{
  assert.equal(evalIn('endurancePitLastTime'),'01:23.847');
  assert.equal(ctx.sets.at(-1)[0],'out');
  assert.equal(ctx.sets.at(-1)[1],'01:23.847');
- console.log('Tests V1840 : PIT officiel, duree finale Apex au millieme, piste HH:MM OK');
+ console.log('Tests V1841 : PIT anime borne a Apex, PIT OUT 8s, duree finale historique, piste HH:MM OK');
 }).catch(error=>{console.error(error);process.exitCode=1});

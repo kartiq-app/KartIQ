@@ -1,3 +1,10 @@
+## V7.2.1841 — PIT IN animé et PIT OUT 8 secondes
+- Le panneau PIT OUT reste visible huit secondes après la sortie des stands, simulation comprise (au lieu de cinq).
+- PIT IN : compteur visuel à trois décimales animé à 25 images/s. Les secondes entières restent strictement autoritaires Apex ; seule la fraction est interpolée dans la seconde confirmée. Ainsi, `00:35.853` peut s'afficher sans devancer Apex à `00:36`.
+- L'ancre d'animation n'est pas réinitialisée par des actualisations identiques, ni transmise aux autres équipes ou à un nouvel arrêt.
+- L'animation ne déclenche aucune requête : mise à jour du texte uniquement lorsque le panneau PIT IN est visible. Pas de modification du moteur de classement, du Recorder ou de la réception Apex.
+- Les millisecondes animées pendant l'arrêt ne sont pas des millièmes officiels : la durée définitive reste celle de l'historique Apex à la sortie des stands.
+
 
 ## V7.2.1840 — PIT officiel Apex et affichage HH:MM
 - Focus Endurance : le chrono PIT IN provient exclusivement de la cellule `otr|to` du live Apex, sans comptage avec l’horloge du navigateur.
