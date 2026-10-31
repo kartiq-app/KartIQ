@@ -211,3 +211,14 @@ Pour les endurances longues (12H/24H), Analyzer conserve désormais son cache de
 Les tours sont ajoutés sur nouvelles impulsions Apex `llp` reçues par le navigateur (le premier tour de sortie de stands est ignoré). L'historique de score local est conservé lors d'un rechargement sur le même appareil, isolé par course/circuit/Session Velocity. En Quick Change, la meilleure référence d'un KV peut aussi être récupérée depuis le registre partagé sur un autre appareil ; la vitesse récente ne se transmet pas entre pilotes. Les données historiques antérieures à l'ouverture de l'application ne sont pas automatiquement rétro-importées.
 
 **Validation nécessaire avant usage stratégique :** recontrôler le suivi KV en conditions réelles, les transitions IN/OUT sur chaque layout Apex, et la disponibilité du score sur un appareil qui rejoint une course déjà démarrée.
+
+
+### V7.2.1844 — Accès pilote temporaire (sans mail)
+
+Depuis **Analyzer → 🔗 ACCÈS PILOTE**, choisir une équipe visible dans le live Apex puis une durée (1, 3, 6, 12 ou 24 h), et cliquer **GÉNÉRER LE LIEN**. Copier le lien et l'envoyer au pilote. Le téléphone affiche le **Focus Endurance** existant, sans connexion Google et sans association permanente. Le lien est en lecture seule : aucune commande Team Management, Spotter ou Data Recorder n'est autorisée. Le Team Manager peut révoquer le lien immédiatement depuis le même écran.
+
+Sans Session Course, l'accès reste attaché au circuit et à l'équipe choisis ; changer de circuit révoque sa validité. Avec une Session Course, il se termine également à la fin de celle-ci. Les jetons sont stockés hachés dans le document SQL des Sessions. Chaque pilote doit garder son lien privé ; son détenteur peut le réutiliser jusqu'à expiration.
+
+### V7.2.1844 — Aspirer une course depuis Velocity Lab
+
+**Analyzer → Velocity Lab → ASPIRER UNE COURSE** (onglet ouvert par défaut). Saisir un nom facultatif, sélectionner **n'importe quel circuit Apex configuré**, puis cliquer **ASPIRER LA COURSE**. Pas besoin de créer une Session Course : le Data Recorder autonome récupère les tours et arrêts historiques encore exposés par Apex, puis poursuit le live. Il est arrêté manuellement via **ARRÊTER** (ou automatiquement par le plafond de sécurité du Recorder) et exporté au format ZIP. Il n'y a jamais deux collecteurs simultanés sur le même circuit ; si une Session Course enregistre déjà ce circuit, son Recorder est la source à exporter. Le mode manuel n'ouvre pas une nouvelle Session Course et ne lance aucun suivi KV autonome. Une course passée indisponible dans l'historique Apex ne peut pas être inventée ou récupérée sans source valide.

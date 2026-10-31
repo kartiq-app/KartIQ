@@ -319,7 +319,7 @@ function updateRemainingDisplay(){
 window.addEventListener('orientationchange',()=>setTimeout(updateRemainingDisplay,80));
 window.addEventListener('resize',()=>updateRemainingDisplay());
 async function load(){
- if(window.velocityEnduranceTest?.active||velocityWorkspaceSwitching)return;
+ if(window.VELOCITY_GUEST_ENDED||window.velocityEnduranceTest?.active||velocityWorkspaceSwitching)return;
  // Le rafraîchissement tourne à 250 ms. Ne jamais lancer une nouvelle
  // requête tant que la précédente n'est pas terminée, afin d'éviter une
  // file d'attente et un retard progressif de l'affichage.
@@ -770,8 +770,9 @@ function closeApexBrowserSocket(){
   try{socket.close()}catch(e){}
  }
 }
-function ensureApexBrowserConnection(){if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
+function ensureApexBrowserConnection(){if(window.VELOCITY_RACE_ACCESS?.token)return;if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
 function connectApexBrowser(force=false){
+ if(window.VELOCITY_RACE_ACCESS?.token)return;
  const circuit=(state?.circuits||[]).find(c=>c.id===state.circuit_id);
  if(!circuit?.websocket_url)return;
  if(!force&&apexBrowserSocket&&apexBrowserCircuitId===circuit.id&&[0,1].includes(apexBrowserSocket.readyState))return;

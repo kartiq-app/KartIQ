@@ -1,3 +1,9 @@
+## V7.2.1844 — Liens pilote temporaires et Velocity Lab manuel
+- Liens d'accès pilote sans email (1/3/6/12/24 h), générés depuis Analyzer pour une équipe du live, même sans Session Course. Expiration à l'échéance ou dès la fin de la Session Course si le lien y est rattaché ; révocation immédiate à la demande. Jeton aléatoire conservé uniquement sous forme de SHA-256 dans le stockage partagé.
+- Accès via /join/<token> : Focus Endurance existant, aucune association permanente d'appareil, aucune connexion Google. Une invitation hors Session Course reste liée au circuit et à l'équipe d'origine. Lecture seule imposée sur le serveur : uniquement flux live et ressources d'affichage accessibles ; mutations Analyzer/Spotter/Recorder interdites.
+- Pas de connexion WebSocket Apex supplémentaire depuis le téléphone invité : il reçoit les données Velocity existantes. Sélection du pilote en priorité par ligne Apex suivie dans Session Course.
+- Velocity Lab s'ouvre par défaut sur « ASPIRER UNE COURSE », le Recorder manuel déjà indépendant de la Session Course. Les autres onglets du Lab restent disponibles. Collecte des données historiques disponibles dans Apex puis du live, uniquement après clic manuel et jusqu'à STOP (ou limite de sécurité).
+
 ## Velocity V7.2.1842 — PIT IN officiel et PIT OUT sans chrono provisoire
 
 - En PIT IN, suppression de l'animation locale des millièmes : seul le compteur Apex à la seconde est affiché, sans extrapolation.

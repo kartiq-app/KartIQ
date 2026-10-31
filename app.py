@@ -375,7 +375,16 @@ def _current_workspace_id(create=True):
         workspace = _workspace_for_authorized_email(create=create)
         return str((workspace or {}).get("id") or LEGACY_WORKSPACE_ID)
     paired = _paired_device_workspace_id()
-    return paired or LEGACY_WORKSPACE_ID
+    if paired:
+        return paired
+    # Temporary pilot views must read the SAME live runtime as the issuer.
+    # The token validator accesses runtimes by explicit id (no recursion).
+    token = str(request.cookies.get("velocity_pilot_guest") or "").strip()
+    if token:
+        access = _race_access_for_token(token)
+        if access and access.get("temporary"):
+            return str(access["session"].get("workspace_id") or LEGACY_WORKSPACE_ID)
+    return LEGACY_WORKSPACE_ID
 
 
 def _workspace_public(workspace_id=None):
@@ -570,7 +579,7 @@ TEAM_DATA_LAST_DB_HASH = ''
 TEAM_DATA_DB_LAST_AT = 0.0
 
 def _default_team_data():
-    return {"teams": [], "invites": {}, "devices": {}, "active_session_id": None, "active_session_ids": {}, "sessions": []}
+    return {"teams": [], "invites": {}, "devices": {}, "active_session_id": None, "active_session_ids": {}, "sessions": [], "pilot_links": {}}
 
 def _load_team_data():
     try:
@@ -582,7 +591,7 @@ def _load_team_data():
         pass
     return _default_team_data()
 
-def _save_team_data(data, force_db=False):
+def _save_team_data(data, force_db=False, strict_db=False):
     global TEAM_DATA_LAST_DB_HASH, TEAM_DATA_DB_LAST_AT
     raw = json.dumps(data, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     try:
@@ -597,6 +606,8 @@ def _save_team_data(data, force_db=False):
     # Limit incidental device heartbeat writes to 15s, without delaying an
     # important active-session creation or closure.
     if RECORDER_STORE is None:
+        if strict_db:
+            raise RuntimeError("Stockage SQL indisponible pour ce lien pilote.")
         return
     now = time.monotonic()
     signature = hashlib.sha256(raw.encode()).hexdigest()
@@ -612,6 +623,8 @@ def _save_team_data(data, force_db=False):
         TEAM_DATA_DB_LAST_AT = now
     except Exception:
         app.logger.exception("Sessions Course : sauvegarde Postgres impossible")
+        if strict_db:
+            raise
 
 TEAM_DATA = _load_team_data()
 TEAM_DATA_LAST_READ_AT = 0.0
@@ -1241,10 +1254,50 @@ def _race_access_for_token(token):
     token = str(token or "").strip()
     with RACE_SESSION_LOCK:
         session = deepcopy(RACE_SESSION) if isinstance(RACE_SESSION, dict) else None
-    if not session or session.get("status") != "active": return None
-    for role in ("spotter", "pilot"):
-        if secrets.compare_digest(str(session.get("tokens", {}).get(role) or ""), token):
-            return {"role": role, "session": _race_session_public(session)}
+    if session and session.get("status") == "active":
+        for role in ("spotter", "pilot"):
+            if secrets.compare_digest(str(session.get("tokens", {}).get(role) or ""), token):
+                return {"role": role, "session": _race_session_public(session)}
+    # Guest links are persisted in the same SQL document as Session Course.
+    # Tokens are NEVER stored in plaintext.  Expiry/revocation is checked
+    # server-side on every request, including after a Render restart.
+    if len(token) < 32 or len(token) > 200:
+        return None
+    digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    _refresh_team_data()
+    now_ms = int(time.time() * 1000)
+    with TEAM_DATA_LOCK:
+        for item in (TEAM_DATA.get("pilot_links") or {}).values():
+            if not isinstance(item, dict) or not secrets.compare_digest(str(item.get("token_hash") or ""), digest):
+                continue
+            if item.get("revoked") or now_ms >= int(item.get("expires_at_ms") or 0):
+                return None
+            sid = str(item.get("session_id") or "")
+            if sid:
+                active = next((race for race in TEAM_DATA.get("sessions", [])
+                               if str(race.get("id")) == sid
+                               and str(race.get("workspace_id")) == str(item.get("workspace_id"))
+                               and race.get("status") == "active"), None)
+                if active is None:
+                    return None
+                context = _race_session_public(active)
+            else:
+                # Manual Pilot access without a Session Course: bound to the
+                # selected live circuit. Do not follow the user to another race.
+                if not str(item.get("circuit_id") or "") or str(_runtime_for_workspace(item.get("workspace_id")).state.get("circuit_id") or "") != str(item.get("circuit_id")):
+                    return None
+                context = {"id": "GUEST-" + str(item.get("id") or ""), "status": "active",
+                           "workspace_id": str(item.get("workspace_id") or ""),
+                           "circuit_id": item["circuit_id"], "team_name": item.get("team_name") or "",
+                           "pilot_focus_driver": item.get("pilot_focus_driver") or "",
+                           "pilot_focus_apex_row": item.get("pilot_focus_apex_row")}
+            # Fixed target, even if the Team Manager switches the primary focus.
+            if item.get("pilot_focus_driver"):
+                context["pilot_focus_driver"] = item["pilot_focus_driver"]
+            if item.get("pilot_focus_apex_row") is not None:
+                context["pilot_focus_apex_row"] = item["pilot_focus_apex_row"]
+            return {"role": "pilot", "session": context, "temporary": True,
+                    "expires_at_ms": int(item["expires_at_ms"])}
     return None
 
 
@@ -1324,6 +1377,7 @@ def velocity_logout():
     # La déconnexion retire aussi l'identité d'appareil de ce navigateur :
     # Velocity ne doit plus rester accessible sur l'ordinateur après logout.
     response.delete_cookie("velocity_device_id")
+    response.delete_cookie("velocity_pilot_guest")
     return response
 
 
@@ -1351,14 +1405,129 @@ def _velocity_member_access():
     return bool(_velocity_paired_device() or _velocity_invite_session_valid())
 
 
+def _velocity_pilot_guest_access():
+    """Read-only, time-limited Pilot access; never authorizes administrative APIs."""
+    token = str(request.cookies.get("velocity_pilot_guest") or "").strip()
+    return _race_access_for_token(token) if token else None
+
+
+@app.post("/api/pilot-access")
+def create_pilot_guest_link():
+    if not _velocity_is_authorized():
+        return jsonify(ok=False, error="Compte administrateur requis."), 403
+    body = request.get_json(silent=True) or {}
+    try:
+        hours = int(body.get("hours", 3))
+    except (ValueError, TypeError):
+        hours = 0
+    if hours not in (1, 3, 6, 12, 24):
+        return jsonify(ok=False, error="Durée autorisée : 1, 3, 6, 12 ou 24 heures."), 400
+    try:
+        manager = _get_recorder_manager()  # SQL only; does not start a collection.
+        if os.environ.get("RENDER") == "true" and not manager.store.persistent:
+            return jsonify(ok=False, error="PostgreSQL requis sur Render pour des liens temporaires durables."), 503
+    except Exception:
+        return jsonify(ok=False, error="Stockage des accès indisponible."), 503
+    _refresh_team_data()
+    wid = _current_workspace_id()
+    circuit_id = str(STATE.get("circuit_id") or "")
+    with TEAM_DATA_LOCK:
+        active = _active_session_for_workspace(TEAM_DATA, wid)
+        if active and active.get("status") == "active":
+            circuit_id = str(active.get("circuit_id") or circuit_id)
+    if not circuit_id:
+        return jsonify(ok=False, error="Sélectionnez un circuit dans Velocity."), 400
+    if active and str(STATE.get("circuit_id") or "") != circuit_id:
+        return jsonify(ok=False, error="Le live affiché ne correspond pas au circuit de la Session Course."), 409
+    target_row = str(body.get("apex_row") or "").strip()
+    drivers = STATE.get("drivers") or []
+    target = next((d for d in drivers if str(d.get("apex_row") or "") == target_row), None)
+    if target is None:
+        focus_name = str((active or {}).get("pilot_focus_driver") or STATE.get("followed_driver") or "").strip()
+        target = next((d for d in drivers if str(d.get("driver") or "").strip().casefold() == focus_name.casefold()), None)
+    if target is None:
+        return jsonify(ok=False, error="Sélectionnez une équipe actuellement visible dans le live Apex."), 400
+    raw_token = secrets.token_urlsafe(32)
+    now_ms = int(time.time() * 1000)
+    with TEAM_DATA_LOCK:
+        lid = secrets.token_hex(6).upper()
+        entry = {"id": lid, "token_hash": hashlib.sha256(raw_token.encode()).hexdigest(),
+                 "session_id": str((active or {}).get("id") or ""), "workspace_id": wid,
+                 "circuit_id": circuit_id, "team_name": str(target.get("driver") or ""),
+                 "pilot_focus_driver": str(target.get("driver") or ""),
+                 "pilot_focus_apex_row": target.get("apex_row"),
+                 "created_at_ms": now_ms, "expires_at_ms": now_ms + hours * 3600000,
+                 "revoked": False}
+        TEAM_DATA.setdefault("pilot_links", {})[lid] = entry
+        # Keep the persisted document bounded: discard expired entries after 7 days.
+        cutoff = now_ms - 7 * 86400000
+        TEAM_DATA["pilot_links"] = {key: value for key, value in TEAM_DATA["pilot_links"].items()
+                                    if int(value.get("expires_at_ms") or 0) >= cutoff}
+        try:
+            _save_team_data(TEAM_DATA, force_db=True, strict_db=True)
+        except Exception:
+            TEAM_DATA["pilot_links"].pop(lid, None)
+            return jsonify(ok=False, error="Impossible d’enregistrer ce lien en SQL."), 503
+    return jsonify(ok=True, id=lid, link=f"{_velocity_external_base()}/join/{raw_token}",
+                   expires_at_ms=entry["expires_at_ms"]), 201
+
+
+@app.get("/api/pilot-access")
+def list_pilot_guest_links():
+    if not _velocity_is_authorized():
+        return jsonify(ok=False, error="Compte administrateur requis."), 403
+    _refresh_team_data()
+    wid = _current_workspace_id()
+    now_ms = int(time.time() * 1000)
+    with TEAM_DATA_LOCK:
+        active = _active_session_for_workspace(TEAM_DATA, wid)
+        entries = [{key: item.get(key) for key in ("id", "created_at_ms", "expires_at_ms", "revoked", "team_name")}
+                   for item in (TEAM_DATA.get("pilot_links") or {}).values()
+                   if item.get("workspace_id") == wid and
+                   ((active and str(item.get("session_id") or "") == str(active.get("id"))) or
+                    (not item.get("session_id") and str(item.get("circuit_id")) == str(STATE.get("circuit_id") or "")))]
+    for entry in entries:
+        entry["active"] = not entry["revoked"] and now_ms < int(entry["expires_at_ms"] or 0)
+    return jsonify(ok=True, links=sorted(entries, key=lambda x: x["created_at_ms"], reverse=True))
+
+
+@app.post("/api/pilot-access/<link_id>/revoke")
+def revoke_pilot_guest_link(link_id):
+    if not _velocity_is_authorized():
+        return jsonify(ok=False, error="Compte administrateur requis."), 403
+    _refresh_team_data()
+    wid = _current_workspace_id()
+    with TEAM_DATA_LOCK:
+        item = (TEAM_DATA.get("pilot_links") or {}).get(str(link_id))
+        if not item or item.get("workspace_id") != wid:
+            return jsonify(ok=False, error="Lien introuvable."), 404
+        item["revoked"] = True
+        try:
+            _save_team_data(TEAM_DATA, force_db=True, strict_db=True)
+        except Exception:
+            item["revoked"] = False
+            return jsonify(ok=False, error="Impossible de révoquer ce lien en SQL."), 503
+    return jsonify(ok=True)
+
+
 @app.before_request
 def velocity_private_access_guard():
     path = request.path
     public_exact = {"/login", "/auth/google", "/auth/google/callback", "/logout", "/favicon.ico"}
-
-    # OAuth admin / Team Manager.
+    # Keep the login/logout endpoints available even when a guest cookie exists.
     if path in public_exact or path.startswith("/static/auth/"):
         return None
+    # A guest can only view Focus Endurance; never grant global member access.
+    if not _velocity_is_authorized() and not _velocity_paired_device():
+        guest = _velocity_pilot_guest_access()
+        if guest:
+            safe_get = (path in ("/api/state", "/api/weather") or
+                        path == f"/api/race-access/{request.cookies.get('velocity_pilot_guest', '')}")
+            if request.method in ("GET", "HEAD") and (safe_get or path.startswith("/static/")):
+                return None
+            if path.startswith("/join/"):
+                return None
+            return ("Accès pilote : lecture seule", 403)
     # Les métadonnées PWA et icônes doivent rester publiques pour qu'iOS
     # puisse créer correctement le raccourci avant/après authentification.
     if path == "/static/manifest.json" or path.startswith("/static/icons/"):
@@ -1544,7 +1713,17 @@ def race_join(token):
     access = _race_access_for_token(token)
     if not access:
         return render_template("index.html", app_version=APP_VERSION, race_access_role="expired", race_access_token="", velocity_invite_token=""), 410
-    return render_template("index.html", app_version=APP_VERSION, race_access_role=access["role"], race_access_token=str(token), velocity_invite_token="", velocity_workspace_id=str((access.get("session") or {}).get("workspace_id") or LEGACY_WORKSPACE_ID))
+    response = app.make_response(render_template(
+        "index.html", app_version=APP_VERSION, race_access_role=access["role"],
+        race_access_token=str(token), velocity_invite_token="",
+        velocity_workspace_id=str((access.get("session") or {}).get("workspace_id") or LEGACY_WORKSPACE_ID)))
+    if access.get("temporary"):
+        max_age = max(1, int((access["expires_at_ms"] - int(time.time() * 1000)) / 1000))
+        response.set_cookie("velocity_pilot_guest", str(token), httponly=True,
+                            samesite="Lax", secure=request.is_secure or os.environ.get("RENDER") == "true", max_age=max_age)
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @app.get("/invite/<token>")
@@ -2678,7 +2857,21 @@ def weather():
 def get_state():
     # Every request uses the latest state. ETag=exact payload bytes, so a 304
     # cannot hide a new Apex chrono. No debounce, no throttling of the live.
-    raw = app.json.dumps(payload(), separators=(",", ":"), sort_keys=True).encode("utf-8")
+    data = payload()
+    # A guest may need the full timing grid to calculate the last-lap rank,
+    # but never receives internal Spotter strategy or messages for other teams.
+    if request.cookies.get("velocity_pilot_guest") and not _velocity_is_authorized() and not _velocity_paired_device():
+        guest = _velocity_pilot_guest_access()
+        if guest and guest.get("temporary"):
+            target = str((guest.get("session") or {}).get("pilot_focus_driver") or "").strip().casefold()
+            message = data.get("driver_message")
+            if not isinstance(message, dict) or str(message.get("target_driver") or "").strip().casefold() != target:
+                data["driver_message"] = None
+            data["spotter"] = {}
+            data["analyzer_rules"] = None
+            data["analyzer_strategy"] = None
+            data["workspace"] = {"id": str((guest.get("session") or {}).get("workspace_id") or LEGACY_WORKSPACE_ID)}
+    raw = app.json.dumps(data, separators=(",", ":"), sort_keys=True).encode("utf-8")
     digest = hashlib.sha256(raw).hexdigest()[:24]
     if request.headers.get("If-None-Match", "").strip('"') == digest:
         response = app.response_class(status=304)

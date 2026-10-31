@@ -359,9 +359,25 @@
       <button type="button" onclick="resetAnalyzerLearning()">↻ RÉINITIALISER L’APPRENTISSAGE</button>
       <button type="button" class="analyzer-test-launch" onclick="openAnalyzerEnduranceTest()">🧪 MODE TEST ENDURANCE</button>
       <button type="button" class="velocity-workspace-launch" onclick="openVelocityWorkspaceManager()">⇄ SESSIONS VELOCITY</button>
+      <button type="button" class="race-pilot-link-launch" onclick="velocityOpenPilotGuestModal()">🔗 ACCÈS PILOTE</button>
       <button type="button" class="velocity-lab-launch" onclick="openVelocityLab()">⚙ VELOCITY LAB</button>
       <button type="button" class="race-session-launch" data-race-session-launch onclick="openRaceSessionManager()"><span>CRÉER UNE SESSION</span></button>
     </footer>
+  </div>
+
+  <div id="velocityPilotGuestModal" class="velocity-pilot-link-overlay" hidden role="dialog" aria-modal="true" aria-label="Accès pilote temporaire">
+    <section class="race-pilot-guest-box velocity-pilot-link-card">
+      <div class="velocity-pilot-link-head"><strong>ACCÈS PILOTE TEMPORAIRE</strong><button type="button" onclick="velocityClosePilotGuestModal()" aria-label="Fermer">×</button></div>
+      <p>Partage un accès au Focus Endurance, sans adresse mail ni compte Google. Le lien est en lecture seule, limité à un circuit, une équipe et une durée choisie.</p>
+      <label class="velocity-pilot-link-label">ÉQUIPE À SUIVRE<select id="racePilotGuestTarget" aria-label="Équipe à suivre"></select></label>
+      <div class="race-pilot-guest-actions">
+        <select id="racePilotGuestHours" aria-label="Durée du lien"><option value="1">1 heure</option><option value="3" selected>3 heures</option><option value="6">6 heures</option><option value="12">12 heures</option><option value="24">24 heures</option></select>
+        <button type="button" class="race-ui-btn primary" id="racePilotGuestCreate" onclick="velocityCreatePilotGuest()">GÉNÉRER LE LIEN</button>
+      </div>
+      <div class="race-pilot-guest-actions"><input id="racePilotGuestLink" readonly hidden aria-label="Lien pilote généré"><button id="racePilotGuestCopy" class="race-ui-btn" type="button" hidden onclick="velocityCopyPilotGuest()">COPIER LE LIEN</button></div>
+      <div id="racePilotGuestList" class="race-pilot-guest-list"></div>
+      <p id="racePilotGuestFeedback" class="velocity-pilot-link-feedback" role="status"></p>
+    </section>
   </div>
 
   <div class="analyzer-rules-modal race-session-modal" id="raceSessionModal" role="dialog" aria-modal="true" aria-labelledby="raceSessionTitle">
@@ -426,7 +442,7 @@
       <div class="velocity-lab-mode-switch" role="group" aria-label="Mode Velocity Lab">
         <button id="velocityLabOfficialTab" class="active" type="button" onclick="setVelocityLabMode('official')">COMPARAISON</button>
         <button id="velocityLabSprintTab" type="button" onclick="setVelocityLabMode('sprint')">SCORE SPRINT <span>EXPÉRIMENTAL</span></button>
-        <button id="velocityLabRecorderTab" type="button" onclick="setVelocityLabMode('recorder')">DATA RECORDER</button>
+        <button id="velocityLabRecorderTab" type="button" onclick="setVelocityLabMode('recorder')">ASPIRER UNE COURSE</button>
       </div>
       <section id="velocityLabOfficialPanel">
       <section class="velocity-lab-ranking">
@@ -462,16 +478,16 @@
       </section>
       <section id="velocityLabRecorderPanel" class="velocity-lab-recorder-panel" hidden>
         <div class="velocity-recorder-intro">
-          <div><span>COLLECTE AUTONOME APEX</span><h3>DATA RECORDER</h3><p>Render reste connecté au live même si tu fermes Velocity. Au démarrage, le Recorder récupère aussi les tours, secteurs et pits déjà disponibles depuis le début de la session Apex, puis poursuit la collecte en direct.</p></div>
+          <div><span>ENREGISTREMENT MANUEL · SANS SESSION COURSE</span><h3>ASPIRER UNE COURSE APEX</h3><p>Choisis n’importe quel circuit configuré et lance la collecte quand tu le souhaites, sans créer de Session Course. Render récupère les tours et arrêts historiques encore disponibles dans Apex, puis continue le live même si tu fermes Velocity. Arrête et exporte la course à tout moment.</p></div>
           <div id="velocityRecorderStorage" class="velocity-recorder-storage">STOCKAGE : —</div>
         </div>
         <div id="velocityRecorderWarning" class="velocity-recorder-warning" hidden></div>
         <section class="velocity-recorder-create">
-          <div class="velocity-recorder-create-head"><strong>NOUVEL ENREGISTREMENT</strong><span>Le Recorder est indépendant de la Session Velocity actuellement ouverte dans Analyzer.</span></div>
+          <div class="velocity-recorder-create-head"><strong>ASPIRER UNE COURSE APEX</strong><span>Mode manuel indépendant : aucune Session Course à créer. Une seule collecte simultanée par circuit.</span></div>
           <div class="velocity-recorder-create-grid">
             <label>NOM<input id="velocityRecorderName" maxlength="120" placeholder="Ex. 24H Course 1"></label>
             <label>CIRCUIT APEX<select id="velocityRecorderCircuit"><option value="">Sélectionnez un circuit</option></select></label>
-            <button id="velocityRecorderStart" type="button" onclick="startVelocityRecorder()">● DÉMARRER L’ENREGISTREMENT</button>
+            <button id="velocityRecorderStart" type="button" onclick="startVelocityRecorder()">● ASPIRER LA COURSE</button>
           </div>
           <div id="velocityRecorderFeedback" class="velocity-recorder-feedback" aria-live="polite"></div>
         </section>

@@ -2691,9 +2691,11 @@ async function runVelocityLabSprintAnalysis(){
 }
 
 function openVelocityLab(){
- setVelocityLabMode('official');
  analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false;analyzerVelocityLabLastRender=0;
- document.getElementById('velocityLabOverlay')?.classList.add('active');document.body.classList.add('velocity-lab-open');analyzerRenderVelocityLab(true);
+ document.getElementById('velocityLabOverlay')?.classList.add('active');document.body.classList.add('velocity-lab-open');
+ // L'onglet doit être visible AVANT le premier chargement : son polling se
+ // déclenche alors directement, y compris sur une ouverture de Lab à froid.
+ setVelocityLabMode('recorder');analyzerRenderVelocityLab(true);
 }
 function closeVelocityLab(){document.getElementById('velocityLabOverlay')?.classList.remove('active');document.body.classList.remove('velocity-lab-open');window.stopVelocityRecorderPolling?.();analyzerVelocityLabSelected.clear();analyzerVelocityLabComparing=false;analyzerVelocityLabComparisonNeedsRender=false}
 function toggleVelocityLabKart(name,checked,input){
@@ -5485,7 +5487,67 @@ async function inviteRaceMember(memberId,memberName){try{const r=await fetch(`/a
 function renderRaceRolePicker(containerId,role,currentValues=[],active=false){const box=document.getElementById(containerId),team=currentRaceTeam();if(!box)return;const current=new Set((Array.isArray(currentValues)?currentValues:(currentValues?[currentValues]:[])).map(String));const members=(team?.members||[]).filter(m=>(m.roles||[]).includes(role));const attr=active?'data-active-role-member':'data-race-role-member';box.innerHTML=members.length?members.map(m=>`<label><input type="checkbox" ${attr}="${role}" value="${analyzerEscape(m.id)}" ${current.has(String(m.id))?'checked':''}> <span>${analyzerEscape(m.name)}</span></label>`).join(''):'<em>Aucun membre autorisé</em>'}
 function renderRaceAssignmentSelectors(){const team=currentRaceTeam();renderRaceRolePicker('raceAssignTM','team_manager',velocityRaceSession?.assignments?.team_manager||[]);renderRaceRolePicker('raceAssignSpotter','spotter',velocityRaceSession?.assignments?.spotter||[]);renderRaceRolePicker('raceAssignPilot','pilot',velocityRaceSession?.assignments?.pilot||[]);const teamLabel=document.getElementById('raceSessionTeam');if(teamLabel)teamLabel.textContent=team?.name||'—';const circuit=document.getElementById('raceSessionCircuit');if(circuit)circuit.textContent=raceSessionCircuitName()}
 function currentAssignmentPayload(){const out={team_manager:[],spotter:[],pilot:[]};document.querySelectorAll('[data-race-role-member]:checked').forEach(el=>{const role=el.dataset.raceRoleMember;if(out[role])out[role].push(el.value)});return out}
-function raceSessionRender(session){velocityRaceSession=session||null;window.velocityRaceSession=velocityRaceSession;velocitySessionButtonUpdate(velocityRaceSession);const empty=document.getElementById('raceSessionEmpty'),active=document.getElementById('raceSessionActive');const isActive=Boolean(session&&session.status==='active');if(empty)empty.hidden=isActive;if(active)active.hidden=!isActive;renderRaceAssignmentSelectors();if(!isActive)return;raceSessionShowPane('raceSessionActive');document.getElementById('raceSessionActiveName').textContent=session.name||'SESSION DE COURSE';document.getElementById('raceSessionActiveCircuit').textContent=session.circuit_name||session.circuit_id||'—';document.getElementById('raceSessionActiveTeam').textContent=session.team_name||'—';renderActiveRaceAssignments()}
+function raceSessionRender(session){velocityRaceSession=session||null;window.velocityRaceSession=velocityRaceSession;velocitySessionButtonUpdate(velocityRaceSession);const empty=document.getElementById('raceSessionEmpty'),active=document.getElementById('raceSessionActive');const isActive=Boolean(session&&session.status==='active');if(empty)empty.hidden=isActive;if(active)active.hidden=!isActive;renderRaceAssignmentSelectors();if(!isActive)return;raceSessionShowPane('raceSessionActive');document.getElementById('raceSessionActiveName').textContent=session.name||'SESSION DE COURSE';document.getElementById('raceSessionActiveCircuit').textContent=session.circuit_name||session.circuit_id||'—';document.getElementById('raceSessionActiveTeam').textContent=session.team_name||'—';renderActiveRaceAssignments();void velocityRefreshPilotGuests()}
+let velocityLastPilotGuestLink='';
+function velocityPilotGuestFeedback(message='',error=false){
+ const el=document.getElementById('racePilotGuestFeedback');
+ if(el){el.textContent=message;el.classList.toggle('error',Boolean(error))}
+}
+function velocityOpenPilotGuestModal(){
+ const modal=document.getElementById('velocityPilotGuestModal');if(!modal)return;
+ const select=document.getElementById('racePilotGuestTarget');
+ const selected=String(window.velocityRaceSession?.pilot_focus_apex_row??state.followed?.apex_row??'');
+ const teams=(state.drivers||[]).filter(d=>String(d.apex_row??'')&&String(d.driver||'').trim());
+ if(select){select.replaceChildren(...teams.map(d=>{
+  const option=document.createElement('option');option.value=String(d.apex_row);
+  option.textContent=`${d.pos?`P${d.pos} · `:''}${d.driver}`;
+  return option;
+ }));if(teams.length){select.value=teams.some(d=>String(d.apex_row)===selected)?selected:String(teams[0].apex_row)}}
+ modal.hidden=false;
+ velocityPilotGuestFeedback(teams.length?'':'Aucune équipe disponible : connectez un circuit Apex.',!teams.length);
+ void velocityRefreshPilotGuests();
+}
+function velocityClosePilotGuestModal(){const modal=document.getElementById('velocityPilotGuestModal');if(modal)modal.hidden=true}
+window.velocityOpenPilotGuestModal=velocityOpenPilotGuestModal;
+window.velocityClosePilotGuestModal=velocityClosePilotGuestModal;
+async function velocityRefreshPilotGuests(){
+ const holder=document.getElementById('racePilotGuestList');if(!holder)return;
+ try{
+  const response=await fetch('/api/pilot-access',{cache:'no-store'}),data=await response.json();
+  if(!response.ok||!data.ok)throw new Error(data.error||'Liens indisponibles');
+  const active=(data.links||[]).filter(x=>x.active);
+  holder.innerHTML=active.length?active.map(x=>`<div class="race-guest-entry"><span>${analyzerEscape(x.team_name||'Pilote')} · expire le ${new Date(Number(x.expires_at_ms)).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span><button type="button" class="race-ui-btn danger" onclick="velocityRevokePilotGuest('${analyzerEscape(x.id)}')">RÉVOQUER</button></div>`).join(''):'<small>Aucun lien temporaire actif.</small>';
+ }catch(error){holder.textContent=error.message||String(error)}
+}
+async function velocityCreatePilotGuest(){
+ const button=document.getElementById('racePilotGuestCreate');
+ const hours=Number(document.getElementById('racePilotGuestHours')?.value||3);
+ const apexRow=String(document.getElementById('racePilotGuestTarget')?.value||'');
+ if(button)button.disabled=true;
+ try{
+  const response=await fetch('/api/pilot-access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hours,apex_row:apexRow})});
+  const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Création impossible');
+  velocityLastPilotGuestLink=data.link;
+  const field=document.getElementById('racePilotGuestLink');if(field){field.value=data.link;field.hidden=false}
+  const copy=document.getElementById('racePilotGuestCopy');if(copy)copy.hidden=false;
+  await velocityRefreshPilotGuests();
+  velocityPilotGuestFeedback(`Lien valable ${hours} heure${hours>1?'s':''}. Copiez-le et envoyez-le au pilote.`);
+ }catch(error){velocityPilotGuestFeedback(error.message||String(error),true)}finally{if(button)button.disabled=false}
+}
+async function velocityCopyPilotGuest(){
+ const url=velocityLastPilotGuestLink||document.getElementById('racePilotGuestLink')?.value||'';
+ if(!url)return;
+ try{await navigator.clipboard.writeText(url);velocityPilotGuestFeedback('Lien pilote copié.')}catch(_){
+  const input=document.getElementById('racePilotGuestLink');if(input){input.focus();input.select();velocityPilotGuestFeedback('Copiez le lien sélectionné.')}}
+}
+async function velocityRevokePilotGuest(id){
+ if(!confirm('Révoquer immédiatement ce lien pilote ?'))return;
+ try{const r=await fetch(`/api/pilot-access/${encodeURIComponent(id)}/revoke`,{method:'POST'}),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Révocation impossible');await velocityRefreshPilotGuests();velocityPilotGuestFeedback('Lien révoqué.')}catch(e){velocityPilotGuestFeedback(e.message||String(e),true)}
+}
+window.velocityCreatePilotGuest=velocityCreatePilotGuest;
+window.velocityCopyPilotGuest=velocityCopyPilotGuest;
+window.velocityRevokePilotGuest=velocityRevokePilotGuest;
+
 function renderActiveRaceAssignments(){const box=document.getElementById('raceActiveAssignments');if(!box||!velocityRaceSession)return;const roles=[['team_manager','TEAM MANAGER'],['spotter','SPOTTER'],['pilot','PILOTE']];box.innerHTML=roles.map(([role,label])=>`<div class="race-role-picker active"><span>${label}</span><div id="raceActive-${role}" class="race-role-members"></div></div>`).join('');roles.forEach(([role])=>renderRaceRolePicker(`raceActive-${role}`,role,velocityRaceSession.assignments?.[role]||[],true))}
 function renderPilotFocusTargetControl(){
  const host=document.getElementById('raceActiveAssignments');if(!host||!velocityRaceSession)return;
@@ -5597,10 +5659,10 @@ function velocityApplyDeviceRole(data){
  if(role&&data?.session?.status==='active')document.body.classList.add('velocity-performance-session',`velocity-performance-${role.replace('_','-')}`);
  velocityResetRoleUI();if(data?.paired)velocitySetDeveloperToolsHidden(true);if(!data?.paired){if(velocityDeviceHasStoredIdentity()){velocitySetDeveloperToolsHidden(true);velocityShowDeviceGate('Appareil non reconnu','Cet appareil était associé à Velocity mais son accès n’est plus valide.','Demandez au Team Manager de réassocier cet appareil.');return}velocitySetDeveloperToolsHidden(false);return}const authorized=new Set(data.authorized_roles||[]);if(!role){velocityShowDeviceGate(data.device?.member_name||'Membre associé',data.device?.team_name?`${data.device.team_name} — aucune session active pour vous.`:'Aucune session active.','En attente d’affectation…');return}if(!authorized.has(role)){velocityShowDeviceGate('Accès refusé','Le rôle demandé n’est pas autorisé pour ce membre.','Contactez le Team Manager.');return}if(role==='team_manager'){showMode('analyzer');return}document.body.classList.add('race-role-access',`race-role-${role}`);if(role==='spotter')showMode('spotter');else if(role==='pilot'){showMode('endurance');setTimeout(()=>openEnduranceFocus(),150)}}
 async function velocityDeviceSessionCheck(){if(window.VELOCITY_INVITE_TOKEN)return;const id=velocityDeviceId();try{const r=await fetch('/api/device/session',{cache:'no-store',headers:id?{'X-Velocity-Device':id}:{}}),data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Vérification impossible');if(data.paired&&data.device?.id&&!id)try{localStorage.setItem(VELOCITY_DEVICE_KEY,data.device.id)}catch(_){}velocityApplyDeviceRole(data)}catch(_){if(velocityDeviceHasStoredIdentity()&&!velocityDeviceAccessSignature)velocityShowDeviceGate('Connexion indisponible','Velocity ne peut pas vérifier vos droits pour le moment.','Accès verrouillé jusqu’au retour du serveur.')}}
-function velocityDeviceBootstrap(){if(window.VELOCITY_INVITE_TOKEN)return;if(velocityDeviceHasStoredIdentity()){velocitySetDeveloperToolsHidden(true);velocityShowDeviceGate()}setTimeout(velocityDeviceSessionCheck,250);velocityDevicePoll=setInterval(velocityDeviceSessionCheck,3000)}
-async function velocityRaceAccessCheck(){const access=window.VELOCITY_RACE_ACCESS||{};if(!access.token)return;try{const r=await fetch(`/api/race-access/${encodeURIComponent(access.token)}`,{cache:'no-store'});if(!r.ok){velocityRaceAccessEnded();return}const data=await r.json();if(!data.ok)velocityRaceAccessEnded();else {}}catch(_){}}
-function velocityRaceAccessEnded(){if(velocityRaceAccessPoll){clearInterval(velocityRaceAccessPoll);velocityRaceAccessPoll=null}clearVelocityFocusMemory();const ended=document.getElementById('raceRoleEnded');if(ended)ended.hidden=false;try{document.getElementById('enduranceFocus')?.classList.remove('show')}catch(_){}}
-function velocityRaceAccessBootstrap(){const access=window.VELOCITY_RACE_ACCESS||{},role=String(access.role||'');if(role==='expired'){velocitySetDeveloperToolsHidden(true);document.body.classList.add('race-role-access');velocityRaceAccessEnded();return}if(!['spotter','pilot'].includes(role))return;velocitySetDeveloperToolsHidden(true);document.body.classList.add('race-role-access',`race-role-${role}`);const launch=()=>{if(!state?.circuit_id){setTimeout(launch,250);return}if(role==='spotter')showMode('spotter');else{showMode('endurance');setTimeout(()=>openEnduranceFocus(),180)}};launch();velocityRaceAccessCheck();velocityRaceAccessPoll=setInterval(velocityRaceAccessCheck,3000)}
+function velocityDeviceBootstrap(){if(window.VELOCITY_INVITE_TOKEN||window.VELOCITY_RACE_ACCESS?.token)return;if(velocityDeviceHasStoredIdentity()){velocitySetDeveloperToolsHidden(true);velocityShowDeviceGate()}setTimeout(velocityDeviceSessionCheck,250);velocityDevicePoll=setInterval(velocityDeviceSessionCheck,3000)}
+async function velocityRaceAccessCheck(){const access=window.VELOCITY_RACE_ACCESS||{};if(!access.token)return;try{const r=await fetch(`/api/race-access/${encodeURIComponent(access.token)}`,{cache:'no-store'});if(!r.ok){velocityRaceAccessEnded();return}const data=await r.json();if(!data.ok)velocityRaceAccessEnded();else {window.velocityRaceSession=data.session||null;}}catch(_){}}
+function velocityRaceAccessEnded(){window.VELOCITY_GUEST_ENDED=true;if(velocityRaceAccessPoll){clearInterval(velocityRaceAccessPoll);velocityRaceAccessPoll=null}clearVelocityFocusMemory();const ended=document.getElementById('raceRoleEnded');if(ended)ended.hidden=false;try{document.getElementById('enduranceFocus')?.classList.remove('show')}catch(_){}}
+function velocityRaceAccessBootstrap(){const access=window.VELOCITY_RACE_ACCESS||{},role=String(access.role||'');if(role==='expired'){velocitySetDeveloperToolsHidden(true);document.body.classList.add('race-role-access');velocityRaceAccessEnded();return}if(!['spotter','pilot'].includes(role))return;velocityDeviceRole=role;window.velocityDeviceRole=role;velocitySetDeveloperToolsHidden(true);document.body.classList.add('race-role-access',`race-role-${role}`);const launch=()=>{if(window.VELOCITY_GUEST_ENDED)return;if(!window.velocityRaceSession||!state?.circuit_id){setTimeout(launch,500);return}if(role==='spotter')showMode('spotter');else{showMode('endurance');setTimeout(()=>openEnduranceFocus(),180)}};void velocityRaceAccessCheck().then(()=>{if(!window.VELOCITY_GUEST_ENDED)launch()});velocityRaceAccessPoll=setInterval(velocityRaceAccessCheck,3000)}
 document.addEventListener('DOMContentLoaded',()=>{velocityInviteBootstrap();velocityRaceAccessBootstrap();velocityDeviceBootstrap()});
 window.openRaceSessionManager=openRaceSessionManager;window.closeRaceSessionManager=closeRaceSessionManager;window.raceSessionTab=raceSessionTab;window.selectRaceTeam=selectRaceTeam;window.createRaceTeamPrompt=createRaceTeamPrompt;window.openRaceTeamCreateModal=openRaceTeamCreateModal;window.closeRaceTeamActionModal=closeRaceTeamActionModal;window.confirmRaceTeamAction=confirmRaceTeamAction;window.openRaceTeamDeleteModal=openRaceTeamDeleteModal;window.openRaceMemberDeleteModal=openRaceMemberDeleteModal;window.closeRaceMemberDeleteModal=closeRaceMemberDeleteModal;window.confirmRaceMemberDelete=confirmRaceMemberDelete;window.openRaceSessionEndModal=openRaceSessionEndModal;window.addRaceMember=addRaceMember;window.updateRaceMemberRoles=updateRaceMemberRoles;window.inviteRaceMember=inviteRaceMember;window.deleteRaceTeam=deleteRaceTeam;window.deleteRaceMember=deleteRaceMember;window.copyRaceInviteLink=copyRaceInviteLink;window.shareRaceInviteLink=shareRaceInviteLink;window.toggleRaceInviteQr=toggleRaceInviteQr;window.closeRaceInviteShare=closeRaceInviteShare;window.createRaceSession=createRaceSession;window.saveRaceAssignments=saveRaceAssignments;window.endRaceSession=endRaceSession;window.claimVelocityInvite=claimVelocityInvite;
 

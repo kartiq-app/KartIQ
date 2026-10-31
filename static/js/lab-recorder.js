@@ -31,7 +31,7 @@ function statusMeta(status){
 }
 function panelVisible(){const panel=document.getElementById('velocityLabRecorderPanel');const overlay=document.getElementById('velocityLabOverlay');return Boolean(panel&&!panel.hidden&&overlay?.classList.contains('active'))}
 function feedback(message='',isError=false){const el=document.getElementById('velocityRecorderFeedback');if(!el)return;el.textContent=message;el.classList.toggle('error',Boolean(isError))}
-function setStartBusy(busy){recorderBusy=Boolean(busy);const button=document.getElementById('velocityRecorderStart');if(button){button.disabled=recorderBusy;button.textContent=recorderBusy?'DÉMARRAGE…':'● DÉMARRER L’ENREGISTREMENT'}}
+function setStartBusy(busy){recorderBusy=Boolean(busy);const button=document.getElementById('velocityRecorderStart');if(button){button.disabled=recorderBusy;button.textContent=recorderBusy?'DÉMARRAGE…':'● ASPIRER LA COURSE'}}
 
 function populateCircuits(circuits){
  const select=document.getElementById('velocityRecorderCircuit');if(!select)return;

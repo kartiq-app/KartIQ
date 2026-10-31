@@ -602,8 +602,19 @@ function renderDriverMessageOverlay(){
 
 
 function enduranceFocusSelectedDriver(){
- const sessionTeam=String(window.velocityRaceSession?.team_name||'').trim();
- if(sessionTeam){const exact=(state.drivers||[]).find(d=>String(d?.driver||'').trim().toLowerCase()===sessionTeam.toLowerCase());if(exact)return exact}
+ const session=window.velocityRaceSession||null;
+ const row=String(session?.pilot_focus_apex_row??'').trim();
+ if(row){const exact=(state.drivers||[]).find(d=>String(d?.apex_row??'')===row);if(exact)return exact}
+ for(const name of [session?.pilot_focus_driver,session?.team_name]){
+  const target=String(name||'').trim().toLowerCase();
+  if(target){const exact=(state.drivers||[]).find(d=>String(d?.driver||'').trim().toLowerCase()===target);if(exact)return exact}
+ }
+ // Never display an unrelated team's timings while the selected guest
+ // target is temporarily absent from the live grid.
+ if(window.VELOCITY_RACE_ACCESS?.token&&session?.pilot_focus_driver){
+  return {driver:String(session.pilot_focus_driver),apex_row:session.pilot_focus_apex_row,
+          status:'unknown',last:'—',pit_stops:0};
+ }
  return state.followed||{};
 }
 function fitEnduranceLastLap(){

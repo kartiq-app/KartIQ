@@ -2968,3 +2968,27 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 .analyzer-ranking-table .a-note.kart-potential.red{color:#ff6475}
 .analyzer-ranking-table .a-note.kart-potential.provisional{color:#a9c9e8}
 .analyzer-ranking-table .a-note.kart-potential.unknown{color:#798696}
+
+/* V7.2.1844 — accès pilote temporaire depuis Team Management. */
+.race-pilot-guest-box{margin-top:16px;padding:14px;border:1px solid #245385;border-radius:11px;background:#091421;display:flex;flex-direction:column;gap:10px}
+.race-pilot-guest-box>strong{font-size:13px;color:#68b4ff;letter-spacing:.05em}
+.race-pilot-guest-box>p{font-size:12px;color:#b5c3d7;margin:0;line-height:1.45}
+.race-pilot-guest-actions{display:flex;gap:8px;flex-wrap:wrap;min-width:0}
+.race-pilot-guest-actions select{background:#101e31;color:white;border:1px solid #395677;padding:9px;border-radius:7px;font-size:12px}
+.race-pilot-guest-actions input{flex:1 1 220px;min-width:0;background:#0c1624;color:#d9eeff;border:1px solid #395677;padding:9px;border-radius:7px;font-size:12px}
+.race-pilot-guest-actions [hidden]{display:none!important}
+.race-pilot-guest-list{display:flex;flex-direction:column;gap:6px}
+.race-guest-entry{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid #21364e;font-size:12px;color:#d3e3f7}
+.race-pilot-guest-list small{color:#8fa5ba}
+
+/* V1844 — lien pilote disponible même sans Session Course. */
+.race-pilot-link-launch{border:1px solid #286db5!important;color:#8bcbff!important;background:#0b1a2c!important;border-radius:7px;cursor:pointer}
+.velocity-pilot-link-overlay[hidden]{display:none!important}
+.velocity-pilot-link-overlay{position:fixed;inset:0;z-index:95000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.86);overflow-y:auto}
+.velocity-pilot-link-card{width:min(560px,100%);max-height:calc(100dvh - 30px);overflow-y:auto;padding:22px}
+.velocity-pilot-link-head{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.velocity-pilot-link-head>strong{color:#72baff;letter-spacing:.04em}
+.velocity-pilot-link-head button{font-size:26px;border:0;background:transparent;color:#fff;cursor:pointer}
+.velocity-pilot-link-label{display:grid;gap:7px;color:#9fb8d5;font-size:12px;font-weight:850}
+.velocity-pilot-link-label select{width:100%;min-width:0;border:1px solid #395677;border-radius:7px;background:#101e31;color:#fff;padding:10px;font-size:12px}
+.velocity-pilot-link-feedback{margin:0;color:#a9e7c7;font-size:12px}.velocity-pilot-link-feedback.error{color:#ff9090}
