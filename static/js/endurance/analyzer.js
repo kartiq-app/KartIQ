@@ -3885,11 +3885,11 @@ function renderAnalyzer(){
  const ownForecast=followed?analyzerForecastFor(followed):{};const stops=analyzerStopsInfo(followed);
  document.getElementById('analyzerFollowedName').textContent=followed?.driver||'—';
  document.getElementById('analyzerFollowedPosition').textContent=followed?.pos?`P${followed.pos}`:'P—';
- document.getElementById('analyzerFollowedTrack').textContent=followed?.track_timer||'—';
+ document.getElementById('analyzerFollowedTrack').textContent=velocityTrackHoursMinutes(followed?.track_timer);
  const mobileTeamPos=document.getElementById('analyzerMobileTeamPos'),mobileTeamName=document.getElementById('analyzerMobileTeamName'),mobileTrack=document.getElementById('analyzerMobileTrackTime');
  if(mobileTeamPos)mobileTeamPos.textContent=followed?.pos?`P${followed.pos}`:'P—';
  if(mobileTeamName)mobileTeamName.textContent=followed?.driver||'ÉQUIPE SUIVIE';
- if(mobileTrack)mobileTrack.textContent=followed?.track_timer||'—';
+ if(mobileTrack)mobileTrack.textContent=velocityTrackHoursMinutes(followed?.track_timer);
  document.getElementById('analyzerFollowedLimit').textContent=Number.isFinite(ownForecast.maxRemaining)?analyzerFormatDuration(ownForecast.maxRemaining):'—';
  document.getElementById('analyzerFollowedStops').textContent=`${stops.done} / ${analyzerRules.requiredStops}`;
  analyzerRenderFollowedPerformance(followed);

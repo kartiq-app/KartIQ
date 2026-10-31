@@ -1,3 +1,11 @@
+
+## V7.2.1840 — PIT officiel Apex et affichage HH:MM
+- Focus Endurance : le chrono PIT IN provient exclusivement de la cellule `otr|to` du live Apex, sans comptage avec l’horloge du navigateur.
+- PIT OUT : conservation de la dernière durée live Apex, avec lecture non bloquante du dernier arrêt terminé depuis l’historique Apex (`D#.P`) pour récupérer la durée en millisecondes lorsque publiée. Aucun millième n’est inventé si Apex ne transmet qu’une valeur à la seconde.
+- Réinitialisation des données PIT lors du changement d’équipe suivie pour éviter la contamination entre équipes.
+- Format d’affichage du temps en piste en `HH:MM` dans le Focus Endurance et les cartes équipe suivie Analyzer ; les valeurs brutes Apex utilisées par les calculs restent inchangées.
+- Aucun changement du classement des derniers chronos ni des calculs KV.
+
 ## V7.2.1839 — Badge arrêts Focus Endurance (maquette validée)
 - Remplacement du libellé bleu `Arrêts : X` par le chiffre seul, noir sur fond bleu arrondi.
 - Badge centré sous la position du dernier chrono, aux proportions et espacements de la maquette fournie (58 % de la zone interne).
