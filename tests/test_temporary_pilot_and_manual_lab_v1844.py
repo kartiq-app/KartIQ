@@ -69,6 +69,40 @@ class TemporaryPilotAccessTests(unittest.TestCase):
         self.assertEqual(self.pilot.get('/api/teams').status_code, 403)
         self.assertEqual(self.pilot.get('/').status_code, 403)
 
+    def test_pilot_install_iphone_android_and_standalone_launch(self):
+        issued = self.issue(hours=3)
+        token = issued['link'].split('/join/')[1]
+        landing = self.pilot.get('/join/' + token)
+        self.assertEqual(landing.status_code, 200)
+        self.assertIn(b'Installer Velocity Pilote', landing.data)
+        self.assertIn(b'Safari', landing.data)
+        self.assertIn(b'Chrome', landing.data)
+        self.assertIn(b'beforeinstallprompt', landing.data)
+        self.assertIn(b'navigator.standalone', landing.data)
+        self.assertNotIn(b'Architecture 5 modes', landing.data)
+        self.assertIn('no-store', landing.headers.get('Cache-Control', ''))
+        manifest_response = self.pilot.get(f'/join/{token}/manifest.webmanifest')
+        self.assertEqual(manifest_response.status_code, 200)
+        manifest = manifest_response.get_json()
+        self.assertEqual(manifest['start_url'], f'/join/{token}?launch=1')
+        self.assertEqual(manifest['scope'], '/join/')
+        self.assertEqual(manifest['orientation'], 'landscape')
+        self.assertEqual(manifest['display'], 'standalone')
+        self.assertNotEqual(manifest['id'], '/')
+        worker = self.pilot.get('/join/pilot-sw.js')
+        self.assertEqual(worker.status_code, 200)
+        self.assertIn(b'self.addEventListener', worker.data)
+        self.assertNotIn(b'caches.open', worker.data)
+        launch = self.pilot.get('/join/' + token + '?launch=1')
+        self.assertEqual(launch.status_code, 200)
+        self.assertIn(b'enduranceFocus', launch.data)
+        self.assertIn(f'/join/{token}/manifest.webmanifest'.encode(), launch.data)
+        self.assertEqual(self.pilot.get('/api/race-access/' + token).status_code, 200)
+        self.assertEqual(self.pilot.post('/api/pilot-access', json={}).status_code, 403)
+        self.team['pilot_links'][issued['id']]['revoked'] = True
+        self.assertEqual(self.pilot.get(f'/join/{token}/manifest.webmanifest').status_code, 410)
+        self.assertEqual(self.pilot.get('/join/' + token + '?launch=1').status_code, 410)
+
     def test_expiry_revocation_and_session_end_are_server_enforced(self):
         issued = self.issue(hours=1)
         token = issued['link'].split('/join/')[1]

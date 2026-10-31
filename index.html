@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Velocity">
-<link rel="manifest" href="/static/manifest.json?v=7.2.1742">
+<link rel="manifest" href="{% if race_access_temporary|default(false) and race_access_role|default('') == 'pilot' and race_access_token|default('') %}/join/{{ race_access_token }}/manifest.webmanifest{% else %}/static/manifest.json?v={{ app_version }}{% endif %}">
 <link rel="apple-touch-icon" href="/static/icons/kartiq-180.png?v=7.2.1742">
 <title>Velocity V{{ app_version }} — Architecture 5 modes</title>
 <link rel="stylesheet" href="/static/css/kartiq.css?v={{ app_version }}">
@@ -368,7 +368,7 @@
   <div id="velocityPilotGuestModal" class="velocity-pilot-link-overlay" hidden role="dialog" aria-modal="true" aria-label="Accès pilote temporaire">
     <section class="race-pilot-guest-box velocity-pilot-link-card">
       <div class="velocity-pilot-link-head"><strong>ACCÈS PILOTE TEMPORAIRE</strong><button type="button" onclick="velocityClosePilotGuestModal()" aria-label="Fermer">×</button></div>
-      <p>Partage un accès au Focus Endurance, sans adresse mail ni compte Google. Le lien est en lecture seule, limité à un circuit, une équipe et une durée choisie.</p>
+      <p>Partage un accès au Focus Endurance, sans adresse mail ni compte Google. Le pilote installe Velocity sur iPhone ou Android depuis ce lien, puis ouvre directement le Focus Endurance. Accès en lecture seule, limité à un circuit, une équipe et une durée choisie.</p>
       <label class="velocity-pilot-link-label">ÉQUIPE À SUIVRE<select id="racePilotGuestTarget" aria-label="Équipe à suivre"></select></label>
       <div class="race-pilot-guest-actions">
         <select id="racePilotGuestHours" aria-label="Durée du lien"><option value="1">1 heure</option><option value="3" selected>3 heures</option><option value="6">6 heures</option><option value="12">12 heures</option><option value="24">24 heures</option></select>

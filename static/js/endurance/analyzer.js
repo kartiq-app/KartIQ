@@ -5531,7 +5531,7 @@ async function velocityCreatePilotGuest(){
   const field=document.getElementById('racePilotGuestLink');if(field){field.value=data.link;field.hidden=false}
   const copy=document.getElementById('racePilotGuestCopy');if(copy)copy.hidden=false;
   await velocityRefreshPilotGuests();
-  velocityPilotGuestFeedback(`Lien valable ${hours} heure${hours>1?'s':''}. Copiez-le et envoyez-le au pilote.`);
+  velocityPilotGuestFeedback(`Lien valable ${hours} heure${hours>1?'s':''}. Envoyez-le au pilote : il ouvre la page d’installation iPhone / Android.`);
  }catch(error){velocityPilotGuestFeedback(error.message||String(error),true)}finally{if(button)button.disabled=false}
 }
 async function velocityCopyPilotGuest(){

@@ -1,3 +1,12 @@
+## V7.2.1845 — Accès pilote : installation iPhone et Android
+
+- Le lien temporaire ouvre désormais une page d’installation Velocity Pilote, sans mail ni compte.
+- Parcours iOS Safari : Partager → Sur l’écran d’accueil, puis lancement automatique du Focus Endurance.
+- Parcours Android Chrome : installation PWA avec manifeste associé au jeton temporaire ; le raccourci démarre directement sur le Focus Endurance.
+- Service worker d’installation limité à /join/ et sans cache des données live.
+- Bouton « Ouvrir le Focus sans installer » si nécessaire.
+- Expiration, révocation, lecture seule et équipe choisie inchangées ; aucun recalcul Apex.
+
 ## V7.2.1844 — Liens pilote temporaires et Velocity Lab manuel
 - Liens d'accès pilote sans email (1/3/6/12/24 h), générés depuis Analyzer pour une équipe du live, même sans Session Course. Expiration à l'échéance ou dès la fin de la Session Course si le lien y est rattaché ; révocation immédiate à la demande. Jeton aléatoire conservé uniquement sous forme de SHA-256 dans le stockage partagé.
 - Accès via /join/<token> : Focus Endurance existant, aucune association permanente d'appareil, aucune connexion Google. Une invitation hors Session Course reste liée au circuit et à l'équipe d'origine. Lecture seule imposée sur le serveur : uniquement flux live et ressources d'affichage accessibles ; mutations Analyzer/Spotter/Recorder interdites.

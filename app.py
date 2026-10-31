@@ -1708,15 +1708,72 @@ def leave_workspace(workspace_id):
     return jsonify(ok=True, active_workspace_id=session.get("velocity_workspace_id"))
 
 
+
+@app.get("/join/pilot-sw.js")
+def pilot_install_service_worker():
+    """Install-only SW scoped to /join/, without caching authenticated live data."""
+    js = ("self.addEventListener('install', e => self.skipWaiting());"
+          "self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));"
+          "self.addEventListener('fetch', e => {"
+          "if (e.request.mode === 'navigate') e.respondWith(fetch(e.request));"
+          "});")
+    response = app.response_class(js, mimetype="application/javascript")
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.get("/join/<token>/manifest.webmanifest")
+def pilot_guest_manifest(token):
+    access = _race_access_for_token(token)
+    if not access or not access.get("temporary"):
+        return ("Lien pilote expiré ou révoqué", 410)
+    # A distinct application identity prevents Android installing the generic
+    # Velocity PWA whose start_url is '/', losing the pilot target.
+    manifest = {
+        "id": "/pilot-focus/" + hashlib.sha256(token.encode("utf-8")).hexdigest()[:24],
+        "name": "Velocity — Focus pilote",
+        "short_name": "Velocity Pilote",
+        "description": "Focus Endurance temporaire, en lecture seule",
+        "start_url": f"/join/{token}?launch=1",
+        "scope": "/join/",
+        "display": "standalone",
+        "display_override": ["fullscreen", "standalone"],
+        "orientation": "landscape",
+        "background_color": "#07090e",
+        "theme_color": "#07090e",
+        "icons": [
+            {"src": "/static/icons/kartiq-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/static/icons/kartiq-512.png", "sizes": "512x512", "type": "image/png"},
+        ],
+    }
+    response = app.response_class(json.dumps(manifest, ensure_ascii=False),
+                                  mimetype="application/manifest+json")
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
+
 @app.get("/join/<token>")
 def race_join(token):
     access = _race_access_for_token(token)
     if not access:
-        return render_template("index.html", app_version=APP_VERSION, race_access_role="expired", race_access_token="", velocity_invite_token=""), 410
-    response = app.make_response(render_template(
-        "index.html", app_version=APP_VERSION, race_access_role=access["role"],
-        race_access_token=str(token), velocity_invite_token="",
-        velocity_workspace_id=str((access.get("session") or {}).get("workspace_id") or LEGACY_WORKSPACE_ID)))
+        return render_template("pilot_install.html", app_version=APP_VERSION,
+                               expired=True, token="", team_name=""), 410
+    # Existing historical role links still open their normal role interface.
+    is_temporary_pilot = access.get("temporary") and access.get("role") == "pilot"
+    launch = str(request.args.get("launch") or "") == "1"
+    if is_temporary_pilot and not launch:
+        response = app.make_response(render_template(
+            "pilot_install.html", app_version=APP_VERSION, expired=False,
+            token=str(token), team_name=str(access["session"].get("pilot_focus_driver") or access["session"].get("team_name") or "Pilote"),
+            expires_at_ms=access["expires_at_ms"],
+        ))
+    else:
+        response = app.make_response(render_template(
+            "index.html", app_version=APP_VERSION, race_access_role=access["role"],
+            race_access_token=str(token), velocity_invite_token="",
+            race_access_temporary=bool(access.get("temporary")),
+            velocity_workspace_id=str((access.get("session") or {}).get("workspace_id") or LEGACY_WORKSPACE_ID)))
     if access.get("temporary"):
         max_age = max(1, int((access["expires_at_ms"] - int(time.time() * 1000)) / 1000))
         response.set_cookie("velocity_pilot_guest", str(token), httponly=True,
