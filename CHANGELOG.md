@@ -1,3 +1,10 @@
+## V7.2.1839 — Badge arrêts Focus Endurance (maquette validée)
+- Remplacement du libellé bleu `Arrêts : X` par le chiffre seul, noir sur fond bleu arrondi.
+- Badge centré sous la position du dernier chrono, aux proportions et espacements de la maquette fournie (58 % de la zone interne).
+- Largeur proportionnelle au chrono, sans agrandissement du bloc ni modification des polices existantes.
+- Donnée inchangée : compteur `pit_stops` Apex de l’équipe suivie.
+- Version applicative et cache iPhone mis à jour pour rendre le nouveau style visible après déploiement.
+
 ## V7.2.1837 — Ajout KCE Misanino Kart Circuit (Italie)
 
 - Nouveau circuit dans `config/circuits.json` : page Apex officielle `https://www.apex-timing.com/live-timing/misanino-kart/` et WebSocket fourni `wss://live-data.apex-timing.com:8043/`.

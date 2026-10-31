@@ -554,7 +554,7 @@ function renderEnduranceFocus(){
  const pitStopsEl=document.getElementById('enduranceFocusPitStops');
  if(position)position.textContent=f.pos?'P'+f.pos:'—';
  if(name)name.textContent=f.driver||state.followed_driver||'—';
- if(pitStopsEl)pitStopsEl.textContent=`Arrêts : ${enduranceFocusPitStopsValue(f)}`;
+ if(pitStopsEl){const count=enduranceFocusPitStopsValue(f);pitStopsEl.textContent=String(count);pitStopsEl.setAttribute('aria-label',`Arrêts aux stands : ${count}`)}
  const lastRank=sprintLastLapRanking(f);if(lastRankEl)lastRankEl.innerHTML=lastRank?enduranceOrdinalMarkup(lastRank.rank):'—';
  const aheadDriver=sprintDriverAhead(f);const behindDriver=sprintDriverBehind(f);
  const focusAhead=sprintGapAhead(f);const focusBehind=sprintGapBehind(f);const isLeader=Number(f.pos)===1;const hasDriverBehind=Boolean(behindDriver);
