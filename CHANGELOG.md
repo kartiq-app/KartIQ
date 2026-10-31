@@ -1,3 +1,11 @@
+## V7.2.1846 — Correction du bouton Installer Velocity Pilote (iPhone / Android)
+- Corrige le bouton visible par erreur malgré `hidden` (surcharge de `display:block` CSS).
+- Le bouton est désormais toujours actionnable : invite native Android si disponible, instructions détaillées sinon.
+- Instructions Safari sur iPhone, Chrome sur Android, et aide pour les navigateurs intégrés aux messageries.
+- Ajoute une action de copie du lien temporaire vers Safari/Chrome en cas de navigateur intégré.
+- Aucune modification des droits d'accès temporaires, du Focus Endurance, du Recorder ou du moteur Apex.
+- Bascule des métadonnées de version et du cache de l'application vers V7.2.1846.
+
 ## V7.2.1845 — Accès pilote : installation iPhone et Android
 
 - Le lien temporaire ouvre désormais une page d’installation Velocity Pilote, sans mail ni compte.

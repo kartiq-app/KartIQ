@@ -153,4 +153,27 @@ class TemporaryPilotAccessTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201, response.get_json())
         self.assertEqual(before, self.team)
 
+
+
+class PilotInstallButtonRegressionTests(unittest.TestCase):
+    """V1846 — the install CTA must not silently do nothing without a native prompt."""
+
+    def test_install_button_always_actionable_and_platform_fallback_present(self):
+        from pathlib import Path
+        page = (Path(__file__).resolve().parents[1] / 'templates' / 'pilot_install.html').read_text()
+        self.assertIn('<button id="installButton" type="button" aria-controls="installGuide"', page)
+        self.assertNotIn('<button id="installButton" type="button" hidden', page)
+        self.assertIn('button[hidden],[hidden]{display:none!important}', page)
+        self.assertIn('function showGuide(message)', page)
+        self.assertIn('if(android&&deferred)', page)
+        self.assertIn("showGuide(ios?", page)
+        self.assertIn('id="copyInstallLink"', page)
+
+    def test_only_guest_install_page_changes_not_live_timing_engine(self):
+        from pathlib import Path
+        page = (Path(__file__).resolve().parents[1] / 'templates' / 'pilot_install.html').read_text()
+        self.assertIn("window.addEventListener('beforeinstallprompt'", page)
+        self.assertIn("window.addEventListener('appinstalled'", page)
+        self.assertIn('window.location.replace(launch)', page)
+
 if __name__ == '__main__': unittest.main()

@@ -17,7 +17,7 @@
 main{width:min(100%,460px);padding:28px 24px;border-radius:20px;background:rgba(13,19,30,.97);border:1px solid #263549;box-shadow:0 14px 60px #0009}
 .logo{font-size:clamp(32px,9vw,52px);font-weight:1000;letter-spacing:-.07em;font-style:italic;line-height:1}.logo b{color:#e31a29}.eyebrow{font-size:11px;color:#4ba8ef;letter-spacing:.16em;font-weight:900;margin-top:20px;text-transform:uppercase}
 h1{font-size:clamp(23px,6vw,30px);line-height:1.15;margin:9px 0 8px}p{font-size:14px;line-height:1.55;color:#b1bfd0;margin:0 0 16px}.team{color:#fff;font-weight:800}.panel{border:1px solid #33445a;background:#101a2a;border-radius:12px;padding:14px;margin:18px 0}.panel strong{display:block;margin-bottom:8px;color:#fff}.steps{margin:0;padding-left:23px;line-height:1.7;color:#d3e1f3;font-size:14px}.steps li{padding:4px 0}.steps b{color:#fff}
-button,.button{border:0;border-radius:10px;background:#2389df;color:#fff;font-size:14px;font-weight:850;display:block;text-align:center;width:100%;padding:15px 16px;text-decoration:none;cursor:pointer}button:disabled{opacity:.5;cursor:default}.button.secondary{background:#202f43;border:1px solid #40556b;margin-top:10px}.helper{font-size:12px;color:#a4b2c4;margin:12px 0 0}.warning{color:#ffbd73}.fine{font-size:11px;color:#8996a8;border-top:1px solid #283447;padding-top:15px;margin-top:20px}.platform{display:none}.platform.visible{display:block}.status{color:#87c4f4;min-height:16px;font-size:12px;margin:10px 0 0}
+button,.button{border:0;border-radius:10px;background:#2389df;color:#fff;font-size:14px;font-weight:850;display:block;text-align:center;width:100%;padding:15px 16px;text-decoration:none;cursor:pointer}button:disabled{opacity:.5;cursor:default}button[hidden],[hidden]{display:none!important}.button.secondary{background:#202f43;border:1px solid #40556b;margin-top:10px}.helper{font-size:12px;color:#a4b2c4;margin:12px 0 0}.warning{color:#ffbd73}.fine{font-size:11px;color:#8996a8;border-top:1px solid #283447;padding-top:15px;margin-top:20px}.platform{display:none}.platform.visible{display:block}.install-guide{margin-top:14px}.install-guide h2{font-size:17px;margin:0 0 10px;color:#fff}.install-guide .steps{margin-bottom:12px}.install-guide .note{font-size:12px;color:#d5e3f5;background:#1d3049;border-left:3px solid #4ba8ef;padding:10px;border-radius:6px}.install-guide .note:empty{display:none}.copy-url{margin-top:12px;background:#1b2b3d;border:1px solid #40556b}.clipboard-help{margin-top:8px;font-size:12px;word-break:break-all}.install-tip{font-size:12px;color:#a9bdcf;margin:8px 0}.status{color:#87c4f4;min-height:16px;font-size:12px;margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -32,47 +32,124 @@ button,.button{border:0;border-radius:10px;background:#2389df;color:#fff;font-si
 <h1>Installer Velocity Pilote</h1>
 <p>Équipe suivie : <span class="team">{{ team_name }}</span></p>
 <p>Ajoute Velocity à ton écran d'accueil pour ouvrir le <b>Focus Endurance</b> directement, sans email ni compte.</p>
-<section id="iosSteps" class="panel platform"><strong>Sur iPhone — Safari</strong><ol class="steps"><li>Ouvre ce lien dans <b>Safari</b> (pas dans le navigateur de WhatsApp).</li><li>Touche <b>Partager</b> <span aria-hidden="true">▢↑</span>, puis <b>Sur l'écran d'accueil</b>.</li><li>Touche <b>Ajouter</b>, puis ouvre l'icône <b>Velocity Pilote</b>.</li></ol></section>
-<section id="androidSteps" class="panel platform"><strong>Sur Android — Chrome</strong><ol class="steps"><li>Ouvre ce lien dans <b>Chrome</b>.</li><li>Touche <b>Installer l'application</b> ci-dessous, ou utilise le menu <b>⋮ → Installer l'application / Ajouter à l'écran d'accueil</b>.</li><li>Ouvre l'icône <b>Velocity Pilote</b> depuis l'accueil.</li></ol></section>
-<section id="otherSteps" class="panel platform"><strong>Installer sur téléphone</strong><p>Sur iPhone, ouvre le lien dans Safari et utilise Partager → Sur l'écran d'accueil. Sur Android, ouvre-le dans Chrome et utilise Installer l'application.</p></section>
-<button id="installButton" type="button" hidden>INSTALLER VELOCITY PILOTE</button>
-<p id="installFeedback" class="status" role="status"></p>
+<button id="installButton" type="button" aria-controls="installGuide" aria-expanded="false">INSTALLER VELOCITY PILOTE</button>
+<p id="installFeedback" class="status" role="status" aria-live="polite">Appuie ici pour afficher la méthode d'installation disponible sur ton téléphone.</p>
+<section id="installGuide" class="panel install-guide" hidden aria-label="Instructions d'installation">
+  <h2 id="installGuideTitle">Installer sur ton téléphone</h2>
+  <p id="installGuideNote" class="note" role="note"></p>
+  <div id="iosSteps" class="platform"><ol class="steps"><li>Ouvre ce lien dans <b>Safari</b> (pas dans le navigateur intégré de WhatsApp, Instagram ou Gmail).</li><li>Dans <b>Safari</b>, touche <b>Partager</b> <span aria-hidden="true">▢↑</span>, puis <b>Sur l'écran d'accueil</b>.</li><li>Touche <b>Ajouter</b>, puis ouvre l'icône <b>Velocity Pilote</b> sur l'écran d'accueil.</li></ol></div>
+  <div id="androidSteps" class="platform"><ol class="steps"><li>Ouvre ce lien dans <b>Chrome</b>, et non dans le navigateur intégré d'une messagerie.</li><li>Dans Chrome, ouvre le menu <b>⋮</b> et choisis <b>Installer l'application</b> ou <b>Ajouter à l'écran d'accueil</b>.</li><li>Valide, puis lance <b>Velocity Pilote</b> depuis son icône.</li></ol></div>
+  <div id="otherSteps" class="platform"><p>Sur iPhone : Safari → Partager → Sur l'écran d'accueil. Sur Android : Chrome → menu ⋮ → Installer / Ajouter à l'écran d'accueil.</p></div>
+  <button id="copyInstallLink" class="copy-url" type="button">COPIER LE LIEN POUR L'OUVRIR DANS SAFARI / CHROME</button>
+  <p id="copyInstallHelp" class="clipboard-help" hidden></p>
+</section>
 <a class="button secondary" href="/join/{{ token }}?launch=1" id="openNow">OUVRIR LE FOCUS SANS INSTALLER</a>
 <p class="helper">Après installation, utilise l'icône de l'écran d'accueil. L'accès reste limité à sa durée de validité et peut être révoqué.</p>
 <p class="fine">Velocity V{{ app_version }} · Lecture seule · Les informations live nécessitent une connexion Internet. Sur iPhone, iOS peut conserver la barre d'état même en mode application.</p>
 <script>
 (() => {
   const token={{ token|tojson }};
+  const installUrl=window.location.origin+'/join/'+encodeURIComponent(token);
   const launch='/join/'+encodeURIComponent(token)+'?launch=1';
   const standalone=window.matchMedia('(display-mode: standalone)').matches||
                    window.matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
   if(standalone){window.location.replace(launch);return;}
+
   const ua=navigator.userAgent||'';
   const ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const android=/Android/i.test(ua);
-  document.getElementById(ios?'iosSteps':android?'androidSteps':'otherSteps').classList.add('visible');
+  const inApp=/(FBAN|FBAV|Instagram|WhatsApp|Line\/|Snapchat|TikTok|wv\)|; wv|GSA\/)/i.test(ua);
+  const isSafari=ios&&/Safari/i.test(ua)&&!/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua)&&!inApp;
+  const isChrome=android&&/Chrome|Chromium/i.test(ua)&&!/EdgA|OPR\/|SamsungBrowser/i.test(ua)&&!inApp;
+  const guide=document.getElementById('installGuide');
+  const guideTitle=document.getElementById('installGuideTitle');
+  const guideNote=document.getElementById('installGuideNote');
   const feedback=document.getElementById('installFeedback');
   const btn=document.getElementById('installButton');
+  const copyBtn=document.getElementById('copyInstallLink');
+  const copyHelp=document.getElementById('copyInstallHelp');
   let deferred=null;
+  let installed=false;
+
+  function showGuide(message){
+    guide.hidden=false;
+    btn.setAttribute('aria-expanded','true');
+    ['iosSteps','androidSteps','otherSteps'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+    document.getElementById(ios?'iosSteps':android?'androidSteps':'otherSteps').classList.add('visible');
+    guideTitle.textContent=ios?'Installation sur iPhone':android?'Installation sur Android':'Installation de Velocity Pilote';
+    guideNote.textContent=ios
+      ? (isSafari?'Dans Safari, le bouton Partager est nécessaire : les sites web ne peuvent pas installer une application automatiquement.':'Ouvre d’abord ce lien dans Safari. Si nécessaire, copie le lien ci-dessous, puis colle-le dans Safari.')
+      :android
+      ? (isChrome?'Si Chrome ne propose pas une installation automatique, utilise le menu ⋮ en haut à droite.':'Ouvre d’abord ce lien dans Chrome. Si nécessaire, copie-le ci-dessous puis colle-le dans Chrome.')
+      :'Ouvre ce lien dans Safari sur iPhone ou Chrome sur Android pour l’ajouter à ton écran d’accueil.';
+    feedback.textContent=message||'Suis les étapes ci-dessous pour installer Velocity Pilote.';
+  }
+
+  // La disponibilité du prompt natif est propre au navigateur : un bouton doit
+  // toujours proposer une solution lorsque beforeinstallprompt ne se déclenche pas.
+  window.addEventListener('beforeinstallprompt',event=>{
+    if(!android)return;
+    event.preventDefault();
+    deferred=event;
+    feedback.textContent='Installation automatique prête : appuie sur INSTALLER VELOCITY PILOTE.';
+  });
+
+  btn.addEventListener('click',async()=>{
+    if(installed){showGuide('Velocity Pilote est installé. Ouvre son icône depuis l’écran d’accueil.');return;}
+    if(android&&deferred){
+      const prompt=deferred;
+      deferred=null;
+      try{
+        await prompt.prompt();
+        const choice=await prompt.userChoice;
+        if(choice?.outcome==='accepted'){
+          feedback.textContent='Installation demandée. Une fois terminée, ouvre l’icône Velocity Pilote.';
+          return;
+        }
+        showGuide('Installation automatique non validée. Tu peux utiliser le menu ⋮ de Chrome.');
+      }catch(_error){
+        showGuide('Installation automatique indisponible. Suis les étapes ci-dessous.');
+      }
+      return;
+    }
+    showGuide(ios?'Sur iPhone, utilise Partager → Sur l’écran d’accueil dans Safari.':
+              android?'Sur Android, utilise le menu ⋮ → Installer / Ajouter à l’écran d’accueil dans Chrome.':
+              'L’installation se fait depuis le navigateur de ton téléphone.');
+  });
+
+  copyBtn.addEventListener('click',async()=>{
+    let copied=false;
+    try{
+      if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(installUrl);copied=true;}
+    }catch(_error){}
+    if(!copied){
+      const input=document.createElement('textarea');
+      input.value=installUrl;
+      input.setAttribute('readonly','');
+      input.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+      document.body.appendChild(input);
+      input.focus();input.select();
+      try{copied=document.execCommand('copy');}catch(_error){}
+      input.remove();
+    }
+    copyHelp.hidden=false;
+    copyHelp.textContent=copied?'Lien copié. Ouvre Safari ou Chrome et colle-le dans la barre d’adresse.':
+      'Copie cette adresse, puis ouvre-la dans Safari ou Chrome : '+installUrl;
+  });
+
+  window.addEventListener('appinstalled',()=>{
+    installed=true;
+    deferred=null;
+    btn.textContent='VELOCITY PILOTE INSTALLÉ';
+    feedback.textContent='Installation terminée. Ouvre l’icône Velocity Pilote sur ton écran d’accueil.';
+    guide.hidden=true;btn.setAttribute('aria-expanded','false');
+  });
+
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/join/pilot-sw.js',{scope:'/join/'}).catch(()=>{
-      feedback.textContent='Installation automatique indisponible : utilise le menu du navigateur.';
+      // Aucun blocage du parcours manuel si le SW n'est pas disponible.
     });
   }
-  window.addEventListener('beforeinstallprompt',e=>{
-    if(!android)return;
-    e.preventDefault();deferred=e;btn.hidden=false;
-  });
-  btn.addEventListener('click',async()=>{
-    if(!deferred)return;
-    const prompt=deferred;deferred=null;btn.hidden=true;
-    try{await prompt.prompt();const choice=await prompt.userChoice;
-      feedback.textContent=choice?.outcome==='accepted'?'Installation demandée. Ouvre ensuite l’icône Velocity Pilote.':'Tu peux installer Velocity depuis le menu de Chrome.';
-    }catch(_){feedback.textContent='Utilise le menu Chrome → Installer l’application.';}
-  });
-  window.addEventListener('appinstalled',()=>{
-    btn.hidden=true;feedback.textContent='Installation terminée. Ouvre Velocity Pilote depuis ton écran d’accueil.';
-  });
 })();
 </script>
 {% endif %}
