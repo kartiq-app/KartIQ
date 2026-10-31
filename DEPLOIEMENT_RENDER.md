@@ -1,3 +1,7 @@
+## V7.2.1849 — Focus invité à distance (aucun nouvel accès requis)
+
+La migration de la table `velocity_access_focus_control` (présence/commande isolées par identifiant d’invitation) est créée automatiquement à l'initialisation de `RecorderStore` sur Render PostgreSQL. Pas de variable d'environnement supplémentaire. Aucun lien d'accès V1848 existant n'est révoqué par le déploiement. Les utilisateurs doivent actualiser/recharger Velocity pour recevoir le code V1849 ; l'écran Focus doit rester ouvert et la connexion active pour une commande à distance. Le serveur refuse un changement d'équipe si la présence Focus a expiré (> 40 s). Le live Apex et le Recorder ne sont pas modifiés.
+
 ## Urgence V7.2.1816 — Correction de la page HTTP 500
 
 1. Redéployer **tous les fichiers V1816** ; ne pas redéployer le `app.py` défectueux de la V1815.

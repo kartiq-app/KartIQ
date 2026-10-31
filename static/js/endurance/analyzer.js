@@ -5488,18 +5488,65 @@ function renderRaceRolePicker(containerId,role,currentValues=[],active=false){co
 function renderRaceAssignmentSelectors(){const team=currentRaceTeam();renderRaceRolePicker('raceAssignTM','team_manager',velocityRaceSession?.assignments?.team_manager||[]);renderRaceRolePicker('raceAssignSpotter','spotter',velocityRaceSession?.assignments?.spotter||[]);renderRaceRolePicker('raceAssignPilot','pilot',velocityRaceSession?.assignments?.pilot||[]);const teamLabel=document.getElementById('raceSessionTeam');if(teamLabel)teamLabel.textContent=team?.name||'—';const circuit=document.getElementById('raceSessionCircuit');if(circuit)circuit.textContent=raceSessionCircuitName()}
 function currentAssignmentPayload(){const out={team_manager:[],spotter:[],pilot:[]};document.querySelectorAll('[data-race-role-member]:checked').forEach(el=>{const role=el.dataset.raceRoleMember;if(out[role])out[role].push(el.value)});return out}
 function raceSessionRender(session){velocityRaceSession=session||null;window.velocityRaceSession=velocityRaceSession;velocitySessionButtonUpdate(velocityRaceSession);const empty=document.getElementById('raceSessionEmpty'),active=document.getElementById('raceSessionActive');const isActive=Boolean(session&&session.status==='active');if(empty)empty.hidden=isActive;if(active)active.hidden=!isActive;renderRaceAssignmentSelectors();if(!isActive)return;raceSessionShowPane('raceSessionActive');document.getElementById('raceSessionActiveName').textContent=session.name||'SESSION DE COURSE';document.getElementById('raceSessionActiveCircuit').textContent=session.circuit_name||session.circuit_id||'—';document.getElementById('raceSessionActiveTeam').textContent=session.team_name||'—';renderActiveRaceAssignments();void velocityRefreshAccess()}
-let velocityLastAccessLink='';
+let velocityLastAccessLink='', velocityAccessRefreshTimer=null, velocityAccessRefreshInFlight=false;
 function velocityAccessFeedback(message='',error=false){const el=document.getElementById('velocityAccessFeedback');if(el){el.textContent=message;el.classList.toggle('error',!!error)}}
 function velocityOpenAccessModal(){
  const modal=document.getElementById('velocityAccessModal');if(!modal)return;
  modal.hidden=false;void velocityRefreshAccess();
+ if(velocityAccessRefreshTimer)clearInterval(velocityAccessRefreshTimer);
+ // Only watch remote Focus presence while the administrator has the panel open.
+ velocityAccessRefreshTimer=setInterval(()=>{if(!modal.hidden)void velocityRefreshAccess()},7000);
 }
-function velocityCloseAccessModal(){const m=document.getElementById('velocityAccessModal');if(m)m.hidden=true}
-async function velocityRefreshAccess(){const h=document.getElementById('velocityAccessList');if(!h)return;try{const r=await fetch('/api/access-grants',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Accès indisponibles');const grants=(d.grants||[]).filter(g=>g.active);h.innerHTML=grants.length?grants.map(g=>`<div class="race-guest-entry"><span>${analyzerEscape(g.name)} · ${(g.modes||[]).map(analyzerEscape).join(', ')} · ${new Date(g.expires_at_ms).toLocaleString('fr-FR')} · ${g.activated?'Activé':'En attente'}</span><button type="button" class="race-ui-btn danger" onclick="velocityRevokeAccess('${analyzerEscape(g.id)}')">RÉVOQUER</button></div>`).join(''):'<small>Aucun accès actif.</small>'}catch(e){h.textContent=e.message||String(e)}}
+function velocityCloseAccessModal(){const m=document.getElementById('velocityAccessModal');if(m)m.hidden=true;if(velocityAccessRefreshTimer){clearInterval(velocityAccessRefreshTimer);velocityAccessRefreshTimer=null}}
+async function velocityRefreshAccess(){
+ const h=document.getElementById('velocityAccessList');if(!h||velocityAccessRefreshInFlight)return;
+ velocityAccessRefreshInFlight=true;
+ const selections=new Map([...h.querySelectorAll('select[data-focus-grant]')].map(el=>[el.dataset.focusGrant,el.value]));
+ try{
+  const r=await fetch('/api/access-grants',{cache:'no-store'}),d=await r.json();
+  if(!r.ok||!d.ok)throw Error(d.error||'Accès indisponibles');
+  const grants=(d.grants||[]).filter(g=>g.active);
+  h.innerHTML=grants.length?grants.map(g=>{
+   const focus=g.focus_presence;
+   const status=focus?(focus.mode==='qualification'?'FOCUS QUALIFICATION':'FOCUS ENDURANCE'):'Hors Focus / non connecté';
+   const selected=selections.get(g.id)||'';
+   const teams=Array.isArray(focus?.teams)?focus.teams:[];
+   const options=teams.map((t,i)=>`<option value="${i}"${selected===String(i)?' selected':''}>${analyzerEscape(t.driver)}</option>`).join('');
+   return `<div class="race-guest-entry velocity-remote-focus-entry">
+     <div class="velocity-remote-focus-description"><strong>${analyzerEscape(g.name)}</strong><small>${(g.modes||[]).map(analyzerEscape).join(', ')} · Expire ${new Date(g.expires_at_ms).toLocaleString('fr-FR')}</small></div>
+     <span class="velocity-remote-focus-status${focus?' active':''}">${analyzerEscape(status)}</span>
+     ${focus?`<div class="velocity-remote-focus-meta">${analyzerEscape(focus.circuit_name||focus.circuit_id||'Circuit inconnu')} · Suit : ${analyzerEscape(focus.followed_driver||'—')}</div>`:''}
+     ${focus?`<div class="velocity-remote-focus-actions"><select data-focus-grant="${analyzerEscape(g.id)}" aria-label="Équipe à afficher sur le téléphone de ${analyzerEscape(g.name)}" ${teams.length?'':'disabled'}>${options||'<option>Équipes en attente du live…</option>'}</select><button type="button" class="race-ui-btn primary" ${teams.length?'':'disabled'} onclick="velocitySendRemoteFocus('${analyzerEscape(g.id)}')">CHANGER LE FOCUS</button></div>`:''}
+     <button type="button" class="race-ui-btn danger" onclick="velocityRevokeAccess('${analyzerEscape(g.id)}')">RÉVOQUER</button>
+    </div>`;
+  }).join(''):'<small>Aucun accès actif.</small>';
+  // Store only this panel's public list for team lookup; never expose token.
+  window.velocityAccessRemoteGrants=grants;
+ }catch(e){h.textContent=e.message||String(e)}
+ finally{velocityAccessRefreshInFlight=false}
+}
+async function velocitySendRemoteFocus(grantId){
+ const select=[...document.querySelectorAll('select[data-focus-grant]')].find(el=>el.dataset.focusGrant===grantId);
+ const grant=(window.velocityAccessRemoteGrants||[]).find(g=>g.id===grantId);
+ const team=grant?.focus_presence?.teams?.[Number(select?.value)];
+ if(!team||!select)return velocityAccessFeedback('Cette équipe n’est plus disponible.',true);
+ const button=select.parentElement?.querySelector('button');if(button)button.disabled=true;
+ try{
+  const r=await fetch(`/api/access-grants/${encodeURIComponent(grantId)}/focus`,{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({driver:team.driver,apex_row:team.apex_row})
+  });
+  const data=await r.json();if(!r.ok||!data.ok)throw Error(data.error||'Commande non transmise');
+  velocityAccessFeedback(`Commande envoyée à ${grant.name} : afficher ${data.driver}. Le téléphone basculera dès réception.`);
+  await velocityRefreshAccess();
+ }catch(e){velocityAccessFeedback(e.message||String(e),true)}
+ finally{if(button)button.disabled=false}
+}
+
 async function velocityCreateAccess(){const button=document.getElementById('velocityAccessCreate');const name=document.getElementById('velocityAccessName')?.value.trim()||'';const modes=[...document.querySelectorAll('#velocityAccessModeList input:checked')].map(e=>e.value);const hours=Number(document.getElementById('velocityAccessHours')?.value||3);if(button)button.disabled=true;try{const r=await fetch('/api/access-grants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,modes,hours})}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Création impossible');velocityLastAccessLink=d.link;const input=document.getElementById('velocityAccessLink');if(input){input.value=d.link;input.hidden=false}const copy=document.getElementById('velocityAccessCopy');if(copy)copy.hidden=false;await velocityRefreshAccess();velocityAccessFeedback(`Nouveau lien créé : les précédentes invitations de ${name} sont révoquées.`)}catch(e){velocityAccessFeedback(e.message||String(e),true)}finally{if(button)button.disabled=false}}
 async function velocityCopyAccess(){const input=document.getElementById('velocityAccessLink');const url=velocityLastAccessLink||input?.value||'';if(!url)return;try{await navigator.clipboard.writeText(url);velocityAccessFeedback('Lien copié.')}catch(_){input?.focus();input?.select();velocityAccessFeedback('Sélectionnez et copiez le lien.')}}
 async function velocityRevokeAccess(id){if(!confirm('Révoquer immédiatement cet accès Velocity ?'))return;try{const r=await fetch(`/api/access-grants/${encodeURIComponent(id)}/revoke`,{method:'POST'}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Erreur');await velocityRefreshAccess();velocityAccessFeedback('Accès révoqué.')}catch(e){velocityAccessFeedback(e.message||String(e),true)}}
-window.velocityOpenAccessModal=velocityOpenAccessModal;window.velocityCloseAccessModal=velocityCloseAccessModal;window.velocityCreateAccess=velocityCreateAccess;window.velocityCopyAccess=velocityCopyAccess;window.velocityRevokeAccess=velocityRevokeAccess;
+window.velocityOpenAccessModal=velocityOpenAccessModal;window.velocityCloseAccessModal=velocityCloseAccessModal;window.velocityCreateAccess=velocityCreateAccess;window.velocityCopyAccess=velocityCopyAccess;window.velocityRevokeAccess=velocityRevokeAccess;window.velocitySendRemoteFocus=velocitySendRemoteFocus;
 function renderActiveRaceAssignments(){const box=document.getElementById('raceActiveAssignments');if(!box||!velocityRaceSession)return;const roles=[['team_manager','TEAM MANAGER'],['spotter','SPOTTER'],['pilot','PILOTE']];box.innerHTML=roles.map(([role,label])=>`<div class="race-role-picker active"><span>${label}</span><div id="raceActive-${role}" class="race-role-members"></div></div>`).join('');roles.forEach(([role])=>renderRaceRolePicker(`raceActive-${role}`,role,velocityRaceSession.assignments?.[role]||[],true))}
 function renderPilotFocusTargetControl(){
  const host=document.getElementById('raceActiveAssignments');if(!host||!velocityRaceSession)return;
@@ -5612,6 +5659,84 @@ function velocityApplyDeviceRole(data){
  velocityResetRoleUI();if(data?.paired)velocitySetDeveloperToolsHidden(true);if(!data?.paired){if(velocityDeviceHasStoredIdentity()){velocitySetDeveloperToolsHidden(true);velocityShowDeviceGate('Appareil non reconnu','Cet appareil était associé à Velocity mais son accès n’est plus valide.','Demandez au Team Manager de réassocier cet appareil.');return}velocitySetDeveloperToolsHidden(false);return}const authorized=new Set(data.authorized_roles||[]);if(!role){velocityShowDeviceGate(data.device?.member_name||'Membre associé',data.device?.team_name?`${data.device.team_name} — aucune session active pour vous.`:'Aucune session active.','En attente d’affectation…');return}if(!authorized.has(role)){velocityShowDeviceGate('Accès refusé','Le rôle demandé n’est pas autorisé pour ce membre.','Contactez le Team Manager.');return}if(role==='team_manager'){showMode('analyzer');return}document.body.classList.add('race-role-access',`race-role-${role}`);if(role==='spotter')showMode('spotter');else if(role==='pilot'){showMode('endurance');setTimeout(()=>openEnduranceFocus(),150)}}
 async function velocityDeviceSessionCheck(){if(window.VELOCITY_INVITE_TOKEN)return;const id=velocityDeviceId();try{const r=await fetch('/api/device/session',{cache:'no-store',headers:id?{'X-Velocity-Device':id}:{}}),data=await r.json();if(!r.ok||!data.ok)throw new Error(data.error||'Vérification impossible');if(data.paired&&data.device?.id&&!id)try{localStorage.setItem(VELOCITY_DEVICE_KEY,data.device.id)}catch(_){}velocityApplyDeviceRole(data)}catch(_){if(velocityDeviceHasStoredIdentity()&&!velocityDeviceAccessSignature)velocityShowDeviceGate('Connexion indisponible','Velocity ne peut pas vérifier vos droits pour le moment.','Accès verrouillé jusqu’au retour du serveur.')}}
 function velocityDeviceBootstrap(){if(window.VELOCITY_INVITED_ACCESS||window.VELOCITY_INVITE_TOKEN||window.VELOCITY_RACE_ACCESS?.token)return;if(velocityDeviceHasStoredIdentity()){velocitySetDeveloperToolsHidden(true);velocityShowDeviceGate()}setTimeout(velocityDeviceSessionCheck,250);velocityDevicePoll=setInterval(velocityDeviceSessionCheck,3000)}
+// V1849 — Contrôle ponctuel du Focus d'un invité par l'administrateur.
+// Separate 2.5s channel: never wait for it to display an Apex chrono.
+let velocityGuestFocusSession='', velocityGuestFocusMode='', velocityGuestFocusLastPresence=0;
+let velocityGuestFocusPresenceBusy=false, velocityGuestFocusCommandBusy=false, velocityGuestFocusApplied='',velocityGuestFocusClosePending=false;
+function velocityGuestFocusCurrentMode(){
+ if(!window.VELOCITY_INVITED_ACCESS||window.VELOCITY_GUEST_ENDED)return '';
+ if(document.getElementById('enduranceFocus')?.classList.contains('show')&&window.VELOCITY_ACCESS_MODES?.includes('endurance'))return 'endurance';
+ if(document.getElementById('qualificationFocus')?.classList.contains('show')&&window.VELOCITY_ACCESS_MODES?.includes('qualification'))return 'qualification';
+ return '';
+}
+function velocityGuestFocusTransition(){
+ if(!window.VELOCITY_INVITED_ACCESS)return;
+ const mode=velocityGuestFocusCurrentMode();
+ if(mode!==velocityGuestFocusMode){
+  if(velocityGuestFocusMode&&!mode)velocityGuestFocusClosePending=true;
+  velocityGuestFocusMode=mode;
+  velocityGuestFocusSession=mode?`${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`:'';
+  velocityGuestFocusApplied='';velocityGuestFocusLastPresence=0;
+  void velocityGuestFocusSendPresence(true);
+ }
+}
+async function velocityGuestFocusSendPresence(force=false){
+ if(!window.VELOCITY_INVITED_ACCESS||window.VELOCITY_GUEST_ENDED||velocityGuestFocusPresenceBusy)return;
+ const mode=velocityGuestFocusCurrentMode(),now=Date.now();
+ if(!force&&now-velocityGuestFocusLastPresence<12000)return;
+ if(mode&&!state?.circuit_id)return;
+ velocityGuestFocusPresenceBusy=true;
+ try{
+  const teams=mode?(state.drivers||[]).filter(d=>String(d?.driver||'').trim()).slice(0,150).map(d=>({
+   driver:String(d.driver).trim(),apex_row:d.apex_row??null
+  })):[];
+  const r=await fetch('/api/access/focus-presence',{
+   method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',
+   body:JSON.stringify({mode,session_id:velocityGuestFocusSession,
+    circuit_id:mode?state.circuit_id:'',followed_driver:mode?(state.followed_driver||state.followed?.driver||''):'',teams})
+  });
+  if(r.ok){
+   velocityGuestFocusLastPresence=now;
+   if(!mode)velocityGuestFocusClosePending=false;
+   else void velocityGuestFocusCheckCommand();
+  }
+ }catch(_){}finally{velocityGuestFocusPresenceBusy=false}
+}
+async function velocityGuestFocusCheckCommand(){
+ if(!velocityGuestFocusCurrentMode()||velocityGuestFocusCommandBusy||!velocityGuestFocusSession)return;
+ velocityGuestFocusCommandBusy=true;
+ try{
+  const r=await fetch('/api/access/focus-command',{cache:'no-store'});
+  if(!r.ok)return;
+  const data=await r.json(),cmd=data?.command;
+  if(!cmd||cmd.id===velocityGuestFocusApplied||cmd.session_id!==velocityGuestFocusSession||
+      cmd.mode!==velocityGuestFocusCurrentMode()||cmd.circuit_id!==state?.circuit_id)return;
+  // Match both the team name and its Apex row: a reused row on another race
+  // must never display another competitor's data on the driver's Focus.
+  const target=(state.drivers||[]).find(d=>String(d?.driver||'')===String(cmd.driver||'')&&
+       String(d?.apex_row??'')===String(cmd.apex_row??''));
+  if(!target)return; // Wait for the actual live grid, never invent a driver.
+  velocityGuestFocusApplied=cmd.id;
+  manualFollowOverride=true;
+  state.followed_driver=target.driver;state.followed=target;
+  state.qualif_delta=typeof qualificationDeltaFor==='function'?qualificationDeltaFor(target):state.qualif_delta;
+  if(typeof render==='function')render();
+  try{
+   const result=await fetch('/api/follow',{method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({driver:target.driver})});
+   if(!result.ok)velocityGuestFocusApplied='';
+  }catch(_){velocityGuestFocusApplied=''}
+ }catch(_){}finally{velocityGuestFocusCommandBusy=false}
+}
+function velocityGuestFocusHeartbeat(){
+ if(!window.VELOCITY_INVITED_ACCESS)return;
+ velocityGuestFocusTransition();
+ if(velocityGuestFocusCurrentMode()||velocityGuestFocusClosePending){
+  void velocityGuestFocusSendPresence(velocityGuestFocusClosePending);
+  if(velocityGuestFocusCurrentMode())void velocityGuestFocusCheckCommand();
+ }
+}
+
 let velocityAccessModes=null,velocityAccessPoll=null,velocityAccessSignature='';
 function velocityOpenRedeem(){const modal=document.getElementById('velocityAccessRedeem');if(modal)modal.hidden=false}
 function velocityCloseRedeem(){const modal=document.getElementById('velocityAccessRedeem');if(modal)modal.hidden=true}
@@ -5641,6 +5766,8 @@ function velocityAccessBootstrap(){
  window.velocityRaceSession=null;
  velocityShowDeviceGate('Vérification des autorisations','Connexion sécurisée à Velocity…','Veuillez patienter…');
  void velocityAccessCheck();velocityAccessPoll=setInterval(velocityAccessCheck,3000);
+ // Status/commands are independent from the 250ms Apex/live loop.
+ window.__velocityGuestFocusHeartbeat=setInterval(velocityGuestFocusHeartbeat,2500);
 }
 window.velocityOpenRedeem=velocityOpenRedeem;window.velocityCloseRedeem=velocityCloseRedeem;window.velocityRedeemAccess=velocityRedeemAccess;window.velocityAllowedMode=velocityAllowedMode;
 document.addEventListener('DOMContentLoaded',()=>{velocityInviteBootstrap();velocityDeviceBootstrap();velocityAccessBootstrap()});

@@ -3013,3 +3013,18 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 .velocity-access-menu-button{display:block;margin:10px auto 18px;padding:10px 15px;border:1px solid #46576a;border-radius:8px;background:#121b27;color:#c7d4e5;font-size:11px;font-weight:800;letter-spacing:.04em;cursor:pointer}
 .velocity-access-menu-button[hidden]{display:none!important}
 .velocity-access-menu-button:hover{background:#203146;border-color:#7190b1}
+
+/* V7.2.1849 — ciblage ponctuel des appareils déjà en Focus. */
+.velocity-remote-focus-heading{margin:16px 0 8px;padding-top:12px;border-top:1px solid #30455b;display:grid;gap:5px}
+.velocity-remote-focus-heading strong{color:#75c4ff;font-size:12px;letter-spacing:.05em}
+.velocity-remote-focus-heading small{color:#9caec3;font-size:11px;line-height:1.4}
+.velocity-remote-focus-entry{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px;border:1px solid #273f56;border-radius:10px;background:#0b1724;margin-bottom:8px}
+.velocity-remote-focus-description{display:flex;flex-direction:column;gap:3px;min-width:130px;flex:1}
+.velocity-remote-focus-description strong{color:#fff;font-size:12px}
+.velocity-remote-focus-description small{color:#8f9eaf;font-size:10px}
+.velocity-remote-focus-status{font-size:10px;color:#939eb1;border:1px solid #455165;border-radius:4px;padding:5px 8px}
+.velocity-remote-focus-status.active{border-color:#38b77f;color:#48d997}
+.velocity-remote-focus-meta{width:100%;font-size:11px;color:#b7c8d9}
+.velocity-remote-focus-actions{width:100%;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.velocity-remote-focus-actions select{flex:1;min-width:145px;color:#fff;background:#121e2d;border:1px solid #3a506d;border-radius:7px;padding:8px}
+.velocity-remote-focus-actions .race-ui-btn{white-space:nowrap}

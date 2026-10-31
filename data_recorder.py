@@ -414,6 +414,12 @@ class RecorderStore:
             """CREATE TABLE IF NOT EXISTS velocity_race_team_state (
                 state_id TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
             )""",
+            # V1849: per-grant remote Focus messages; independent of the global
+            # Sessions Course JSON document to prevent multi-worker lost updates.
+            """CREATE TABLE IF NOT EXISTS velocity_access_focus_control (
+                grant_id TEXT PRIMARY KEY, presence_json TEXT NOT NULL DEFAULT '{}',
+                command_json TEXT NOT NULL DEFAULT '{}', updated_at_ms BIGINT NOT NULL
+            )""",
             """CREATE TABLE IF NOT EXISTS velocity_spotter_shared_state (
                 workspace_id TEXT PRIMARY KEY, revision BIGINT NOT NULL,
                 snapshot_json TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
@@ -614,6 +620,58 @@ class RecorderStore:
                                                   updated_at_ms=excluded.updated_at_ms""",
             (_safe_json(data), _now_ms()),
         )
+
+    # V1849 — Focus à distance. No worker, no polling, no Apex capture here.
+    # Each grant has its own SQL row; concurrent users cannot overwrite the
+    # administrator's grants or another user's live Focus presence.
+    def put_access_focus_presence(self, grant_id: str, presence: dict[str, Any]):
+        self._execute(
+            """INSERT INTO velocity_access_focus_control(grant_id,presence_json,command_json,updated_at_ms)
+               VALUES (?,?,'{}',?) ON CONFLICT(grant_id)
+               DO UPDATE SET presence_json=excluded.presence_json,
+                             updated_at_ms=excluded.updated_at_ms""",
+            (grant_id, _safe_json(presence), _now_ms()),
+        )
+
+    def put_access_focus_command(self, grant_id: str, command: dict[str, Any]):
+        self._execute(
+            """INSERT INTO velocity_access_focus_control(grant_id,presence_json,command_json,updated_at_ms)
+               VALUES (?,'{}',?,?) ON CONFLICT(grant_id)
+               DO UPDATE SET command_json=excluded.command_json,
+                             updated_at_ms=excluded.updated_at_ms""",
+            (grant_id, _safe_json(command), _now_ms()),
+        )
+
+    def get_access_focus_control(self, grant_id: str) -> dict[str, Any]:
+        row = self._execute(
+            "SELECT presence_json,command_json FROM velocity_access_focus_control WHERE grant_id=?",
+            (grant_id,), fetchone=True,
+        ) or {}
+        def parse(key):
+            try:
+                value = json.loads(row.get(key) or '{}')
+                return value if isinstance(value, dict) else {}
+            except (ValueError, TypeError):
+                return {}
+        return {'presence': parse('presence_json'), 'command': parse('command_json')}
+
+    def list_access_focus_controls(self, grant_ids: list[str]) -> dict[str, dict[str, Any]]:
+        if not grant_ids:
+            return {}
+        ids = [str(i) for i in grant_ids[:500]]
+        rows = self._execute(
+            'SELECT grant_id,presence_json,command_json FROM velocity_access_focus_control '
+            'WHERE grant_id IN (' + ','.join('?' for _ in ids) + ')',
+            tuple(ids), fetchall=True,
+        ) or []
+        result = {}
+        for row in rows:
+            try: presence = json.loads(row.get('presence_json') or '{}')
+            except (ValueError, TypeError): presence = {}
+            try: command = json.loads(row.get('command_json') or '{}')
+            except (ValueError, TypeError): command = {}
+            result[str(row['grant_id'])] = {'presence': presence, 'command': command}
+        return result
 
     def save_session_relay_matrix(self, rid: str, matrix: dict[str, Any]) -> int:
         """Upsert seulement les cellules modifiées, sans effacer les anciens relais.

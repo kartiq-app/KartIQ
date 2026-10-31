@@ -1458,6 +1458,131 @@ def create_access_grant():
                    expires_at_ms=entry["expires_at_ms"]), 201
 
 
+VELOCITY_REMOTE_FOCUS_TTL_MS = 40000
+VELOCITY_REMOTE_FOCUS_MODES = frozenset(("qualification", "endurance"))
+
+
+def _velocity_focus_store():
+    # Independent SQL rows: no Session Course creation, no Apex worker.
+    return _get_recorder_manager().store
+
+
+def _velocity_focus_presence_public(presence, now_ms):
+    if not isinstance(presence, dict) or now_ms - int(presence.get('seen_at_ms') or 0) > VELOCITY_REMOTE_FOCUS_TTL_MS:
+        return None
+    if presence.get('mode') not in VELOCITY_REMOTE_FOCUS_MODES or not presence.get('session_id'):
+        return None
+    return {key: presence.get(key) for key in ('mode', 'session_id', 'circuit_id',
+                                               'circuit_name', 'followed_driver', 'seen_at_ms', 'teams')}
+
+
+@app.post("/api/access/focus-presence")
+def report_access_focus_presence():
+    grant = _velocity_access_grant()
+    if not grant:
+        return jsonify(ok=False, error="Accès invité requis."), 403
+    body = request.get_json(silent=True) or {}
+    mode = str(body.get('mode') or '').strip()
+    if mode and (mode not in VELOCITY_REMOTE_FOCUS_MODES or mode not in set(grant.get('modes') or [])):
+        return jsonify(ok=False, error="Mode Focus non autorisé."), 403
+    session_id = str(body.get('session_id') or '')[:80] if mode else ''
+    circuit_id = str(body.get('circuit_id') or '')[:80] if mode else ''
+    # The invited user may choose any configured circuit. The browser reports
+    # its live UI circuit; avoid cross-worker STATE checks (WebSockets/runtime
+    # live in one worker while the heartbeat can reach another worker).
+    if mode and (not session_id or not circuit_id):
+        return jsonify(ok=False, error="Circuit Focus invalide."), 400
+    known = {str(c.get('id') or ''): str(c.get('name') or c.get('id') or '')
+             for c in load_circuits()}
+    if mode and circuit_id not in known:
+        return jsonify(ok=False, error="Circuit inconnu."), 400
+    reported = body.get('teams') or []
+    if not isinstance(reported, list) or len(reported) > 150:
+        return jsonify(ok=False, error="Liste des équipes invalide."), 400
+    teams = []
+    for item in reported if mode else []:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get('driver') or '').strip()[:120]
+        if not name:
+            continue
+        row = item.get('apex_row')
+        try: row = int(row) if row is not None and str(row) != '' else None
+        except (ValueError, TypeError): row = None
+        if row is not None and not (0 <= row <= 10000):
+            row = None
+        teams.append({'driver': name, 'apex_row': row})
+    presence = {'mode': mode, 'session_id': session_id,
+                'circuit_id': circuit_id, 'circuit_name': known.get(circuit_id, ''),
+                'followed_driver': str(body.get('followed_driver') or '').strip()[:120] if mode else '',
+                'teams': teams, 'seen_at_ms': int(time.time() * 1000)}
+    try:
+        _velocity_focus_store().put_access_focus_presence(str(grant['id']), presence)
+    except Exception:
+        app.logger.exception('Focus invité : présence indisponible')
+        return jsonify(ok=False, error="État Focus indisponible."), 503
+    return jsonify(ok=True)
+
+
+@app.get("/api/access/focus-command")
+def get_access_focus_command():
+    grant = _velocity_access_grant()
+    if not grant:
+        return jsonify(ok=False, error="Accès invité requis."), 403
+    try:
+        record = _velocity_focus_store().get_access_focus_control(str(grant['id']))
+    except Exception:
+        return jsonify(ok=False, error="Commande Focus indisponible."), 503
+    presence = _velocity_focus_presence_public(record.get('presence'), int(time.time()*1000))
+    command = record.get('command') or {}
+    if not presence or not command or (command.get('session_id') != presence.get('session_id')
+            or command.get('mode') != presence.get('mode')
+            or command.get('circuit_id') != presence.get('circuit_id')):
+        return jsonify(ok=True, command=None)
+    return jsonify(ok=True, command=command)
+
+
+@app.post("/api/access-grants/<grant_id>/focus")
+def set_access_remote_focus(grant_id):
+    if not _velocity_is_authorized():
+        return jsonify(ok=False, error="Administrateur requis."), 403
+    _refresh_team_data()
+    wid = _current_workspace_id()
+    now_ms = int(time.time() * 1000)
+    with TEAM_DATA_LOCK:
+        grant = deepcopy(TEAM_DATA.get('access_grants', {}).get(str(grant_id)))
+    if not grant or grant.get('workspace_id') != wid:
+        return jsonify(ok=False, error="Utilisateur introuvable."), 404
+    if grant.get('revoked') or not grant.get('bound_device_id') or now_ms >= int(grant.get('expires_at_ms') or 0):
+        return jsonify(ok=False, error="L'accès utilisateur n'est plus actif."), 409
+    try:
+        store = _velocity_focus_store()
+        control = store.get_access_focus_control(str(grant_id))
+    except Exception:
+        return jsonify(ok=False, error="Suivi Focus indisponible."), 503
+    presence = _velocity_focus_presence_public(control.get('presence'), now_ms)
+    if not presence or presence['mode'] not in set(grant.get('modes') or []):
+        return jsonify(ok=False, error="Cet utilisateur n'est plus en Focus."), 409
+    body = request.get_json(silent=True) or {}
+    target_name = str(body.get('driver') or '').strip()
+    target_row = body.get('apex_row')
+    # Pick only an exact team from the guest's currently reported circuit;
+    # the server never touches the admin's own current followed driver.
+    team = next((t for t in (presence.get('teams') or []) if
+                 t.get('driver') == target_name and str(t.get('apex_row') or '') == str(target_row or '')), None)
+    if not team:
+        return jsonify(ok=False, error="Équipe absente du classement du pilote."), 409
+    command = {'id': secrets.token_hex(12), 'session_id': presence['session_id'],
+               'circuit_id': presence['circuit_id'], 'mode': presence['mode'],
+               'driver': target_name, 'apex_row': team.get('apex_row'), 'sent_at_ms': now_ms}
+    try:
+        store.put_access_focus_command(str(grant_id), command)
+    except Exception:
+        app.logger.exception('Commande Focus distant indisponible')
+        return jsonify(ok=False, error="Commande non enregistrée."), 503
+    return jsonify(ok=True, command_id=command['id'], driver=target_name)
+
+
 @app.get("/api/access-grants")
 def list_access_grants():
     if not _velocity_is_authorized():
@@ -1470,6 +1595,16 @@ def list_access_grants():
                    "active": bool(not g.get("revoked") and now_ms < int(g.get("expires_at_ms") or 0)),
                    "activated": bool(g.get("bound_device_id"))}
                   for g in TEAM_DATA.get("access_grants", {}).values() if g.get("workspace_id") == wid]
+    try:
+        controls = _velocity_focus_store().list_access_focus_controls([g['id'] for g in grants if g.get('activated') and g.get('active')])
+    except Exception:
+        controls = {}
+    for grant_item in grants:
+        record = controls.get(grant_item['id']) or {}
+        grant_item['focus_presence'] = _velocity_focus_presence_public(record.get('presence'), now_ms)
+        # The admin sees status, never any access cookie or bearer token.
+        cmd = record.get('command') or {}
+        grant_item['focus_command'] = {'driver': cmd.get('driver'), 'sent_at_ms': cmd.get('sent_at_ms')} if cmd else None
     return jsonify(ok=True, grants=sorted(grants, key=lambda g: int(g.get("expires_at_ms") or 0), reverse=True))
 
 
@@ -1612,13 +1747,16 @@ def velocity_private_access_guard():
         # preferences, stored only in their isolated runtime. These are the
         # only allowed POST actions; all admin mutations stay prohibited.
         if request.method == "POST" and path in (
-                "/api/circuit", "/api/follow", "/api/apex/frame", "/api/apex/status"):
+                "/api/circuit", "/api/follow", "/api/apex/frame", "/api/apex/status",
+                "/api/access/focus-presence"):
+            if path == "/api/access/focus-presence" and request.content_length and request.content_length > 32768:
+                return ("Présence Focus trop volumineuse", 413)
             if path == "/api/apex/frame" and request.content_length and request.content_length > 524288:
                 return ("Trame Apex trop volumineuse", 413)
             return None
         if request.method in ("GET", "HEAD"):
             mode = set(grant.get("modes") or [])
-            if path in ("/api/state", "/api/weather"):
+            if path in ("/api/state", "/api/weather", "/api/access/focus-command"):
                 return None
             if path in ("/api/analyzer-rules", "/api/analyzer-strategy") and "analyzer" in mode:
                 return None

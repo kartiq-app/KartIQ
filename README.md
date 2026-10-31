@@ -1,3 +1,13 @@
+## V7.2.1849 — Commande à distance des Focus invités
+
+- **Aucun nouveau lien à émettre** : réutilise les accès universels existants (identifiant de l'invitation, droits et date d'expiration inchangés).
+- Dans **Analyzer → GÉRER LES ACCÈS**, section **FOCUS À DISTANCE**, affiche les utilisateurs ayant un Focus **Qualification** ou **Endurance** actif ; indique circuit et équipe suivie.
+- L'administrateur choisit une équipe parmi celles remontées par **le classement Apex du téléphone de l'invité**, puis clique **CHANGER LE FOCUS**. Un ordre ponctuel arrive sur l'écran Focus déjà ouvert (polling indépendant ~2,5 s) ; le pilote reste libre de choisir ensuite une autre équipe.
+- Un utilisateur ne peut recevoir que les ordres concernant **son propre appareil** et **son Focus ouvert**, sur **son circuit actuel**. Un nouvel accès, la révocation, l'expiration ou la fermeture du Focus invalident les commandes précédentes.
+- **V1849 n'associe les liens ni à un circuit ni à une Session Course**. Elle ne change pas le flux live Apex ni le calcul de ses temps. La présence est enregistrée toutes les ~12 secondes **uniquement pendant un Focus actif**, dans une table SQL dédiée, jamais dans le JSON partagé des Sessions Course.
+- Sur un appareil sans connexion ou sorti du Focus, la commande n'est pas applicable ; la liste des Focus se périme après 40 secondes sans signal. Le succès du bouton indique que la commande a été enregistrée, pas une garantie de réception si le téléphone est hors ligne.
+- **Service worker V1849** : l'app installée récupère les scripts actualisés après son prochain rechargement. Les liens existants restent valables, mais les téléphones doivent avoir chargé V1849 pour accepter les commandes à distance.
+
 ## V7.2.1847 — Accès universels (remplace Velocity Pilote)
 
 Depuis **Analyzer → GÉRER LES ACCÈS** (administrateur Google), choisir un nom stable

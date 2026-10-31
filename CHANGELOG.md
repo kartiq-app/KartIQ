@@ -1,3 +1,10 @@
+## V7.2.1849 — contrôle à distance des Focus invités
+- Ajout d'une commande de sélection d'équipe sur les Focus Endurance/Qualification des invités déjà appairés, sans toucher aux liens, modes, circuits ou Session Course.
+- Séparation SQL `velocity_access_focus_control` : présence et commande propres à chaque invitation, vérifiées côté serveur ; aucune modification du live Apex.
+- Admin : liste des Focus connectés et des équipes du circuit de chaque téléphone dans « GÉRER LES ACCÈS ».
+- Invité : activation ponctuelle du Focus à distance via canal indépendant, fréquence réduite ; garde-fous contre les commandes périmées ou destinées à un autre mode/circuit/appareil.
+- MàJ de version/cache à 1849.
+
 ## V7.2.1848 — accès aux modes et circuits indépendants
 
 - Suppression du bouton rouge flottant « ACTIVER UN LIEN » ; activation dans le menu d'accueil (☰).

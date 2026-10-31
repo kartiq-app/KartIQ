@@ -60,6 +60,49 @@ class AccessStaticTests(unittest.TestCase):
         self.assertIn('if not guest_live:', src)
         self.assertNotIn('pilot_focus_driver": str((driver', src)
 
+    def test_remote_focus_logic_stays_independent_of_apex_and_links(self):
+        src = (ROOT / 'app.py').read_text()
+        sql = (ROOT / 'data_recorder.py').read_text()
+        ui = (ROOT / 'static/js/endurance/analyzer.js').read_text()
+        self.assertIn('velocity_access_focus_control', sql)
+        self.assertIn('def put_access_focus_presence(', sql)
+        self.assertIn('def put_access_focus_command(', sql)
+        self.assertIn('def set_access_remote_focus(', src)
+        self.assertIn('def get_access_focus_command(', src)
+        self.assertIn('def report_access_focus_presence(', src)
+        self.assertIn('VELOCITY_REMOTE_FOCUS_TTL_MS', src)
+        self.assertIn('velocityGuestFocusCheckCommand', ui)
+        self.assertIn('velocityGuestFocusSendPresence', ui)
+        self.assertIn('CHANGER LE FOCUS', ui)
+        # Command never sets the admin's followed_driver and doesn't require a Session Course.
+        command_route = src.split('def set_access_remote_focus(', 1)[1].split('@app.get("/api/access-grants")', 1)[0]
+        self.assertNotIn('STATE["followed_driver"]', command_route)
+        self.assertNotIn('_active_session_for_workspace(', command_route)
+        self.assertNotIn('previous["revoked"]', command_route)
+
+    def test_remote_sql_rows_are_independent(self):
+        import tempfile
+        from data_recorder import RecorderStore
+        with tempfile.TemporaryDirectory() as directory:
+            from pathlib import Path
+            with patch.dict('os.environ', {'DATABASE_URL': ''}):
+                store = RecorderStore(Path(directory))
+            try:
+                store.put_access_focus_presence('guest-A', {'session_id': 'A1', 'mode': 'endurance', 'teams': [{'driver':'A'}]})
+                store.put_access_focus_presence('guest-B', {'session_id': 'B1', 'mode': 'qualification', 'teams': [{'driver':'B'}]})
+                store.put_access_focus_command('guest-A', {'id':'cmd-A','driver':'A'})
+                store.put_access_focus_command('guest-B', {'id':'cmd-B','driver':'B'})
+                store.put_access_focus_presence('guest-A', {'session_id':'A1','mode':'endurance', 'teams':[{'driver':'A2'}]})
+                a = store.get_access_focus_control('guest-A')
+                b = store.get_access_focus_control('guest-B')
+                self.assertEqual(a['command']['id'], 'cmd-A')
+                self.assertEqual(a['presence']['teams'][0]['driver'], 'A2')
+                self.assertEqual(b['command']['id'], 'cmd-B')
+                self.assertEqual(b['presence']['teams'][0]['driver'], 'B')
+                self.assertEqual(len(store.list_access_focus_controls(['guest-A','guest-B'])), 2)
+            finally:
+                store._conn.close()
+
     def test_python_syntax(self):
         ast.parse((ROOT / 'app.py').read_text())
 
@@ -188,6 +231,72 @@ class UniversalAccessIntegration(unittest.TestCase):
         self.assertEqual(pwa.post('/api/access/activate',json={'token':token}).status_code,200)
         self.assertEqual(pwa.get('/api/state').status_code,200)
         self.assertEqual(self.guest.get('/api/state').status_code,403)
+
+
+    def test_remote_focus_from_admin_uses_current_link_no_reissue(self):
+        class FakeStore:
+            def __init__(self): self.records={}
+            def get_access_focus_control(self, grant_id):
+                return self.records.get(grant_id, {'presence':{}, 'command':{}})
+            def put_access_focus_presence(self, grant_id, presence):
+                self.records.setdefault(grant_id, {'presence':{}, 'command':{}})['presence']=presence
+            def put_access_focus_command(self, grant_id, command):
+                self.records.setdefault(grant_id, {'presence':{}, 'command':{}})['command']=command
+            def list_access_focus_controls(self, ids):
+                return {id:self.records[id] for id in ids if id in self.records}
+        store=FakeStore()
+        with patch.object(velocity,'_velocity_focus_store',lambda:store):
+            grant=self.issue(name='REMOTE PILOT',modes=['endurance'])
+            token=grant['link'].split('/access/')[1]
+            self.assertEqual(self.guest.post('/api/access/activate',json={'token':token}).status_code,200)
+            circuit=velocity.load_circuits()[0]['id']
+            self.assertEqual(self.guest.post('/api/circuit',json={'circuit_id':circuit}).status_code,200)
+            data={'mode':'endurance','session_id':'focus-session-A','circuit_id':circuit,
+                  'followed_driver':'TEAM ALPHA','teams':[{'driver':'TEAM ALPHA','apex_row':3},
+                                                           {'driver':'TEAM BRAVO','apex_row':4}]}
+            self.assertEqual(self.guest.post('/api/access/focus-presence',json=data).status_code,200)
+            grants=self.admin.get('/api/access-grants').get_json()['grants']
+            self.assertEqual(grants[0]['focus_presence']['mode'],'endurance')
+            cmd=self.admin.post(f"/api/access-grants/{grant['id']}/focus",json={'driver':'TEAM BRAVO','apex_row':4})
+            self.assertEqual(cmd.status_code,200,cmd.get_json())
+            remote=self.guest.get('/api/access/focus-command').get_json()['command']
+            self.assertEqual(remote['driver'],'TEAM BRAVO')
+            self.assertEqual(remote['session_id'],'focus-session-A')
+            self.assertFalse(self.data['access_grants'][grant['id']]['revoked'])
+            # Request targeting a competitor outside this guest's circuit is rejected.
+            self.assertEqual(self.admin.post(f"/api/access-grants/{grant['id']}/focus",
+                json={'driver':'ANOTHER TEAM','apex_row':15}).status_code,409)
+            # Once the guest exits Focus, prior command is no longer served.
+            data.update(mode='',session_id='',circuit_id='',teams=[])
+            self.assertEqual(self.guest.post('/api/access/focus-presence',json=data).status_code,200)
+            self.assertIsNone(self.guest.get('/api/access/focus-command').get_json()['command'])
+            # The invitation remains usable until its original expiry.
+            self.assertEqual(self.guest.get('/api/access/me').status_code,200)
+
+    def test_remote_focus_permissions_and_revoke(self):
+        class Store:
+            def __init__(self): self.presence={}
+            def put_access_focus_presence(self, key, value): self.presence[key]=value
+            def get_access_focus_control(self, key): return {'presence': self.presence.get(key,{}),'command':{}}
+            def put_access_focus_command(self, key, value): self.last_command=value
+        store=Store()
+        with patch.object(velocity,'_velocity_focus_store',lambda:store):
+            grant=self.issue(name='QUALIF',modes=['qualification'])
+            token=grant['link'].split('/access/')[1]
+            self.assertEqual(self.guest.post('/api/access/activate',json={'token':token}).status_code,200)
+            circuit=velocity.load_circuits()[0]['id']
+            self.assertEqual(self.guest.post('/api/access/focus-presence',json={'mode':'endurance',
+                'session_id':'1','circuit_id':circuit}).status_code,403)
+            self.assertEqual(self.guest.post('/api/access/focus-presence',json={'mode':'qualification',
+                'session_id':'1','circuit_id':circuit,'teams':[{'driver':'X','apex_row':1}]}).status_code,200)
+            self.assertEqual(self.guest.post(f"/api/access-grants/{grant['id']}/focus",
+                json={'driver':'X','apex_row':1}).status_code,403)
+            self.assertEqual(self.admin.post(f"/api/access-grants/{grant['id']}/focus",
+                json={'driver':'X','apex_row':1}).status_code,200)
+            # Revocation must disable both the guest's polling and presence.
+            self.assertEqual(self.admin.post(f"/api/access-grants/{grant['id']}/revoke").status_code,200)
+            self.assertEqual(self.guest.get('/api/access/focus-command').status_code,403)
+            self.assertEqual(self.guest.post('/api/access/focus-presence',json={}).status_code,403)
 
 
 if __name__ == '__main__': unittest.main()

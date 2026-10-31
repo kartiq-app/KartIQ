@@ -13,13 +13,13 @@ async function closeSprintFocus(){
 }
 async function openEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('endurance-focus-active');rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
+ overlay.classList.add('show');document.body.classList.add('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeEnduranceFocus(){
- document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');clearVelocityFocusMemory('endurance');setFocusLandscapeLock(false);
+ document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();clearVelocityFocusMemory('endurance');setFocusLandscapeLock(false);
  // Une reponse PIT historique ne doit pas reactiver l'overlay apres fermeture.
  endurancePitOfficialLookupToken++;
  endurancePitOutPhase='idle';
