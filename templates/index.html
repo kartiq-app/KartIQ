@@ -15,7 +15,6 @@
 </head>
 <body{% if velocity_grant %} class="velocity-invited-user"{% endif %}>
 <header><div class="header-left"><button class="home-btn" onclick="showHome()" title="Retour à l’accueil" aria-label="Retour à l’accueil">☰</button><button id="previewBtn" class="preview-btn" onclick="toggleIphonePreview()">📱 Aperçu iPhone SE</button><button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleVelocityFullscreen()" title="Plein écran" aria-label="Afficher Velocity en plein écran">⛶</button><div class="brand">Velocity <span style="font-size:12px;color:var(--muted)">V{{ app_version }} LIVE</span></div></div><div class="mode-tabs"><button class="mode-btn" data-mode="qualification" {% if velocity_grant and 'qualification' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('qualification')">Qualification</button><button class="mode-btn" data-mode="sprint" {% if velocity_grant and 'sprint' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('sprint')">Sprint</button><button class="mode-btn" data-mode="endurance" {% if velocity_grant and 'endurance' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('endurance')">Endurance</button><button class="mode-btn" data-mode="spotter" {% if velocity_grant and 'spotter' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('spotter')">Spotter</button><button class="mode-btn" data-mode="analyzer" {% if velocity_grant and 'analyzer' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('analyzer')">Analyzer</button></div><div class="meta"><span class="live">● <span id="connection">—</span></span><button id="reconnectLive" class="home-btn" onclick="reconnectLive()" title="Reconnecter Apex" aria-label="Reconnecter Apex">↻</button><span id="clock">--:--:--</span></div></header>
-<button id="velocityAccessRedeemButton" class="velocity-access-redeem-button" type="button" onclick="velocityOpenRedeem()" hidden>ACTIVER UN LIEN</button>
 
 <div id="fullscreenFloatControls" class="fullscreen-float-controls" aria-hidden="true"><button type="button" onclick="showHome()" title="Ouvrir le menu" aria-label="Ouvrir le menu">☰</button><button type="button" onclick="exitVelocityFullscreen()" title="Quitter le plein écran" aria-label="Quitter le plein écran">✕</button></div>
 
@@ -34,6 +33,7 @@
           <option value="" selected disabled>Sélectionnez votre circuit</option>
         </select>
       </div>
+      <button id="velocityAccessRedeemButton" class="velocity-access-menu-button" type="button" onclick="velocityOpenRedeem()" hidden>ACTIVER UN NOUVEAU LIEN</button>
 
       <div class="race-mode-cards">
         <button class="race-mode-card" data-home-mode="qualification" {% if velocity_grant and 'qualification' not in velocity_grant.modes %}hidden{% endif %} onclick="showMode('qualification')" aria-label="Ouvrir le mode Qualification">
@@ -369,7 +369,7 @@
   <div id="velocityAccessModal" class="velocity-pilot-link-overlay" hidden role="dialog" aria-modal="true" aria-label="Gestion des accès Velocity">
     <section class="race-pilot-guest-box velocity-pilot-link-card">
       <div class="velocity-pilot-link-head"><strong>ACCÈS VELOCITY</strong><button type="button" onclick="velocityCloseAccessModal()" aria-label="Fermer">×</button></div>
-      <p>Une seule application Velocity. Choisis les modes accessibles en lecture seule. Un nouveau lien pour le même nom remplace immédiatement l'ancien.</p>
+      <p>Une seule application Velocity. Choisis les modes accessibles en consultation. Le pilote sélectionne librement son circuit et l'équipe à suivre en Focus. Un nouveau lien pour le même nom remplace immédiatement l'ancien.</p>
       <label class="velocity-pilot-link-label">NOM DE L’UTILISATEUR<input id="velocityAccessName" maxlength="80" placeholder="Ex. Pilote 1" autocomplete="off"></label>
       <div class="velocity-access-modes" id="velocityAccessModeList">
         <label><input type="checkbox" value="qualification"> Qualification</label>
@@ -378,7 +378,6 @@
         <label><input type="checkbox" value="spotter"> Spotter</label>
         <label><input type="checkbox" value="analyzer"> Analyzer</label>
       </div>
-      <label class="velocity-pilot-link-label">ÉQUIPE À SUIVRE (FACULTATIF)<select id="velocityAccessTarget"><option value="">Aucune équipe imposée</option></select></label>
       <div class="race-pilot-guest-actions">
         <select id="velocityAccessHours" aria-label="Durée du lien"><option value="1">1 heure</option><option value="3" selected>3 heures</option><option value="6">6 heures</option><option value="12">12 heures</option><option value="24">24 heures</option><option value="48">48 heures</option><option value="72">72 heures</option><option value="168">7 jours</option></select>
         <button type="button" class="race-ui-btn primary" id="velocityAccessCreate" onclick="velocityCreateAccess()">GÉNÉRER LE LIEN</button>

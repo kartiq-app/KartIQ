@@ -3007,4 +3007,9 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 .velocity-access-redeem button{padding:12px;border:0;border-radius:8px;color:#fff;background:#bb2438;font-weight:800}
 .velocity-access-redeem .velocity-access-redeem-close{background:#26374b}
 
-.velocity-invited-user .home-circuit{display:none!important}
+.velocity-invited-user .home-circuit{display:block!important}
+
+/* V1848: invitation activation belongs to the HOME menu, never on race screens. */
+.velocity-access-menu-button{display:block;margin:10px auto 18px;padding:10px 15px;border:1px solid #46576a;border-radius:8px;background:#121b27;color:#c7d4e5;font-size:11px;font-weight:800;letter-spacing:.04em;cursor:pointer}
+.velocity-access-menu-button[hidden]{display:none!important}
+.velocity-access-menu-button:hover{background:#203146;border-color:#7190b1}

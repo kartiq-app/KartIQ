@@ -126,6 +126,7 @@ function isBriceDriverName(value){
  return normalized==='BRICE NGUESSAN'||normalized==='NGUESSAN'||normalized==='B NGUESSAN'||normalized==='GUESSAN'||normalized.split(' ').includes('NGUESSAN')||normalized.split(' ').includes('GUESSAN');
 }
 async function maybeAutoFollowBrice(){
+ if(window.VELOCITY_INVITED_ACCESS)return; // Guests always pick their own team.
  if(!['qualification','sprint','endurance'].includes(currentMode)||manualFollowOverride||autoBriceFollowApplied||autoBriceFollowInFlight)return;
  const selected=(state.drivers||[]).find(d=>isBriceDriverName(d.driver));
  if(!selected)return;

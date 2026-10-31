@@ -376,7 +376,10 @@ def _current_workspace_id(create=True):
         return str((workspace or {}).get("id") or LEGACY_WORKSPACE_ID)
     grant = _velocity_access_grant()
     if grant:
-        return str(grant.get("workspace_id") or LEGACY_WORKSPACE_ID)
+        # V1848: one private runtime per invitation. Selecting another circuit
+        # or following a driver must never change the administrator's live race,
+        # another guest's circuit or the Session Course/Spotter registry.
+        return _velocity_guest_runtime_id(grant)
     paired = _paired_device_workspace_id()
     if paired:
         return paired
@@ -1358,6 +1361,11 @@ VELOCITY_ACCESS_MODES = frozenset(("qualification", "sprint", "endurance", "spot
 VELOCITY_ACCESS_COOKIE = "velocity_access_device"
 
 
+def _velocity_guest_runtime_id(grant):
+    # Server-generated grant ids cannot be supplied by the browser.
+    return "ACCESS-" + str(grant.get("id") or "")
+
+
 def _velocity_access_device_id():
     # Never authorize a grant using a user-supplied X-Velocity-Device header.
     return str(request.cookies.get(VELOCITY_ACCESS_COOKIE) or "").strip()
@@ -1385,7 +1393,7 @@ def _velocity_access_grant():
 
 def _velocity_access_public(grant):
     return {key: grant.get(key) for key in ("id", "name", "modes", "workspace_id",
-            "expires_at_ms", "team_name", "pilot_focus_driver", "pilot_focus_apex_row")}
+            "expires_at_ms")}
 
 
 def _velocity_access_store_ready():
@@ -1416,21 +1424,13 @@ def create_access_grant():
     except Exception:
         return jsonify(ok=False, error="Stockage des invitations indisponible."), 503
     wid = _current_workspace_id()
-    row = str(body.get("apex_row") or "").strip()
-    driver = None
-    if row:
-        driver = next((d for d in (_runtime_for_workspace(wid).state.get("drivers") or [])
-                       if str(d.get("apex_row") or "") == row), None)
-        if not driver:
-            return jsonify(ok=False, error="Équipe Apex introuvable dans ce workspace."), 400
+    # Access grants authorize Velocity modes, never a specific circuit, race
+    # session, team or driver. The invited user chooses their circuit and Focus.
     raw_token = secrets.token_urlsafe(32)
     now_ms = int(time.time() * 1000)
     entry = {"id": secrets.token_hex(8).upper(), "name": name,
              "name_key": name.casefold(), "token_hash": hashlib.sha256(raw_token.encode()).hexdigest(),
              "modes": sorted(set(modes)), "workspace_id": wid,
-             "team_name": str((driver or {}).get("driver") or ""),
-             "pilot_focus_driver": str((driver or {}).get("driver") or ""),
-             "pilot_focus_apex_row": (driver or {}).get("apex_row"),
              "bound_device_id": "", "created_at_ms": now_ms,
              "expires_at_ms": now_ms + hours * 3600000, "revoked": False}
     _refresh_team_data()
@@ -1607,6 +1607,14 @@ def velocity_private_access_guard():
     grant = _velocity_access_grant()
     if grant:
         if path == "/" or path.startswith("/static/") or path == "/api/access/me":
+            return None
+        # The invited user's circuit and followed driver are local VIEW
+        # preferences, stored only in their isolated runtime. These are the
+        # only allowed POST actions; all admin mutations stay prohibited.
+        if request.method == "POST" and path in (
+                "/api/circuit", "/api/follow", "/api/apex/frame", "/api/apex/status"):
+            if path == "/api/apex/frame" and request.content_length and request.content_length > 524288:
+                return ("Trame Apex trop volumineuse", 413)
             return None
         if request.method in ("GET", "HEAD"):
             mode = set(grant.get("modes") or [])
@@ -2912,7 +2920,8 @@ def get_state():
         data["analyzer_strategy"] = data.get("analyzer_strategy") if "analyzer" in allowed else None
         if "spotter" not in allowed:
             data["spotter"] = {}
-        data["workspace"] = {"id": str(grant.get("workspace_id") or LEGACY_WORKSPACE_ID)}
+        # Consistent with the isolated runtime used by this invited user.
+        data["workspace"] = {"id": _velocity_guest_runtime_id(grant)}
     raw = app.json.dumps(data, separators=(",", ":"), sort_keys=True).encode("utf-8")
     digest = hashlib.sha256(raw).hexdigest()[:24]
     if request.headers.get("If-None-Match", "").strip('"') == digest:
@@ -3321,13 +3330,14 @@ def set_circuit():
         app.logger.exception("Erreur pendant la sélection du circuit %s", circuit_id)
         return jsonify(ok=False, error=f"Initialisation du circuit impossible : {error}"), 500
     STATE["circuit_selected_at_ms"] = int(time.time()*1000)
-    # V1813: only this explicit circuit-selection endpoint is allowed to
-    # rotate a KV run on circuit change. GET polling must remain read-only.
-    try:
-        RegistryRuns(_spotter_persistent_store()).current(
-            workspace_id,circuit_id=circuit_id,explicit_circuit_change=True)
-    except Exception:
-        app.logger.exception("Registre KV : sélection explicite du circuit %s",circuit_id)
+    # Never persist/rotate the shared kart or Spotter run for a guest.
+    # Admin behavior is unchanged; guests only modify their private live view.
+    if _velocity_is_authorized():
+        try:
+            RegistryRuns(_spotter_persistent_store()).current(
+                workspace_id,circuit_id=circuit_id,explicit_circuit_change=True)
+        except Exception:
+            app.logger.exception("Registre KV : sélection explicite du circuit %s",circuit_id)
     return jsonify(ok=True, circuit_id=circuit_id, circuit_name=circuits[circuit_id].get("name"))
 
 
@@ -3539,7 +3549,11 @@ def apex_frame():
     if runtime.duplicate_frame(frame_circuit_id, frame):
         return jsonify(ok=True, duplicate=True, decoded_count=0, unknown_count=0, interpreted_events=[])
 
-    write_traffic("IN", frame)
+    # Invited browsers decode Apex only inside their private runtime.
+    # No traffic capture or disk recorder is started by a shared-access link.
+    guest_live = not _velocity_is_authorized()
+    if not guest_live:
+        write_traffic("IN", frame)
     incoming_session_title = extract_apex_session_title(frame)
     if incoming_session_title:
         STATE["apex_session_title"] = incoming_session_title
@@ -3586,7 +3600,8 @@ def apex_frame():
         STATE["live"]["last_frame_preview"] = frame[:180].replace("\n", " · ")
         STATE["live"]["status"] = "receiving"
         STATE["connection"] = "LIVE • DONNÉES RÉELLES"
-    EVENT_STORE.append({"type": "websocket_frame", "raw": frame, "updates": updates_to_dicts(initial_updates + updates), "changes": changes, "unknown": unknown, "interpreted_events": interpreted_events})
+    if not guest_live:
+        EVENT_STORE.append({"type": "websocket_frame", "raw": frame, "updates": updates_to_dicts(initial_updates + updates), "changes": changes, "unknown": unknown, "interpreted_events": interpreted_events})
     return jsonify(ok=True, decoded_count=len(initial_updates)+len(updates), unknown_count=len(unknown), race=snapshot, interpreted_events=interpreted_events)
 
 

@@ -1,3 +1,12 @@
+## V7.2.1848 — accès aux modes et circuits indépendants
+
+- Suppression du bouton rouge flottant « ACTIVER UN LIEN » ; activation dans le menu d'accueil (☰).
+- Le lien donne accès à des modes Velocity sans affecter un circuit, une course ou une équipe.
+- Le circuit est librement sélectionnable par l'invité ; classement Endurance ouvert avant le Focus, équipe choisie via un clic sur le classement.
+- Chaque invité utilise un runtime Apex isolé pour éviter tout effet sur le circuit de l'administrateur ou celui d'un autre invité.
+- Autorisation serveur de quatre actions strictement limitées au runtime de l'invité : sélectionner le circuit, choisir le suivi, recevoir les trames Apex, mise à jour de statut live. Autres mutations et API admin interdites.
+- Aucun Recorder automatique ou historique Apex enregistré sur disque pour les invités.
+
 # V7.2.1847 — Gestion universelle des accès
 - Suppression de Velocity Pilote (routes /join, manifest dédié, page et interface).
 - Invitation par nom, cinq modes indépendants, durée 1 h à 7 jours, équipe Apex facultative.

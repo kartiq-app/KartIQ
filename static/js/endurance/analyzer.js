@@ -5492,12 +5492,11 @@ let velocityLastAccessLink='';
 function velocityAccessFeedback(message='',error=false){const el=document.getElementById('velocityAccessFeedback');if(el){el.textContent=message;el.classList.toggle('error',!!error)}}
 function velocityOpenAccessModal(){
  const modal=document.getElementById('velocityAccessModal');if(!modal)return;
- const sel=document.getElementById('velocityAccessTarget');if(sel){sel.innerHTML='<option value="">Aucune équipe imposée</option>';for(const d of (state?.drivers||[])){if(d.apex_row===undefined||!d.driver)continue;const o=document.createElement('option');o.value=String(d.apex_row);o.textContent=d.driver;sel.appendChild(o)}}
  modal.hidden=false;void velocityRefreshAccess();
 }
 function velocityCloseAccessModal(){const m=document.getElementById('velocityAccessModal');if(m)m.hidden=true}
 async function velocityRefreshAccess(){const h=document.getElementById('velocityAccessList');if(!h)return;try{const r=await fetch('/api/access-grants',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Accès indisponibles');const grants=(d.grants||[]).filter(g=>g.active);h.innerHTML=grants.length?grants.map(g=>`<div class="race-guest-entry"><span>${analyzerEscape(g.name)} · ${(g.modes||[]).map(analyzerEscape).join(', ')} · ${new Date(g.expires_at_ms).toLocaleString('fr-FR')} · ${g.activated?'Activé':'En attente'}</span><button type="button" class="race-ui-btn danger" onclick="velocityRevokeAccess('${analyzerEscape(g.id)}')">RÉVOQUER</button></div>`).join(''):'<small>Aucun accès actif.</small>'}catch(e){h.textContent=e.message||String(e)}}
-async function velocityCreateAccess(){const button=document.getElementById('velocityAccessCreate');const name=document.getElementById('velocityAccessName')?.value.trim()||'';const modes=[...document.querySelectorAll('#velocityAccessModeList input:checked')].map(e=>e.value);const hours=Number(document.getElementById('velocityAccessHours')?.value||3);const apex_row=document.getElementById('velocityAccessTarget')?.value||'';if(button)button.disabled=true;try{const r=await fetch('/api/access-grants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,modes,hours,apex_row})}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Création impossible');velocityLastAccessLink=d.link;const input=document.getElementById('velocityAccessLink');if(input){input.value=d.link;input.hidden=false}const copy=document.getElementById('velocityAccessCopy');if(copy)copy.hidden=false;await velocityRefreshAccess();velocityAccessFeedback(`Nouveau lien créé : les précédentes invitations de ${name} sont révoquées.`)}catch(e){velocityAccessFeedback(e.message||String(e),true)}finally{if(button)button.disabled=false}}
+async function velocityCreateAccess(){const button=document.getElementById('velocityAccessCreate');const name=document.getElementById('velocityAccessName')?.value.trim()||'';const modes=[...document.querySelectorAll('#velocityAccessModeList input:checked')].map(e=>e.value);const hours=Number(document.getElementById('velocityAccessHours')?.value||3);if(button)button.disabled=true;try{const r=await fetch('/api/access-grants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,modes,hours})}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Création impossible');velocityLastAccessLink=d.link;const input=document.getElementById('velocityAccessLink');if(input){input.value=d.link;input.hidden=false}const copy=document.getElementById('velocityAccessCopy');if(copy)copy.hidden=false;await velocityRefreshAccess();velocityAccessFeedback(`Nouveau lien créé : les précédentes invitations de ${name} sont révoquées.`)}catch(e){velocityAccessFeedback(e.message||String(e),true)}finally{if(button)button.disabled=false}}
 async function velocityCopyAccess(){const input=document.getElementById('velocityAccessLink');const url=velocityLastAccessLink||input?.value||'';if(!url)return;try{await navigator.clipboard.writeText(url);velocityAccessFeedback('Lien copié.')}catch(_){input?.focus();input?.select();velocityAccessFeedback('Sélectionnez et copiez le lien.')}}
 async function velocityRevokeAccess(id){if(!confirm('Révoquer immédiatement cet accès Velocity ?'))return;try{const r=await fetch(`/api/access-grants/${encodeURIComponent(id)}/revoke`,{method:'POST'}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Erreur');await velocityRefreshAccess();velocityAccessFeedback('Accès révoqué.')}catch(e){velocityAccessFeedback(e.message||String(e),true)}}
 window.velocityOpenAccessModal=velocityOpenAccessModal;window.velocityCloseAccessModal=velocityCloseAccessModal;window.velocityCreateAccess=velocityCreateAccess;window.velocityCopyAccess=velocityCopyAccess;window.velocityRevokeAccess=velocityRevokeAccess;
@@ -5620,27 +5619,26 @@ async function velocityRedeemAccess(){const input=document.getElementById('veloc
 function velocityAllowedMode(mode){return !Array.isArray(velocityAccessModes)||velocityAccessModes.includes(mode)}
 function velocityApplyAccess(data){
  const grant=data?.access;const modes=grant?.modes||[];
- if(!grant||!Array.isArray(modes)||!modes.length){velocityAccessModes=[];window.VELOCITY_ACCESS_MODES=[];velocityShowDeviceGate('Accès Velocity terminé','Cette invitation a expiré ou a été remplacée.','Demandez un nouveau lien.');return}
- velocityAccessModes=modes;window.VELOCITY_ACCESS_MODES=modes;
- const signature=[grant.id,modes.join(','),grant.expires_at_ms,grant.pilot_focus_driver].join('|');
- if(signature===velocityAccessSignature){
-   if(currentMode==='home'&&state?.circuit_id){const preferred=modes[0];showMode(preferred);if(preferred==='endurance'&&modes.length===1)setTimeout(()=>openEnduranceFocus(),180)}
-   return;
- }
+ if(!grant||!Array.isArray(modes)||!modes.length){velocityAccessModes=[];window.VELOCITY_ACCESS_MODES=[];window.VELOCITY_GUEST_ENDED=true;closeApexBrowserSocket();velocityShowDeviceGate('Accès Velocity terminé','Cette invitation a expiré ou a été remplacée.','Demandez un nouveau lien.');return}
+ const signature=[grant.id,modes.join(','),grant.expires_at_ms].join('|');
+ velocityAccessModes=modes;window.VELOCITY_ACCESS_MODES=modes;window.VELOCITY_GUEST_ENDED=false;
+ if(signature===velocityAccessSignature)return;
  velocityAccessSignature=signature;velocityResetRoleUI();velocitySetDeveloperToolsHidden(true);
  document.body.classList.add('velocity-invited-user');
+ window.velocityRaceSession=null; // no Session Course, no imposed team/focus
  for(const btn of document.querySelectorAll('[data-mode],[data-home-mode]')){const mode=btn.getAttribute('data-mode')||btn.getAttribute('data-home-mode');btn.hidden=!modes.includes(mode)}
- if(grant.pilot_focus_driver){window.velocityRaceSession={status:'active',pilot_focus_driver:grant.pilot_focus_driver,pilot_focus_apex_row:grant.pilot_focus_apex_row,workspace_id:grant.workspace_id}}
- const preferred=modes.includes(currentMode)?currentMode:modes[0];
- if(state?.circuit_id){showMode(preferred);if(preferred==='endurance'&&modes.length===1)setTimeout(()=>openEnduranceFocus(),180)}else{showHome()}
+ // Stay on the circuit selector at first access; never auto-open Focus.
+ // Users choose their circuit, see the full rankings, then tap any driver.
+ if(currentMode!=='home'&&!modes.includes(currentMode))showHome();
 }
-async function velocityAccessCheck(){try{const r=await fetch('/api/access/me',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Accès expiré');velocityApplyAccess(d)}catch(e){velocityAccessModes=[];window.VELOCITY_ACCESS_MODES=[];velocityShowDeviceGate('Accès Velocity indisponible','Impossible de vérifier les autorisations.','Ouvrez un nouveau lien d’accès.')}}
+async function velocityAccessCheck(){try{const r=await fetch('/api/access/me',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Accès expiré');velocityApplyAccess(d)}catch(e){velocityAccessModes=[];window.VELOCITY_ACCESS_MODES=[];window.VELOCITY_GUEST_ENDED=true;closeApexBrowserSocket();velocityShowDeviceGate('Accès Velocity indisponible','Impossible de vérifier les autorisations.','Ouvrez un nouveau lien d’accès.')}}
 function velocityAccessBootstrap(){
  const isGuest=Boolean(window.VELOCITY_INVITED_ACCESS);
  const btn=document.getElementById('velocityAccessRedeemButton');if(btn)btn.hidden=!isGuest;
  if(!isGuest)return;
  velocityAccessModes=(window.VELOCITY_INVITED_ACCESS.modes||[]);
  document.body.classList.add('velocity-invited-user');velocitySetDeveloperToolsHidden(true);
+ window.velocityRaceSession=null;
  velocityShowDeviceGate('Vérification des autorisations','Connexion sécurisée à Velocity…','Veuillez patienter…');
  void velocityAccessCheck();velocityAccessPoll=setInterval(velocityAccessCheck,3000);
 }

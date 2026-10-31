@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1847"
-APP_RELEASE_NAME = "CORRECTION INSTALLATION PILOTE IPHONE ANDROID"
+APP_VERSION = "7.2.1848"
+APP_RELEASE_NAME = "ACCES LIBRES AUX CIRCUITS ET CLASSEMENT ENDURANCE"
 
 
 def _circuit_sort_key(circuit):

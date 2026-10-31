@@ -36,6 +36,30 @@ class AccessStaticTests(unittest.TestCase):
         self.assertIn('strict_db=True', src)
         self.assertIn('previous["revoked"] = True', src)
 
+    def test_access_is_unbound_and_home_menu_replaces_overlay_button(self):
+        html = (ROOT / 'templates/index.html').read_text()
+        css = (ROOT / 'static/css/60-analyzer.css').read_text()
+        js = (ROOT / 'static/js/endurance/analyzer.js').read_text()
+        core = (ROOT / 'static/js/core/core.js').read_text()
+        self.assertNotIn('velocityAccessTarget', html)
+        self.assertNotIn('velocityAccessTarget', js)
+        self.assertIn('id="velocityAccessRedeemButton"', html)
+        self.assertIn('class="velocity-access-menu-button"', html)
+        self.assertIn('.velocity-invited-user .home-circuit{display:block!important}', css)
+        self.assertNotIn("setTimeout(()=>openEnduranceFocus()", js.split("function velocityApplyAccess(data){",1)[1].split("async function velocityAccessCheck()",1)[0])
+        self.assertIn('closeApexBrowserSocket()', js)
+        self.assertNotIn('||window.VELOCITY_INVITED_ACCESS)return;', core)
+        self.assertIn('velocityAccessModes=modes', js)
+
+    def test_runtime_is_isolated_from_administrator_workspace(self):
+        src = (ROOT / 'app.py').read_text()
+        self.assertIn('def _velocity_guest_runtime_id(', src)
+        self.assertIn('return _velocity_guest_runtime_id(grant)', src)
+        self.assertIn('"/api/circuit", "/api/follow", "/api/apex/frame", "/api/apex/status"', src)
+        self.assertIn('if _velocity_is_authorized():\n        try:\n            RegistryRuns', src)
+        self.assertIn('if not guest_live:', src)
+        self.assertNotIn('pilot_focus_driver": str((driver', src)
+
     def test_python_syntax(self):
         ast.parse((ROOT / 'app.py').read_text())
 
@@ -115,6 +139,46 @@ class UniversalAccessIntegration(unittest.TestCase):
         self.now += 3601
         self.assertEqual(self.guest.get('/api/state').status_code,403)
         self.assertEqual(self.guest.get('/access/'+token).status_code,410)
+
+    def test_guest_can_pick_any_circuit_and_follow_without_changing_admin(self):
+        issued = self.issue(modes=['endurance'])
+        token = issued['link'].split('/access/')[1]
+        self.assertEqual(self.guest.post('/api/access/activate',json={'token':token}).status_code, 200)
+        admin_runtime = velocity._runtime_for_workspace('W1')
+        self.assertEqual(admin_runtime.state['circuit_id'], 'track1')
+        circuits = velocity.load_circuits()
+        self.assertGreater(len(circuits), 0)
+        first = circuits[0]['id']
+        result = self.guest.post('/api/circuit', json={'circuit_id':first})
+        self.assertEqual(result.status_code, 200, result.get_json())
+        guest_state = self.guest.get('/api/state').get_json()
+        self.assertEqual(guest_state['circuit_id'], first)
+        self.assertEqual(admin_runtime.state['circuit_id'], 'track1')
+        self.assertEqual(self.guest.get('/api/teams').status_code, 403)
+        self.assertEqual(self.guest.post('/api/race-session/end',json={}).status_code, 403)
+        self.assertEqual(self.guest.post('/api/spotter-state',json={}).status_code, 403)
+        # The guest's view preference cannot modify the admin followed driver.
+        guest_runtime_id = 'ACCESS-' + issued['id']
+        guest_runtime = velocity._runtime_for_workspace(guest_runtime_id)
+        guest_runtime.state.update(drivers=[{'driver':'GUEST TEAM','pos':1,'laps':0,'last':'1:02.33'}])
+        follow = self.guest.post('/api/follow',json={'driver':'GUEST TEAM'})
+        self.assertEqual(follow.status_code, 200, follow.get_json())
+        self.assertEqual(guest_runtime.state['followed_driver'], 'GUEST TEAM')
+        self.assertEqual(admin_runtime.state['followed_driver'], 'TEAM TEST')
+
+    def test_separate_guests_have_separate_circuit_runtime(self):
+        first=self.issue(name='Pilote 1')
+        second=self.issue(name='Pilote 2')
+        browser2=velocity.app.test_client()
+        self.assertEqual(self.guest.post('/api/access/activate',json={'token':first['link'].split('/access/')[1]}).status_code,200)
+        self.assertEqual(browser2.post('/api/access/activate',json={'token':second['link'].split('/access/')[1]}).status_code,200)
+        circuits = velocity.load_circuits()
+        self.assertGreaterEqual(len(circuits), 2)
+        self.assertEqual(self.guest.post('/api/circuit',json={'circuit_id':circuits[0]['id']}).status_code,200)
+        self.assertEqual(browser2.post('/api/circuit',json={'circuit_id':circuits[1]['id']}).status_code,200)
+        self.assertEqual(self.guest.get('/api/state').get_json()['circuit_id'],circuits[0]['id'])
+        self.assertEqual(browser2.get('/api/state').get_json()['circuit_id'],circuits[1]['id'])
+        self.assertEqual(self.admin.get('/api/state').get_json()['circuit_id'],'track1')
 
     def test_ios_pwa_cookie_isolation_allows_transfer(self):
         issued=self.issue()

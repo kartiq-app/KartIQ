@@ -246,3 +246,8 @@ Sans Session Course, l'accès reste attaché au circuit et à l'équipe choisis 
 ### V7.2.1844 — Aspirer une course depuis Velocity Lab
 
 **Analyzer → Velocity Lab → ASPIRER UNE COURSE** (onglet ouvert par défaut). Saisir un nom facultatif, sélectionner **n'importe quel circuit Apex configuré**, puis cliquer **ASPIRER LA COURSE**. Pas besoin de créer une Session Course : le Data Recorder autonome récupère les tours et arrêts historiques encore exposés par Apex, puis poursuit le live. Il est arrêté manuellement via **ARRÊTER** (ou automatiquement par le plafond de sécurité du Recorder) et exporté au format ZIP. Il n'y a jamais deux collecteurs simultanés sur le même circuit ; si une Session Course enregistre déjà ce circuit, son Recorder est la source à exporter. Le mode manuel n'ouvre pas une nouvelle Session Course et ne lance aucun suivi KV autonome. Une course passée indisponible dans l'historique Apex ne peut pas être inventée ou récupérée sans source valide.
+
+
+## V7.2.1848 — accès universels sans circuit imposé
+
+Un accès invité autorise uniquement les modes sélectionnés, indépendamment d'une session ou d'un circuit. Le pilote choisit son circuit sur l'accueil et peut consulter le classement Endurance intégral ; il sélectionne librement l'équipe à suivre en Focus. L'invitation ne propose plus d'équipe prédéfinie. L'option « Activer un nouveau lien » n'apparaît que sur l'accueil (bouton ☰), pas sur l'écran de course. Les changements de circuit et le choix de l'équipe sont confinés à l'espace en mémoire de l'invitation ; ils ne modifient pas le workspace de l'administrateur, ni la Session Course, ni le registre Spotter. Le WebSocket Apex de l'invité alimente uniquement son propre classement, sans Recorder automatique.

@@ -770,9 +770,10 @@ function closeApexBrowserSocket(){
   try{socket.close()}catch(e){}
  }
 }
-function ensureApexBrowserConnection(){if(window.VELOCITY_RACE_ACCESS?.token||window.VELOCITY_INVITED_ACCESS)return;if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
+function ensureApexBrowserConnection(){if(window.VELOCITY_RACE_ACCESS?.token||window.VELOCITY_GUEST_ENDED)return;if(window.VELOCITY_INVITED_ACCESS&&!Array.isArray(window.VELOCITY_ACCESS_MODES))return;if(!state?.circuit_id)return;if(apexBrowserCircuitId!==state.circuit_id||(!apexBrowserSocket&&!apexBrowserConnecting))connectApexBrowser(false)}
 function connectApexBrowser(force=false){
- if(window.VELOCITY_RACE_ACCESS?.token||window.VELOCITY_INVITED_ACCESS)return;
+ if(window.VELOCITY_RACE_ACCESS?.token||window.VELOCITY_GUEST_ENDED)return;
+ if(window.VELOCITY_INVITED_ACCESS&&!Array.isArray(window.VELOCITY_ACCESS_MODES))return;
  const circuit=(state?.circuits||[]).find(c=>c.id===state.circuit_id);
  if(!circuit?.websocket_url)return;
  if(!force&&apexBrowserSocket&&apexBrowserCircuitId===circuit.id&&[0,1].includes(apexBrowserSocket.readyState))return;
@@ -783,12 +784,12 @@ function connectApexBrowser(force=false){
  sendApexStatus('connecting','CONNEXION APEX…');
  let socket;
  try{socket=new WebSocket(circuit.websocket_url);apexBrowserSocket=socket}catch(err){if(connectionToken!==apexBrowserConnectionToken)return;apexBrowserConnecting=false;sendApexStatus('error','ERREUR LIVE',err.message);return}
- const isCurrentConnection=()=>connectionToken===apexBrowserConnectionToken&&socket===apexBrowserSocket&&circuit.id===state?.circuit_id;
+ const isCurrentConnection=()=>connectionToken===apexBrowserConnectionToken&&socket===apexBrowserSocket&&circuit.id===state?.circuit_id&&!window.VELOCITY_GUEST_ENDED;
  socket.addEventListener('open',()=>{
   if(!isCurrentConnection())return;
   apexBrowserConnecting=false;
   sendApexStatus('connected','LIVE • CONNECTÉ');
-  if(circuit.session_request){socket.send(circuit.session_request);fetch('/api/developer/outbound',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:circuit.session_request})}).catch(()=>{})}
+  if(circuit.session_request){socket.send(circuit.session_request);if(!window.VELOCITY_INVITED_ACCESS)fetch('/api/developer/outbound',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:circuit.session_request})}).catch(()=>{})}
  });
  socket.addEventListener('message',async e=>{
   if(!isCurrentConnection())return;
