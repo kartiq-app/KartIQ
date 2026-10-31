@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1841"
-APP_RELEASE_NAME = "CHRONO STANDS ANIME APEX ET AFFICHAGE PIT OUT 8 SECONDES"
+APP_VERSION = "7.2.1843"
+APP_RELEASE_NAME = "FOCUS ENDURANCE BADGE ARRETS CHIFFRE EN GRAS"
 
 
 def _circuit_sort_key(circuit):

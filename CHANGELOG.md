@@ -1,3 +1,12 @@
+## Velocity V7.2.1842 — PIT IN officiel et PIT OUT sans chrono provisoire
+
+- En PIT IN, suppression de l'animation locale des millièmes : seul le compteur Apex à la seconde est affiché, sans extrapolation.
+- À la sortie, écran noir pendant la récupération asynchrone du passage historique Apex ; aucun premier temps `03:01` n'est montré.
+- À réception de la durée finale Apex en millisecondes (`03:01.019`), elle s'affiche directement pendant 8 secondes complètes à partir de son apparition.
+- Attente plafonnée à 20 secondes : si Apex ne répond pas, retour au Focus sans valeur inventée.
+- Lecture de l'historique bornée et indépendante du flux live ; isolation des équipes et annulation à la fermeture du Focus.
+- Versions Render et cache iPhone actualisés.
+
 ## V7.2.1841 — PIT IN animé et PIT OUT 8 secondes
 - Le panneau PIT OUT reste visible huit secondes après la sortie des stands, simulation comprise (au lieu de cinq).
 - PIT IN : compteur visuel à trois décimales animé à 25 images/s. Les secondes entières restent strictement autoritaires Apex ; seule la fraction est interpolée dans la seconde confirmée. Ainsi, `00:35.853` peut s'afficher sans devancer Apex à `00:36`.
@@ -2471,3 +2480,8 @@
 - Libellé en bleu (même teinte que le temps de sortie des stands).
 - Même taille que le nom de l’équipe, sans modifier la taille des autres textes.
 - Resserrement léger des espacements internes pour conserver le gabarit initial de la case.
+
+## V7.2.1843 — Focus Endurance : chiffre des arrêts en gras
+- Le chiffre noir du badge bleu des arrêts utilise désormais la fonte **F1 Torque** (graisse bold réelle) au lieu de F1 Regular.
+- Aucune modification du positionnement, de la taille du chiffre, du rectangle ou des données Apex.
+- Numéro applicatif et version du cache mobile actualisés.
