@@ -1,3 +1,5 @@
+V7.2.1864 — VVCE SERVEUR : sélectionner Analyzer → CLASSEMENT VIRTUEL pour initialiser automatiquement la collecte secondaire. Le premier classement peut nécessiter un chargement historique ; les suivantes lisent immédiatement le dernier snapshot SQL. Affichage NON CERTIFIÉ si les tours ne sont pas horodatés sur une chronologie commune. Si aucune session Apex n'est identifiée, le classement ne démarre pas. Une collecte dédiée VVCE ne commence que sur action explicite, reste limitée à 30 h et s'arrête si le live ne fournit plus de messages pendant 15 minutes. Sur Render, DATABASE_URL est nécessaire à la persistance. Les résultats ne doivent pas être utilisés pour des décisions critiques avant validation sur plusieurs courses.
+
 V7.2.1863 : le diagnostic VVCE apparaît sous le classement Analyzer (résultat ou raison de refus), sans altérer le LIVE.
 
 ## V7.2.1860

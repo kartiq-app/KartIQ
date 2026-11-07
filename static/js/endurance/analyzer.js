@@ -1150,99 +1150,95 @@ function analyzerVVCEInvalidate(){
  analyzerVVCE.status='idle';analyzerVVCE.circuit='';analyzerVVCE.session='';
  analyzerVVCE.teams=new Map();analyzerVVCE.reason='';analyzerVVCE.loaded=0;analyzerVVCE.failedTeams=[];analyzerVVCE.ranking=[];analyzerVVCE.finishedAt=0;
 }
-function analyzerVVCEMedian(values){
- const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y),n=a.length;
- return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null;
+// V1864 — the browser never reconstructs 34 historical Apex teams.
+// Reading a persisted snapshot is cheap; all heavy work stays off the live path.
+let analyzerVVCERequestToken=0;
+let analyzerVVCEPOLL=null;
+function analyzerVVCEContext(){
+ return {circuit:analyzerSessionCircuit(),session:String(state?.apex_session_id||state?.apex_session_title||'').trim()};
 }
-function analyzerVVCECompute(datasets){
- // Port direct de la méthode exploratoire utilisée sur l'export Agadir :
- // somme des tours + tours manquants * médiane de 30 tours propres +
- // arrêts restant * perte nette médiane observée sur le plateau.
- // IMPORTANT : sans chronologie absolue commune, résultat NON CERTIFIÉ.
- if(datasets.length<2)throw Error('Au moins deux historiques d’équipes sont nécessaires.');
- const maxStops=Math.max(...datasets.map(x=>x.stops));
- const maxLap=Math.max(...datasets.map(x=>x.lastLap));
- const netCosts=[];
- for(const d of datasets){
-  for(const n of d.pitNext){
-   const duration=d.lapsByNumber.get(n),base=d.cleanMedian;
-   if(Number.isFinite(duration)&&Number.isFinite(base)&&duration>base*1.45&&duration<base*5)
-    netCosts.push(duration-base);
-  }
- }
- if(netCosts.length<6)throw Error('Pas assez de tours de stands identifiables pour estimer le coût net.');
- const netCost=analyzerVVCEMedian(netCosts);
- if(!(netCost>0))throw Error('Coût net des stands non identifiable.');
- const ranking=datasets.map(d=>{
-  const remaining=Math.max(0,maxStops-d.stops),missingLaps=Math.max(0,maxLap-d.lastLap);
-  const total=d.elapsed+missingLaps*d.pace+remaining*netCost;
-  return {...d,missing:remaining,extra:remaining*netCost,projectedTotal:total,missingLaps};
- }).sort((a,b)=>a.projectedTotal-b.projectedTotal||a.realPos-b.realPos);
- const leader=ranking[0].projectedTotal;
- ranking.forEach((d,i)=>{d.position=i+1;d.gap=Math.max(0,d.projectedTotal-leader)});
- return {ranking,maxStops,maxLap,netCost,netSamples:netCosts.length};
-}
-async function startAnalyzerVVCE(){
- if(analyzerVVCE.status==='loading')return;
- const circuit=analyzerSessionCircuit(),session=String(state?.apex_session_id||state?.apex_session_title||'');
- const initial=(state.drivers||[]).filter(d=>Number(d.apex_row)>0&&d.driver)
-   .map(d=>({name:String(d.driver),rowId:Number(d.apex_row),stops:Number(d.pit_stops)||0,
-             realPos:Number(d.pos)||999}));
- if(!initial.length){analyzerVVCE.status='error';analyzerVVCE.reason='Aucune équipe Apex.';renderAnalyzer();return}
- analyzerVVCE.status='loading';analyzerVVCE.circuit=circuit;analyzerVVCE.session=session;
- analyzerVVCE.startedAt=Date.now();analyzerVVCE.loaded=0;analyzerVVCE.total=initial.length;
- analyzerVVCE.reason='Récupération des historiques Apex sur demande…';analyzerVVCE.teams=new Map();analyzerVVCE.failedTeams=[];analyzerVVCE.validTeams=0;analyzerVVCE.ranking=[];analyzerVVCE.finishedAt=0;renderAnalyzer();
+async function analyzerVVCEReadSnapshot(token){
+ const {circuit,session}=analyzerVVCEContext();
+ if(!circuit||!session||token!==analyzerVVCERequestToken||analyzerRankingMode!=='virtual')return;
  try{
-  const datasets=[];let failures=0;const failureDetails=[];
-  // Séquentiel : préserver en priorité le débit des chronos live sur réseau mobile.
-  for(const item of initial){
-   if(analyzerSessionCircuit()!==circuit||String(state?.apex_session_id||state?.apex_session_title||'')!==session){
-    throw Error('Circuit ou session modifié pendant le calcul.');
-   }
-   let laps,pits;
-   try{[laps,pits]=await Promise.all([fetchAllApexTeamLaps(item.rowId,'',null),fetchAllApexTeamPits(item.rowId,'',null)]);}
-   catch(fetchError){failures++;failureDetails.push(`${item.name} : requête Apex échouée (${String(fetchError?.message||fetchError)})`);analyzerVVCE.loaded++;analyzerVVCE.failedTeams=failureDetails.slice();analyzerVVCE.reason=`Historique Apex : ${analyzerVVCE.loaded}/${initial.length} équipes`;renderAnalyzer();continue;}
-   const lapMap=new Map();
-   for(const lap of laps||[]){
-    const n=Number(lap.lap),v=Number(lap.lapTime)/1000;
-    if(Number.isInteger(n)&&n>0&&Number.isFinite(v)&&v>0&&v<1800)lapMap.set(n,v);
-   }
-   const nums=[...lapMap.keys()].sort((a,b)=>a-b),last=nums[nums.length-1]||0;
-   const pitNext=new Set((pits||[]).map(p=>Number(p.lap)+1).filter(Number.isInteger));
-   const clean=nums.filter(n=>n>2&&!pitNext.has(n)&&lapMap.get(n)>=40&&lapMap.get(n)<=300)
-                   .map(n=>lapMap.get(n));
-   const baseline=analyzerVVCEMedian(clean);
-   // Toujours refuser une série trouée : sommer uniquement les tours récupérés
-   // créerait un avantage artificiel massif pour l'équipe concernée.
-   if(last<20||nums.length!==last||clean.length<15||!Number.isFinite(baseline)){failures++;failureDetails.push(`${item.name} : ${nums.length}/${last} tours, ${clean.length} tours propres`);}
-   else datasets.push({...item,stops:item.stops,lastLap:last,elapsed:nums.reduce((acc,n)=>acc+lapMap.get(n),0),
-                       pace:analyzerVVCEMedian(clean.slice(-30)),cleanMedian:baseline,pitNext,lapsByNumber:lapMap});
-   analyzerVVCE.loaded++;analyzerVVCE.validTeams=datasets.length;analyzerVVCE.failedTeams=failureDetails.slice();analyzerVVCE.reason=`Historique Apex : ${analyzerVVCE.loaded}/${initial.length} équipes`;
-   renderAnalyzer();
+  const url=`/api/vvce/status?circuit_id=${encodeURIComponent(circuit)}&session_key=${encodeURIComponent(session)}`;
+  const response=await fetch(url,{cache:'no-store'});
+  const payload=await response.json();
+  if(!response.ok||!payload.ok)throw Error(payload.error||'Statut VVCE indisponible');
+  if(token!==analyzerVVCERequestToken||analyzerRankingMode!=='virtual')return;
+  const item=payload.data||{};
+  const result=item.result;
+  analyzerVVCE.circuit=circuit;analyzerVVCE.session=session;
+  analyzerVVCE.reason=item.reason||item.note||'Initialisation du calcul serveur';
+  if(result&&Array.isArray(result.ranking)){
+   analyzerVVCE.ranking=result.ranking;
+   analyzerVVCE.teams=new Map(result.ranking.map(d=>[Number(d.rowId),d]));
+   analyzerVVCE.referenceStops=result.referenceStops;
+   analyzerVVCE.referenceLap=result.referenceLap;
+   analyzerVVCE.pitNetCost=result.pitNetCost;
+   analyzerVVCE.netSamples=result.netSamples;
+   analyzerVVCE.total=result.teams;
+   analyzerVVCE.finishedAt=Number(item.updatedAt)||0;
+   analyzerVVCE.stale=item.status!=='ready'||Date.now()-analyzerVVCE.finishedAt>90000;
+   analyzerVVCE.status='ready';
+  }else{
+   analyzerVVCE.status=item.status==='idle'?'idle':'loading';
+   analyzerVVCE.ranking=[];analyzerVVCE.teams=new Map();
   }
-  // Pas de classement partiel abusivement présenté comme classement du plateau.
-  if(failures||datasets.length!==initial.length)throw Error(`${failures} historique(s) incomplet(s) : projection du plateau indisponible.`);
-  const result=analyzerVVCECompute(datasets);
-  analyzerVVCE.teams=new Map(result.ranking.map(d=>[d.rowId,d]));
-  analyzerVVCE.pitNetCost=result.netCost;analyzerVVCE.referenceStops=result.maxStops;
-  analyzerVVCE.referenceLap=result.maxLap;analyzerVVCE.netSamples=result.netSamples;analyzerVVCE.ranking=result.ranking;analyzerVVCE.finishedAt=Date.now();analyzerVVCE.status='ready';
-  analyzerVVCE.reason=`ESSAI NON CERTIFIÉ · ${initial.length} équipes · ${result.netSamples} tours de stands · coût net médian ${result.netCost.toFixed(1)} s · capture non simultanée`;
+  renderAnalyzer();
  }catch(error){
-  analyzerVVCE.status='error';analyzerVVCE.teams=new Map();analyzerVVCE.ranking=[];analyzerVVCE.finishedAt=Date.now();
-  analyzerVVCE.reason=String(error?.message||error);console.warn('[Velocity VVCE] Calcul interrompu :',analyzerVVCE.reason,analyzerVVCE.failedTeams);
- }finally{renderAnalyzer()}
+  if(token!==analyzerVVCERequestToken)return;
+  analyzerVVCE.reason=String(error?.message||error);
+  if(analyzerVVCE.ranking.length){analyzerVVCE.stale=true;analyzerVVCE.status='ready'}
+  else analyzerVVCE.status='error';
+  renderAnalyzer();
+ }
 }
+async function analyzerVVCEActivate(){
+ const {circuit,session}=analyzerVVCEContext();
+ if(!circuit||!session){analyzerVVCE.status='error';analyzerVVCE.reason='Aucune session Apex identifiée.';renderAnalyzer();return}
+ const token=++analyzerVVCERequestToken;
+ if(analyzerVVCEPOLL)clearInterval(analyzerVVCEPOLL);
+ analyzerVVCE.status='loading';analyzerVVCE.reason='Lecture du dernier classement disponible sur Render…';
+ analyzerVVCE.circuit=circuit;analyzerVVCE.session=session;
+ await analyzerVVCEReadSnapshot(token);
+ const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0).map(d=>({apex_row:Number(d.apex_row)}));
+ try{
+  const response=await fetch('/api/vvce/start',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({circuit_id:circuit,session_key:session,drivers})});
+  const data=await response.json();
+  if(!response.ok||!data.ok)throw Error(data.error||'Initialisation serveur indisponible');
+  if(token!==analyzerVVCERequestToken)return;
+  await analyzerVVCEReadSnapshot(token);
+ }catch(error){
+  if(token!==analyzerVVCERequestToken)return;
+  analyzerVVCE.reason=String(error?.message||error);
+  if(analyzerVVCE.ranking.length){analyzerVVCE.stale=true;analyzerVVCE.status='ready'}
+  else analyzerVVCE.status='error';
+  renderAnalyzer();
+ }
+ if(token===analyzerVVCERequestToken){
+  analyzerVVCEPOLL=setInterval(()=>{
+   if(analyzerRankingMode!=='virtual'||analyzerSessionCircuit()!==circuit||analyzerVVCEContext().session!==session){
+    clearInterval(analyzerVVCEPOLL);analyzerVVCEPOLL=null;return;
+   }
+   analyzerVVCEReadSnapshot(token);
+  },7000);
+ }
+}
+// Backward-compatible explicit retry hook; not required for routine navigation.
+function startAnalyzerVVCE(){return analyzerVVCEActivate()}
 function analyzerRenderVVCEReport(){
  const panel=document.getElementById('analyzerVVCEReport');if(!panel)return;
  panel.hidden=analyzerRankingMode!=='virtual';if(panel.hidden)return;
  const v=analyzerVVCE,ready=v.status==='ready'&&v.circuit===analyzerSessionCircuit()&&v.session===String(state?.apex_session_id||state?.apex_session_title||'');
  const time=v.finishedAt?new Date(v.finishedAt).toLocaleTimeString('fr-FR'):null;
- const head=`<strong>VVCE · ${v.status==='loading'?'CALCUL EN COURS':ready?'CALCUL TERMINÉ':v.status==='error'?'CALCUL NON VALIDÉ':'TEST EXPÉRIMENTAL'}</strong>`;
- if(v.status==='loading'){panel.innerHTML=`${head}<p>Historiques traités : <strong>${v.loaded}/${v.total}</strong> · Exploitables : ${v.validTeams} · Refusés : ${v.failedTeams.length}. Le classement reste indisponible jusqu'à la fin.</p>`;return}
+ const head=`<strong>VVCE SERVEUR · ${v.status==='loading'?'INITIALISATION':ready?(v.stale?'DERNIER CLASSEMENT (NON ACTUALISÉ)':'CLASSEMENT DISPONIBLE'):v.status==='error'?'INDISPONIBLE':'EN ATTENTE'}</strong>`;
+ if(v.status==='loading'){panel.innerHTML=`${head}<p>${analyzerEscape(v.reason||'Collecte et calcul en cours côté serveur')}. Aucun classement ne sera inventé tant que les données sont insuffisantes.</p>`;return}
  if(v.status==='error'){panel.innerHTML=`${head}<p>${analyzerEscape(v.reason)} · ${v.loaded}/${v.total} équipes traitées${time?' · '+time:''}.</p>${v.failedTeams.length?`<details><summary>${v.failedTeams.length} historiques incomplets — détails</summary><ul>${v.failedTeams.map(x=>`<li>${analyzerEscape(x)}</li>`).join('')}</ul></details>`:''}<small>Aucune position VVCE publiée. Le classement LIVE reste inchangé.</small>`;return}
- if(!ready){panel.innerHTML=`${head}<p>Clique sur CALCULER VVCE pour lancer une analyse historique à la demande. Les résultats ne sont pas certifiés en direct.</p>`;return}
+ if(!ready){panel.innerHTML=`${head}<p>Calcul automatique sur le serveur après sélection du classement virtuel. En attente de données Apex exploitables.</p>`;return}
  const rows=v.ranking.map(d=>`<tr><td>${d.position}</td><td>${analyzerEscape(d.name)}</td><td>${d.realPos}</td><td>${d.lastLap}</td><td>${d.stops}/${v.referenceStops}</td><td>${d.missing}</td><td>${d.missingLaps}</td><td>+${analyzerFormatDuration(d.extra)}</td><td>${analyzerFormatDuration(d.projectedTotal)}</td><td>${d.position===1?'—':'+'+analyzerFormatDuration(d.gap)}</td></tr>`).join('');
- panel.innerHTML=`${head}<p><strong>${v.ranking.length}/${v.total} équipes</strong> · ${v.netSamples} passages exploitables · coût net médian <strong>${v.pitNetCost.toFixed(2)} s</strong> · référence ${v.referenceStops} arrêts · tour ${v.referenceLap} · ${time}.</p><small>Projection figée, données non simultanées, non certifiée. Un nouveau clic sur RECALCULER lance une nouvelle collecte.</small><details open><summary>Détails des positions (${v.ranking.length} équipes)</summary><div style="overflow:auto;max-height:280px"><table class="analyzer-ranking-table" style="min-width:820px;width:100%;font-size:11px"><thead><tr><th>VVCE</th><th>ÉQUIPE</th><th>LIVE</th><th>TOURS</th><th>STANDS</th><th>À AJOUTER</th><th>TOURS PROJETÉS</th><th>TEMPS AJOUTÉ</th><th>TEMPS PROJETÉ</th><th>ÉCART</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+ panel.innerHTML=`${head}<p><strong>${v.ranking.length}/${v.total} équipes</strong> · ${v.netSamples} passages exploitables · coût net médian <strong>${v.pitNetCost.toFixed(2)} s</strong> · référence ${v.referenceStops} arrêts · tour ${v.referenceLap} · ${time}.</p><small>Projection automatiquement actualisée côté serveur, calcul historique non certifié au même instant. Les données trop anciennes restent visibles avec un avertissement.</small><details open><summary>Détails des positions (${v.ranking.length} équipes)</summary><div style="overflow:auto;max-height:280px"><table class="analyzer-ranking-table" style="min-width:820px;width:100%;font-size:11px"><thead><tr><th>VVCE</th><th>ÉQUIPE</th><th>LIVE</th><th>TOURS</th><th>STANDS</th><th>À AJOUTER</th><th>TOURS PROJETÉS</th><th>TEMPS AJOUTÉ</th><th>TEMPS PROJETÉ</th><th>ÉCART</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
 }
 function analyzerVirtualMetrics(rows){
  const ready=analyzerVVCE.status==='ready'&&analyzerVVCE.circuit===analyzerSessionCircuit()
@@ -1279,7 +1275,8 @@ function setAnalyzerRankingMode(mode){
  document.getElementById('analyzerVirtualRankingBtn')?.classList.toggle('active',analyzerRankingMode==='virtual');
  document.getElementById('analyzerSectorRankingBtn')?.classList.toggle('active',analyzerRankingMode==='sectors');
  renderAnalyzer();
- // VVCE : aucun chargement historique automatique. L'utilisateur lance le test explicitement.
+ if(analyzerRankingMode==='virtual')analyzerVVCEActivate();
+ else{++analyzerVVCERequestToken;if(analyzerVVCEPOLL){clearInterval(analyzerVVCEPOLL);analyzerVVCEPOLL=null}}
 }
 function analyzerRelayRawMetrics(driver,gridNow=null){
  const history=analyzerTeamHistory(driver),relay=history.currentRelay,average=analyzerCurrentStintAverage(driver);
@@ -4000,11 +3997,11 @@ function renderAnalyzer(){
  const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
  const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),sectorBtn=document.getElementById('analyzerSectorRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
  if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');if(sectorBtn)sectorBtn.classList.toggle('active',analyzerRankingMode==='sectors');
- const vvceButton=document.getElementById('analyzerVVCEButton');if(vvceButton){vvceButton.hidden=analyzerRankingMode!=='virtual';vvceButton.disabled=analyzerVVCE.status==='loading';vvceButton.textContent=analyzerVVCE.status==='loading'?`CALCUL ${analyzerVVCE.loaded}/${analyzerVVCE.total}`:analyzerVVCE.status==='ready'?'RECALCULER VVCE':analyzerVVCE.status==='error'?'RÉESSAYER VVCE':'CALCULER VVCE (TEST)'}
+ 
  const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');rankingTable.classList.toggle('sector-ranking-mode',analyzerRankingMode==='sectors');}
  const rankingHead=document.getElementById('analyzerRankingHead');if(rankingHead&&analyzerRankingMode!=='sectors')rankingHead.innerHTML=analyzerGeneralRankingHeader();
  analyzerRenderVVCEReport();
- if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(`VVCE EXPÉRIMENTAL · ${analyzerVVCE.status==='loading'?'Chargement '+analyzerVVCE.loaded+'/'+analyzerVVCE.total:analyzerVVCE.reason||'Clique sur CALCULER VVCE pour tester'} · Non utilisable pour une décision en course`):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity · NOTE KART* : estimation provisoire, KV non confirmé si —';
+ if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(`VVCE SERVEUR · ${analyzerVVCE.stale?'Données anciennes · ':''}${analyzerVVCE.reason||'Projection non certifiée'} · Le LIVE officiel reste indépendant`):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity · NOTE KART* : estimation provisoire, KV non confirmé si —';
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver)||state.followed||(state.drivers||[])[0]||null;
  const ownForecast=followed?analyzerForecastFor(followed):{};const stops=analyzerStopsInfo(followed);
  document.getElementById('analyzerFollowedName').textContent=followed?.driver||'—';
@@ -4086,7 +4083,7 @@ function renderAnalyzer(){
    const displayPos=isVirtual?(virtual.valid?virtual.position:'—'):d.pos;
    const stopsValue=isVirtual?`${analyzerEscape(d.pit_stops??0)}${virtual.missing?`<small class="virtual-stop-add">+${virtual.missing} virtuel${virtual.missing>1?'s':''}</small>`:''}`:analyzerEscape(d.pit_stops??'—');
    const gapValue=isVirtual?(virtual.valid?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):'Projection non calculée'):analyzerEscape(d.gap);
-   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Projection VVCE exploratoire : coût net médian des arrêts, capture non simultanée">${Number.isFinite(virtual.extra)?'+'+analyzerFormatDuration(virtual.extra):'En attente des PITS Apex'}</small>`:'';
+   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Projection VVCE serveur, non certifiée au même instant">${Number.isFinite(virtual.extra)?'+'+analyzerFormatDuration(virtual.extra):'En attente des PITS Apex'}</small>`:'';
    const rankingFlash=typeof rankingFlashMeta==='function'?rankingFlashMeta(d):{className:'',style:''};
    return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerPhysicalKartForDriverLabel(d))}">${analyzerEscape(x.kartRating?.kv||'—')}</td><td class="a-note kart-potential ${analyzerKartRatingTone(x.kartRating)}" title="${x.kartRating?.liveOnly?'Estimation LIVE de la machine actuelle, KV non identifié (non historisée)':x.kartRating?.provisional?'Estimation provisoire des premiers tours':'Potentiel du kart physique'}">${x.kartRating?.value==null?'—':x.kartRating.value.toFixed(1)+(x.kartRating.provisional?'*':'')}</td></tr>`;
   }).join('');

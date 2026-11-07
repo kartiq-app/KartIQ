@@ -1,3 +1,12 @@
+## V7.2.1864 — VVCE serveur à ouverture directe (validation en direct)
+
+- Analyzer : « Classement virtuel » lit le dernier snapshot VVCE disponible sur Render ; suppression du bouton de test et des récupérations historiques séquentielles dans le navigateur.
+- Au premier clic, une collecte explicite démarre via un Recorder serveur si aucun n'est déjà actif sur le circuit ; recalcul secondaire seulement quand les compteurs de tours enregistrés changent.
+- Stockage SQL persistant par espace/circuit/session Apex ; reprise des workers après redémarrage Render, limite de durée 30 h et arrêt si plus de messages pendant 15 minutes.
+- Dernier résultat conservé mais marqué non actualisé si le calcul échoue ou s'arrête ; aucune position inventée en l'absence d'historiques complets.
+- Classement LIVE et moteur KV/Spotter/Focus inchangés. VVCE reste une projection historique non certifiée temporellement ; le premier chargement peut durer selon la disponibilité des historiques.
+- Les installations où un Recorder Apex est déjà actif le réutilisent afin d'éviter un deuxième WebSocket.
+
 ## V7.2.1863 — Diagnostic et compte-rendu VVCE
 
 - Affichage visible du résultat final (calcul terminé ou erreur) sous les commandes Analyzer ; le message n'est plus envoyé uniquement vers un élément absent.
