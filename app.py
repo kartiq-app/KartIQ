@@ -128,6 +128,28 @@ def _session_recorder_watchdog():
             app.logger.exception("Surveillance du plafond de durée des sessions")
         time.sleep(60)
 
+def _retire_obsolete_vvce_recorders(manager, circuit_id=None):
+    """Retire ONLY obsolete VVCE collectors (all historical generations).
+
+    Never stop a user-owned Session, KV or Lab recording. A Render restart
+    does not necessarily clean up the older VVCE_V1864/V1865 records.
+    """
+    stopped = 0
+    for rec in manager.store.active_recordings():
+        rid = str(rec.get('id') or '')
+        if not str(rec.get('name') or '').startswith('VVCE_V'):
+            continue
+        if circuit_id is not None and str(rec.get('circuit_id') or '') != str(circuit_id):
+            continue
+        try:
+            manager.store.request_stop(rid)
+            manager.stop(rid)
+            stopped += 1
+        except Exception:
+            app.logger.exception('Unable to stop obsolete VVCE recorder %s', rid)
+    return stopped
+
+
 def _resume_velocity_recorders():
     try:
         global TEAM_DATA, TEAM_DATA_LAST_DB_HASH
@@ -138,15 +160,8 @@ def _resume_velocity_recorders():
                 TEAM_DATA = restored
                 TEAM_DATA_LAST_DB_HASH = hashlib.sha256(json.dumps(restored, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
         _reap_session_recorders()
-        # V1877: retire all legacy VVCE background jobs without touching KV/Session.
-        # Persist a stop request BEFORE restoring workers after Render restarts.
-        for obsolete in manager.store.active_recordings():
-            if str(obsolete.get('name') or '').startswith(('VVCE_V1870:', 'VVCE_V1872:')):
-                manager.store.request_stop(str(obsolete['id']))
-                try:
-                    manager.stop(str(obsolete['id']))
-                except Exception:
-                    app.logger.warning('Unable to stop obsolete virtual recorder %s', obsolete['id'])
+        # Remove ALL historical VVCE generations, including V1864/V1865.
+        _retire_obsolete_vvce_recorders(manager)
         _get_recorder_manager().resume_active()
         threading.Thread(target=_session_recorder_watchdog, name="velocity-session-recorder-budget-guard", daemon=True).start()
     except Exception:
@@ -3305,6 +3320,9 @@ def velocity_start_kv_tracking():
             return jsonify(ok=False,error="Sélectionnez d'abord un circuit Apex."),400
         manager=_get_recorder_manager()
         store=manager.store
+        # A historical virtual recorder may still reserve this circuit even
+        # after V1877 disabled the engine. Clean only those obsolete workers.
+        _retire_obsolete_vvce_recorders(manager,circuit)
         scope=KartScoringScope(store).read(workspace,context)
         run_id=scope['run_id']
         active=_kv_bound_recorder(store,workspace,run_id,circuit)
@@ -3319,11 +3337,15 @@ def velocity_start_kv_tracking():
                 return jsonify(ok=True,recording_id=recording['id'],status='session_recorder',run_id=run_id,scored_count=_kv_server_scored_count(store,workspace,context))
         existing=[r for r in store.active_recordings() if str(r.get('circuit_id') or '')==circuit]
         if existing:
-            # Only this workspace/run's own dedicated KV recorder is shareable.
-            # Never borrow a recorder belonging to another workspace.
+            # Never share a private Session/Lab recording across workspaces.
+            # Reuse an existing KV recorder only with exact workspace and run.
             recording=next((r for r in existing if str(r.get('name') or '')==_kv_tracker_name(workspace,run_id)),None)
             if not recording:
-                return jsonify(ok=False,error='Un Recorder différent utilise déjà ce circuit ; collecte KV non activée.'),409
+                return jsonify(ok=False,error=('Un autre Recorder utilise déjà ce circuit. '
+                    'Les anciennes collectes VVCE ont été nettoyées, mais une collecte '
+                    'Session, Karts ou Lab distincte reste active. Arrêtez-la dans '
+                    'Velocity avant de relancer Karts ; aucune connexion Apex concurrente '
+                    'ni interruption forcée ne sera effectuée.')),409
         else:
             recording=manager.create(_kv_tracker_name(workspace,run_id),circuit)
         _kv_bind_recorder(store,workspace,run_id,circuit,recording['id'])

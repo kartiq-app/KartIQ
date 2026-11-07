@@ -1,3 +1,9 @@
+## V7.2.1878 — Libération des anciens Recorders VVCE bloquant Karts
+- Nettoyage de toute collecte dont le nom commence par `VVCE_V`, notamment les anciennes V1864/V1865 oubliées par V1877.
+- Nettoyage ciblé au clic Karts si une ancienne collecte VVCE est encore active sur le circuit.
+- Préservation absolue des Recorders Session, KV et Lab non VVCE ; message d’action si un autre Recorder actif occupe toujours le circuit.
+- Moteur KV, LIVE Apex, PIT Focus et Spotter inchangés.
+
 ## V7.2.1877 — Suppression du classement virtuel, priorité collecte KV
 - Retrait du moteur VVCE serveur, du worker de calcul, des routes API et de son interface Analyzer.
 - Anciens Recorders VVCE explicitement arrêtés lors du redémarrage Render. Pas d’effacement des données historiques SQL.
