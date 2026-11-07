@@ -34,6 +34,10 @@ def _filtered(samples):
 def _window(laps):
     """Equivalent to client scoring: best six of last ten after 8 valid laps."""
     recent=_filtered(laps[-10:])
+    # A relay score needs at least two clean, attributable laps. One lap is
+    # insufficient for a meaningful provisional pace measurement.
+    if len(recent) < 2:
+        return None, True
     if len(laps) >= 8 and len(recent) >= 8:
         return sum(sorted(recent)[:6])/6, False
     if not recent:

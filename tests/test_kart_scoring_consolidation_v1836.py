@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from data_recorder import RecorderStore
 from backend.services.kart_scoring_scope import KartScoringScope
-from backend.services.spotter_kv_scores import apply_recorder_scores, _evaluate
+from backend.services.spotter_kv_scores import apply_recorder_scores, _evaluate, _window, _score
 from spotter_registry_scope import RegistryRuns
 
 
@@ -142,10 +142,11 @@ class ConsolidatedKartScoringTest(unittest.TestCase):
                {'team':'apex:17','at':1000,'source':'initial-live'},
                {'team':'apex:28','at':9000,'source':'pit_out'}]}}
         teams={17:{'laps':[{'received_at_ms':2000,'seconds':44.8}]},
-               28:{'laps':[{'received_at_ms':10000,'seconds':47.5}]}}
+               28:{'laps':[{'received_at_ms':10000,'seconds':47.5},
+                           {'received_at_ms':11000,'seconds':47.5}]}}
         result=_evaluate(reg,teams,1000)['KV01']
-        self.assertEqual(result['validLaps'],2)
-        self.assertEqual(result['relayLaps'],1)
+        self.assertEqual(result['validLaps'],3)
+        self.assertEqual(result['relayLaps'],2)
         self.assertEqual(result['recent'],47.5)
 
 if __name__=='__main__':unittest.main()
@@ -229,4 +230,33 @@ class NoSessionKVTest(unittest.TestCase):
     def test_unrelated_lab_recorder_never_scores(self):
         rec=self.store.create_recording('Velocity Lab',{'id':'other','name':'Other','websocket_url':'wss://example.invalid/'})
         self.assertEqual(apply_recorder_scores(self.store,rec['id'],{17:{'laps':self.laps}}),0)
+
+
+
+# V1875: KV relay provisional score starts at two clean, attributed laps.
+class TwoCleanLapsTests(unittest.TestCase):
+    def test_zero_one_lap_does_not_publish(self):
+        for laps in ([], [70.0], [70.0, 900.0], [70.0, 10.0]):
+            self.assertEqual(_window(laps), (None, True))
+
+    def test_two_laps_publish_provisional_using_existing_formula(self):
+        pace, provisional = _window([70.0, 71.0])
+        self.assertEqual(pace, 70.5)
+        self.assertTrue(provisional)
+        self.assertEqual(_score(70.5, 70.0), 92.9)
+
+    def test_updates_each_clean_lap(self):
+        p2, prov2 = _window([70., 72.])
+        p3, prov3 = _window([70., 72., 71.])
+        self.assertTrue(prov2 and prov3)
+        self.assertNotEqual(p2, p3)
+
+    def test_qualified_at_eight_laps(self):
+        pace, provisional = _window([70.0] * 8)
+        self.assertEqual(pace, 70.0)
+        self.assertFalse(provisional)
+
+    def test_bad_times_dont_count_as_clean(self):
+        self.assertEqual(_window([70., 400.]), (None, True))
+        self.assertEqual(_window([20., 70.]), (None, True))
 

@@ -2056,9 +2056,12 @@ function analyzerRenderLiveKarts(){
   return {kv:String(kv),team,status,provisional,potential,recent,laps:valid?Number(speed.validLaps)||0:0,relayLaps:valid?Number(speed.relayLaps)||0:0,updatedAt:valid?Number(speed.updatedAt)||0:0};
  }).sort((a,b)=>(b.potential??b.recent??-1)-(a.potential??a.recent??-1)||a.kv.localeCompare(b.kv,'fr',{numeric:true}));
  const value=n=>n==null?'—':n.toFixed(1);
- const status=snapshot?`${rows.length} KV · ${snapshot.kart_scoring_status==='scoring'?'Notes enregistrées côté serveur':'En attente de tours exploitables / collecte KV'}${analyzerKartsLastError?' · Connexion : '+analyzerEscape(analyzerKartsLastError):''}`:analyzerKartsLastError?analyzerEscape(analyzerKartsLastError):'Connexion au registre KV…';
- const markup=`<div class="analyzer-karts-status">${status}</div>${rows.length?`<table class="analyzer-kartiq-table analyzer-live-karts-table"><thead><tr><th>KV</th><th>DERNIÈRE ÉQUIPE CONNUE</th><th>NOTE KART</th><th>NOTE RELAIS</th><th>TOURS KV</th><th>TOURS RELAIS</th><th>IDENTITÉ</th></tr></thead><tbody>${rows.map(item=>`<tr><td class="kartiq-kart">${analyzerEscape(item.kv)}</td><td class="kartiq-team" title="${analyzerEscape(item.team)}">${analyzerEscape(item.team)}</td><td class="kartiq-score">${value(item.potential)}</td><td class="kartiq-score">${value(item.recent)}${item.provisional&&item.recent!==null?'*':''}</td><td>${item.laps||'—'}</td><td>${item.relayLaps||'—'}</td><td>${analyzerEscape(item.status)}</td></tr>`).join('')}</tbody></table>`:'<div class="analyzer-empty">Aucun kart physique KV connu sur cette session. Les numéros Apex ne sont pas assimilés à des identités KV.</div>'}<div class="analyzer-karts-note">Notes issues du moteur KV serveur, sans calcul dans le navigateur. « — » = aucune note qualifiée. * Note relais provisoire. La dernière équipe connue ne certifie pas une affectation actuelle.</div>`;
- if(analyzerKartsLastMarkup===markup)return;
+ const scoringMessage={scoring:'Notes enregistrées côté serveur',tracking_not_active:'Collecte KV inactive : aucune note ne peut évoluer',waiting_for_recorder_laps:'En attente de 2 tours propres attribuables au même relais',waiting_for_kv:'Aucun kart KV enregistré'};
+ const status=snapshot?`${rows.length} KV · ${scoringMessage[snapshot.kart_scoring_status]||'Collecte KV en attente'}${analyzerKartsLastError?' · Connexion : '+analyzerEscape(analyzerKartsLastError):''}`:analyzerKartsLastError?analyzerEscape(analyzerKartsLastError):'Connexion au registre KV…';
+ const markup=`<div class="analyzer-karts-status">${status}</div>${rows.length?`<table class="analyzer-kartiq-table analyzer-live-karts-table"><thead><tr><th>KV</th><th>DERNIÈRE ÉQUIPE CONNUE</th><th>NOTE KART</th><th>NOTE RELAIS</th><th>TOURS KV</th><th>TOURS RELAIS</th><th>IDENTITÉ</th></tr></thead><tbody>${rows.map(item=>`<tr><td class="kartiq-kart">${analyzerEscape(item.kv)}</td><td class="kartiq-team" title="${analyzerEscape(item.team)}">${analyzerEscape(item.team)}</td><td class="kartiq-score">${value(item.potential)}</td><td class="kartiq-score">${value(item.recent)}${item.provisional&&item.recent!==null?'*':''}</td><td>${item.laps||'—'}</td><td>${item.relayLaps||'—'}</td><td>${analyzerEscape(item.status)}</td></tr>`).join('')}</tbody></table>`:'<div class="analyzer-empty">Aucun kart physique KV connu sur cette session. Les numéros Apex ne sont pas assimilés à des identités KV.</div>'}<div class="analyzer-karts-note">Notes issues du moteur KV serveur, sans calcul dans le navigateur. Relais : note provisoire dès 2 tours propres attribués. Kart : potentiel qualifié à partir d'une fenêtre de 8 tours valides. « — » = note indisponible. * Note relais provisoire. La dernière équipe connue ne certifie pas une affectation actuelle.</div>`;
+ // The shared host is replaced when switching Velocity/Relays/Karts.
+ // A matching markup cache is not proof that the Karts table is still mounted.
+ if(analyzerKartsLastMarkup===markup && host.querySelector('.analyzer-karts-status'))return;
  const top=host.scrollTop,left=host.scrollLeft;
  host.innerHTML=markup;analyzerKartsLastMarkup=markup;
  host.scrollTop=top;host.scrollLeft=left;
@@ -2067,6 +2070,8 @@ function analyzerRenderLiveKarts(){
 function setAnalyzerVelocityView(view){
  const nextView=['relays','velocity','karts'].includes(view)?view:'velocity';
  const enteringRelays=nextView==='relays'&&analyzerVelocityView!=='relays';
+ // Force Karts to mount again after another view replaced the shared DOM.
+ if(nextView!==analyzerVelocityView)analyzerKartsLastMarkup='';
  analyzerVelocityView=nextView;
  if(enteringRelays)analyzerRelayScoreScrollLeft=0;
   document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');

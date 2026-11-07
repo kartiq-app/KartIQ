@@ -1,3 +1,15 @@
+## V7.2.1875 — Note relais KV provisoire à partir de 2 tours propres
+- Le moteur KV côté serveur exige désormais deux tours valides attribués au même relais avant de publier un rythme récent provisoire.
+- Le potentiel kart qualifié conserve ses exigences de fenêtre >= 8 tours et la formule de score existante.
+- L’onglet Analyzer Karts explicite le seuil et distingue collecte inactive, attente de tours et notes disponibles.
+- La collecte et la traçabilité KV doivent déjà fonctionner : le changement de seuil ne crée pas de tours artificiels.
+- Classement LIVE, VVCE, Focus Endurance, Spotter PIT et autres scores relais inchangés.
+
+## V7.2.1874 — Correctif retour vers Karts
+- Invalide le cache d’interface lors des changements entre Velocity, Score Relais et Karts.
+- Ne saute plus le rendu Karts si le panneau partagé contient encore l’ancienne vue.
+- Aucun changement du moteur KV, de VVCE ou du live Apex.
+
 ## V7.2.1873 — Vue KARTS en direct dans Analyzer
 - Troisième onglet KARTS à côté de VELOCITY et SCORE RELAIS.
 - Lecture du registre KV SQL existant et de ses notes `server-recorder` ; aucune modification du moteur mathématique.

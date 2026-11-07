@@ -1,4 +1,11 @@
-V7.2.1873 — VVCE HYBRIDE : estimation secondaire des pertes nettes aux stands depuis les tours/PIT du Recorder, vérification obligatoire des positions sur le LIVE Apex. Le résultat peut rester indisponible lorsque les tours individuels ou les écarts officiels ne peuvent pas être réconciliés. Les données du Recorder ne prouvent pas un temps absolu commun. Cache persistant SQL, calcul hors flux LIVE. Focus Endurance et Spotter inchangés.
+## V7.2.1875 — Note relais KV provisoire à partir de 2 tours propres
+- Le moteur KV côté serveur exige désormais deux tours valides attribués au même relais avant de publier un rythme récent provisoire.
+- Le potentiel kart qualifié conserve ses exigences de fenêtre >= 8 tours et la formule de score existante.
+- L’onglet Analyzer Karts explicite le seuil et distingue collecte inactive, attente de tours et notes disponibles.
+- La collecte et la traçabilité KV doivent déjà fonctionner : le changement de seuil ne crée pas de tours artificiels.
+- Classement LIVE, VVCE, Focus Endurance, Spotter PIT et autres scores relais inchangés.
+
+V7.2.1874 — VVCE HYBRIDE : estimation secondaire des pertes nettes aux stands depuis les tours/PIT du Recorder, vérification obligatoire des positions sur le LIVE Apex. Le résultat peut rester indisponible lorsque les tours individuels ou les écarts officiels ne peuvent pas être réconciliés. Les données du Recorder ne prouvent pas un temps absolu commun. Cache persistant SQL, calcul hors flux LIVE. Focus Endurance et Spotter inchangés.
 
 V7.2.1871 — Garde-fou VVCE : interdiction d’attribuer le tour du leader aux équipes dont le numéro de tour est inconnu, invalidation des résultats v1870 et suspension explicite du classement lorsque les écarts Apex ne permettent pas une comparaison fiable. LIVE, PIT, KV et Spotter inchangés.
 
