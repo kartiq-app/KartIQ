@@ -1,5 +1,5 @@
 
-## V7.2.1854 — Orchestration Suivi Karts résiliente (7 novembre 2026)
+## V7.2.1855 — Orchestration Suivi Karts résiliente (7 novembre 2026)
 
 - Activation et relance KV envoyées directement à `POST /api/spotter-kv-tracking` : une lecture GET momentanément indisponible ne bloque plus la commande. Le serveur reste seul responsable de la détermination du run/circuit et de la création du Recorder.
 - Synchronisation SQL du registre séparée de la collecte : dernier état conservé, statut SYNCHRONISÉ/EN RECONNEXION et relecture avec temporisation exponentielle jusqu'à 30 s en cas de panne.

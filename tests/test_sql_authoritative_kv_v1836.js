@@ -40,5 +40,7 @@ assert(!spotter.includes('spotterRegistrySyncLiveRelayScores('));
 assert(!spotter.includes('spotterSaveAnalyzerPotentials('));
 assert(!core.includes('velocityKartScoreOnLap('));
 assert.match(core,/window\.velocityKartServerScope/);
-assert.match(spotter,/speed\.relayLaps/);
+// Legacy Spotter table removed in V1855; relayLaps must remain in the preserved server scoring engine.
+const scorer=fs.readFileSync('backend/services/spotter_kv_scores.py','utf8');
+assert.match(scorer,/relayLaps/);
 console.log('V1836 OK: SQL epoch, provisional baseline, relay resets, no ghost KV or browser score writers');

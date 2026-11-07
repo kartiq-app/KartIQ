@@ -42,7 +42,7 @@ const ANALYZER_AUTOSAVE_MS=15000;
 const ANALYZER_STORAGE_CLEANUP_KEY=velocityWorkspaceStorageKey('velocity-analyzer-storage-cleanup-v3');
 const ANALYZER_MAX_SESSION_INDEX=10;
 let analyzerKartSort='none';
-let analyzerVelocityView='karts';
+let analyzerVelocityView='velocity';
 let analyzerRelayScoreData=null;
 let analyzerRelayScoreLoading=false;
 let analyzerRelayScoreLoadToken=0;
@@ -1850,46 +1850,13 @@ function analyzerRefreshVelocityDeltaCells(){
  });
 }
 
-// V7.2.1794 — Carte « KARTS », distincte de Velocity et Score Relais historiques.
-function analyzerRenderKartSpeedMarket(){
- const target=document.getElementById('analyzerKartMarket');if(!target)return;
- const mode=typeof window.velocityKartScoreMode==='function'?window.velocityKartScoreMode():null;
- if(!mode){target.innerHTML='<div class="analyzer-empty">Choisissez Kart fixe ou Quick Change dans Spotter → MODE KARTS avant de noter les machines.</div>';return}
- const allRankings=typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
- const rankings=mode==='quick'&&typeof window.velocityKartRegistryLiveAssignment==='function'
-  ?allRankings.filter(entry=>entry.kv&&window.velocityKartRegistryLiveAssignment(entry.kv))
-  :allRankings;
- if(!rankings.length){
-  const detail='En attente des premiers tours valides : vitesse récente provisoire après 4 tours, potentiel après 8 tours.';
-  target.innerHTML=`<div class="analyzer-empty">${detail}</div>`;return;
- }
- const drivers=(state?.drivers||[]);
- const velocityKartColorTone=value=>!Number.isFinite(value)?'unknown':value>=98?'gold':value>=90?'green':value>=80?'orange':'red';
- const rows=rankings.map((entry,index)=>{
-  const kv=entry.kv;
-  const identity=kv&&typeof window.velocityKartDisplayAssignment==='function'?window.velocityKartDisplayAssignment(kv):null;
-  const liveAssignment=kv&&typeof window.velocityKartRegistryLiveAssignment==='function'?window.velocityKartRegistryLiveAssignment(kv):null;
-  const teamKey=entry.teamKey||identity?.team||entry.team;
-  const driver=liveAssignment?.driver||drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===teamKey)||null;
-  const teamName=liveAssignment?.team||driver?.driver||String(entry.team||'').replace(/^apex:/,'Equipe ');
-  const displayKv=kv||(driver&&typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null);
-  const kartNumber=mode==='quick'?(displayKv||'—'):String(driver?.apex||driver?.kart||'—');
-  const label=entry.referenceLoading?'RÉF. EN CHARGEMENT':(!displayKv&&mode==='quick'?'KV NON IDENTIFIÉ':entry.confirmed?'CONFIRMÉ':'KV PROVISOIRE');
-  const recent=entry.recentScore===null?'—':`${entry.recentScore.toFixed(1)}${entry.recentProvisional?'*':''}`;
-  const potential=entry.potential===null?'—':entry.potential.toFixed(1)+(entry.referenceLoading?'*':'');
-  const clickTeam=driver?.driver?` onclick="followDriver(${JSON.stringify(driver.driver).replace(/"/g,'&quot;')})"`:'';
-  return `<tr${clickTeam}><td>${index+1}</td><td>${analyzerEscape(kartNumber)}</td><td title="${analyzerEscape(teamName)}">${analyzerEscape(teamName)}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.potential)}">${potential}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.recentScore)}">${recent}</td><td>${Number.isFinite(entry.best?.seconds)?(entry.best.seconds-entry.reference).toFixed(3)+'s':'—'}</td><td title="${entry.totalValid} tours observés">${label}</td></tr>`;
- }).join('');
- target.innerHTML=`<div class="velocity-kart-speed-help">${mode==='quick'?'QUICK CHANGE · vitesse des équipes en piste sans KV identifié ; potentiel physique uniquement si KV confirmé':'KART FIXE · scores par machine de l’équipe'} · Potentiel = meilleure fenêtre connue (6 rapides / 10 tours). Récente = relais actuel. * provisoire / référence partagée en chargement. La régularité ne pénalise pas la vitesse.</div><table class="velocity-kart-speed-table"><thead><tr><th>P</th><th>KART</th><th>ÉQUIPE</th><th>POT.</th><th>RÉC.</th><th>Δ</th><th>PREUVE</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
+// V7.2.1855 : ancienne carte KARTS retirée. Les moteurs de notes sont préservés.
 function setAnalyzerVelocityView(view){
- const nextView=['relays','velocity','karts'].includes(view)?view:'karts';
+ const nextView=['relays','velocity'].includes(view)?view:'velocity';
  const enteringRelays=nextView==='relays'&&analyzerVelocityView!=='relays';
  analyzerVelocityView=nextView;
  if(enteringRelays)analyzerRelayScoreScrollLeft=0;
- document.getElementById('analyzerKartSpeedViewBtn')?.classList.toggle('active',analyzerVelocityView==='karts');
- document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
+  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
  const sort=document.querySelector('.analyzer-kartiq-sort');if(sort)sort.hidden=analyzerVelocityView!=='velocity';
  renderAnalyzer();
@@ -3920,12 +3887,7 @@ function renderAnalyzer(){
  const marketByScore=all.map(x=>({...x,relayMetrics:analyzerVelocityUnifiedMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).map((x,index)=>({...x,kartiqTop:index+1,relayRemaining:analyzerKartRelayRemaining(x.driver)}));
  const mobileVelocity=document.getElementById('analyzerMobileVelocityScore');
  if(mobileVelocity){
-  if(analyzerVelocityView==='karts'){
-   const identity=typeof velocityKartScoreIdentity==='function'?velocityKartScoreIdentity(followed):null;
-   const entry=identity?velocityKartScoreRankings().find(p=>p.id===identity.id):null;
-   mobileVelocity.textContent=entry?.potential?.toFixed(1)??'—';
-   mobileVelocity.className=entry?.potential>=90?'high':'';
-  }else{
+  {
    const ownVelocity=marketByScore.find(x=>x.driver?.driver===(followed?.driver||state.followed_driver));
    mobileVelocity.textContent=ownVelocity?.relayMetrics?.score??'—';
    mobileVelocity.className=ownVelocity?analyzerScoreClass(ownVelocity.relayMetrics.score):'';
@@ -3944,14 +3906,11 @@ function renderAnalyzer(){
   const bv=Number.isFinite(bDelta)?bDelta:Number.POSITIVE_INFINITY;
   return av-bv||a.kartiqTop-b.kartiqTop;
  });
- document.getElementById('analyzerKartSpeedViewBtn')?.classList.toggle('active',analyzerVelocityView==='karts');
- document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
+  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
  const velocitySortLabel=document.querySelector('.analyzer-kartiq-sort');if(velocitySortLabel)velocitySortLabel.hidden=analyzerVelocityView!=='velocity';
  if(analyzerVelocityView==='relays'){
   analyzerRenderRelayScoreTable(marketByScore);
- }else if(analyzerVelocityView==='karts'){
-  analyzerRenderKartSpeedMarket();
  }else{
    const kartSortSelect=document.getElementById('analyzerKartSort');if(kartSortSelect)kartSortSelect.value=analyzerKartSort;
    const showPilotContinuity=analyzerSessionHasPilotData();

@@ -550,13 +550,11 @@ let spotterRegistryReady=false;
 let spotterRegistryUpdatedAt=0;
 let spotterRegistryWriteInFlight=false;
 let spotterRegistryLoading=null;
-let spotterRegistrySortMode='default';
 // V1854: SQL registry availability and KV collection are independent states.
 let spotterRegistrySyncState='connecting';
 let spotterRegistrySyncLastSuccess=0;
 let spotterRegistrySyncFailures=0;
 let spotterRegistryNextRetryAt=0;
-let spotterKartCommandBusy=false;
 function spotterRegistrySetSyncState(state){
  spotterRegistrySyncState=state;
  if(state==='online'){
@@ -649,7 +647,7 @@ async function spotterPullRegistry({forceServer=false}={}){
      localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({
       version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState
      }));
-     spotterRefreshKartRegistry();
+     
     }
    }
    return true;
@@ -724,7 +722,7 @@ async function spotterPushRegistry(){
     if(sentRun===spotterRegistryRunId){
      spotterState.kartRegistry=canonical;
      spotterPublishKartScoreReference();
-     spotterRefreshKartRegistry();
+     
      try{localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,
       appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));}
      catch(e){console.warn('[Spotter] Sauvegarde locale après fusion KV indisponible',e)}
@@ -877,59 +875,7 @@ function spotterRegistryClearSpeeds(){
  // Le serveur efface aussi les scores de l'ancien epoch ; conserver le suivi des KV.
 }
 window.spotterRegistryClearSpeeds=spotterRegistryClearSpeeds;
-function spotterRegistrySeedCurrent(){
- if(!spotterState.kartTrackingEnabled||!spotterRegistryReady)return;
- Object.entries(spotterState.assignments||{}).forEach(([team,item])=>{if(item?.kv)spotterRegistryAppend(item.kv,team,null,{source:'activation'})});
- [...(spotterState.queue||[]),...(spotterState.maintenance||[])].forEach(item=>{if(item?.kv)spotterRegistryEnsure(item.kv)});
- spotterScheduleRegistryPush();
-}
-// V1854: only the server decides which current course/registry receives notes.
-// The local SQL snapshot is a view, never a prerequisite for issuing a KV command.
-// No previous KV trace is marked interrupted by stopping a recorder.
-async function spotterSetKartTracking(enabled){
- const next=Boolean(enabled);
- if(spotterKartCommandBusy)return;
- if(!next&&!spotterState.kartTrackingEnabled)return;
- spotterKartCommandBusy=true;
- spotterRegistryCourseMessage(next?'Commande envoyée au serveur KV…':'Arrêt de la collecte demandé…');
- try{
-  const response=await fetch('/api/spotter-kv-tracking',{
-   method:next?'POST':'DELETE',headers:{'Content-Type':'application/json'},
-   ...(next?{body:'{}'}:{})
-  });
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok||!result.ok)throw new Error(result.detail||result.error||`HTTP ${response.status}`);
-  if(next){
-   // Do not silently switch physical identities: the authoritative server run
-   // is loaded separately, and old in-flight registry pushes remain guarded.
-   spotterState.kartTrackingEnabled=true;
-   const count=Number.isFinite(Number(result.scored_count))?Number(result.scored_count):0;
-   spotterKartScoringMessage=`Collecte serveur ${result.status==='session_recorder'?'via Session Course':'active'} · ${count} note(s) KV calculée(s).`;
-   spotterRegistryCourseMessage(`Collecte confirmée côté serveur · ${count} note(s) KV. Synchronisation du registre en cours.`);
-  }else{
-   spotterState.kartTrackingEnabled=false;
-   spotterKartScoringMessage='Collecte KV arrêtée. Identités et historique conservés.';
-   spotterRegistryCourseMessage('Collecte arrêtée ; aucune trace KV effacée ni interrompue.');
-  }
-  saveSpotterFoundation();
-  // Reload SQL after confirming the command; a failed GET is not a failed POST.
-  const synced=await spotterPullRegistry({forceServer:true});
-  if(synced&&next)spotterRegistrySeedCurrent();
-  if(!synced)spotterRegistryCourseMessage('Commande acceptée par le serveur. Registre momentanément hors ligne : dernière copie conservée, reconnexion automatique.',false);
-  spotterRefreshKartRegistry({force:true});
-  // Rebuild controls only after the success state is committed, retaining overlay.
-  await spotterOpenKartRegistry();
-  spotterRegistryCourseMessage(!next?'Collecte arrêtée, historiques préservés.':`Collecte KV active · ${Number(result.scored_count)||0} note(s) calculée(s) · ${synced?'registre synchronisé':'registre en reconnexion'}.`);
- }catch(error){
-  spotterKartScoringMessage=`Commande KV refusée : ${String(error.message||error)}`;
-  spotterRegistryCourseMessage(spotterKartScoringMessage,true);
-  console.error('[Spotter] Commande collecte KV',error);
- }finally{spotterKartCommandBusy=false}
-}
-
-function spotterRegistryCounts(){const rows=Object.values(spotterState.kartRegistry||{});return {active:rows.filter(row=>row?.trace==='active').length,total:rows.length,live:spotterRegistryLiveRows().length}}
-// V7.2.1810 — Table compacte, tri et rafraîchissement sans perte du défilement global.
-// La NOTE est une évaluation de vitesse ; CHRONO POT./RÉC. restent des durées, sans nouveau calcul.
+// V1855: retired legacy tracking activation and registry UI. Shared kart identity and score engines remain.
 function spotterRegistryShortTeam(value){
  const full=spotterDisplayName(value),letters=Array.from(full);
  return letters.length>30?letters.slice(0,29).join('')+'…':full;
@@ -994,7 +940,7 @@ async function spotterRegistrySeedLiveTeams(){
    if(payload.ok&&payload.run_id===spotterRegistryRunId&&!spotterRegistryPushTimer&&!spotterRegistryWriteInFlight){
     spotterState.kartRegistry=payload.registry;
     spotterRegistryUpdatedAt=Number(payload.registry_updated_at_ms)||spotterRegistryUpdatedAt;
-    spotterPublishKartScoreReference();spotterRefreshKartRegistry();
+    spotterPublishKartScoreReference();
    }
   }
  }catch(error){console.warn('[Spotter] Attribution KV provisoire différée',error)}
@@ -1128,237 +1074,11 @@ async function spotterWarmRegistryStats(){
     }
     spotterStatsWarmCache.set(key,{at:Date.now(),best:scratch.best?.seconds??null,
      recent:scratch.recent??null,count:valid.length,source:'apex-stats-provisional'});
-    if(document.getElementById('spotterRegistryOverlay'))spotterRefreshKartRegistry();
    }catch(error){console.warn('[Spotter] STATS provisoires indisponibles',row,error)}
   }
  };
  await Promise.all([worker(),worker()]);
 }
-let spotterKartScoringMessage="";
-function spotterKartScoreDiagnostic(){
- const status=String(window.velocityKartScoringStatus||'');
- if(spotterKartScoringMessage)return spotterKartScoringMessage;
- if(status==='mode_not_selected')return 'NOTES · mode Karts facultatif';
- if(status==='tracking_not_active')return 'NOTES EN PAUSE · activer le suivi KV';
- if(status==='waiting_for_kv')return 'EN ATTENTE · première identification KV';
- if(status==='waiting_for_recorder_laps')return 'EN ATTENTE · tours valides de la collecte serveur';
- return '';
-}
-function spotterRegistryRowsHtml(){
- const registry=spotterState.kartRegistry||{};
- const observed=spotterRegistryLiveRows();
- // Rendering is read-only: relay persistence runs in the dedicated 2s cycle.
- const liveByKv=new Map(observed.filter(item=>item.kv).map(item=>[item.kv,item]));
- const registered=Object.values(registry).filter(row=>{
-  // La liste active ne montre que les machines actuellement associees au live.
-  // L'historique complet reste disponible dans Archives KV / export.
-  return Boolean(row?.kv&&liveByKv.has(row.kv));
- }).map(row=>({
-  row,current:liveByKv.get(row.kv)?.current||spotterRegistryCurrent(row.kv),
-  kv:row.kv,key:row.kv,position:liveByKv.get(row.kv)?.position??99999,
-  rating:row.autoProvisional&&liveByKv.get(row.kv)?.rating?.value!=null?liveByKv.get(row.kv).rating:spotterRegistryRating(row.kv),isLive:Boolean(liveByKv.has(row.kv))
- }));
- const unmatched=observed.filter(item=>!item.kv).map(item=>({
-  row:{kv:null,history:[],trace:'live'},current:item.current,kv:null,key:item.key,
-  position:item.position,rating:item.rating||{value:null,provisional:false},isLive:true
- }));
- // Les lignes Apex doivent être visibles EN PREMIER : les KV historiques non
- // associés à une équipe active ne doivent pas masquer le live sous le scroll.
- // Aucune association physique KV n’est inventée ici.
- const rows=unmatched.concat(registered);
- const byKv=(a,b)=>a.kv&&b.kv?spotterKvNumber(a.kv)-spotterKvNumber(b.kv):a.kv?-1:b.kv?1:a.position-b.position;
- if(spotterRegistrySortMode==='note')rows.sort((a,b)=>(b.rating.value??-1)-(a.rating.value??-1)||byKv(a,b));
- else if(spotterRegistrySortMode==='relay')rows.sort((a,b)=>(b.current.seconds??-1)-(a.current.seconds??-1)||byKv(a,b));
- else rows.sort((a,b)=>Number(b.isLive)-Number(a.isLive)||a.position-b.position||byKv(a,b));
- if(!rows.length)return '<div class="spotter-registry-empty-block">En attente du premier état Apex : aucune équipe ni machine disponible.</div>';
- const countHistory=Math.max(1,...rows.map(item=>Array.isArray(item.row.history)?item.row.history.length:0));
- const head=['KV','NOTE KART','KART APEX','ÉQUIPE ACTUELLE','TOURS','EN PISTE','CHRONO POT.','CHRONO RÉC.','DERNIER','FIABILITÉ'];
- const heading=head.map((label,i)=>`<th scope="col" class="${i===3?'spotter-registry-current-column':''}">${label}</th>`).join('')+
-  Array.from({length:countHistory},(_,i)=>`<th scope="col" class="spotter-registry-team-column">RELAIS ${i+1}</th>`).join('');
- const safe=value=>spotterEscape(String(value));
- const name=value=>`<span class="spotter-registry-name" title="${safe(spotterDisplayName(value))}">${safe(spotterRegistryShortTeam(value))}</span>`;
- const body=rows.map(({row,current,kv,key,rating,isLive})=>{
-  const {team,kart,last,seconds,laps}=current;
-  const speed=row.speed,valid=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.potential))&&speed.potential!==null;
-  const freshRelay=Number(speed?.updatedAt||0)>=Number(row?.history?.[row.history.length-1]?.at||0);
-  const relayTours=(speed?.source==='server-recorder'&&freshRelay&&Number(speed.relayLaps)>0)?Number(speed.relayLaps):null;
-  const displayTours=relayTours??((Number(laps)>0)?Number(laps):null);
-  const stats=current.driver?spotterStatsWarmValue(current.driver):null;
-  const potFallback=stats?.best??(row.autoProvisional?current.driver?.best||current.driver?.best_lap:null);
-  const recFallback=stats?.recent??(row.autoProvisional?current.driver?.last||current.driver?.last_lap:null);
-  const tone=rating.value===null?'unknown':rating.value>=98?'gold':rating.value>=90?'green':rating.value>=80?'orange':'red';
-  const displayed=rating.value===null?'—':String(Math.round(rating.value*10)/10)+(rating.provisional?'*':'');
-  const status=row.autoProvisional?'KV PROVISOIRE':rating.provisional?'PROVISOIRE*':valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—';
-  const interrupted=row.trace==='interrupted';
-  const currentTeam=`<td class="spotter-registry-current-column"><div class="spotter-registry-current-team">${name(team)}</div></td>`;
-  const note=`<td class="spotter-registry-note-cell"><span class="spotter-registry-rating ${tone}" title="${rating.liveOnly?'Estimation LIVE des tours de l’équipe, KV physique non identifié et historique non modifié':rating.provisional?'Estimation sur les premiers tours, non confirmée':'Potentiel de vitesse du kart physique'}">${safe(displayed)}</span></td>`;
-  const base=`<td class="spotter-registry-kv">${safe(kv||'—')}</td>${note}<td class="spotter-registry-kart">${safe(kart)}</td>${currentTeam}`+
-   `<td class="spotter-registry-laps">${safe(displayTours===null?'—':displayTours)}</td>`+
-   `<td class="spotter-registry-on-track">${safe(spotterRegistryTrackLabel(seconds))}</td>`+
-   `<td title="${valid?'Potentiel moteur KV':stats?'Meilleur tour STATS Apex, estimation équipe provisoire':'Estimation live provisoire'}">${safe(valid?spotterRegistryFormatChrono(speed.potential):spotterRegistryFormatChrono(potFallback))}</td>`+
-   `<td>${safe(speed&&freshRelay&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.recent))&&speed.recent!==null?spotterRegistryFormatChrono(speed.recent):spotterRegistryFormatChrono(recFallback))}</td>`+
-   `<td>${safe(spotterRegistryFormatChrono(last))}</td><td class="spotter-registry-state">${safe(status)}${interrupted?'<span class="spotter-registry-trace">TRACE INTERROMPUE</span>':''}</td>`;
-  // V1834: show history in SQL event order; do not present an initial observation
-  // as the currently active relay after a later confirmed transfer.
-  const historyEntries=Array.isArray(row.history)?row.history:[];
-  const liveTeamKey=current.driver?spotterDriverKey(current.driver):'';
-  const latestRelay=historyEntries[historyEntries.length-1];
-  const relayMismatch=Boolean(kv&&liveTeamKey&&latestRelay&&String(latestRelay.team)!==String(liveTeamKey));
-  const history=historyEntries.map((entry,index)=>{
-   const score=entry?.score==null?'—':safe(entry.score)+(entry.scoreProvisional?'*':'');
-   const isLast=index===historyEntries.length-1;
-   const active=isLast&&!relayMismatch&&liveTeamKey&&String(entry.team)===String(liveTeamKey);
-   const observation=entry?.source==='initial-live';
-   const detail=observation?'Observation initiale, affectation physique non confirmée':active?'Relais actif confirmé par le live':'Relais historique';
-   return `<td class="spotter-registry-team-column" title="${safe(detail)}"><div class="spotter-registry-entry">${name(spotterRegistryHistoricalName(entry))}${active?'<small title="Relais actuel"> ●</small>':''}${observation?'<small title="Observation initiale, pas un transfert confirmé"> *</small>':''}<em class="${spotterScoreTone(entry?.score)}">${score}</em></div></td>`;
-  }).join('');
-  const remaining=countHistory-historyEntries.length;
-  const blank=remaining>0?`<td colspan="${remaining}" class="spotter-registry-blank">${!historyEntries.length&&!isLive?'Aucune affectation':''}</td>`:'';
-  const mismatchHint=relayMismatch?'<span title="Le live ne correspond pas au dernier relais enregistré : changement non confirmé, historique préservé"> ⚠ À vérifier</span>':'';
-  return `<tr class="spotter-registry-grid-row${!kv?' spotter-registry-unidentified':''}" data-kv="${safe(key)}">${base.replace('</td><td class="spotter-registry-laps">',mismatchHint+'</td><td class="spotter-registry-laps">')}${history}${blank}</tr>`;
- }).join('');
- return `<table class="spotter-registry-grid"><thead><tr>${heading}</tr></thead><tbody>${body}</tbody></table>`;
-}
-
-function spotterSetKartRegistrySort(value){
- spotterRegistrySortMode=['default','note','relay'].includes(value)?value:'default';
- spotterRefreshKartRegistry({force:true});
-}
-function spotterRefreshKartRegistry({force=false}={}){
- const overlay=document.getElementById('spotterRegistryOverlay');
- const diagnostic=overlay?.querySelector('[data-spotter-scoring-diagnostic]');
- if(diagnostic){const warning=spotterKartScoreDiagnostic();diagnostic.textContent=warning;diagnostic.hidden=!warning;}
- const target=overlay?.querySelector('.spotter-registry-table');
- if(!target)return;
- const next=spotterRegistryRowsHtml();
- if(!force&&target.dataset.lastHtml===next)return;
- // A transient empty read is NEVER allowed to destroy a nonempty table.
- // A genuine new race has a new run_id and is handled separately below.
- const blank=next.includes('spotter-registry-empty-block')||!next.includes('spotter-registry-grid-row');
- if(blank&&target.querySelector?.('.spotter-registry-grid-row')&&
-    target.dataset.runId===spotterRegistryRunId)return;
- const left=target.scrollLeft,top=target.scrollTop;
- const runChanged=target.dataset.runId&&target.dataset.runId!==spotterRegistryRunId;
- const existing=target.querySelector?.('.spotter-registry-grid');
- const template=(typeof document.createElement==='function')?document.createElement('template'):null;
- if(template)template.innerHTML=next;
- const incoming=template?.content?.querySelector?.('.spotter-registry-grid');
- // V1799 rendered once. Preserve the existing table and only update cells
- // whose text actually changed, so live chrono updates don't flicker.
- let patched=false;
- if(!force&&!runChanged&&existing&&incoming){
-  const before=[...existing.querySelectorAll('tbody tr')];
-  const after=[...incoming.querySelectorAll('tbody tr')];
-  const headBefore=existing.querySelector('thead')?.innerHTML;
-  const headAfter=incoming.querySelector('thead')?.innerHTML;
-  if(before.length===after.length&&headBefore===headAfter&&
-     before.every((tr,i)=>tr.dataset.kv===after[i].dataset.kv&&
-      tr.children.length===after[i].children.length&&
-      [...tr.children].every((td,j)=>td.colSpan===after[i].children[j].colSpan))){
-   before.forEach((tr,i)=>[...tr.children].forEach((td,j)=>{
-    const replacement=after[i].children[j];
-    if(td.innerHTML!==replacement.innerHTML)td.innerHTML=replacement.innerHTML;
-   }));
-   patched=true;
-  }
- }
- if(!patched)target.innerHTML=next;
- target.dataset.lastHtml=next;
- target.dataset.runId=spotterRegistryRunId||'';
- target.scrollLeft=left;target.scrollTop=top;
- const count=spotterRegistryCounts();
- const label=overlay.querySelector('[data-spotter-registry-count]');
- if(label)label.textContent=`● LIVE · ${count.live||0} ÉQUIPES · ${count.active}/${count.total} KV`;
-}
-function spotterRegistrySortControl(){
- const choices=[['default','Par défaut'],['note','Note'],['relay','Durée de relais']];
- return `<label class="spotter-registry-sort">Trier par <select aria-label="Trier le registre" onchange="spotterSetKartRegistrySort(this.value)">${choices.map(([id,label])=>`<option value="${id}" ${spotterRegistrySortMode===id?'selected':''}>${label}</option>`).join('')}</select></label>`;
-}
-async function spotterOpenKartRegistry(){
- // Afficher les équipes LIVE immédiatement, sans attendre PostgreSQL ou 8 tours.
- document.getElementById('spotterRegistryOverlay')?.remove();
- const active=Boolean(spotterState.kartTrackingEnabled),counts=spotterRegistryCounts();
- const heading=`<div class="spotter-registry-head"><div><div class="spotter-registry-title">REGISTRE DES KARTS</div><small data-spotter-registry-count>● LIVE · ${counts.live||0} ÉQUIPES · ${counts.active}/${counts.total} KV</small><small data-spotter-registry-sync style="display:block;color:#83e0b0;font-size:11px">SYNCHRONISATION…</small><small class="spotter-registry-live-hint">Équipes Apex visibles immédiatement · — = KV non identifié · * = note provisoire</small></div><div class="spotter-registry-head-tools">${spotterRegistrySortControl()}<button class="spotter-registry-close" type="button" onclick="spotterCloseKartRegistry()" aria-label="Fermer le registre">×</button></div></div>`;
- const content=active
-  ? `${heading}<div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterSetKartTracking(true)" title="Démarrer ou reprendre la collecte des notes sans Session Course">RELANCER LES NOTES</button><button class="spotter-secondary danger" type="button" onclick="spotterSetKartTracking(false)">ARRÊTER LE SUIVI</button><button class="spotter-primary" type="button" onclick="spotterCloseKartRegistry()">FERMER</button></div>`
-  : `<div class="spotter-registry-title">SUIVI KARTS</div><p class="spotter-registry-warning">Le suivi n’est fiable que si chaque échange est compté. Une interruption conserve l’historique connu mais Velocity ne reconstitue jamais une filiation incertaine.</p><div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterCloseKartRegistry()">ANNULER</button><button class="spotter-primary" type="button" onclick="spotterSetKartTracking(true)">ACTIVER LE SUIVI</button></div>`;
- const scorerInfo=spotterKartScoreDiagnostic();
- document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel wide"><p data-spotter-scoring-diagnostic class="spotter-registry-warning" ${scorerInfo?'':'hidden'}>${spotterEscape(scorerInfo)}</p>${content}</div></div>`);
- void spotterWarmRegistryStats();
- spotterRegistrySetSyncState(spotterRegistrySyncState);
- void spotterPullRegistry().then(()=>{spotterRefreshKartRegistry({force:true});void spotterRegistrySeedLiveTeams()}).catch(error=>console.warn('[Spotter] Registre live ouvert sans cache SQL',error));
-}
-
-function spotterExportKartRegistry(){
- const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:SPOTTER_APP_RELEASE,run_id:spotterRegistryRunId,registry:spotterClone(spotterState.kartRegistry||{})};
- const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
- const url=URL.createObjectURL(blob);
- const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
-}
-let spotterNewKartCourseInFlight=false;
-function spotterRegistryCourseMessage(message,error=false){
- const overlay=document.getElementById('spotterRegistryOverlay');
- if(!overlay)return;
- let node=overlay.querySelector('[data-spotter-course-message]');
- if(!node){node=document.createElement('div');node.setAttribute('data-spotter-course-message','');
-  const header=overlay.querySelector('.spotter-registry-head');header?.insertAdjacentElement('afterend',node);
- }
- node.textContent=message;
- node.style.cssText='padding:8px 12px;margin:8px 0;border:1px solid '+(error?'#ef6a73':'#3fbd91')+';color:'+(error?'#ff9ba1':'#8de7c3')+';border-radius:6px;font-size:12px;font-weight:700';
-}
-async function spotterStartNewKartCourse(){
- if(spotterNewKartCourseInFlight)return;
- if(!spotterRegistryReady||!spotterRegistryRunId){spotterRegistryCourseMessage('Le registre serveur n’est pas chargé. Réessaie après synchronisation.',true);return;}
- if(!confirm('Archiver le registre de cette course et ouvrir un registre KV VIDE ? Les files du Quick Change seront conservées.'))return;
- spotterNewKartCourseInFlight=true;
- const button=document.querySelector('#spotterRegistryOverlay button[onclick="spotterStartNewKartCourse()"]');
- if(button){button.disabled=true;button.textContent='CRÉATION EN COURS…';}
- try{
-  const oldRun=spotterRegistryRunId;
-  const response=await fetch('/api/spotter-registry/new-course',{
-   method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({run_id:oldRun})
-  });
-  const data=await response.json();if(!response.ok||!data.ok){
-   if(response.status===409){
-    await spotterPullRegistry();
-    spotterRegistryCourseMessage('Le registre a déjà changé sur un autre appareil. État serveur rechargé.',true);
-    return;
-   }
-   throw Error(data.error||'Nouvelle course KV impossible');
-  }
-  if(!data.run_id||String(data.run_id)===oldRun)throw Error('Le serveur n’a pas confirmé un nouvel identifiant de course.');
-  // The server has COMMITTED the new race. Apply the response immediately,
-  // without waiting for another GET that may finish with an obsolete snapshot.
-  spotterRegistryBackupLocal(oldRun);
-  clearTimeout(spotterRegistryPushTimer);spotterRegistryPushTimer=null;
-  spotterRegistryRunId=String(data.run_id);
-  window.velocityKartServerScope={runId:spotterRegistryRunId,epoch:spotterRegistryRunId,
-   mode:data.kart_mode||'',circuitId:(typeof spotterLiveState==='function'?spotterLiveState()?.circuit_id:'')||'',
-   workspaceId:String(window.VELOCITY_WORKSPACE_ID||((typeof spotterLiveState==='function')?spotterLiveState()?.workspace?.id:'')||'')};
-  const currentLive=(typeof spotterLiveState==='function')?spotterLiveState():null;
-  if(currentLive){currentLive.kart_scoring_epoch=spotterRegistryRunId;currentLive.kart_setup_mode=data.kart_mode||null;}
-  if(typeof velocityKartScoreEnsureScope==='function')velocityKartScoreEnsureScope();
-  spotterRegistryUpdatedAt=Number(data.registry_updated_at_ms)||0;
-  spotterRegistryExplicitRunGuard=spotterRegistryRunId;
-  spotterRegistryReady=true;
-  spotterState.kartRegistry={};
-  spotterPublishKartScoreReference();
-  localStorage.setItem(SPOTTER_RUN_STORAGE_KEY,spotterRegistryRunId);
-  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
-  spotterRefreshKartRegistry({force:true});
-  spotterRegistryAutoSeedAt=0;
-  void spotterRegistrySeedLiveTeams();
-  void spotterWarmRegistryStats();
-  spotterRegistryCourseMessage('NOUVELLE COURSE KV CRÉÉE · ancien historique archivé · KV attribués aux équipes live.');
- }catch(error){spotterRegistryCourseMessage('Nouvelle course KV impossible : '+(error.message||String(error)),true);console.error('[Spotter] Création course KV',error);}
- finally{spotterNewKartCourseInFlight=false;if(button){button.disabled=false;button.textContent='NOUVELLE COURSE KV';}}
-}
-function spotterExportKartArchives(){
- // The ZIP contains one isolated JSON per old run; its contents are never merged.
- window.location.assign('/api/spotter-registry/archives/export');
-}
-function spotterCloseKartRegistry(){document.getElementById('spotterRegistryOverlay')?.remove()}
-
 // V7.2.1795 — Mode de course dans Spotter, jamais sur la Home générale.
 // Le choix utilise l'API et le moteur de la V1794 ; pas d'état local concurrent.
 function spotterKartModeLabel(){
@@ -2017,7 +1737,6 @@ function spotterCommandBar(step){
   <button class="spotter-desktop-command spotter-quick-change-command" type="button" onclick="openSpotterSetup()">PRÉPARER LA ZONE QUICK CHANGE</button>
   <button class="spotter-desktop-command spotter-auto-command ${spotterState.freeMode?'active resume':''}" type="button" onclick="spotterToggleAuto()">${spotterState.freeMode?'▶ REPRENDRE':'AUTO'}</button>
   <button class="spotter-desktop-command spotter-add-kart-command" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button>
-  <button class="spotter-desktop-command spotter-tracking-command ${spotterState.kartTrackingEnabled?'active':''}" type="button" onclick="spotterOpenKartRegistry()">${spotterState.kartTrackingEnabled?'● ':''}SUIVI KARTS</button>
   <button class="spotter-desktop-command spotter-reset-command" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button>
  </div>`;
  return mobile+desktop;
@@ -2420,7 +2139,7 @@ function renderSpotterFoundation(forceStep){
      <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 ZONE MECA</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en zone méca.</div>'}</div></section>
     </aside>
    </div>
-   <div class="spotter-footer-actions"><button class="spotter-secondary spotter-mobile-kart-mode-link" type="button" onclick="spotterOpenKartModeDialog()">MODE KARTS · <span data-spotter-kart-mode-label>${spotterKartModeLabel()}</span></button><button class="spotter-secondary" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button><button class="spotter-secondary ${spotterState.kartTrackingEnabled?'tracking-active':''}" type="button" onclick="spotterOpenKartRegistry()">${spotterState.kartTrackingEnabled?'● ':''}SUIVI KARTS</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
+   <div class="spotter-footer-actions"><button class="spotter-secondary spotter-mobile-kart-mode-link" type="button" onclick="spotterOpenKartModeDialog()">MODE KARTS · <span data-spotter-kart-mode-label>${spotterKartModeLabel()}</span></button><button class="spotter-secondary" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
   </div>
   <div class="spotter-step ${step==='recalibrate'?'active':''}" id="spotterRecalibrateStep">
    <div class="spotter-recalibrate-desktop-layout">
@@ -2576,8 +2295,8 @@ async function spotterRenewMonitorLease(){
 // The relay writer runs once per 2s cycle, not additionally on each table render.
 function spotterRunRegistryCycle(){
  // Presentation only. No duplicate scoring or SQL write on render.
- spotterRefreshKartRegistry();
- if(document.getElementById('spotterRegistryOverlay'))void spotterRegistrySeedLiveTeams();
+ 
+ if(false)void spotterRegistrySeedLiveTeams();
 }
 function spotterRunMetricsCycle(){
  if(!spotterState.configured)return;

@@ -1,5 +1,5 @@
 
-## V7.2.1854 — Orchestration Suivi Karts résiliente (7 novembre 2026)
+## V7.2.1855 — Orchestration Suivi Karts résiliente (7 novembre 2026)
 
 - Activation et relance KV envoyées directement à `POST /api/spotter-kv-tracking` : une lecture GET momentanément indisponible ne bloque plus la commande. Le serveur reste seul responsable de la détermination du run/circuit et de la création du Recorder.
 - Synchronisation SQL du registre séparée de la collecte : dernier état conservé, statut SYNCHRONISÉ/EN RECONNEXION et relecture avec temporisation exponentielle jusqu'à 30 s en cas de panne.
@@ -296,3 +296,7 @@ Sans Session Course, l'accès reste attaché au circuit et à l'équipe choisis 
 ## V7.2.1848 — accès universels sans circuit imposé
 
 Un accès invité autorise uniquement les modes sélectionnés, indépendamment d'une session ou d'un circuit. Le pilote choisit son circuit sur l'accueil et peut consulter le classement Endurance intégral ; il sélectionne librement l'équipe à suivre en Focus. L'invitation ne propose plus d'équipe prédéfinie. L'option « Activer un nouveau lien » n'apparaît que sur l'accueil (bouton ☰), pas sur l'écran de course. Les changements de circuit et le choix de l'équipe sont confinés à l'espace en mémoire de l'invitation ; ils ne modifient pas le workspace de l'administrateur, ni la Session Course, ni le registre Spotter. Le WebSocket Apex de l'invité alimente uniquement son propre classement, sans Recorder automatique.
+
+
+### V7.2.1855 — Dépose contrôlée des anciennes interfaces KV
+Les vues Suivi Karts (Spotter/Analyzer) et KARTS (Analyzer) ne sont plus accessibles. Les calculs, le stockage et les affectations partagés restent intacts pour la refonte ultérieure. Il ne s’agit pas encore de la nouvelle interface prévue par le cahier des charges.

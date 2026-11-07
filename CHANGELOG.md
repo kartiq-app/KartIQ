@@ -1,5 +1,12 @@
+## V7.2.1855 — Dépose des interfaces historiques Suivi Karts / Karts Analyzer
+- Retrait du bouton Suivi Karts dans Spotter et Analyzer.
+- Suppression de la carte Karts Analyzer et de son rendu JavaScript.
+- Velocity et Score Relais restent disponibles.
+- Aucune modification des moteurs de score KV et relais ni des données KV.
+- Le registre et ses dépendances transversales sont conservés pour éviter de casser Quick Change et les affectations; leur extraction définitive est une étape distincte.
 
-## V7.2.1854 — Orchestration Suivi Karts résiliente (7 novembre 2026)
+
+## V7.2.1855 — Orchestration Suivi Karts résiliente (7 novembre 2026)
 
 - Activation et relance KV envoyées directement à `POST /api/spotter-kv-tracking` : une lecture GET momentanément indisponible ne bloque plus la commande. Le serveur reste seul responsable de la détermination du run/circuit et de la création du Recorder.
 - Synchronisation SQL du registre séparée de la collecte : dernier état conservé, statut SYNCHRONISÉ/EN RECONNEXION et relecture avec temporisation exponentielle jusqu'à 30 s en cas de panne.
