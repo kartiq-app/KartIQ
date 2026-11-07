@@ -3165,15 +3165,52 @@ def _spotter_persistent_store():
     return RECORDER_STORE
 
 
-def _spotter_shared_read(workspace_id):
+def _spotter_storage_key(workspace_id, circuit_id):
+    '''Separate Quick Change snapshots per circuit without changing the KV store.'''
+    wid = str(workspace_id or '').strip()
+    cid = str(circuit_id or '').strip()
+    if not wid or not cid:
+        raise ValueError('Espace et circuit requis pour le suivi Spotter')
+    # Keep the existing workspace-scoped database schema and CAS semantics.
+    return f'{wid}:circuit:{cid}'
+
+
+def _spotter_shared_read(workspace_id, circuit_id=None):
+    '''Read only the circuit requested, with a safe one-time legacy migration.'''
+    cid = str(circuit_id or STATE.get('circuit_id') or '').strip()
+    if not cid:
+        return {}
     store = _spotter_persistent_store()
+    scoped_key = _spotter_storage_key(workspace_id, cid)
     row = store._execute(
-        "SELECT revision,snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?",
-        (workspace_id,), fetchone=True)
+        'SELECT revision,snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?',
+        (scoped_key,), fetchone=True)
+    if not row:
+        # Existing V1855 records are keyed only by workspace. Migrate them solely
+        # when their recorded circuit matches, never to a different track.
+        legacy = store._execute(
+            'SELECT revision,snapshot_json,updated_at_ms FROM velocity_spotter_shared_state WHERE workspace_id=?',
+            (workspace_id,), fetchone=True)
+        if legacy:
+            try:
+                data = json.loads(legacy['snapshot_json'])
+            except (TypeError, ValueError):
+                data = {}
+            if isinstance(data, dict) and str(data.get('circuit_id') or '') == cid:
+                store._execute('''INSERT INTO velocity_spotter_shared_state
+                    (workspace_id,revision,snapshot_json,updated_at_ms)
+                    VALUES(?,?,?,?) ON CONFLICT(workspace_id) DO NOTHING''',
+                    (scoped_key, int(legacy['revision']), legacy['snapshot_json'],
+                     int(legacy['updated_at_ms'] or 0)))
+                row = store._execute(
+                    'SELECT revision,snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?',
+                    (scoped_key,), fetchone=True)
     if not row:
         return {}
-    data = json.loads(row["snapshot_json"])
-    data["revision"] = int(row["revision"])
+    data = json.loads(row['snapshot_json'])
+    if not isinstance(data, dict) or str(data.get('circuit_id') or '') != cid:
+        raise ValueError('Etat Spotter lie a un autre circuit')
+    data['revision'] = int(row['revision'])
     return data
 
 
@@ -3429,7 +3466,7 @@ def spotter_monitor_lease():
         return jsonify(ok=False,error="Identifiant Spotter manquant"),400
     try:
         store = _spotter_persistent_store()
-        wid = _current_workspace_id()
+        wid = _spotter_storage_key(_current_workspace_id(), STATE.get('circuit_id'))
         now = int(time.time()*1000)
         expires = now + 5000
         row = store._execute("""INSERT INTO velocity_spotter_monitor_lease
@@ -3465,12 +3502,18 @@ def update_spotter_state():
     try:
         store = _spotter_persistent_store()
         workspace_id = _current_workspace_id()
+        current_circuit = str(STATE.get('circuit_id') or '').strip()
+        submitted_circuit = str(clean.get('circuit_id') or '').strip()
+        if not current_circuit or submitted_circuit != current_circuit:
+            return jsonify(ok=False,error='Circuit Spotter modifie : recharger le contexte avant toute ecriture',
+                           circuit_id=current_circuit),409
+        scoped_key = _spotter_storage_key(workspace_id, current_circuit)
         now = int(time.time()*1000)
-        if revision != 0 and not _spotter_shared_read(workspace_id):
+        if revision != 0 and not _spotter_shared_read(workspace_id, current_circuit):
             return jsonify(ok=False,error="Nouvel espace Spotter : révision 0 attendue",
                            empty_workspace=True,workspace_id=workspace_id,revision=0),409
         clean.update(revision=revision+1, updated_at_ms=now,
-                     circuit_id=str(snapshot.get("circuit_id") or STATE.get("circuit_id") or ""))
+                     circuit_id=current_circuit)
         # Atomic compare-and-swap on Postgres/SQLite: two clients cannot overwrite
         # a more recent mutation, even when handled by different server workers.
         row = store._execute("""INSERT INTO velocity_spotter_shared_state
@@ -3478,7 +3521,7 @@ def update_spotter_state():
             VALUES(?,?,?,?) ON CONFLICT(workspace_id) DO UPDATE
             SET revision=excluded.revision,snapshot_json=excluded.snapshot_json,updated_at_ms=excluded.updated_at_ms
             WHERE velocity_spotter_shared_state.revision=? RETURNING revision""",
-            (workspace_id,revision+1,json.dumps(clean,ensure_ascii=False),now,revision),fetchone=True)
+            (scoped_key,revision+1,json.dumps(clean,ensure_ascii=False),now,revision),fetchone=True)
         if not row:
             return jsonify(ok=False,error="État Spotter modifié sur un autre appareil",
                            spotter=_spotter_shared_read(workspace_id),workspace_id=workspace_id),409
@@ -3493,8 +3536,12 @@ def update_spotter_state():
 def get_spotter_state():
     try:
         workspace_id = _current_workspace_id()
-        shared = _spotter_shared_read(workspace_id)
-        response=jsonify(ok=True, spotter=shared, workspace_id=workspace_id,server_version=APP_VERSION,storage_backend=_spotter_persistent_store().backend)
+        circuit_id = str(STATE.get('circuit_id') or '')
+        requested = str(request.args.get('circuit_id') or circuit_id)
+        if requested != circuit_id:
+            return jsonify(ok=False,error='Circuit change pendant la lecture Spotter',circuit_id=circuit_id),409
+        shared = _spotter_shared_read(workspace_id, circuit_id)
+        response=jsonify(ok=True, spotter=shared, workspace_id=workspace_id,circuit_id=circuit_id,server_version=APP_VERSION,storage_backend=_spotter_persistent_store().backend)
         response.headers["Cache-Control"]="private, no-store"
         return response
     except Exception as exc:
@@ -3550,6 +3597,13 @@ def set_circuit():
         # déjà actif : le deuxième appareil doit récupérer le Quick Change existant.
         current_circuit = str(STATE.get("circuit_id") or "").strip()
         if current_circuit != circuit_id:
+            if current_circuit:
+                # Best-effort legacy migration: database unavailability must not
+                # prevent switching the live circuit itself.
+                try:
+                    _spotter_shared_read(workspace_id, current_circuit)
+                except Exception:
+                    app.logger.warning('Migration Spotter differee pour %s', current_circuit, exc_info=True)
             reset_race_state_for_new_circuit(circuit_id)
     except Exception as error:
         app.logger.exception("Erreur pendant la sélection du circuit %s", circuit_id)

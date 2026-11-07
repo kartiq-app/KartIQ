@@ -1,3 +1,10 @@
+## V7.2.1856 — Contexte Spotter par circuit
+
+- Les états Quick Change sont isolés par circuit, dans le même espace Velocity.
+- Les anciens états SQL sont migrés sans suppression uniquement si leur circuit correspond.
+- La sélection d’une autre piste invalide l’état local temporaire et recharge ce circuit.
+- Une écriture issue de l’ancien circuit est refusée ; le moteur KV et Apex restent inchangés.
+
 ## V7.2.1855 — Dépose des interfaces historiques Suivi Karts / Karts Analyzer
 - Retrait du bouton Suivi Karts dans Spotter et Analyzer.
 - Suppression de la carte Karts Analyzer et de son rendu JavaScript.

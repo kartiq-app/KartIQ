@@ -1,3 +1,10 @@
+## V7.2.1856 : isolation Spotter multi-circuits
+
+- Les états Quick Change sont isolés par circuit, dans le même espace Velocity.
+- Les anciens états SQL sont migrés sans suppression uniquement si leur circuit correspond.
+- La sélection d’une autre piste invalide l’état local temporaire et recharge ce circuit.
+- Une écriture issue de l’ancien circuit est refusée ; le moteur KV et Apex restent inchangés.
+
 
 ## V7.2.1855 — Orchestration Suivi Karts résiliente (7 novembre 2026)
 

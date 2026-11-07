@@ -89,6 +89,34 @@ let spotterRetryDelayMs=0;
 let spotterSetupDraft=null;
 let spotterSetupOrigin='spotter';
 let spotterSetupRequested=false;
+let spotterCircuitContext='';
+function spotterCurrentCircuit(){
+ return String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'').trim();
+}
+function spotterEnsureCircuitContext(){
+ const circuit=spotterCurrentCircuit();
+ if(!circuit||circuit===spotterCircuitContext)return false;
+ const previous=spotterCircuitContext;
+ spotterCircuitContext=circuit;
+ if(!previous)return false;
+ // Only transient browser state is cleared. Stored per-circuit data remains
+ // authoritative on the server and is retrieved on the next GET.
+ clearTimeout(spotterSyncTimer);spotterPushQueued=false;
+ spotterServerRevision=0;spotterConfirmedSnapshot=null;spotterLastRemoteUpdate=0;
+ spotterLocalMutationAt=0;spotterDeferredRemote=null;spotterPushInFlight=false;
+ spotterMonitorLeaseOwner=false;spotterMonitorLeaseUntil=0;spotterLastMonitorLeaseWorkspace='';
+ spotterState.queue=[];spotterState.maintenance=[];spotterState.incoming=[];
+ spotterState.assignments={};spotterState.incomingQueueSelections={};spotterState.movementLog=[];
+ spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;
+ spotterState.configured=false;spotterState.replacementRequest=null;spotterState.undoSnapshot=null;
+ spotterState.kartTrackingEnabled=false;spotterState.kartRegistry={};
+ spotterState.nextKvNumber=1;spotterState.freePitIns=0;spotterState.freePitOuts=0;
+ spotterState.freeMode=false;spotterState.recalibrating=false;spotterState.freeStartedAt=null;
+ spotterSetupDraft=null;spotterSetupRequested=false;spotterUiStep='mode';
+ spotterLastSyncError='';spotterUpdateSyncBadge();
+ spotterPublishSharedState();
+ return true;
+}
 
 function spotterClone(value){return JSON.parse(JSON.stringify(value??null))}
 function spotterUndoState(){
@@ -253,7 +281,7 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
   spotterConfirmedSnapshot=spotterClone(remote);
   spotterPublishSharedState(remote);
   spotterLastSyncError='';spotterUpdateSyncBadge();
-  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
+  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,circuit_id:String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||''),appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
   if(document.body.classList.contains('current-spotter')&&(remoteReset||!(spotterDrag?.active||spotterSetupDraft))){
    // Un snapshot distant peut rafraîchir le LIVE, mais ne remplace jamais
    // un menu de configuration / ajout / Quick Change en cours.
@@ -265,9 +293,14 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
 }
 async function spotterPullSharedState({force=false}={}){
  try{
-  const response=await fetch('/api/spotter-state',{cache:'no-store',headers:{...((typeof velocityDeviceHeaders==='function')?velocityDeviceHeaders():{})}});
+  spotterEnsureCircuitContext();
+  const requestedCircuit=spotterCurrentCircuit();
+  const response=await fetch(`/api/spotter-state?circuit_id=${encodeURIComponent(requestedCircuit)}`,{cache:'no-store',headers:{...((typeof velocityDeviceHeaders==='function')?velocityDeviceHeaders():{})}});
   if(!response.ok){spotterLastSyncError=`Lecture serveur HTTP ${response.status}`;spotterUpdateSyncBadge();return false;}
   const payload=await response.json();
+  if(requestedCircuit!==spotterCurrentCircuit()||String(payload?.circuit_id||'')!==requestedCircuit){
+   spotterEnsureCircuitContext();return false;
+  }
   const previousWorkspace=spotterWorkspaceStatus;
   spotterWorkspaceStatus=String(payload?.workspace_id||'INCONNU');
   if(previousWorkspace!==spotterWorkspaceStatus){
@@ -291,6 +324,7 @@ async function spotterPullSharedState({force=false}={}){
 }
 
 function loadSpotterFoundation(){
+ spotterCircuitContext=spotterCurrentCircuit();
  try{
   const saved=JSON.parse(localStorage.getItem(SPOTTER_STORAGE_KEY)||'null');
   // Migration V7.1.2 : les sauvegardes V7.1.1 et antérieures peuvent contenir
@@ -300,7 +334,10 @@ function loadSpotterFoundation(){
    // V7.2.1784 : une mise à jour Velocity ne doit jamais effacer une course
    // Spotter en cours. On migre l'état local vers la release courante puis on
    // laisse les protections circuit/session décider d'une éventuelle remise à zéro.
-   Object.assign(spotterState,saved.state);
+   if(saved.circuit_id&&saved.circuit_id===spotterCircuitContext){
+    Object.assign(spotterState,saved.state);
+   }
+   // Legacy unscoped saves must never reappear on a different track.
   }else if(saved){
    // Seules les très anciennes sauvegardes au format incompatible sont purgées.
    localStorage.removeItem(SPOTTER_STORAGE_KEY);
@@ -308,7 +345,7 @@ function loadSpotterFoundation(){
  }catch(_){localStorage.removeItem(SPOTTER_STORAGE_KEY)}
  spotterEnsureSetupDefaults();
  spotterPublishSharedState();
- localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,circuit_id:String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||''),appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  renderSpotterFoundation();
 }
 let spotterSyncTimer=null;
@@ -536,7 +573,7 @@ function spotterScheduleSharedSync(delay=120){
 function saveSpotterFoundation(){
  spotterLocalMutationAt=Date.now();
  spotterPublishSharedState();
- localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,circuit_id:String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||''),appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  spotterScheduleSharedSync();
 }
 
@@ -1190,7 +1227,7 @@ function spotterCancelSetup(){
  const origin=spotterSetupOrigin;
  spotterSetupDraft=null;spotterSetupOrigin='spotter';spotterSetupRequested=false;
  // Annuler ne doit ni pousser un état temporaire au serveur ni réinitialiser les files.
- localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,circuit_id:String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||''),appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  if(origin==='analyzer'){showMode('analyzer');return}
  if(spotterState.configured){spotterRenderCurrent();return}
  showHome();
