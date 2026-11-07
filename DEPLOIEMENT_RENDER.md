@@ -1,3 +1,5 @@
+V7.2.1867 — Base V1866 (chronométrage LIVE et PIT Spotter issu de V1854), avec VVCE serveur réintégré depuis V1865. Le classement virtuel reste non certifié au même instant. DATABASE_URL nécessaire à la persistance SQL.
+
 V7.2.1866 — Retour à la base V1854. Vérifier les migrations et la configuration Render avant de déployer : fonctions introduites après V1854 absentes de cette version.
 
 

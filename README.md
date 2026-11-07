@@ -1,3 +1,5 @@
+V7.2.1867 — Base V1866 (chronométrage LIVE et PIT Spotter issu de V1854), avec VVCE serveur réintégré depuis V1865. Le classement virtuel reste non certifié au même instant. DATABASE_URL nécessaire à la persistance SQL.
+
 V7.2.1866 — RETOUR À LA BASE V1854 (source fournie par l’utilisateur). Le module VVCE des V1862–V1865 et leurs fonctions postérieures ne font pas partie de cette archive. Les compteurs de stands Spotter affichent désormais la valeur PIT officielle Apex exactement comme Focus Endurance. Aucun chronométrage local n’est présenté comme une valeur officielle.
 
 

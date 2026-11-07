@@ -1,3 +1,9 @@
+## V7.2.1867 — VVCE réintégré sur le moteur LIVE V1866
+- Rétablissement du calcul VVCE SQL/Recorder et de l’interface de classement virtuel de V1865.
+- Chronométrage LIVE, Focus Endurance, Spotter PIT, KV et relais conservés depuis V1866.
+- Tableau : Virtuel, Live, Équipe, Stands, Tours, puis calculs ; scroll interne avec position conservée.
+- VVCE reste une projection historique non certifiée au même instant ; traitement secondaire sans impact volontaire sur le LIVE.
+
 ## V7.2.1866 — Retour moteur V1854 + compteur stands Apex dans Spotter
 - Retour à l’archive V1854 fournie par l’utilisateur. Cette version n’intègre pas VVCE ni les développements ultérieurs.
 - Spotter réutilise directement le PIT TIMER Apex affiché par Focus Endurance (même fonction de formatage).

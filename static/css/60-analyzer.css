@@ -3028,3 +3028,5 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 .velocity-remote-focus-actions{width:100%;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .velocity-remote-focus-actions select{flex:1;min-width:145px;color:#fff;background:#121e2d;border:1px solid #3a506d;border-radius:7px;padding:8px}
 .velocity-remote-focus-actions .race-ui-btn{white-space:nowrap}
+
+.vvce-report-table-wrap{overflow:auto;max-height:280px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;border:1px solid #253241;border-radius:8px;margin-top:8px}.vvce-report-table{min-width:980px;width:100%;font-size:11px}.vvce-report-table th,.vvce-report-table td{white-space:nowrap}.vvce-report-table .vvce-team-cell{min-width:180px;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
