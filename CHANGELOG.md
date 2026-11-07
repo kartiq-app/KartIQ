@@ -1,3 +1,10 @@
+## V7.2.1861 — Correction du classement virtuel (Agadir)
+- Correction de la valeur Apex « Tour 302 » du leader : indicateur de tour courant, jamais retard de 302 tours.
+- Correction des cas Apex avec `laps=0` : les écarts « N Tours » restent exploitables, zéro tour n’est pas une référence fiable.
+- Refus de projeter un écart absent au lieu de l’assimiler à zéro.
+- Aucun changement du live Apex, du moteur KV ou de la cadence des compteurs de stands V1860.
+- Validation sur l’export Agadir : EIRIZ PRO 301 tours, SKART GOATS 288 tours dans le CSV. L’export de snapshots ne contient pas les écarts live détaillés ; validation live recommandée.
+
 ## V7.2.1860 — Classement virtuel recalculé et PIT à cadence stable
 
 - Classement virtuel : maximum d'arrêts réellement observé sur le plateau conservé comme référence, sans règlement obligatoire.

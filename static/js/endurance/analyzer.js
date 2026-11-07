@@ -1109,31 +1109,41 @@ function analyzerVirtualPitReference(rows){
  if(candidate<15||near.length<3)return {seconds:null,samples:values.length,estimated:true};
  return {seconds:candidate,samples:values.length,estimated:true};
 }
+// Classement virtuel : le leader est toujours la reference 0.
+// Sur certains schemas Apex, "Tour 302" dans sa colonne Ecart signifie
+// le tour de course atteint et NON 302 tours de retard.
+// Des snapshots Apex peuvent aussi fournir laps=0 pour TOUTES les equipes :
+// ne jamais considerer ce zero comme une mesure de deficit fiable.
 function analyzerVirtualLiveGap(driver,leaderLaps,pace){
+ const pos=Number(driver?.pos);
+ if(pos===1)return 0;
+ const raw=String(driver?.gap??'').trim().replace(/^\+/,'');
  const laps=analyzerNullableNumeric(driver?.laps);
- if(laps===null||laps<0||leaderLaps===null)return null;
- const lapDiff=leaderLaps-laps;
- if(lapDiff<0)return null;
- const raw=String(driver?.gap??'').trim();
- const explicitLap=/\b(\d+)\s*(?:tours?|laps?)\b/i.exec(raw);
+ const validLaps=laps!==null&&laps>0;
+ const validLeader=Number.isFinite(leaderLaps)&&leaderLaps>0;
+ // Une etiquette "Tour N" peut indiquer le tour du leader, pas un ecart.
+ if(/^\s*(?:tour|lap)\s+\d+\s*$/i.test(raw))return null;
+ // Apex fournit explicitement N tours de retard ("1 Tour", "13 Tours").
+ const explicitLap=/^\s*(\d+)\s*(?:tours?|laps?)\s*$/i.exec(raw);
  if(explicitLap){
-  // L'indication de tours Apex fait foi, pas un suffixe numérique tronqué.
   if(!Number.isFinite(pace)||pace<=0)return null;
   return Number(explicitLap[1])*pace;
  }
- const t=analyzerParseDuration(raw.replace(/^\+/,'').replace(/\s*(?:s|sec|secondes?)$/i,''));
- if(lapDiff===0){
-  if(Number(driver?.pos)===1)return 0;
-  return Number.isFinite(t)&&t>=0?t:null;
+ const seconds=analyzerParseDuration(raw.replace(/\s*(?:s|sec|secondes?)$/i,''));
+ if(validLaps&&validLeader){
+  const deficit=leaderLaps-laps;
+  if(deficit<0)return null;
+  if(deficit===0)return Number.isFinite(seconds)&&seconds>=0?seconds:null;
+  if(!Number.isFinite(pace)||pace<=0)return null;
+  return deficit*pace+(Number.isFinite(seconds)&&seconds>=0&&seconds<pace?seconds:0);
  }
- // Un retard d'un tour doit être converti explicitement. On n'utilise pas
- // une chaîne illisible comme zéro seconde.
- if(!Number.isFinite(pace)||pace<=0)return null;
- return lapDiff*pace+(Number.isFinite(t)&&t>=0&&t<pace?t:0);
+ // Sans nombre de tours fiable, les seuls ecarts admissibles sont ceux
+ // explicitement exprimes par Apex. Ne pas fabriquer un retard nul.
+ return Number.isFinite(seconds)&&seconds>=0?seconds:null;
 }
 function analyzerVirtualMetrics(rows){
  const maxStops=Math.max(0,...rows.map(x=>analyzerNumeric(x.driver?.pit_stops,0)));
- const maxLaps=rows.reduce((n,x)=>{const v=analyzerNullableNumeric(x.driver?.laps);return v===null?n:Math.max(n,v)},null);
+ const maxLaps=rows.reduce((n,x)=>{const v=analyzerNullableNumeric(x.driver?.laps);return v===null||v<=0?n:Math.max(n,v)},null);
  const grid=analyzerGridPace(),pace=grid.length?grid[Math.floor(grid.length/2)]:null;
  const reference=analyzerVirtualPitReference(rows);
  const output=rows.map(x=>{

@@ -1,4 +1,4 @@
-const CACHE = 'velocity-v7-2-1860';
+const CACHE = 'velocity-v7-2-1861';
 
 const ASSETS = [
   '/static/css/kartiq.css',
