@@ -38,7 +38,6 @@ from backend.logging_tools import ApexLogManager
 from backend.network import local_ip
 from backend.services.race_state import RaceStateService
 from backend.services.relay_score_engine import fetch_and_compute
-from backend.services.vvce_server import VVCERepository, calculate as compute_vvce
 from data_recorder import RecorderStore, RecorderManager
 from spotter_registry_scope import RegistryRuns
 from backend.services.kart_scoring_scope import KartScoringScope
@@ -140,7 +139,6 @@ def _resume_velocity_recorders():
                 TEAM_DATA_LAST_DB_HASH = hashlib.sha256(json.dumps(restored, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
         _reap_session_recorders()
         _get_recorder_manager().resume_active()
-        _resume_vvce_workers()
         threading.Thread(target=_session_recorder_watchdog, name="velocity-session-recorder-budget-guard", daemon=True).start()
     except Exception:
         # L'état est exposé dans Velocity Lab ; pas de crash global de l'application.
@@ -3045,175 +3043,6 @@ def weather():
         return jsonify(ok=False, error=str(exc)), 502
 
 
-# VVCE 1864: read-only projection from an explicitly started server recorder.
-# Never run a database scan, history request, or projection inside /api/state
-# or in the critical Apex frame-processing path.
-VVCE_THREADS_LOCK = threading.RLock()
-VVCE_THREADS = {}
-VVCE_RECORDER_PREFIX = "VVCE_V1864:"
-
-
-def _vvce_scope(workspace, circuit, session_key):
-    return f"{workspace}:vvce:{circuit}:{hashlib.sha256(session_key.encode()).hexdigest()[:16]}"
-
-
-def _vvce_repository():
-    return VVCERepository(_spotter_persistent_store())
-
-
-def _vvce_work(scope, recording_id, expected, circuit, session_key):
-    """An independent, best-effort secondary worker; source is persisted Recorder laps."""
-    last_success = 0
-    last_signature = None
-    try:
-        store = _spotter_persistent_store()
-        repo = VVCERepository(store)
-        started_ms = int(time.time()*1000)
-        while int(time.time()*1000)-started_ms < VELOCITY_RECORDER_MAX_HOURS*3600000:
-            rec = store.get_recording(recording_id)
-            if not rec or rec.get('desired_status') == 'stopped' or rec.get('status') in ('stopped','error'):
-                break
-            # Avoid publishing old data if this recorder stopped receiving live
-            # messages. Backfill-only historical calculations are never certified.
-            last_message = int(rec.get('last_message_at_ms') or 0)
-            if (last_message and int(time.time()*1000)-last_message > 900000) or (not last_message and int(time.time()*1000)-started_ms > 900000):
-                break
-            try:
-                latest = repo.read(scope) or {}
-                current_rows = latest.get('expectedRows') or expected
-                signature = (int(rec.get('laps_count') or 0),int(rec.get('pits_count') or 0),tuple(current_rows))
-                if signature == last_signature:
-                    time.sleep(20)
-                    continue
-                laps, pits = store.worker_history(recording_id)
-                result = compute_vvce(laps, pits, current_rows)
-                now = int(time.time()*1000)
-                repo.put(scope, {'status':'ready','result':result,'updatedAt':now,
-                                 'circuit':circuit,'session':session_key,'recordingId':recording_id,
-                                 'expectedRows':current_rows,'note':'Projection sur historiques enregistrés ; non certifiée au même instant.'})
-                last_signature = signature
-                last_success = now
-            except (ValueError, TypeError) as exc:
-                prev = repo.read(scope) or {}
-                # Retain the last good result, but clearly mark it stale.
-                repo.put(scope, {**prev, 'status':'waiting' if not last_success else 'stale',
-                                 'reason':str(exc)[:350], 'checkedAt':int(time.time()*1000),
-                                 'circuit':circuit,'session':session_key,'recordingId':recording_id})
-            except Exception as exc:
-                app.logger.warning('VVCE background error: %s', exc)
-                prev = repo.read(scope) or {}
-                repo.put(scope, {**prev, 'status':'stale' if prev.get('result') else 'waiting',
-                                 'reason':'Données Recorder temporairement indisponibles.',
-                                 'checkedAt':int(time.time()*1000)})
-            time.sleep(20)
-        previous = repo.read(scope) or {}
-        repo.put(scope, {**previous,'status':'stale','reason':'Collecte VVCE arrêtée ou devenue inactive.',
-                         'checkedAt':int(time.time()*1000)})
-        # Stop only our dedicated VVCE recorder. Other Session/Lab/KV recorders
-        # remain exclusively owned by their respective workflows.
-        rec = store.get_recording(recording_id)
-        if rec and str(rec.get('name') or '').startswith(VVCE_RECORDER_PREFIX):
-            try: _get_recorder_manager().stop(recording_id)
-            except Exception: app.logger.warning('VVCE dedicated recorder stop failed')
-    except Exception:
-        app.logger.exception('VVCE worker failed')
-    finally:
-        with VVCE_THREADS_LOCK:
-            VVCE_THREADS.pop(scope, None)
-
-
-def _resume_vvce_workers():
-    """Resume persisted secondary projections after a Render restart."""
-    try:
-        repo = _vvce_repository()
-        for item in repo.active():
-            rec = _get_recorder_manager().store.get_recording(item.get('recordingId') or '')
-            if not rec or rec.get('desired_status') == 'stopped':
-                continue
-            expected = item.get('expectedRows') or []
-            if expected:
-                _vvce_launch(item['scope'], rec['id'], expected, item['circuit'], item['session'])
-    except Exception:
-        app.logger.exception('VVCE secondary resume failed')
-
-
-def _vvce_launch(scope, recording_id, expected, circuit, session_key):
-    with VVCE_THREADS_LOCK:
-        current = VVCE_THREADS.get(scope)
-        if current and current.is_alive():
-            return
-        thread = threading.Thread(target=_vvce_work,
-            args=(scope, recording_id, expected, circuit, session_key),
-            name='vvce-secondary-'+hashlib.md5(scope.encode()).hexdigest()[:8], daemon=True)
-        VVCE_THREADS[scope] = thread
-        thread.start()
-
-
-@app.post('/api/vvce/start')
-def vvce_start():
-    """Explicit opt-in once; reopen reads cached results without launching history jobs."""
-    if not _velocity_is_authorized():
-        return jsonify(ok=False,error='Accès administrateur requis'),403
-    body=request.get_json(silent=True) or {}
-    circuit=str(body.get('circuit_id') or '').strip()
-    session_key=str(body.get('session_key') or '').strip()[:200]
-    live_session = str(STATE.get('apex_session_id') or STATE.get('apex_session_title') or '').strip()[:200]
-    if not circuit or not session_key or circuit != str(STATE.get('circuit_id') or '') or (live_session and session_key != live_session):
-        return jsonify(ok=False,error='Circuit ou session Apex non synchronisé'),409
-    rows=body.get('drivers') or []
-    expected=sorted({int(d.get('apex_row') or 0) for d in rows if isinstance(d,dict) and str(d.get('apex_row') or '').isdigit() and int(d.get('apex_row'))>0})
-    if len(expected)<2 or len(expected)>120:
-        return jsonify(ok=False,error='Grille Apex insuffisante ou invalide'),400
-    workspace=_current_workspace_id()
-    scope=_vvce_scope(workspace,circuit,session_key)
-    try:
-        manager=_get_recorder_manager()
-        repo=VVCERepository(manager.store)
-        current=repo.read(scope)
-        recording=None
-        if current and current.get('recordingId'):
-            recording=manager.store.get_recording(current['recordingId'])
-            if recording and (recording.get('desired_status')=='stopped' or recording.get('status') in ('stopped','error')):
-                recording=None
-        if not recording:
-            active=[r for r in manager.store.active_recordings() if str(r.get('circuit_id'))==circuit]
-            if active:
-                # Reuse any active session/Lab/KV Recorder. Never create a second
-                # Apex socket and never stop a Recorder owned by another mode.
-                recording=active[0]
-            else:
-                recording=manager.create(VVCE_RECORDER_PREFIX+workspace+':'+session_key[:50],circuit)
-        if not current or current.get('recordingId') != recording['id']:
-            repo.put(scope, {'status':'waiting','reason':'Initialisation des historiques sur Render',
-                             'recordingId':recording['id'],'circuit':circuit,'session':session_key,
-                             'expectedRows':expected,'updatedAt':0})
-        elif sorted(current.get('expectedRows') or []) != expected:
-            # Changes in team count are only safe for same circuit/session.
-            # Keep a coherent roster in the persisted worker snapshot.
-            repo.put(scope, {**current,'expectedRows':expected})
-        _vvce_launch(scope,recording['id'],expected,circuit,session_key)
-        return jsonify(ok=True,scope=scope,recording_id=recording['id'])
-    except Exception as exc:
-        app.logger.exception('VVCE start failed')
-        return jsonify(ok=False,error=str(exc)[:250]),503
-
-
-@app.get('/api/vvce/status')
-def vvce_status():
-    if not _velocity_is_authorized():
-        return jsonify(ok=False,error='Accès administrateur requis'),403
-    circuit=str(request.args.get('circuit_id') or '')
-    session_key=str(request.args.get('session_key') or '')[:200]
-    if not circuit or not session_key:
-        return jsonify(ok=False,error='Circuit et session requis'),400
-    scope=_vvce_scope(_current_workspace_id(),circuit,session_key)
-    try:
-        item=_vvce_repository().read(scope)
-        return jsonify(ok=True,data=item or {'status':'idle'})
-    except Exception as exc:
-        return jsonify(ok=False,error='Lecture du classement impossible',detail=str(exc)[:160]),503
-
-
 @app.get("/api/state")
 def get_state():
     # Every request uses the latest state. ETag=exact payload bytes, so a 304
@@ -3336,52 +3165,15 @@ def _spotter_persistent_store():
     return RECORDER_STORE
 
 
-def _spotter_storage_key(workspace_id, circuit_id):
-    '''Separate Quick Change snapshots per circuit without changing the KV store.'''
-    wid = str(workspace_id or '').strip()
-    cid = str(circuit_id or '').strip()
-    if not wid or not cid:
-        raise ValueError('Espace et circuit requis pour le suivi Spotter')
-    # Keep the existing workspace-scoped database schema and CAS semantics.
-    return f'{wid}:circuit:{cid}'
-
-
-def _spotter_shared_read(workspace_id, circuit_id=None):
-    '''Read only the circuit requested, with a safe one-time legacy migration.'''
-    cid = str(circuit_id or STATE.get('circuit_id') or '').strip()
-    if not cid:
-        return {}
+def _spotter_shared_read(workspace_id):
     store = _spotter_persistent_store()
-    scoped_key = _spotter_storage_key(workspace_id, cid)
     row = store._execute(
-        'SELECT revision,snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?',
-        (scoped_key,), fetchone=True)
-    if not row:
-        # Existing V1855 records are keyed only by workspace. Migrate them solely
-        # when their recorded circuit matches, never to a different track.
-        legacy = store._execute(
-            'SELECT revision,snapshot_json,updated_at_ms FROM velocity_spotter_shared_state WHERE workspace_id=?',
-            (workspace_id,), fetchone=True)
-        if legacy:
-            try:
-                data = json.loads(legacy['snapshot_json'])
-            except (TypeError, ValueError):
-                data = {}
-            if isinstance(data, dict) and str(data.get('circuit_id') or '') == cid:
-                store._execute('''INSERT INTO velocity_spotter_shared_state
-                    (workspace_id,revision,snapshot_json,updated_at_ms)
-                    VALUES(?,?,?,?) ON CONFLICT(workspace_id) DO NOTHING''',
-                    (scoped_key, int(legacy['revision']), legacy['snapshot_json'],
-                     int(legacy['updated_at_ms'] or 0)))
-                row = store._execute(
-                    'SELECT revision,snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?',
-                    (scoped_key,), fetchone=True)
+        "SELECT revision,snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?",
+        (workspace_id,), fetchone=True)
     if not row:
         return {}
-    data = json.loads(row['snapshot_json'])
-    if not isinstance(data, dict) or str(data.get('circuit_id') or '') != cid:
-        raise ValueError('Etat Spotter lie a un autre circuit')
-    data['revision'] = int(row['revision'])
+    data = json.loads(row["snapshot_json"])
+    data["revision"] = int(row["revision"])
     return data
 
 
@@ -3637,7 +3429,7 @@ def spotter_monitor_lease():
         return jsonify(ok=False,error="Identifiant Spotter manquant"),400
     try:
         store = _spotter_persistent_store()
-        wid = _spotter_storage_key(_current_workspace_id(), STATE.get('circuit_id'))
+        wid = _current_workspace_id()
         now = int(time.time()*1000)
         expires = now + 5000
         row = store._execute("""INSERT INTO velocity_spotter_monitor_lease
@@ -3673,18 +3465,12 @@ def update_spotter_state():
     try:
         store = _spotter_persistent_store()
         workspace_id = _current_workspace_id()
-        current_circuit = str(STATE.get('circuit_id') or '').strip()
-        submitted_circuit = str(clean.get('circuit_id') or '').strip()
-        if not current_circuit or submitted_circuit != current_circuit:
-            return jsonify(ok=False,error='Circuit Spotter modifie : recharger le contexte avant toute ecriture',
-                           circuit_id=current_circuit),409
-        scoped_key = _spotter_storage_key(workspace_id, current_circuit)
         now = int(time.time()*1000)
-        if revision != 0 and not _spotter_shared_read(workspace_id, current_circuit):
+        if revision != 0 and not _spotter_shared_read(workspace_id):
             return jsonify(ok=False,error="Nouvel espace Spotter : révision 0 attendue",
                            empty_workspace=True,workspace_id=workspace_id,revision=0),409
         clean.update(revision=revision+1, updated_at_ms=now,
-                     circuit_id=current_circuit)
+                     circuit_id=str(snapshot.get("circuit_id") or STATE.get("circuit_id") or ""))
         # Atomic compare-and-swap on Postgres/SQLite: two clients cannot overwrite
         # a more recent mutation, even when handled by different server workers.
         row = store._execute("""INSERT INTO velocity_spotter_shared_state
@@ -3692,7 +3478,7 @@ def update_spotter_state():
             VALUES(?,?,?,?) ON CONFLICT(workspace_id) DO UPDATE
             SET revision=excluded.revision,snapshot_json=excluded.snapshot_json,updated_at_ms=excluded.updated_at_ms
             WHERE velocity_spotter_shared_state.revision=? RETURNING revision""",
-            (scoped_key,revision+1,json.dumps(clean,ensure_ascii=False),now,revision),fetchone=True)
+            (workspace_id,revision+1,json.dumps(clean,ensure_ascii=False),now,revision),fetchone=True)
         if not row:
             return jsonify(ok=False,error="État Spotter modifié sur un autre appareil",
                            spotter=_spotter_shared_read(workspace_id),workspace_id=workspace_id),409
@@ -3707,12 +3493,8 @@ def update_spotter_state():
 def get_spotter_state():
     try:
         workspace_id = _current_workspace_id()
-        circuit_id = str(STATE.get('circuit_id') or '')
-        requested = str(request.args.get('circuit_id') or circuit_id)
-        if requested != circuit_id:
-            return jsonify(ok=False,error='Circuit change pendant la lecture Spotter',circuit_id=circuit_id),409
-        shared = _spotter_shared_read(workspace_id, circuit_id)
-        response=jsonify(ok=True, spotter=shared, workspace_id=workspace_id,circuit_id=circuit_id,server_version=APP_VERSION,storage_backend=_spotter_persistent_store().backend)
+        shared = _spotter_shared_read(workspace_id)
+        response=jsonify(ok=True, spotter=shared, workspace_id=workspace_id,server_version=APP_VERSION,storage_backend=_spotter_persistent_store().backend)
         response.headers["Cache-Control"]="private, no-store"
         return response
     except Exception as exc:
@@ -3768,13 +3550,6 @@ def set_circuit():
         # déjà actif : le deuxième appareil doit récupérer le Quick Change existant.
         current_circuit = str(STATE.get("circuit_id") or "").strip()
         if current_circuit != circuit_id:
-            if current_circuit:
-                # Best-effort legacy migration: database unavailability must not
-                # prevent switching the live circuit itself.
-                try:
-                    _spotter_shared_read(workspace_id, current_circuit)
-                except Exception:
-                    app.logger.warning('Migration Spotter differee pour %s', current_circuit, exc_info=True)
             reset_race_state_for_new_circuit(circuit_id)
     except Exception as error:
         app.logger.exception("Erreur pendant la sélection du circuit %s", circuit_id)
@@ -3930,6 +3705,20 @@ def add_quick_change():
         "title": "AJOUTÉ AU QUICK CHANGE",
         "line1": item["previous_team"],
         "line2": f"Kart {item['kart']} — Rang {item['pace_rank']}",
+    }
+    return jsonify(ok=True)
+
+
+@app.post("/api/test-top8-pit-entry")
+def test_top8_pit_entry():
+    if STATE.get("mode") != "endurance":
+        return jsonify(ok=False, error="Alerte Top 8 disponible uniquement en endurance"), 400
+    STATE["generic_alert"] = {
+        "event_id": datetime.now().isoformat(timespec="milliseconds"),
+        "kind": "top8_pit_entry",
+        "title": "🚨 ALERTE",
+        "team": "TEAM ALPHA",
+        "position": 5,
     }
     return jsonify(ok=True)
 

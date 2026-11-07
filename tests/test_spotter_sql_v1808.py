@@ -73,37 +73,6 @@ class SpotterSQLTest(unittest.TestCase):
         self.assertEqual(recovered['client_id'],'desktop')
 
 
-class CircuitIsolatedSpotterTest(SpotterSQLTest):
-    def _functions(self):
-        module=ast.parse((ROOT/'app.py').read_text(encoding='utf8'))
-        selected=[node for node in module.body if isinstance(node,ast.FunctionDef) and node.name in ('_spotter_storage_key','_spotter_shared_read')]
-        env={'_spotter_persistent_store':lambda:self.store,'STATE':{'circuit_id':'actua-karting'},'json':json}
-        exec(compile(ast.Module(body=selected,type_ignores=[]),str(ROOT/'app.py'),'exec'),env)
-        return env
-
-    def test_different_circuits_do_not_share_snapshot(self):
-        env=self._functions()
-        key=env['_spotter_storage_key']
-        self.assertNotEqual(key('WS','actua-karting'),key('WS','mrk-agadir'))
-        snapshot={'circuit_id':'actua-karting','queue':[{'kv':'KV42'}]}
-        self.store._execute('INSERT INTO velocity_spotter_shared_state(workspace_id,revision,snapshot_json,updated_at_ms) VALUES(?,?,?,?)',
-                            (key('WS','actua-karting'),9,json.dumps(snapshot),123))
-        self.assertEqual(env['_spotter_shared_read']('WS','actua-karting')['queue'],snapshot['queue'])
-        self.assertEqual(env['_spotter_shared_read']('WS','mrk-agadir'),{})
-
-    def test_legacy_snapshot_migrates_only_to_its_circuit(self):
-        env=self._functions()
-        snapshot={'circuit_id':'actua-karting','queue':[{'kv':'KV42'}]}
-        self.store._execute('INSERT INTO velocity_spotter_shared_state(workspace_id,revision,snapshot_json,updated_at_ms) VALUES(?,?,?,?)',
-                            ('WS',11,json.dumps(snapshot),123))
-        self.assertEqual(env['_spotter_shared_read']('WS','mrk-agadir'),{})
-        self.assertEqual(env['_spotter_shared_read']('WS','actua-karting')['revision'],11)
-        self.assertEqual(env['_spotter_shared_read']('WS','mrk-agadir'),{})
-        row=self.store._execute('SELECT snapshot_json FROM velocity_spotter_shared_state WHERE workspace_id=?',
-                                (env['_spotter_storage_key']('WS','actua-karting'),),fetchone=True)
-        self.assertEqual(json.loads(row['snapshot_json'])['queue'],snapshot['queue'])
-
-
 class WorkspaceResolutionTest(unittest.TestCase):
     def test_paired_device_uses_persistent_workspace_without_course(self):
         module=ast.parse((ROOT/'app.py').read_text(encoding='utf8'))

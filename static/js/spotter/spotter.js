@@ -21,51 +21,6 @@ const spotterState={
  replacementRequest:null,
  kartTrackingEnabled:false,kartRegistry:{}
 };
-// V1858: localStorage is only a best-effort, bounded Quick Change cache.
-// The race-scoped KV registry and its history belong to the server, never to
-// this browser backup. A full browser quota must not prevent starting Spotter.
-let spotterLocalCacheWarningShown=false;
-function spotterPersistLocalSnapshot(){
- try{
-  const {kartRegistry,undoSnapshot,movementLog,lastDriverStatus,...operational}=spotterState;
-  const snapshot={...operational,movementLog:(movementLog||[]).slice(0,40),lastDriverStatus:{}};
-  const payload=JSON.stringify({version:6,
-   circuit_id:String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||''),
-   appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:snapshot});
-  // Avoid a large browser backup even if some other operational field grows.
-  if(payload.length>240000){
-   console.warn('[Spotter] Cache local trop volumineux : stockage serveur prioritaire');
-   return false;
-  }
-  localStorage.setItem(SPOTTER_STORAGE_KEY,payload);
-  spotterLocalCacheWarningShown=false;
-  return true;
- }catch(error){
-  // A previously stored full KV registry may occupy the entire origin quota.
-  // Replacing this single obsolete cache is safe because the live state is
-  // already in memory and the authoritative state persists on the server.
-  if(error?.name==='QuotaExceededError'||error?.code===22||error?.code===1014){
-   try{
-    localStorage.removeItem(SPOTTER_STORAGE_KEY);
-    const {kartRegistry,undoSnapshot,movementLog,lastDriverStatus,...operational}=spotterState;
-    const snapshot={...operational,movementLog:(movementLog||[]).slice(0,40),lastDriverStatus:{}};
-    const payload=JSON.stringify({version:6,
-     circuit_id:String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||''),
-     appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:snapshot});
-    if(payload.length<=240000){localStorage.setItem(SPOTTER_STORAGE_KEY,payload);return true;}
-   }catch(_){/* Keep Spotter live even when browser storage is full. */}
-  }
-  if(!spotterLocalCacheWarningShown){
-   console.warn('[Spotter] Cache local indisponible ; synchro serveur maintenue',error);
-   spotterLocalCacheWarningShown=true;
-  }
-  return false;
- }
-}
-function spotterSafeLocalSet(key,value){
- try{localStorage.setItem(key,value);return true}
- catch(error){console.warn('[Spotter] Stockage facultatif indisponible',key,error);return false}
-}
 function spotterPadKv(index){return `KV${String(index+1).padStart(2,'0')}`}
 function spotterKvFromNumber(number){return `KV${String(Math.max(1,Number(number)||1)).padStart(2,'0')}`}
 function spotterKvNumber(kv){const match=String(kv||'').match(/(\d+)/);return match?Number(match[1]):0}
@@ -134,36 +89,6 @@ let spotterRetryDelayMs=0;
 let spotterSetupDraft=null;
 let spotterSetupOrigin='spotter';
 let spotterSetupRequested=false;
-// V1857: a new Quick Change setup must not be erased by a stale GET.
-let spotterLaunchAwaitingServer=false;
-let spotterCircuitContext='';
-function spotterCurrentCircuit(){
- return String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'').trim();
-}
-function spotterEnsureCircuitContext(){
- const circuit=spotterCurrentCircuit();
- if(!circuit||circuit===spotterCircuitContext)return false;
- const previous=spotterCircuitContext;
- spotterCircuitContext=circuit;
- if(!previous)return false;
- // Only transient browser state is cleared. Stored per-circuit data remains
- // authoritative on the server and is retrieved on the next GET.
- clearTimeout(spotterSyncTimer);spotterPushQueued=false;
- spotterServerRevision=0;spotterConfirmedSnapshot=null;spotterLastRemoteUpdate=0;
- spotterLocalMutationAt=0;spotterDeferredRemote=null;spotterPushInFlight=false;
- spotterMonitorLeaseOwner=false;spotterMonitorLeaseUntil=0;spotterLastMonitorLeaseWorkspace='';
- spotterState.queue=[];spotterState.maintenance=[];spotterState.incoming=[];
- spotterState.assignments={};spotterState.incomingQueueSelections={};spotterState.movementLog=[];
- spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;
- spotterState.configured=false;spotterState.replacementRequest=null;spotterState.undoSnapshot=null;
- spotterState.kartTrackingEnabled=false;spotterState.kartRegistry={};
- spotterState.nextKvNumber=1;spotterState.freePitIns=0;spotterState.freePitOuts=0;
- spotterState.freeMode=false;spotterState.recalibrating=false;spotterState.freeStartedAt=null;
- spotterSetupDraft=null;spotterSetupRequested=false;spotterUiStep='mode';spotterLaunchAwaitingServer=false;
- spotterLastSyncError='';spotterUpdateSyncBadge();
- spotterPublishSharedState();
- return true;
-}
 
 function spotterClone(value){return JSON.parse(JSON.stringify(value??null))}
 function spotterUndoState(){
@@ -228,7 +153,7 @@ const spotterAcknowledgedIncoming=new Map();
 try{for(const entry of JSON.parse(localStorage.getItem(SPOTTER_ACK_KEY)||'[]')){
  if(entry?.id&&entry?.record&&Date.now()-Number(entry.record.at)<43200000)spotterAcknowledgedIncoming.set(entry.id,entry.record)
 }}catch(_){}
-function spotterPersistAcknowledged(){spotterSafeLocalSet(SPOTTER_ACK_KEY,JSON.stringify([...spotterAcknowledgedIncoming].slice(-300)))}
+function spotterPersistAcknowledged(){localStorage.setItem(SPOTTER_ACK_KEY,JSON.stringify([...spotterAcknowledgedIncoming].slice(-300)))}
 function spotterRememberAcknowledged(item){
  if(!item?.id)return;
  spotterAcknowledgedIncoming.set(String(item.id),{team:String(item.team||''),at:Date.now()});
@@ -275,10 +200,6 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
  // Server revision is authoritative; timestamps from different devices are not.
  const remoteRevision=Number(remote.revision)||0;
  if(!force&&remoteRevision<=spotterServerRevision)return;
- // The server may reply to a prior GET after the launch button was pressed.
- // Do not let an old unconfigured snapshot undo the local configuration before
- // the compare-and-swap POST has been acknowledged.
- if(typeof spotterLaunchAwaitingServer!=='undefined' && spotterLaunchAwaitingServer && spotterState.configured && remote.configured===false)return;
  const remoteMutation=spotterRemoteMutationAt(remote);
  // A reset is an authoritative state transition, not a regular queue merge.
  const remoteReset=remote.configured===false && Array.isArray(remote.queue) && remote.queue.length===0 && Array.isArray(remote.incoming) && remote.incoming.length===0;
@@ -332,7 +253,7 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
   spotterConfirmedSnapshot=spotterClone(remote);
   spotterPublishSharedState(remote);
   spotterLastSyncError='';spotterUpdateSyncBadge();
-  // Remote snapshot is authoritative on the server; no browser rewrite on each poll.
+  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
   if(document.body.classList.contains('current-spotter')&&(remoteReset||!(spotterDrag?.active||spotterSetupDraft))){
    // Un snapshot distant peut rafraîchir le LIVE, mais ne remplace jamais
    // un menu de configuration / ajout / Quick Change en cours.
@@ -344,14 +265,9 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
 }
 async function spotterPullSharedState({force=false}={}){
  try{
-  spotterEnsureCircuitContext();
-  const requestedCircuit=spotterCurrentCircuit();
-  const response=await fetch(`/api/spotter-state?circuit_id=${encodeURIComponent(requestedCircuit)}`,{cache:'no-store',headers:{...((typeof velocityDeviceHeaders==='function')?velocityDeviceHeaders():{})}});
+  const response=await fetch('/api/spotter-state',{cache:'no-store',headers:{...((typeof velocityDeviceHeaders==='function')?velocityDeviceHeaders():{})}});
   if(!response.ok){spotterLastSyncError=`Lecture serveur HTTP ${response.status}`;spotterUpdateSyncBadge();return false;}
   const payload=await response.json();
-  if(requestedCircuit!==spotterCurrentCircuit()||String(payload?.circuit_id||'')!==requestedCircuit){
-   spotterEnsureCircuitContext();return false;
-  }
   const previousWorkspace=spotterWorkspaceStatus;
   spotterWorkspaceStatus=String(payload?.workspace_id||'INCONNU');
   if(previousWorkspace!==spotterWorkspaceStatus){
@@ -375,7 +291,6 @@ async function spotterPullSharedState({force=false}={}){
 }
 
 function loadSpotterFoundation(){
- spotterCircuitContext=spotterCurrentCircuit();
  try{
   const saved=JSON.parse(localStorage.getItem(SPOTTER_STORAGE_KEY)||'null');
   // Migration V7.1.2 : les sauvegardes V7.1.1 et antérieures peuvent contenir
@@ -385,10 +300,7 @@ function loadSpotterFoundation(){
    // V7.2.1784 : une mise à jour Velocity ne doit jamais effacer une course
    // Spotter en cours. On migre l'état local vers la release courante puis on
    // laisse les protections circuit/session décider d'une éventuelle remise à zéro.
-   if(saved.circuit_id&&saved.circuit_id===spotterCircuitContext){
-    Object.assign(spotterState,saved.state);
-   }
-   // Legacy unscoped saves must never reappear on a different track.
+   Object.assign(spotterState,saved.state);
   }else if(saved){
    // Seules les très anciennes sauvegardes au format incompatible sont purgées.
    localStorage.removeItem(SPOTTER_STORAGE_KEY);
@@ -396,7 +308,7 @@ function loadSpotterFoundation(){
  }catch(_){localStorage.removeItem(SPOTTER_STORAGE_KEY)}
  spotterEnsureSetupDefaults();
  spotterPublishSharedState();
- spotterPersistLocalSnapshot();
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  renderSpotterFoundation();
 }
 let spotterSyncTimer=null;
@@ -573,7 +485,6 @@ async function spotterPushSharedState(){
     spotterLastRemoteUpdate=Number(payload?.updated_at_ms)||Date.now();
     spotterServerRevision=Number(payload?.revision)||revision+1;
     spotterWorkspaceStatus=String(payload?.workspace_id||spotterWorkspaceStatus);
-    spotterLaunchAwaitingServer=false;
     spotterSyncLastWriteAt=Date.now();spotterLastSyncError='';
     spotterConfirmedSnapshot=spotterClone({...edited,revision:spotterServerRevision,updated_at_ms:spotterLastRemoteUpdate});
     spotterPublishSharedState(spotterConfirmedSnapshot);spotterUpdateSyncBadge();
@@ -587,20 +498,8 @@ async function spotterPushSharedState(){
    }
    const remote=payload.spotter;
    if(!confirmed&&Number(remote.revision)>0){
-    // A fresh circuit may already have a blank versioned server snapshot.
-    // Rebase the launch on it rather than discarding the user's three files.
-    if(spotterLaunchAwaitingServer && edited.configured && !remote.configured &&
-       !remote.queue.length && !remote.incoming.length && !remote.maintenance.length){
-     revision=Number(remote.revision)||0;
-     confirmed=spotterClone(remote);
-     spotterConfirmedSnapshot=spotterClone(remote);
-     spotterServerRevision=revision;
-     edited={...edited,client_id:SPOTTER_CLIENT_ID,app_release:SPOTTER_APP_RELEASE,mutation_at_ms:Date.now()};
-     continue;
-    }
-    spotterLaunchAwaitingServer=false;
     spotterApplyRemoteSnapshot(remote,{force:true});
-    spotterLastSyncError='État distant déjà actif : vérifier la configuration avant relance';
+    spotterLastSyncError='Premier chargement effectué après conflit : recommencer l’action';
     spotterUpdateSyncBadge();return;
    }
    const merged=spotterRebaseFields(confirmed||{},edited,remote);
@@ -637,7 +536,7 @@ function spotterScheduleSharedSync(delay=120){
 function saveSpotterFoundation(){
  spotterLocalMutationAt=Date.now();
  spotterPublishSharedState();
- spotterPersistLocalSnapshot();
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  spotterScheduleSharedSync();
 }
 
@@ -651,11 +550,13 @@ let spotterRegistryReady=false;
 let spotterRegistryUpdatedAt=0;
 let spotterRegistryWriteInFlight=false;
 let spotterRegistryLoading=null;
+let spotterRegistrySortMode='default';
 // V1854: SQL registry availability and KV collection are independent states.
 let spotterRegistrySyncState='connecting';
 let spotterRegistrySyncLastSuccess=0;
 let spotterRegistrySyncFailures=0;
 let spotterRegistryNextRetryAt=0;
+let spotterKartCommandBusy=false;
 function spotterRegistrySetSyncState(state){
  spotterRegistrySyncState=state;
  if(state==='online'){
@@ -717,7 +618,7 @@ async function spotterPullRegistry({forceServer=false}={}){
     spotterState.kartRegistry={};
     spotterRegistryRunId=remoteRun;
     spotterRegistryUpdatedAt=0;
-    spotterSafeLocalSet(SPOTTER_RUN_STORAGE_KEY,remoteRun);
+    localStorage.setItem(SPOTTER_RUN_STORAGE_KEY,remoteRun);
     clearTimeout(spotterRegistryPushTimer);spotterRegistryPushTimer=null;
    }
    // The registry response is authoritative for BOTH physical identity and
@@ -745,7 +646,10 @@ async function spotterPullRegistry({forceServer=false}={}){
     }else{
      spotterState.kartRegistry=spotterClone(incoming);
      spotterPublishKartScoreReference();
-     // KV registry is server-authoritative and deliberately not stored locally.
+     localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({
+      version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState
+     }));
+     spotterRefreshKartRegistry();
     }
    }
    return true;
@@ -820,8 +724,10 @@ async function spotterPushRegistry(){
     if(sentRun===spotterRegistryRunId){
      spotterState.kartRegistry=canonical;
      spotterPublishKartScoreReference();
-     
-     // Server holds KV history; never duplicate it into the browser cache.
+     spotterRefreshKartRegistry();
+     try{localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,
+      appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));}
+     catch(e){console.warn('[Spotter] Sauvegarde locale après fusion KV indisponible',e)}
      if(pendingNewEvents)spotterScheduleRegistryPush();
     }
     console.info('[Spotter] Passages KV concurrents conservés sur Render',payload.history_events_added||0);
@@ -971,7 +877,59 @@ function spotterRegistryClearSpeeds(){
  // Le serveur efface aussi les scores de l'ancien epoch ; conserver le suivi des KV.
 }
 window.spotterRegistryClearSpeeds=spotterRegistryClearSpeeds;
-// V1855: retired legacy tracking activation and registry UI. Shared kart identity and score engines remain.
+function spotterRegistrySeedCurrent(){
+ if(!spotterState.kartTrackingEnabled||!spotterRegistryReady)return;
+ Object.entries(spotterState.assignments||{}).forEach(([team,item])=>{if(item?.kv)spotterRegistryAppend(item.kv,team,null,{source:'activation'})});
+ [...(spotterState.queue||[]),...(spotterState.maintenance||[])].forEach(item=>{if(item?.kv)spotterRegistryEnsure(item.kv)});
+ spotterScheduleRegistryPush();
+}
+// V1854: only the server decides which current course/registry receives notes.
+// The local SQL snapshot is a view, never a prerequisite for issuing a KV command.
+// No previous KV trace is marked interrupted by stopping a recorder.
+async function spotterSetKartTracking(enabled){
+ const next=Boolean(enabled);
+ if(spotterKartCommandBusy)return;
+ if(!next&&!spotterState.kartTrackingEnabled)return;
+ spotterKartCommandBusy=true;
+ spotterRegistryCourseMessage(next?'Commande envoyée au serveur KV…':'Arrêt de la collecte demandé…');
+ try{
+  const response=await fetch('/api/spotter-kv-tracking',{
+   method:next?'POST':'DELETE',headers:{'Content-Type':'application/json'},
+   ...(next?{body:'{}'}:{})
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.ok)throw new Error(result.detail||result.error||`HTTP ${response.status}`);
+  if(next){
+   // Do not silently switch physical identities: the authoritative server run
+   // is loaded separately, and old in-flight registry pushes remain guarded.
+   spotterState.kartTrackingEnabled=true;
+   const count=Number.isFinite(Number(result.scored_count))?Number(result.scored_count):0;
+   spotterKartScoringMessage=`Collecte serveur ${result.status==='session_recorder'?'via Session Course':'active'} · ${count} note(s) KV calculée(s).`;
+   spotterRegistryCourseMessage(`Collecte confirmée côté serveur · ${count} note(s) KV. Synchronisation du registre en cours.`);
+  }else{
+   spotterState.kartTrackingEnabled=false;
+   spotterKartScoringMessage='Collecte KV arrêtée. Identités et historique conservés.';
+   spotterRegistryCourseMessage('Collecte arrêtée ; aucune trace KV effacée ni interrompue.');
+  }
+  saveSpotterFoundation();
+  // Reload SQL after confirming the command; a failed GET is not a failed POST.
+  const synced=await spotterPullRegistry({forceServer:true});
+  if(synced&&next)spotterRegistrySeedCurrent();
+  if(!synced)spotterRegistryCourseMessage('Commande acceptée par le serveur. Registre momentanément hors ligne : dernière copie conservée, reconnexion automatique.',false);
+  spotterRefreshKartRegistry({force:true});
+  // Rebuild controls only after the success state is committed, retaining overlay.
+  await spotterOpenKartRegistry();
+  spotterRegistryCourseMessage(!next?'Collecte arrêtée, historiques préservés.':`Collecte KV active · ${Number(result.scored_count)||0} note(s) calculée(s) · ${synced?'registre synchronisé':'registre en reconnexion'}.`);
+ }catch(error){
+  spotterKartScoringMessage=`Commande KV refusée : ${String(error.message||error)}`;
+  spotterRegistryCourseMessage(spotterKartScoringMessage,true);
+  console.error('[Spotter] Commande collecte KV',error);
+ }finally{spotterKartCommandBusy=false}
+}
+
+function spotterRegistryCounts(){const rows=Object.values(spotterState.kartRegistry||{});return {active:rows.filter(row=>row?.trace==='active').length,total:rows.length,live:spotterRegistryLiveRows().length}}
+// V7.2.1810 — Table compacte, tri et rafraîchissement sans perte du défilement global.
+// La NOTE est une évaluation de vitesse ; CHRONO POT./RÉC. restent des durées, sans nouveau calcul.
 function spotterRegistryShortTeam(value){
  const full=spotterDisplayName(value),letters=Array.from(full);
  return letters.length>30?letters.slice(0,29).join('')+'…':full;
@@ -1036,7 +994,7 @@ async function spotterRegistrySeedLiveTeams(){
    if(payload.ok&&payload.run_id===spotterRegistryRunId&&!spotterRegistryPushTimer&&!spotterRegistryWriteInFlight){
     spotterState.kartRegistry=payload.registry;
     spotterRegistryUpdatedAt=Number(payload.registry_updated_at_ms)||spotterRegistryUpdatedAt;
-    spotterPublishKartScoreReference();
+    spotterPublishKartScoreReference();spotterRefreshKartRegistry();
    }
   }
  }catch(error){console.warn('[Spotter] Attribution KV provisoire différée',error)}
@@ -1170,11 +1128,237 @@ async function spotterWarmRegistryStats(){
     }
     spotterStatsWarmCache.set(key,{at:Date.now(),best:scratch.best?.seconds??null,
      recent:scratch.recent??null,count:valid.length,source:'apex-stats-provisional'});
+    if(document.getElementById('spotterRegistryOverlay'))spotterRefreshKartRegistry();
    }catch(error){console.warn('[Spotter] STATS provisoires indisponibles',row,error)}
   }
  };
  await Promise.all([worker(),worker()]);
 }
+let spotterKartScoringMessage="";
+function spotterKartScoreDiagnostic(){
+ const status=String(window.velocityKartScoringStatus||'');
+ if(spotterKartScoringMessage)return spotterKartScoringMessage;
+ if(status==='mode_not_selected')return 'NOTES · mode Karts facultatif';
+ if(status==='tracking_not_active')return 'NOTES EN PAUSE · activer le suivi KV';
+ if(status==='waiting_for_kv')return 'EN ATTENTE · première identification KV';
+ if(status==='waiting_for_recorder_laps')return 'EN ATTENTE · tours valides de la collecte serveur';
+ return '';
+}
+function spotterRegistryRowsHtml(){
+ const registry=spotterState.kartRegistry||{};
+ const observed=spotterRegistryLiveRows();
+ // Rendering is read-only: relay persistence runs in the dedicated 2s cycle.
+ const liveByKv=new Map(observed.filter(item=>item.kv).map(item=>[item.kv,item]));
+ const registered=Object.values(registry).filter(row=>{
+  // La liste active ne montre que les machines actuellement associees au live.
+  // L'historique complet reste disponible dans Archives KV / export.
+  return Boolean(row?.kv&&liveByKv.has(row.kv));
+ }).map(row=>({
+  row,current:liveByKv.get(row.kv)?.current||spotterRegistryCurrent(row.kv),
+  kv:row.kv,key:row.kv,position:liveByKv.get(row.kv)?.position??99999,
+  rating:row.autoProvisional&&liveByKv.get(row.kv)?.rating?.value!=null?liveByKv.get(row.kv).rating:spotterRegistryRating(row.kv),isLive:Boolean(liveByKv.has(row.kv))
+ }));
+ const unmatched=observed.filter(item=>!item.kv).map(item=>({
+  row:{kv:null,history:[],trace:'live'},current:item.current,kv:null,key:item.key,
+  position:item.position,rating:item.rating||{value:null,provisional:false},isLive:true
+ }));
+ // Les lignes Apex doivent être visibles EN PREMIER : les KV historiques non
+ // associés à une équipe active ne doivent pas masquer le live sous le scroll.
+ // Aucune association physique KV n’est inventée ici.
+ const rows=unmatched.concat(registered);
+ const byKv=(a,b)=>a.kv&&b.kv?spotterKvNumber(a.kv)-spotterKvNumber(b.kv):a.kv?-1:b.kv?1:a.position-b.position;
+ if(spotterRegistrySortMode==='note')rows.sort((a,b)=>(b.rating.value??-1)-(a.rating.value??-1)||byKv(a,b));
+ else if(spotterRegistrySortMode==='relay')rows.sort((a,b)=>(b.current.seconds??-1)-(a.current.seconds??-1)||byKv(a,b));
+ else rows.sort((a,b)=>Number(b.isLive)-Number(a.isLive)||a.position-b.position||byKv(a,b));
+ if(!rows.length)return '<div class="spotter-registry-empty-block">En attente du premier état Apex : aucune équipe ni machine disponible.</div>';
+ const countHistory=Math.max(1,...rows.map(item=>Array.isArray(item.row.history)?item.row.history.length:0));
+ const head=['KV','NOTE KART','KART APEX','ÉQUIPE ACTUELLE','TOURS','EN PISTE','CHRONO POT.','CHRONO RÉC.','DERNIER','FIABILITÉ'];
+ const heading=head.map((label,i)=>`<th scope="col" class="${i===3?'spotter-registry-current-column':''}">${label}</th>`).join('')+
+  Array.from({length:countHistory},(_,i)=>`<th scope="col" class="spotter-registry-team-column">RELAIS ${i+1}</th>`).join('');
+ const safe=value=>spotterEscape(String(value));
+ const name=value=>`<span class="spotter-registry-name" title="${safe(spotterDisplayName(value))}">${safe(spotterRegistryShortTeam(value))}</span>`;
+ const body=rows.map(({row,current,kv,key,rating,isLive})=>{
+  const {team,kart,last,seconds,laps}=current;
+  const speed=row.speed,valid=speed&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.potential))&&speed.potential!==null;
+  const freshRelay=Number(speed?.updatedAt||0)>=Number(row?.history?.[row.history.length-1]?.at||0);
+  const relayTours=(speed?.source==='server-recorder'&&freshRelay&&Number(speed.relayLaps)>0)?Number(speed.relayLaps):null;
+  const displayTours=relayTours??((Number(laps)>0)?Number(laps):null);
+  const stats=current.driver?spotterStatsWarmValue(current.driver):null;
+  const potFallback=stats?.best??(row.autoProvisional?current.driver?.best||current.driver?.best_lap:null);
+  const recFallback=stats?.recent??(row.autoProvisional?current.driver?.last||current.driver?.last_lap:null);
+  const tone=rating.value===null?'unknown':rating.value>=98?'gold':rating.value>=90?'green':rating.value>=80?'orange':'red';
+  const displayed=rating.value===null?'—':String(Math.round(rating.value*10)/10)+(rating.provisional?'*':'');
+  const status=row.autoProvisional?'KV PROVISOIRE':rating.provisional?'PROVISOIRE*':valid?(speed.confirmed?'CONFIRMÉ':'PROVISOIRE'):'—';
+  const interrupted=row.trace==='interrupted';
+  const currentTeam=`<td class="spotter-registry-current-column"><div class="spotter-registry-current-team">${name(team)}</div></td>`;
+  const note=`<td class="spotter-registry-note-cell"><span class="spotter-registry-rating ${tone}" title="${rating.liveOnly?'Estimation LIVE des tours de l’équipe, KV physique non identifié et historique non modifié':rating.provisional?'Estimation sur les premiers tours, non confirmée':'Potentiel de vitesse du kart physique'}">${safe(displayed)}</span></td>`;
+  const base=`<td class="spotter-registry-kv">${safe(kv||'—')}</td>${note}<td class="spotter-registry-kart">${safe(kart)}</td>${currentTeam}`+
+   `<td class="spotter-registry-laps">${safe(displayTours===null?'—':displayTours)}</td>`+
+   `<td class="spotter-registry-on-track">${safe(spotterRegistryTrackLabel(seconds))}</td>`+
+   `<td title="${valid?'Potentiel moteur KV':stats?'Meilleur tour STATS Apex, estimation équipe provisoire':'Estimation live provisoire'}">${safe(valid?spotterRegistryFormatChrono(speed.potential):spotterRegistryFormatChrono(potFallback))}</td>`+
+   `<td>${safe(speed&&freshRelay&&String(speed.epoch||'')===String(spotterLiveState()?.kart_scoring_epoch||'')&&Number.isFinite(Number(speed.recent))&&speed.recent!==null?spotterRegistryFormatChrono(speed.recent):spotterRegistryFormatChrono(recFallback))}</td>`+
+   `<td>${safe(spotterRegistryFormatChrono(last))}</td><td class="spotter-registry-state">${safe(status)}${interrupted?'<span class="spotter-registry-trace">TRACE INTERROMPUE</span>':''}</td>`;
+  // V1834: show history in SQL event order; do not present an initial observation
+  // as the currently active relay after a later confirmed transfer.
+  const historyEntries=Array.isArray(row.history)?row.history:[];
+  const liveTeamKey=current.driver?spotterDriverKey(current.driver):'';
+  const latestRelay=historyEntries[historyEntries.length-1];
+  const relayMismatch=Boolean(kv&&liveTeamKey&&latestRelay&&String(latestRelay.team)!==String(liveTeamKey));
+  const history=historyEntries.map((entry,index)=>{
+   const score=entry?.score==null?'—':safe(entry.score)+(entry.scoreProvisional?'*':'');
+   const isLast=index===historyEntries.length-1;
+   const active=isLast&&!relayMismatch&&liveTeamKey&&String(entry.team)===String(liveTeamKey);
+   const observation=entry?.source==='initial-live';
+   const detail=observation?'Observation initiale, affectation physique non confirmée':active?'Relais actif confirmé par le live':'Relais historique';
+   return `<td class="spotter-registry-team-column" title="${safe(detail)}"><div class="spotter-registry-entry">${name(spotterRegistryHistoricalName(entry))}${active?'<small title="Relais actuel"> ●</small>':''}${observation?'<small title="Observation initiale, pas un transfert confirmé"> *</small>':''}<em class="${spotterScoreTone(entry?.score)}">${score}</em></div></td>`;
+  }).join('');
+  const remaining=countHistory-historyEntries.length;
+  const blank=remaining>0?`<td colspan="${remaining}" class="spotter-registry-blank">${!historyEntries.length&&!isLive?'Aucune affectation':''}</td>`:'';
+  const mismatchHint=relayMismatch?'<span title="Le live ne correspond pas au dernier relais enregistré : changement non confirmé, historique préservé"> ⚠ À vérifier</span>':'';
+  return `<tr class="spotter-registry-grid-row${!kv?' spotter-registry-unidentified':''}" data-kv="${safe(key)}">${base.replace('</td><td class="spotter-registry-laps">',mismatchHint+'</td><td class="spotter-registry-laps">')}${history}${blank}</tr>`;
+ }).join('');
+ return `<table class="spotter-registry-grid"><thead><tr>${heading}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function spotterSetKartRegistrySort(value){
+ spotterRegistrySortMode=['default','note','relay'].includes(value)?value:'default';
+ spotterRefreshKartRegistry({force:true});
+}
+function spotterRefreshKartRegistry({force=false}={}){
+ const overlay=document.getElementById('spotterRegistryOverlay');
+ const diagnostic=overlay?.querySelector('[data-spotter-scoring-diagnostic]');
+ if(diagnostic){const warning=spotterKartScoreDiagnostic();diagnostic.textContent=warning;diagnostic.hidden=!warning;}
+ const target=overlay?.querySelector('.spotter-registry-table');
+ if(!target)return;
+ const next=spotterRegistryRowsHtml();
+ if(!force&&target.dataset.lastHtml===next)return;
+ // A transient empty read is NEVER allowed to destroy a nonempty table.
+ // A genuine new race has a new run_id and is handled separately below.
+ const blank=next.includes('spotter-registry-empty-block')||!next.includes('spotter-registry-grid-row');
+ if(blank&&target.querySelector?.('.spotter-registry-grid-row')&&
+    target.dataset.runId===spotterRegistryRunId)return;
+ const left=target.scrollLeft,top=target.scrollTop;
+ const runChanged=target.dataset.runId&&target.dataset.runId!==spotterRegistryRunId;
+ const existing=target.querySelector?.('.spotter-registry-grid');
+ const template=(typeof document.createElement==='function')?document.createElement('template'):null;
+ if(template)template.innerHTML=next;
+ const incoming=template?.content?.querySelector?.('.spotter-registry-grid');
+ // V1799 rendered once. Preserve the existing table and only update cells
+ // whose text actually changed, so live chrono updates don't flicker.
+ let patched=false;
+ if(!force&&!runChanged&&existing&&incoming){
+  const before=[...existing.querySelectorAll('tbody tr')];
+  const after=[...incoming.querySelectorAll('tbody tr')];
+  const headBefore=existing.querySelector('thead')?.innerHTML;
+  const headAfter=incoming.querySelector('thead')?.innerHTML;
+  if(before.length===after.length&&headBefore===headAfter&&
+     before.every((tr,i)=>tr.dataset.kv===after[i].dataset.kv&&
+      tr.children.length===after[i].children.length&&
+      [...tr.children].every((td,j)=>td.colSpan===after[i].children[j].colSpan))){
+   before.forEach((tr,i)=>[...tr.children].forEach((td,j)=>{
+    const replacement=after[i].children[j];
+    if(td.innerHTML!==replacement.innerHTML)td.innerHTML=replacement.innerHTML;
+   }));
+   patched=true;
+  }
+ }
+ if(!patched)target.innerHTML=next;
+ target.dataset.lastHtml=next;
+ target.dataset.runId=spotterRegistryRunId||'';
+ target.scrollLeft=left;target.scrollTop=top;
+ const count=spotterRegistryCounts();
+ const label=overlay.querySelector('[data-spotter-registry-count]');
+ if(label)label.textContent=`● LIVE · ${count.live||0} ÉQUIPES · ${count.active}/${count.total} KV`;
+}
+function spotterRegistrySortControl(){
+ const choices=[['default','Par défaut'],['note','Note'],['relay','Durée de relais']];
+ return `<label class="spotter-registry-sort">Trier par <select aria-label="Trier le registre" onchange="spotterSetKartRegistrySort(this.value)">${choices.map(([id,label])=>`<option value="${id}" ${spotterRegistrySortMode===id?'selected':''}>${label}</option>`).join('')}</select></label>`;
+}
+async function spotterOpenKartRegistry(){
+ // Afficher les équipes LIVE immédiatement, sans attendre PostgreSQL ou 8 tours.
+ document.getElementById('spotterRegistryOverlay')?.remove();
+ const active=Boolean(spotterState.kartTrackingEnabled),counts=spotterRegistryCounts();
+ const heading=`<div class="spotter-registry-head"><div><div class="spotter-registry-title">REGISTRE DES KARTS</div><small data-spotter-registry-count>● LIVE · ${counts.live||0} ÉQUIPES · ${counts.active}/${counts.total} KV</small><small data-spotter-registry-sync style="display:block;color:#83e0b0;font-size:11px">SYNCHRONISATION…</small><small class="spotter-registry-live-hint">Équipes Apex visibles immédiatement · — = KV non identifié · * = note provisoire</small></div><div class="spotter-registry-head-tools">${spotterRegistrySortControl()}<button class="spotter-registry-close" type="button" onclick="spotterCloseKartRegistry()" aria-label="Fermer le registre">×</button></div></div>`;
+ const content=active
+  ? `${heading}<div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterSetKartTracking(true)" title="Démarrer ou reprendre la collecte des notes sans Session Course">RELANCER LES NOTES</button><button class="spotter-secondary danger" type="button" onclick="spotterSetKartTracking(false)">ARRÊTER LE SUIVI</button><button class="spotter-primary" type="button" onclick="spotterCloseKartRegistry()">FERMER</button></div>`
+  : `<div class="spotter-registry-title">SUIVI KARTS</div><p class="spotter-registry-warning">Le suivi n’est fiable que si chaque échange est compté. Une interruption conserve l’historique connu mais Velocity ne reconstitue jamais une filiation incertaine.</p><div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterCloseKartRegistry()">ANNULER</button><button class="spotter-primary" type="button" onclick="spotterSetKartTracking(true)">ACTIVER LE SUIVI</button></div>`;
+ const scorerInfo=spotterKartScoreDiagnostic();
+ document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel wide"><p data-spotter-scoring-diagnostic class="spotter-registry-warning" ${scorerInfo?'':'hidden'}>${spotterEscape(scorerInfo)}</p>${content}</div></div>`);
+ void spotterWarmRegistryStats();
+ spotterRegistrySetSyncState(spotterRegistrySyncState);
+ void spotterPullRegistry().then(()=>{spotterRefreshKartRegistry({force:true});void spotterRegistrySeedLiveTeams()}).catch(error=>console.warn('[Spotter] Registre live ouvert sans cache SQL',error));
+}
+
+function spotterExportKartRegistry(){
+ const payload={format:'velocity-kart-registry-v1',exportedAt:new Date().toISOString(),version:SPOTTER_APP_RELEASE,run_id:spotterRegistryRunId,registry:spotterClone(spotterState.kartRegistry||{})};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');a.href=url;a.download='Velocity_Historique_KV_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+let spotterNewKartCourseInFlight=false;
+function spotterRegistryCourseMessage(message,error=false){
+ const overlay=document.getElementById('spotterRegistryOverlay');
+ if(!overlay)return;
+ let node=overlay.querySelector('[data-spotter-course-message]');
+ if(!node){node=document.createElement('div');node.setAttribute('data-spotter-course-message','');
+  const header=overlay.querySelector('.spotter-registry-head');header?.insertAdjacentElement('afterend',node);
+ }
+ node.textContent=message;
+ node.style.cssText='padding:8px 12px;margin:8px 0;border:1px solid '+(error?'#ef6a73':'#3fbd91')+';color:'+(error?'#ff9ba1':'#8de7c3')+';border-radius:6px;font-size:12px;font-weight:700';
+}
+async function spotterStartNewKartCourse(){
+ if(spotterNewKartCourseInFlight)return;
+ if(!spotterRegistryReady||!spotterRegistryRunId){spotterRegistryCourseMessage('Le registre serveur n’est pas chargé. Réessaie après synchronisation.',true);return;}
+ if(!confirm('Archiver le registre de cette course et ouvrir un registre KV VIDE ? Les files du Quick Change seront conservées.'))return;
+ spotterNewKartCourseInFlight=true;
+ const button=document.querySelector('#spotterRegistryOverlay button[onclick="spotterStartNewKartCourse()"]');
+ if(button){button.disabled=true;button.textContent='CRÉATION EN COURS…';}
+ try{
+  const oldRun=spotterRegistryRunId;
+  const response=await fetch('/api/spotter-registry/new-course',{
+   method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({run_id:oldRun})
+  });
+  const data=await response.json();if(!response.ok||!data.ok){
+   if(response.status===409){
+    await spotterPullRegistry();
+    spotterRegistryCourseMessage('Le registre a déjà changé sur un autre appareil. État serveur rechargé.',true);
+    return;
+   }
+   throw Error(data.error||'Nouvelle course KV impossible');
+  }
+  if(!data.run_id||String(data.run_id)===oldRun)throw Error('Le serveur n’a pas confirmé un nouvel identifiant de course.');
+  // The server has COMMITTED the new race. Apply the response immediately,
+  // without waiting for another GET that may finish with an obsolete snapshot.
+  spotterRegistryBackupLocal(oldRun);
+  clearTimeout(spotterRegistryPushTimer);spotterRegistryPushTimer=null;
+  spotterRegistryRunId=String(data.run_id);
+  window.velocityKartServerScope={runId:spotterRegistryRunId,epoch:spotterRegistryRunId,
+   mode:data.kart_mode||'',circuitId:(typeof spotterLiveState==='function'?spotterLiveState()?.circuit_id:'')||'',
+   workspaceId:String(window.VELOCITY_WORKSPACE_ID||((typeof spotterLiveState==='function')?spotterLiveState()?.workspace?.id:'')||'')};
+  const currentLive=(typeof spotterLiveState==='function')?spotterLiveState():null;
+  if(currentLive){currentLive.kart_scoring_epoch=spotterRegistryRunId;currentLive.kart_setup_mode=data.kart_mode||null;}
+  if(typeof velocityKartScoreEnsureScope==='function')velocityKartScoreEnsureScope();
+  spotterRegistryUpdatedAt=Number(data.registry_updated_at_ms)||0;
+  spotterRegistryExplicitRunGuard=spotterRegistryRunId;
+  spotterRegistryReady=true;
+  spotterState.kartRegistry={};
+  spotterPublishKartScoreReference();
+  localStorage.setItem(SPOTTER_RUN_STORAGE_KEY,spotterRegistryRunId);
+  localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
+  spotterRefreshKartRegistry({force:true});
+  spotterRegistryAutoSeedAt=0;
+  void spotterRegistrySeedLiveTeams();
+  void spotterWarmRegistryStats();
+  spotterRegistryCourseMessage('NOUVELLE COURSE KV CRÉÉE · ancien historique archivé · KV attribués aux équipes live.');
+ }catch(error){spotterRegistryCourseMessage('Nouvelle course KV impossible : '+(error.message||String(error)),true);console.error('[Spotter] Création course KV',error);}
+ finally{spotterNewKartCourseInFlight=false;if(button){button.disabled=false;button.textContent='NOUVELLE COURSE KV';}}
+}
+function spotterExportKartArchives(){
+ // The ZIP contains one isolated JSON per old run; its contents are never merged.
+ window.location.assign('/api/spotter-registry/archives/export');
+}
+function spotterCloseKartRegistry(){document.getElementById('spotterRegistryOverlay')?.remove()}
+
 // V7.2.1795 — Mode de course dans Spotter, jamais sur la Home générale.
 // Le choix utilise l'API et le moteur de la V1794 ; pas d'état local concurrent.
 function spotterKartModeLabel(){
@@ -1192,7 +1376,7 @@ function spotterOpenKartModeDialog(){
    <button type="button" class="spotter-kart-mode-choice" data-velocity-kart-mode-option="quick" aria-pressed="false" onclick="velocitySetKartMode('quick')"><strong>QUICK CHANGE</strong><span>Machines suivies par identifiant KV dans le registre Spotter</span></button>
   </div>
   <p id="velocityKartModeNotice" class="spotter-kart-mode-notice" aria-live="polite"></p>
-  <div class="spotter-kart-mode-actions"><button type="button" class="spotter-kart-mode-done" onclick="spotterCloseKartModeDialog()">FERMER</button></div>
+  <div class="spotter-kart-mode-actions"><button type="button" class="spotter-kart-mode-reset" onclick="velocityKartNewRace()">NOUVELLE COURSE · RÉINITIALISER LES NOTES</button><button type="button" class="spotter-kart-mode-done" onclick="spotterCloseKartModeDialog()">FERMER</button></div>
  </section></div>`);
  if(typeof velocityRenderKartModeChoice==='function')velocityRenderKartModeChoice();
  document.querySelector('#spotterKartModeOverlay .spotter-kart-mode-close')?.focus();
@@ -1286,7 +1470,7 @@ function spotterCancelSetup(){
  const origin=spotterSetupOrigin;
  spotterSetupDraft=null;spotterSetupOrigin='spotter';spotterSetupRequested=false;
  // Annuler ne doit ni pousser un état temporaire au serveur ni réinitialiser les files.
- spotterPersistLocalSnapshot();
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState}));
  if(origin==='analyzer'){showMode('analyzer');return}
  if(spotterState.configured){spotterRenderCurrent();return}
  showHome();
@@ -1488,7 +1672,6 @@ function spotterSeedGridAssignments(startNumber){
  return {assignments,next};
 }
 function launchSpotterFoundation(){
- try{
  spotterEnsureSetupPerFile();
  const karts=spotterState.setupKarts.map((kart,index)=>({kart:String(kart||'').trim(),file:Math.max(1,Math.min(spotterState.mode,Number(spotterState.setupQueueFiles?.[index])||1))}))
   .filter(item=>item.kart)
@@ -1498,28 +1681,16 @@ function launchSpotterFoundation(){
  const seeded=spotterSeedGridAssignments(karts.length+1);
  spotterState.queue=karts;spotterState.incoming=[];spotterState.maintenance=[];spotterState.assignments=seeded.assignments;spotterState.nextKvNumber=seeded.next;spotterState.movementLog=[];spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;spotterState.freeMode=false;spotterState.freeStartedAt=null;spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.autoNextFile=1;spotterState.configured=true;
  const setupOrigin=spotterSetupOrigin;spotterSetupDraft=null;spotterSetupOrigin='spotter';spotterSetupRequested=false;
- // Switch immediately to the live Quick Change UI; a delayed server GET must
- // not send the user back to the file setup screen.
- spotterLaunchAwaitingServer=true;
- spotterUiStep='live';
- saveSpotterFoundation();
- renderSpotterFoundation('live');
- spotterLastSyncError='Configuration en cours de synchronisation';spotterUpdateSyncBadge();
+ saveSpotterFoundation();spotterUiStep='live';renderSpotterFoundation('live');
  if(setupOrigin==='analyzer')setTimeout(()=>showMode('analyzer'),0);
  // Dès que la configuration est validée, synchroniser immédiatement les karts
  // déjà signalés IN par Apex, sans attendre le prochain tick de 750 ms.
  setTimeout(spotterMonitorApex,0);
- }catch(error){
-  console.error('[Spotter] Impossible de lancer la configuration Quick Change',error);
-  spotterLastSyncError='Erreur lors du lancement : consulter la console';
-  spotterUpdateSyncBadge();
-  alert('Impossible de lancer le Spotter : '+String(error?.message||error));
- }
 }
 function resetSpotterFoundation(){
  if(!confirm('Réinitialiser la configuration Spotter ?'))return;
  spotterAcknowledgedIncoming.clear();spotterPersistAcknowledged();
- spotterDeferredRemote=null;spotterSetupDraft=null;spotterSetupRequested=false;spotterLaunchAwaitingServer=false;
+ spotterDeferredRemote=null;spotterSetupDraft=null;spotterSetupRequested=false;
  Object.assign(spotterState,{mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,autoNextFile:1,configured:false,kartTrackingEnabled:false});
  saveSpotterFoundation();spotterUiStep='mode';renderSpotterFoundation('mode');
 }
@@ -1846,6 +2017,7 @@ function spotterCommandBar(step){
   <button class="spotter-desktop-command spotter-quick-change-command" type="button" onclick="openSpotterSetup()">PRÉPARER LA ZONE QUICK CHANGE</button>
   <button class="spotter-desktop-command spotter-auto-command ${spotterState.freeMode?'active resume':''}" type="button" onclick="spotterToggleAuto()">${spotterState.freeMode?'▶ REPRENDRE':'AUTO'}</button>
   <button class="spotter-desktop-command spotter-add-kart-command" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button>
+  <button class="spotter-desktop-command spotter-tracking-command ${spotterState.kartTrackingEnabled?'active':''}" type="button" onclick="spotterOpenKartRegistry()">${spotterState.kartTrackingEnabled?'● ':''}SUIVI KARTS</button>
   <button class="spotter-desktop-command spotter-reset-command" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button>
  </div>`;
  return mobile+desktop;
@@ -2209,7 +2381,7 @@ function spotterQueueVisualState(items,index){
 const SPOTTER_FILE_COLORS_KEY=velocityWorkspaceStorageKey('velocity_spotter_file_title_colors_v1');
 function spotterFileColors(){try{const v=JSON.parse(localStorage.getItem(SPOTTER_FILE_COLORS_KEY)||'[]');return Array.isArray(v)?v:[]}catch(_){return []}}
 function spotterFileColor(file){const color=spotterFileColors()[file-1];return /^#[0-9a-fA-F]{6}$/.test(color||'')?color:'#aeb6c5'}
-function spotterSetFileTitleColor(file,color){if(!/^#[0-9a-fA-F]{6}$/.test(color||''))return;const list=spotterFileColors();list[file-1]=color;spotterSafeLocalSet(SPOTTER_FILE_COLORS_KEY,JSON.stringify(list));document.querySelectorAll(`[data-spotter-file-title="${file}"]`).forEach(node=>node.style.color=color)}
+function spotterSetFileTitleColor(file,color){if(!/^#[0-9a-fA-F]{6}$/.test(color||''))return;const list=spotterFileColors();list[file-1]=color;localStorage.setItem(SPOTTER_FILE_COLORS_KEY,JSON.stringify(list));document.querySelectorAll(`[data-spotter-file-title="${file}"]`).forEach(node=>node.style.color=color)}
 function spotterRenderQueueColumns(){
  const count=Math.max(1,Math.min(3,Number(spotterState.mode)||1));
  const columns=[];
@@ -2248,7 +2420,7 @@ function renderSpotterFoundation(forceStep){
      <section class="spotter-card spotter-maintenance" data-spotter-drop-zone="maintenance"><div class="spotter-card-body"><div class="spotter-section-title"><span>🔧 ZONE MECA</span><span>${spotterState.maintenance.length}</span></div>${spotterState.maintenance.length?`<div class="spotter-maintenance-grid">${spotterState.maintenance.map(spotterMaintenanceCard).join('')}</div>`:'<div class="spotter-empty">Aucun kart en zone méca.</div>'}</div></section>
     </aside>
    </div>
-   <div class="spotter-footer-actions"><button class="spotter-secondary spotter-mobile-kart-mode-link" type="button" onclick="spotterOpenKartModeDialog()">MODE KARTS · <span data-spotter-kart-mode-label>${spotterKartModeLabel()}</span></button><button class="spotter-secondary" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
+   <div class="spotter-footer-actions"><button class="spotter-secondary spotter-mobile-kart-mode-link" type="button" onclick="spotterOpenKartModeDialog()">MODE KARTS · <span data-spotter-kart-mode-label>${spotterKartModeLabel()}</span></button><button class="spotter-secondary" type="button" onclick="spotterOpenAddKart()">AJOUTER UN KART</button><button class="spotter-secondary ${spotterState.kartTrackingEnabled?'tracking-active':''}" type="button" onclick="spotterOpenKartRegistry()">${spotterState.kartTrackingEnabled?'● ':''}SUIVI KARTS</button><button class="spotter-secondary" type="button" onclick="resetSpotterFoundation()">RÉINITIALISER</button></div>
   </div>
   <div class="spotter-step ${step==='recalibrate'?'active':''}" id="spotterRecalibrateStep">
    <div class="spotter-recalibrate-desktop-layout">
@@ -2320,23 +2492,27 @@ function spotterDisplayPotential(kv){const value=spotterKartPotential(kv);return
 function spotterQueueColorClass(item){const n=spotterKartPotential(item?.kv);return n===null?'score-unknown':n>=98?'score-gold':n>=90?'score-green':n>=80?'score-orange':'score-red'}
 function spotterQueueCard(item,visualState='next'){
  const score=spotterDisplayPotential(item.kv);
- if(item.status==='reserved')return `<div class="spotter-queue-card reserved spotter-draggable ${item.estimated?'estimated':''}" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart attribué" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.reservedTeam}))}</span><strong>${spotterEscape(spotterDisplayName(item.reservedTeam))}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div>${spotterPitTimerMarkup(item,item.pitInAt)}</div>`;
+ if(item.status==='reserved')return `<div class="spotter-queue-card reserved spotter-draggable ${item.estimated?'estimated':''}" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart attribué" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.reservedTeam}))}</span><strong>${spotterEscape(spotterDisplayName(item.reservedTeam))}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div>${spotterPitTimerMarkup(item)}</div>`;
  const waiting=visualState==='waiting';
  return `<div class="spotter-queue-card available ${waiting?'waiting ':''}${spotterQueueColorClass(item)} spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.lastTeam}))}</span><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div></div>`;
 }
-function spotterPitTimerForItem(item){
- // Utiliser d'abord le compteur PIT officiel de l'equipe, pas l'heure de detection locale.
- const team=item?.reservedTeam||item?.team||item?.lastTeam;
+// V7.2.1866 — Les chronometres Spotter utilisent exactement le temps PIT IN
+// fourni par Apex, avec le meme formatage que Focus Endurance.
+// Ne pas mesurer un arret depuis Date.now(): la detection locale peut etre tardive.
+function spotterOfficialPitTime(team){
  const driver=spotterFindDriver(team);
- const clock=typeof window.velocityPitClockForDriver==='function'?window.velocityPitClockForDriver(driver):null;
- return clock?.text||null;
+ if(!driver||String(driver.status||'').toLowerCase()!=='pit')return null;
+ const format=typeof endurancePitOfficialLiveSeconds==='function'
+  ?endurancePitOfficialLiveSeconds
+  :(typeof formatEndurancePitClock==='function'?formatEndurancePitClock:null);
+ if(!format)return null;
+ const value=format(String(driver.pit_timer??'').trim());
+ return value&&value!=='—'?value:null;
 }
-function spotterPitTimerMarkup(item,start){
- const local=spotterFormatDuration(Date.now()-Number(start||Date.now()));
- const official=spotterPitTimerForItem(item);
- // En l'absence de compteur officiel, garder l'estimation mais la signaler.
- const text=official||local;
- return `<div class="spotter-pit-time" data-spotter-pit-start="${Number(start||Date.now())}" data-spotter-pit-team="${spotterEscape(item?.reservedTeam||item?.team||item?.lastTeam||'')}" ${official?'':'title="Estimation locale : attente des donnees Apex"'}>${text}</div>`;
+function spotterPitTimerMarkup(item){
+ const team=item?.reservedTeam||item?.team||item?.lastTeam||'';
+ const official=spotterOfficialPitTime(team);
+ return `<div class="spotter-pit-time ${official?'':'spotter-pit-unsynced'}" data-spotter-pit-team="${spotterEscape(team)}" title="${official?'Compteur officiel Apex — meme source que Focus Endurance':'Compteur Apex indisponible — aucune estimation locale'}">${official||'—'}</div>`;
 }
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
 function spotterTeamNumber(item){
@@ -2347,13 +2523,14 @@ function spotterTeamNumber(item){
  const match=String(item?.team||item?.name||'').trim().match(/^(?:TEAM|ÉQUIPE)?\s*#?([0-9]{1,4})\b/i);
  return match?match[1]:'—';
 }
-function updateSpotterLiveTimers(){document.querySelectorAll('[data-spotter-pit-start]').forEach(node=>{
- const driver=spotterFindDriver(node.dataset.spotterPitTeam||'');
- const official=typeof window.velocityPitClockForDriver==='function'?window.velocityPitClockForDriver(driver):null;
- node.textContent=official?.text||spotterFormatDuration(Date.now()-Number(node.dataset.spotterPitStart||Date.now()));
- node.classList.toggle('spotter-pit-unsynced',!official||!official.fresh);
- node.title=!official?'Estimation locale : pas de compteur Apex':!official.fresh?'Dernier compteur Apex connu (connexion a verifier)':'Synchronise avec Apex';
-})}
+function updateSpotterLiveTimers(){
+ document.querySelectorAll('[data-spotter-pit-team]').forEach(node=>{
+  const official=spotterOfficialPitTime(node.dataset.spotterPitTeam||'');
+  node.textContent=official||'—';
+  node.classList.toggle('spotter-pit-unsynced',!official);
+  node.title=official?'Compteur officiel Apex — meme source que Focus Endurance':'Compteur Apex indisponible — aucune estimation locale';
+ });
+}
 function spotterIncomingCard(item){
  const selection=spotterState.incomingQueueSelections[item.id];
  const selected=Number(selection)||0;
@@ -2372,7 +2549,7 @@ function spotterIncomingCard(item){
    <span class="spotter-score">${spotterDisplayPotential(item.returnedKv)}</span>
    
    <span class="spotter-kv-value">${spotterEscape(item.returnedKv||'—')}</span>
-   ${spotterPitTimerMarkup(item,item.pitInAt)}
+   ${spotterPitTimerMarkup(item)}
   </div>
   <div class="spotter-incoming-control">
    <div class="spotter-file-choices">${queueButtons}</div>
@@ -2424,14 +2601,16 @@ async function spotterRenewMonitorLease(){
 // The relay writer runs once per 2s cycle, not additionally on each table render.
 function spotterRunRegistryCycle(){
  // Presentation only. No duplicate scoring or SQL write on render.
- 
- if(false)void spotterRegistrySeedLiveTeams();
+ spotterRefreshKartRegistry();
+ if(document.getElementById('spotterRegistryOverlay'))void spotterRegistrySeedLiveTeams();
 }
 function spotterRunMetricsCycle(){
  if(!spotterState.configured)return;
  if(!spotterRefreshVelocityMetrics())return;
  spotterPublishSharedState();
- // Display-only metrics are never persisted to browser storage on each tick.
+ localStorage.setItem(SPOTTER_STORAGE_KEY,JSON.stringify({
+  version:6,appRelease:SPOTTER_APP_RELEASE,savedAt:new Date().toISOString(),state:spotterState
+ }));
  if(document.body.classList.contains('current-spotter')&&spotterUiStep==='live'&&!spotterUiIsInteractive()){
   spotterRenderCurrent();
  }

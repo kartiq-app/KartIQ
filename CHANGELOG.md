@@ -1,87 +1,12 @@
-## V7.2.1864 — VVCE serveur à ouverture directe (validation en direct)
-
-- Analyzer : « Classement virtuel » lit le dernier snapshot VVCE disponible sur Render ; suppression du bouton de test et des récupérations historiques séquentielles dans le navigateur.
-- Au premier clic, une collecte explicite démarre via un Recorder serveur si aucun n'est déjà actif sur le circuit ; recalcul secondaire seulement quand les compteurs de tours enregistrés changent.
-- Stockage SQL persistant par espace/circuit/session Apex ; reprise des workers après redémarrage Render, limite de durée 30 h et arrêt si plus de messages pendant 15 minutes.
-- Dernier résultat conservé mais marqué non actualisé si le calcul échoue ou s'arrête ; aucune position inventée en l'absence d'historiques complets.
-- Classement LIVE et moteur KV/Spotter/Focus inchangés. VVCE reste une projection historique non certifiée temporellement ; le premier chargement peut durer selon la disponibilité des historiques.
-- Les installations où un Recorder Apex est déjà actif le réutilisent afin d'éviter un deuxième WebSocket.
-
-## V7.2.1863 — Diagnostic et compte-rendu VVCE
-
-- Affichage visible du résultat final (calcul terminé ou erreur) sous les commandes Analyzer ; le message n'est plus envoyé uniquement vers un élément absent.
-- Détail des 34 équipes calculées : position VVCE, position LIVE au départ, tours historiques, arrêts, arrêts virtuels, tours projetés, temps ajouté, total projeté et écart.
-- En cas de données Apex incomplètes : raison précise et noms des équipes en échec ; pas de positions artificiellement validées.
-- Résultats figés jusqu'à un recalcul volontaire, bouton explicite « Recalculer VVCE » ; aucun déclenchement automatique.
-- Algorithme expérimental VVCE inchangé, classement LIVE et moteurs KV inchangés.
-
-## V7.2.1862 — VVCE test expérimental dans Analyzer
-
-- Ajout d’un bouton « CALCULER VVCE (TEST) » dans Classement virtuel.
-- Portage du prototype Agadir : temps cumulés des tours complets, projection des tours manquants par médiane des 30 derniers tours propres, coût NET des stands estimé par médiane des tours post-IN moins le tour propre typique, égalisation au maximum d’arrêts du plateau.
-- Chargement Apex uniquement sur action explicite, séquentiel afin de préserver le live ; aucun recalcul permanent.
-- Calcul figé après collecte : il ne s’agit PAS d’un classement live synchronisé ni d’un classement certifié ; les différentes équipes peuvent être interrogées à des instants différents.
-- Si une équipe manque de données, aucun classement virtuel partiel trompeur n’est calculé.
-- Classement LIVE, scores KV, scores relais, Quick Change et logique des compteurs PIT inchangés.
-
-## V7.2.1862 — Correction du classement virtuel (Agadir)
-- Correction de la valeur Apex « Tour 302 » du leader : indicateur de tour courant, jamais retard de 302 tours.
-- Correction des cas Apex avec `laps=0` : les écarts « N Tours » restent exploitables, zéro tour n’est pas une référence fiable.
-- Refus de projeter un écart absent au lieu de l’assimiler à zéro.
-- Aucun changement du live Apex, du moteur KV ou de la cadence des compteurs de stands V1860.
-- Validation sur l’export Agadir : EIRIZ PRO 301 tours, SKART GOATS 288 tours dans le CSV. L’export de snapshots ne contient pas les écarts live détaillés ; validation live recommandée.
-
-## V7.2.1860 — Classement virtuel recalculé et PIT à cadence stable
-
-- Classement virtuel : maximum d'arrêts réellement observé sur le plateau conservé comme référence, sans règlement obligatoire.
-- Écarts live Apex préservés lorsqu'ils sont des durées ; retards exprimés en tours convertis avec une cadence médiane de plateau disponible. Une information inexploitable ne devient jamais un déficit de zéro seconde.
-- Coût commun d'un arrêt estimé à partir des durées *Pit time* historiques Apex des équipes : minimum probable arrondi à un palier inférieur de 15 secondes (ex. 2:31–2:33 ⇒ 2:30), sous réserve d'au moins trois valeurs cohérentes. Pas de coût fictif si les données sont absentes.
-- Colonnes du classement virtuel : arrêts réels inchangés, arrêts virtuels ajoutés séparément, écart virtuel recalculé. Les lignes non calculables restent marquées « Données insuffisantes » et ne reçoivent pas de position simulée.
-- Compteurs de stands Spotter/Focus : même horloge visuelle, pas de saut ou de progression accélérée pour rattraper une trame Apex. Recalage interne et cadence bornée à une seconde par pas d'au moins 950 ms ; signal d'obsolescence des trames au-delà de trois secondes. Durée finale officielle d'Apex inchangée.
-- Traitement live, Quick Change, moteur de notes KV, scores relais et affichages LIVE conservés.
-
-## V7.2.1859 — Synchronisation des chronometres PIT et suppression des alertes Top 8
-
-- Compteurs Spotter des karts entrants/reserves recales sur le compteur Apex `otr|to` / `otr|*in` en direct, sans appel reseau supplementaire.
-- Focus Endurance utilise la meme reference temporielle pour les secondes affichees au PIT IN. La duree officielle du PIT OUT reste exclusivement issue de l historique Apex.
-- Prise en compte du schema GRID courant (colonne `otr` mobile) et isolation par circuit/ligne Apex.
-- Si le compteur n est pas frais, signalisation visuelle ; pas de millisecondes inventees.
-- Suppression des popups Top 8/bon kart aux stands de la generation serveur, de l interface Analyzer et des outils de test. Les autres alertes ne sont pas modifiees.
-- Aucun changement du live, du decodage du classement, du moteur KV ou des scores de relais.
-
-## V7.2.1858 — Correction quota localStorage Spotter
-
-- Diagnostic établi : `localStorage.setItem(velocity_spotter_v7_foundation)` bloque `LANCER LE SPOTTER` lorsque le quota navigateur est atteint.
-- Le cache navigateur est limité aux données utiles Quick Change ; les historiques et le registre KV restent exclusivement autoritaires côté serveur.
-- Les écritures de cache deviennent facultatives et ne bloquent plus le lancement en cas de `QuotaExceededError`.
-- Remplacement de l’ancienne copie locale du registre par un cache allégé sur la même clé, sans effacer les autres données du navigateur.
-- Suppression des sauvegardes locales périodiques à chaque rafraîchissement des métriques.
-- Préservation de l'isolation par circuit, de la synchronisation serveur et des formules de calcul KV.
+## V7.2.1866 — Retour moteur V1854 + compteur stands Apex dans Spotter
+- Retour à l’archive V1854 fournie par l’utilisateur. Cette version n’intègre pas VVCE ni les développements ultérieurs.
+- Spotter réutilise directement le PIT TIMER Apex affiché par Focus Endurance (même fonction de formatage).
+- Suppression du chrono local fondé sur Date.now() pour les cartes Spotter en entrée et en file.
+- En l’absence de valeur Apex fiable, affiche « — » plutôt qu’un temps inventé.
+- Aucun changement aux calculs de notes KV, scores de relais, et flux Apex du moteur V1854.
 
 
-## V7.2.1857 — Spotter : lancement des files et choix du mode
-- Protection de la configuration des files contre les lectures serveur antérieures au lancement.
-- En cas de conflit initial avec un état vierge, la configuration est renvoyée avec la révision serveur, sans effacer les files.
-- Message d'erreur explicite si la construction de l'écran Spotter échoue.
-- Retrait du bouton « Nouvelle course · Réinitialiser les notes » de la boîte de choix Kart fixe / Quick Change.
-- Formules KV, scores relais et flux live Apex inchangés.
-
-## V7.2.1856 — Contexte Spotter par circuit
-
-- Les états Quick Change sont isolés par circuit, dans le même espace Velocity.
-- Les anciens états SQL sont migrés sans suppression uniquement si leur circuit correspond.
-- La sélection d’une autre piste invalide l’état local temporaire et recharge ce circuit.
-- Une écriture issue de l’ancien circuit est refusée ; le moteur KV et Apex restent inchangés.
-
-## V7.2.1855 — Dépose des interfaces historiques Suivi Karts / Karts Analyzer
-- Retrait du bouton Suivi Karts dans Spotter et Analyzer.
-- Suppression de la carte Karts Analyzer et de son rendu JavaScript.
-- Velocity et Score Relais restent disponibles.
-- Aucune modification des moteurs de score KV et relais ni des données KV.
-- Le registre et ses dépendances transversales sont conservés pour éviter de casser Quick Change et les affectations; leur extraction définitive est une étape distincte.
-
-
-## V7.2.1855 — Orchestration Suivi Karts résiliente (7 novembre 2026)
+## V7.2.1854 — Orchestration Suivi Karts résiliente (7 novembre 2026)
 
 - Activation et relance KV envoyées directement à `POST /api/spotter-kv-tracking` : une lecture GET momentanément indisponible ne bloque plus la commande. Le serveur reste seul responsable de la détermination du run/circuit et de la création du Recorder.
 - Synchronisation SQL du registre séparée de la collecte : dernier état conservé, statut SYNCHRONISÉ/EN RECONNEXION et relecture avec temporisation exponentielle jusqu'à 30 s en cas de panne.

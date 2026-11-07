@@ -42,7 +42,7 @@ const ANALYZER_AUTOSAVE_MS=15000;
 const ANALYZER_STORAGE_CLEANUP_KEY=velocityWorkspaceStorageKey('velocity-analyzer-storage-cleanup-v3');
 const ANALYZER_MAX_SESSION_INDEX=10;
 let analyzerKartSort='none';
-let analyzerVelocityView='velocity';
+let analyzerVelocityView='karts';
 let analyzerRelayScoreData=null;
 let analyzerRelayScoreLoading=false;
 let analyzerRelayScoreLoadToken=0;
@@ -1079,181 +1079,32 @@ function analyzerPitIndicator(driver){return driver?.status==='pit'?'<span class
 function analyzerPaceSeconds(driver){return parseLapTime(driver?.pace5||driver?.best)}
 function analyzerGridPace(){return (state.drivers||[]).map(analyzerPaceSeconds).filter(Number.isFinite).sort((a,b)=>a-b)}
 function analyzerPitSeconds(pit){
- // La colonne Apex Pit time est prioritaire. pitOutMs - pitInMs peut être
- // inexact pour un historique reconstitué et ne doit pas servir de tour.
- const time=analyzerParseDuration(pit?.pitTime);
- if(Number.isFinite(time)&&time>0&&time<1800)return time;
- const direct=(Number(pit?.pitOutMs)-Number(pit?.pitInMs))/1000;
- return Number.isFinite(direct)&&direct>0&&direct<1800?direct:null;
+ const direct=Number(pit?.pitOutMs)-Number(pit?.pitInMs);
+ if(Number.isFinite(direct)&&direct>0)return direct/1000;
+ return analyzerParseDuration(pit?.pitTime);
 }
-// Minimum probable : rechercher la borne inférieure des arrêts terminés du
-// plateau, puis l'arrondir au palier inférieur de 15 secondes (45, 60, 150...).
-// Au moins 3 arrêts cohérents sont nécessaires, jamais de valeur inventée.
-function analyzerVirtualPitReference(rows){
- const values=[];
- for(const x of rows){
-  const key=`${analyzerSessionCircuit()}:${Number(x.driver?.apex_row)||0}`;
-  const entry=analyzerVirtualPitCache.get(key);
-  if(entry?.status!=='loaded')continue;
-  for(const pit of entry.pits||[]){
-   const v=analyzerPitSeconds(pit);
-   if(Number.isFinite(v)&&v>=15)values.push(v);
-  }
+function analyzerVirtualPitAverage(driver){
+ const key=`${analyzerSessionCircuit()}:${Number(driver?.apex_row)||0}`,entry=analyzerVirtualPitCache.get(key);
+ if(entry?.status==='loaded'){
+  const values=(entry.pits||[]).map(analyzerPitSeconds).filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b).slice(0,3);
+  if(values.length)return {seconds:values.reduce((a,b)=>a+b,0)/values.length,samples:values.length,estimated:false};
  }
- values.sort((a,b)=>a-b);
- if(values.length<3)return {seconds:null,samples:values.length,estimated:true};
- // Rejeter un arrêt isolé anormalement court : troisième plus petite valeur.
- const lower=values[2];
- const candidate=Math.floor(lower/15)*15;
- const near=values.filter(v=>v>=candidate&&v<=candidate+12);
- if(candidate<15||near.length<3)return {seconds:null,samples:values.length,estimated:true};
- return {seconds:candidate,samples:values.length,estimated:true};
-}
-// Classement virtuel : le leader est toujours la reference 0.
-// Sur certains schemas Apex, "Tour 302" dans sa colonne Ecart signifie
-// le tour de course atteint et NON 302 tours de retard.
-// Des snapshots Apex peuvent aussi fournir laps=0 pour TOUTES les equipes :
-// ne jamais considerer ce zero comme une mesure de deficit fiable.
-function analyzerVirtualLiveGap(driver,leaderLaps,pace){
- const pos=Number(driver?.pos);
- if(pos===1)return 0;
- const raw=String(driver?.gap??'').trim().replace(/^\+/,'');
- const laps=analyzerNullableNumeric(driver?.laps);
- const validLaps=laps!==null&&laps>0;
- const validLeader=Number.isFinite(leaderLaps)&&leaderLaps>0;
- // Une etiquette "Tour N" peut indiquer le tour du leader, pas un ecart.
- if(/^\s*(?:tour|lap)\s+\d+\s*$/i.test(raw))return null;
- // Apex fournit explicitement N tours de retard ("1 Tour", "13 Tours").
- const explicitLap=/^\s*(\d+)\s*(?:tours?|laps?)\s*$/i.exec(raw);
- if(explicitLap){
-  if(!Number.isFinite(pace)||pace<=0)return null;
-  return Number(explicitLap[1])*pace;
- }
- const seconds=analyzerParseDuration(raw.replace(/\s*(?:s|sec|secondes?)$/i,''));
- if(validLaps&&validLeader){
-  const deficit=leaderLaps-laps;
-  if(deficit<0)return null;
-  if(deficit===0)return Number.isFinite(seconds)&&seconds>=0?seconds:null;
-  if(!Number.isFinite(pace)||pace<=0)return null;
-  return deficit*pace+(Number.isFinite(seconds)&&seconds>=0&&seconds<pace?seconds:0);
- }
- // Sans nombre de tours fiable, les seuls ecarts admissibles sont ceux
- // explicitement exprimes par Apex. Ne pas fabriquer un retard nul.
- return Number.isFinite(seconds)&&seconds>=0?seconds:null;
-}
-// VVCE 1862 — expérimentation volontairement isolée du classement LIVE.
-// L'extraction complète des historiques Apex est déclenchée par l'utilisateur,
-// jamais par le rendu, le polling ou le changement automatique de circuit.
-const analyzerVVCE={status:'idle',circuit:'',session:'',teams:new Map(),reason:'',startedAt:0,
-                   loaded:0,total:0,pitNetCost:null,referenceStops:null,referenceLap:null,finishedAt:0,failedTeams:[],validTeams:0,netSamples:0,ranking:[]};
-function analyzerVVCEInvalidate(){
- analyzerVVCE.status='idle';analyzerVVCE.circuit='';analyzerVVCE.session='';
- analyzerVVCE.teams=new Map();analyzerVVCE.reason='';analyzerVVCE.loaded=0;analyzerVVCE.failedTeams=[];analyzerVVCE.ranking=[];analyzerVVCE.finishedAt=0;
-}
-// V1864 — the browser never reconstructs 34 historical Apex teams.
-// Reading a persisted snapshot is cheap; all heavy work stays off the live path.
-let analyzerVVCERequestToken=0;
-let analyzerVVCEPOLL=null;
-function analyzerVVCEContext(){
- return {circuit:analyzerSessionCircuit(),session:String(state?.apex_session_id||state?.apex_session_title||'').trim()};
-}
-async function analyzerVVCEReadSnapshot(token){
- const {circuit,session}=analyzerVVCEContext();
- if(!circuit||!session||token!==analyzerVVCERequestToken||analyzerRankingMode!=='virtual')return;
- try{
-  const url=`/api/vvce/status?circuit_id=${encodeURIComponent(circuit)}&session_key=${encodeURIComponent(session)}`;
-  const response=await fetch(url,{cache:'no-store'});
-  const payload=await response.json();
-  if(!response.ok||!payload.ok)throw Error(payload.error||'Statut VVCE indisponible');
-  if(token!==analyzerVVCERequestToken||analyzerRankingMode!=='virtual')return;
-  const item=payload.data||{};
-  const result=item.result;
-  analyzerVVCE.circuit=circuit;analyzerVVCE.session=session;
-  analyzerVVCE.reason=item.reason||item.note||'Initialisation du calcul serveur';
-  if(result&&Array.isArray(result.ranking)){
-   analyzerVVCE.ranking=result.ranking;
-   analyzerVVCE.teams=new Map(result.ranking.map(d=>[Number(d.rowId),d]));
-   analyzerVVCE.referenceStops=result.referenceStops;
-   analyzerVVCE.referenceLap=result.referenceLap;
-   analyzerVVCE.pitNetCost=result.pitNetCost;
-   analyzerVVCE.netSamples=result.netSamples;
-   analyzerVVCE.total=result.teams;
-   analyzerVVCE.finishedAt=Number(item.updatedAt)||0;
-   analyzerVVCE.stale=item.status!=='ready'||Date.now()-analyzerVVCE.finishedAt>90000;
-   analyzerVVCE.status='ready';
-  }else{
-   analyzerVVCE.status=item.status==='idle'?'idle':'loading';
-   analyzerVVCE.ranking=[];analyzerVVCE.teams=new Map();
-  }
-  renderAnalyzer();
- }catch(error){
-  if(token!==analyzerVVCERequestToken)return;
-  analyzerVVCE.reason=String(error?.message||error);
-  if(analyzerVVCE.ranking.length){analyzerVVCE.stale=true;analyzerVVCE.status='ready'}
-  else analyzerVVCE.status='error';
-  renderAnalyzer();
- }
-}
-async function analyzerVVCEActivate(){
- const {circuit,session}=analyzerVVCEContext();
- if(!circuit||!session){analyzerVVCE.status='error';analyzerVVCE.reason='Aucune session Apex identifiée.';renderAnalyzer();return}
- const token=++analyzerVVCERequestToken;
- if(analyzerVVCEPOLL)clearInterval(analyzerVVCEPOLL);
- analyzerVVCE.status='loading';analyzerVVCE.reason='Lecture du dernier classement disponible sur Render…';
- analyzerVVCE.circuit=circuit;analyzerVVCE.session=session;
- await analyzerVVCEReadSnapshot(token);
- const drivers=(state.drivers||[]).filter(d=>Number(d.apex_row)>0).map(d=>({apex_row:Number(d.apex_row)}));
- try{
-  const response=await fetch('/api/vvce/start',{method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({circuit_id:circuit,session_key:session,drivers})});
-  const data=await response.json();
-  if(!response.ok||!data.ok)throw Error(data.error||'Initialisation serveur indisponible');
-  if(token!==analyzerVVCERequestToken)return;
-  await analyzerVVCEReadSnapshot(token);
- }catch(error){
-  if(token!==analyzerVVCERequestToken)return;
-  analyzerVVCE.reason=String(error?.message||error);
-  if(analyzerVVCE.ranking.length){analyzerVVCE.stale=true;analyzerVVCE.status='ready'}
-  else analyzerVVCE.status='error';
-  renderAnalyzer();
- }
- if(token===analyzerVVCERequestToken){
-  analyzerVVCEPOLL=setInterval(()=>{
-   if(analyzerRankingMode!=='virtual'||analyzerSessionCircuit()!==circuit||analyzerVVCEContext().session!==session){
-    clearInterval(analyzerVVCEPOLL);analyzerVVCEPOLL=null;return;
-   }
-   analyzerVVCEReadSnapshot(token);
-  },7000);
- }
-}
-// Backward-compatible explicit retry hook; not required for routine navigation.
-function startAnalyzerVVCE(){return analyzerVVCEActivate()}
-function analyzerRenderVVCEReport(){
- const panel=document.getElementById('analyzerVVCEReport');if(!panel)return;
- panel.hidden=analyzerRankingMode!=='virtual';if(panel.hidden)return;
- const v=analyzerVVCE,ready=v.status==='ready'&&v.circuit===analyzerSessionCircuit()&&v.session===String(state?.apex_session_id||state?.apex_session_title||'');
- const time=v.finishedAt?new Date(v.finishedAt).toLocaleTimeString('fr-FR'):null;
- const head=`<strong>VVCE SERVEUR · ${v.status==='loading'?'INITIALISATION':ready?(v.stale?'DERNIER CLASSEMENT (NON ACTUALISÉ)':'CLASSEMENT DISPONIBLE'):v.status==='error'?'INDISPONIBLE':'EN ATTENTE'}</strong>`;
- if(v.status==='loading'){panel.innerHTML=`${head}<p>${analyzerEscape(v.reason||'Collecte et calcul en cours côté serveur')}. Aucun classement ne sera inventé tant que les données sont insuffisantes.</p>`;return}
- if(v.status==='error'){panel.innerHTML=`${head}<p>${analyzerEscape(v.reason)} · ${v.loaded}/${v.total} équipes traitées${time?' · '+time:''}.</p>${v.failedTeams.length?`<details><summary>${v.failedTeams.length} historiques incomplets — détails</summary><ul>${v.failedTeams.map(x=>`<li>${analyzerEscape(x)}</li>`).join('')}</ul></details>`:''}<small>Aucune position VVCE publiée. Le classement LIVE reste inchangé.</small>`;return}
- if(!ready){panel.innerHTML=`${head}<p>Calcul automatique sur le serveur après sélection du classement virtuel. En attente de données Apex exploitables.</p>`;return}
- const rows=v.ranking.map(d=>`<tr><td>${d.position}</td><td>${analyzerEscape(d.name)}</td><td>${d.realPos}</td><td>${d.lastLap}</td><td>${d.stops}/${v.referenceStops}</td><td>${d.missing}</td><td>${d.missingLaps}</td><td>+${analyzerFormatDuration(d.extra)}</td><td>${analyzerFormatDuration(d.projectedTotal)}</td><td>${d.position===1?'—':'+'+analyzerFormatDuration(d.gap)}</td></tr>`).join('');
- panel.innerHTML=`${head}<p><strong>${v.ranking.length}/${v.total} équipes</strong> · ${v.netSamples} passages exploitables · coût net médian <strong>${v.pitNetCost.toFixed(2)} s</strong> · référence ${v.referenceStops} arrêts · tour ${v.referenceLap} · ${time}.</p><small>Projection automatiquement actualisée côté serveur, calcul historique non certifié au même instant. Les données trop anciennes restent visibles avec un avertissement.</small><details open><summary>Détails des positions (${v.ranking.length} équipes)</summary><div style="overflow:auto;max-height:280px"><table class="analyzer-ranking-table" style="min-width:820px;width:100%;font-size:11px"><thead><tr><th>VVCE</th><th>ÉQUIPE</th><th>LIVE</th><th>TOURS</th><th>STANDS</th><th>À AJOUTER</th><th>TOURS PROJETÉS</th><th>TEMPS AJOUTÉ</th><th>TEMPS PROJETÉ</th><th>ÉCART</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+ return {seconds:analyzerRules.minPitSeconds,samples:0,estimated:true};
 }
 function analyzerVirtualMetrics(rows){
- const ready=analyzerVVCE.status==='ready'&&analyzerVVCE.circuit===analyzerSessionCircuit()
- &&analyzerVVCE.session===String(state?.apex_session_id||state?.apex_session_title||'');
- return rows.map(x=>{
-  const d=x.driver,entry=ready?analyzerVVCE.teams.get(Number(d.apex_row)):null;
-  return {...x,virtual:{valid:Boolean(entry),position:entry?.position??null,
-   maxStops:analyzerVVCE.referenceStops,missing:entry?.missing??0,
-   extra:entry?.extra??null,gap:entry?.gap??null,
-   pitAverage:{samples:0},experimental:true}};
- }).sort((a,b)=>{
-  if(a.virtual.valid!==b.virtual.valid)return a.virtual.valid?-1:1;
-  if(a.virtual.valid)return a.virtual.position-b.virtual.position;
-  return (Number(a.driver.pos)||999)-(Number(b.driver.pos)||999);
- });
+ const maxStops=Math.max(0,...rows.map(x=>analyzerNumeric(x.driver?.pit_stops,0)));
+ const maxLaps=Math.max(0,...rows.map(x=>analyzerNumeric(x.driver?.laps,0)));
+ const gridPace=analyzerGridPace(),fallbackPace=gridPace.length?gridPace[Math.floor(gridPace.length/2)]:60;
+ const output=rows.map(x=>{
+  const d=x.driver,stops=analyzerNumeric(d.pit_stops,0),missing=Math.max(0,maxStops-stops),pitAverage=analyzerVirtualPitAverage(d);
+  const extra=missing*pitAverage.seconds,laps=analyzerNumeric(d.laps,0),lapDeficit=Math.max(0,maxLaps-laps),pace=analyzerPaceSeconds(d)||fallbackPace;
+  const parsedGap=analyzerParseDuration(String(d.gap||'').replace(/^\+/,'').replace(/\s*(tour|tours|lap|laps).*$/i,''));
+  const baseDeficit=lapDeficit>0?lapDeficit*pace:(Number.isFinite(parsedGap)?parsedGap:0);
+  return {...x,virtual:{maxStops,missing,pitAverage,extra,baseDeficit,totalDeficit:baseDeficit+extra}};
+ }).sort((a,b)=>a.virtual.totalDeficit-b.virtual.totalDeficit||analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999));
+ const leader=output[0]?.virtual.totalDeficit||0;
+ output.forEach((x,index)=>{x.virtual.position=index+1;x.virtual.gap=Math.max(0,x.virtual.totalDeficit-leader)});
+ return output;
 }
 async function analyzerLoadVirtualPitData(){
  if(analyzerVirtualLoading)return;
@@ -1275,8 +1126,7 @@ function setAnalyzerRankingMode(mode){
  document.getElementById('analyzerVirtualRankingBtn')?.classList.toggle('active',analyzerRankingMode==='virtual');
  document.getElementById('analyzerSectorRankingBtn')?.classList.toggle('active',analyzerRankingMode==='sectors');
  renderAnalyzer();
- if(analyzerRankingMode==='virtual')analyzerVVCEActivate();
- else{++analyzerVVCERequestToken;if(analyzerVVCEPOLL){clearInterval(analyzerVVCEPOLL);analyzerVVCEPOLL=null}}
+ if(analyzerRankingMode==='virtual')analyzerLoadVirtualPitData();
 }
 function analyzerRelayRawMetrics(driver,gridNow=null){
  const history=analyzerTeamHistory(driver),relay=history.currentRelay,average=analyzerCurrentStintAverage(driver);
@@ -2000,13 +1850,46 @@ function analyzerRefreshVelocityDeltaCells(){
  });
 }
 
-// V7.2.1855 : ancienne carte KARTS retirée. Les moteurs de notes sont préservés.
+// V7.2.1794 — Carte « KARTS », distincte de Velocity et Score Relais historiques.
+function analyzerRenderKartSpeedMarket(){
+ const target=document.getElementById('analyzerKartMarket');if(!target)return;
+ const mode=typeof window.velocityKartScoreMode==='function'?window.velocityKartScoreMode():null;
+ if(!mode){target.innerHTML='<div class="analyzer-empty">Choisissez Kart fixe ou Quick Change dans Spotter → MODE KARTS avant de noter les machines.</div>';return}
+ const allRankings=typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
+ const rankings=mode==='quick'&&typeof window.velocityKartRegistryLiveAssignment==='function'
+  ?allRankings.filter(entry=>entry.kv&&window.velocityKartRegistryLiveAssignment(entry.kv))
+  :allRankings;
+ if(!rankings.length){
+  const detail='En attente des premiers tours valides : vitesse récente provisoire après 4 tours, potentiel après 8 tours.';
+  target.innerHTML=`<div class="analyzer-empty">${detail}</div>`;return;
+ }
+ const drivers=(state?.drivers||[]);
+ const velocityKartColorTone=value=>!Number.isFinite(value)?'unknown':value>=98?'gold':value>=90?'green':value>=80?'orange':'red';
+ const rows=rankings.map((entry,index)=>{
+  const kv=entry.kv;
+  const identity=kv&&typeof window.velocityKartDisplayAssignment==='function'?window.velocityKartDisplayAssignment(kv):null;
+  const liveAssignment=kv&&typeof window.velocityKartRegistryLiveAssignment==='function'?window.velocityKartRegistryLiveAssignment(kv):null;
+  const teamKey=entry.teamKey||identity?.team||entry.team;
+  const driver=liveAssignment?.driver||drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===teamKey)||null;
+  const teamName=liveAssignment?.team||driver?.driver||String(entry.team||'').replace(/^apex:/,'Equipe ');
+  const displayKv=kv||(driver&&typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null);
+  const kartNumber=mode==='quick'?(displayKv||'—'):String(driver?.apex||driver?.kart||'—');
+  const label=entry.referenceLoading?'RÉF. EN CHARGEMENT':(!displayKv&&mode==='quick'?'KV NON IDENTIFIÉ':entry.confirmed?'CONFIRMÉ':'KV PROVISOIRE');
+  const recent=entry.recentScore===null?'—':`${entry.recentScore.toFixed(1)}${entry.recentProvisional?'*':''}`;
+  const potential=entry.potential===null?'—':entry.potential.toFixed(1)+(entry.referenceLoading?'*':'');
+  const clickTeam=driver?.driver?` onclick="followDriver(${JSON.stringify(driver.driver).replace(/"/g,'&quot;')})"`:'';
+  return `<tr${clickTeam}><td>${index+1}</td><td>${analyzerEscape(kartNumber)}</td><td title="${analyzerEscape(teamName)}">${analyzerEscape(teamName)}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.potential)}">${potential}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.recentScore)}">${recent}</td><td>${Number.isFinite(entry.best?.seconds)?(entry.best.seconds-entry.reference).toFixed(3)+'s':'—'}</td><td title="${entry.totalValid} tours observés">${label}</td></tr>`;
+ }).join('');
+ target.innerHTML=`<div class="velocity-kart-speed-help">${mode==='quick'?'QUICK CHANGE · vitesse des équipes en piste sans KV identifié ; potentiel physique uniquement si KV confirmé':'KART FIXE · scores par machine de l’équipe'} · Potentiel = meilleure fenêtre connue (6 rapides / 10 tours). Récente = relais actuel. * provisoire / référence partagée en chargement. La régularité ne pénalise pas la vitesse.</div><table class="velocity-kart-speed-table"><thead><tr><th>P</th><th>KART</th><th>ÉQUIPE</th><th>POT.</th><th>RÉC.</th><th>Δ</th><th>PREUVE</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 function setAnalyzerVelocityView(view){
- const nextView=['relays','velocity'].includes(view)?view:'velocity';
+ const nextView=['relays','velocity','karts'].includes(view)?view:'karts';
  const enteringRelays=nextView==='relays'&&analyzerVelocityView!=='relays';
  analyzerVelocityView=nextView;
  if(enteringRelays)analyzerRelayScoreScrollLeft=0;
-  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
+ document.getElementById('analyzerKartSpeedViewBtn')?.classList.toggle('active',analyzerVelocityView==='karts');
+ document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
  const sort=document.querySelector('.analyzer-kartiq-sort');if(sort)sort.hidden=analyzerVelocityView!=='velocity';
  renderAnalyzer();
@@ -2672,7 +2555,7 @@ function velocityLabSprintMatrices(analysis){
 }
 function velocityLabSprintMatrixHtml(title,firstHeader,rows,stages,subValue){
  const head=stages.map(s=>`<th>${analyzerEscape(s.label)}</th>`).join('');
- const body=rows.map(item=>`<tr><th>${analyzerEscape(String(item.name))}</th>${stages.map(stage=>{const row=item.cells.get(stage.index);if(!row)return '<td class="velocity-lab-matrix-empty">—</td>';const score=Number.isFinite(row.score)?row.score:'—',klass=Number.isFinite(row.score)?analyzerScoreClass(row.score):'neutral';return `<td><b class="velocity-lab-matrix-score ${klass}">${score}</b><small>${row.insufficient?'Projection non calculée':analyzerEscape(subValue(row))}</small></td>`}).join('')}</tr>`).join('');
+ const body=rows.map(item=>`<tr><th>${analyzerEscape(String(item.name))}</th>${stages.map(stage=>{const row=item.cells.get(stage.index);if(!row)return '<td class="velocity-lab-matrix-empty">—</td>';const score=Number.isFinite(row.score)?row.score:'—',klass=Number.isFinite(row.score)?analyzerScoreClass(row.score):'neutral';return `<td><b class="velocity-lab-matrix-score ${klass}">${score}</b><small>${row.insufficient?'Données insuffisantes':analyzerEscape(subValue(row))}</small></td>`}).join('')}</tr>`).join('');
  return `<section class="velocity-lab-matrix-card"><div class="velocity-lab-matrix-title"><strong>${title}</strong><span>${rows.length} ${firstHeader==='PILOTE'?'pilote(s)':'kart(s)'}</span></div><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table velocity-lab-matrix"><thead><tr><th>${firstHeader}</th>${head}</tr></thead><tbody>${body}</tbody></table></div></section>`
 }
 function renderVelocityLabSprintResults(){
@@ -2698,7 +2581,7 @@ function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ct
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
- rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(Number.isFinite(row.score)?String(row.score):'—',x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(row.insufficient?'Projection non calculée':String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
+ rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(Number.isFinite(row.score)?String(row.score):'—',x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(row.insufficient?'Données insuffisantes':String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
 }
 function velocityLabSprintPdfRankingRows(rows){
  return (rows||[]).slice().sort(velocityLabSprintScoreSort).map((r,i)=>[
@@ -3993,15 +3876,13 @@ function renderAnalyzer(){
  analyzerIngestLiveSectorCache();
  const all=analyzerRows();
  analyzerSyncRankingSortControl(all);
- const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerRankingMode==='virtual'?analyzerVirtualMetrics(all):[];const sectorCount=analyzerSectorRankingSessionCount(all);
+ const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sectorCount=analyzerSectorRankingSessionCount(all);
  const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
  const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),sectorBtn=document.getElementById('analyzerSectorRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
  if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');if(sectorBtn)sectorBtn.classList.toggle('active',analyzerRankingMode==='sectors');
- 
  const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');rankingTable.classList.toggle('sector-ranking-mode',analyzerRankingMode==='sectors');}
  const rankingHead=document.getElementById('analyzerRankingHead');if(rankingHead&&analyzerRankingMode!=='sectors')rankingHead.innerHTML=analyzerGeneralRankingHeader();
- analyzerRenderVVCEReport();
- if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(`VVCE SERVEUR · ${analyzerVVCE.stale?'Données anciennes · ':''}${analyzerVVCE.reason||'Projection non certifiée'} · Le LIVE officiel reste indépendant`):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity · NOTE KART* : estimation provisoire, KV non confirmé si —';
+ if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(analyzerVirtualLoading?'Calcul des temps d’arrêts virtuels en cours…':'Même nombre d’arrêts pour toutes les équipes — moyenne des 3 meilleurs arrêts propres à chaque équipe'):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity · NOTE KART* : estimation provisoire, KV non confirmé si —';
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver)||state.followed||(state.drivers||[])[0]||null;
  const ownForecast=followed?analyzerForecastFor(followed):{};const stops=analyzerStopsInfo(followed);
  document.getElementById('analyzerFollowedName').textContent=followed?.driver||'—';
@@ -4039,7 +3920,12 @@ function renderAnalyzer(){
  const marketByScore=all.map(x=>({...x,relayMetrics:analyzerVelocityUnifiedMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).map((x,index)=>({...x,kartiqTop:index+1,relayRemaining:analyzerKartRelayRemaining(x.driver)}));
  const mobileVelocity=document.getElementById('analyzerMobileVelocityScore');
  if(mobileVelocity){
-  {
+  if(analyzerVelocityView==='karts'){
+   const identity=typeof velocityKartScoreIdentity==='function'?velocityKartScoreIdentity(followed):null;
+   const entry=identity?velocityKartScoreRankings().find(p=>p.id===identity.id):null;
+   mobileVelocity.textContent=entry?.potential?.toFixed(1)??'—';
+   mobileVelocity.className=entry?.potential>=90?'high':'';
+  }else{
    const ownVelocity=marketByScore.find(x=>x.driver?.driver===(followed?.driver||state.followed_driver));
    mobileVelocity.textContent=ownVelocity?.relayMetrics?.score??'—';
    mobileVelocity.className=ownVelocity?analyzerScoreClass(ownVelocity.relayMetrics.score):'';
@@ -4058,11 +3944,14 @@ function renderAnalyzer(){
   const bv=Number.isFinite(bDelta)?bDelta:Number.POSITIVE_INFINITY;
   return av-bv||a.kartiqTop-b.kartiqTop;
  });
-  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
+ document.getElementById('analyzerKartSpeedViewBtn')?.classList.toggle('active',analyzerVelocityView==='karts');
+ document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
  const velocitySortLabel=document.querySelector('.analyzer-kartiq-sort');if(velocitySortLabel)velocitySortLabel.hidden=analyzerVelocityView!=='velocity';
  if(analyzerVelocityView==='relays'){
   analyzerRenderRelayScoreTable(marketByScore);
+ }else if(analyzerVelocityView==='karts'){
+  analyzerRenderKartSpeedMarket();
  }else{
    const kartSortSelect=document.getElementById('analyzerKartSort');if(kartSortSelect)kartSortSelect.value=analyzerKartSort;
    const showPilotContinuity=analyzerSessionHasPilotData();
@@ -4080,10 +3969,10 @@ function renderAnalyzer(){
   analyzerRankingBody.innerHTML=sorted.map(x=>{
    const d=x.driver;const isFollowed=d.driver===state.followed_driver;const penalty=d.penalty||'—';const isVirtual=analyzerRankingMode==='virtual';
    const relayTimer=analyzerRelayTimer(d),stintAverage=analyzerCurrentStintAverage(d),virtual=x.virtual;
-   const displayPos=isVirtual?(virtual.valid?virtual.position:'—'):d.pos;
+   const displayPos=isVirtual?virtual.position:d.pos;
    const stopsValue=isVirtual?`${analyzerEscape(d.pit_stops??0)}${virtual.missing?`<small class="virtual-stop-add">+${virtual.missing} virtuel${virtual.missing>1?'s':''}</small>`:''}`:analyzerEscape(d.pit_stops??'—');
-   const gapValue=isVirtual?(virtual.valid?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):'Projection non calculée'):analyzerEscape(d.gap);
-   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Projection VVCE serveur, non certifiée au même instant">${Number.isFinite(virtual.extra)?'+'+analyzerFormatDuration(virtual.extra):'En attente des PITS Apex'}</small>`:'';
+   const gapValue=isVirtual?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):analyzerEscape(d.gap);
+   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Moyenne ${virtual.pitAverage.samples||0} arrêt(s)">+${analyzerFormatDuration(virtual.extra)}${virtual.pitAverage.estimated?' estimé':''}</small>`:'';
    const rankingFlash=typeof rankingFlashMeta==='function'?rankingFlashMeta(d):{className:'',style:''};
    return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerPhysicalKartForDriverLabel(d))}">${analyzerEscape(x.kartRating?.kv||'—')}</td><td class="a-note kart-potential ${analyzerKartRatingTone(x.kartRating)}" title="${x.kartRating?.liveOnly?'Estimation LIVE de la machine actuelle, KV non identifié (non historisée)':x.kartRating?.provisional?'Estimation provisoire des premiers tours':'Potentiel du kart physique'}">${x.kartRating?.value==null?'—':x.kartRating.value.toFixed(1)+(x.kartRating.provisional?'*':'')}</td></tr>`;
   }).join('');

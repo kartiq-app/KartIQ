@@ -1,32 +1,7 @@
-V7.2.1864 — VVCE SERVEUR : sélectionner Analyzer → CLASSEMENT VIRTUEL pour initialiser automatiquement la collecte secondaire. Le premier classement peut nécessiter un chargement historique ; les suivantes lisent immédiatement le dernier snapshot SQL. Affichage NON CERTIFIÉ si les tours ne sont pas horodatés sur une chronologie commune. Si aucune session Apex n'est identifiée, le classement ne démarre pas. Une collecte dédiée VVCE ne commence que sur action explicite, reste limitée à 30 h et s'arrête si le live ne fournit plus de messages pendant 15 minutes. Sur Render, DATABASE_URL est nécessaire à la persistance. Les résultats ne doivent pas être utilisés pour des décisions critiques avant validation sur plusieurs courses.
-
-V7.2.1863 : le diagnostic VVCE apparaît sous le classement Analyzer (résultat ou raison de refus), sans altérer le LIVE.
-
-## V7.2.1860
-
-Classement virtuel sur maximum d’arrêts observés et minimum probable déduit des PITS Apex ; compteur PIT sans accélération visible. Voir CHANGELOG.md.
-
-## V7.2.1860 — Stockage local Spotter non bloquant
-
-Le navigateur peut atteindre son quota après la sauvegarde de volumineux historiques KV dans `velocity_spotter_v7_foundation`. Le cache local est maintenant allégé : les événements historiques du registre KV restent côté serveur. En cas de quota rempli, Spotter fonctionne et se synchronise avec Render sans dépendre d’une sauvegarde locale réussie. Les identités physiques et les historiques SQL ne sont ni réinitialisés ni effacés.
+V7.2.1866 — RETOUR À LA BASE V1854 (source fournie par l’utilisateur). Le module VVCE des V1862–V1865 et leurs fonctions postérieures ne font pas partie de cette archive. Les compteurs de stands Spotter affichent désormais la valeur PIT officielle Apex exactement comme Focus Endurance. Aucun chronométrage local n’est présenté comme une valeur officielle.
 
 
-## V7.2.1857 — Spotter : lancement des files et choix du mode
-- Protection de la configuration des files contre les lectures serveur antérieures au lancement.
-- En cas de conflit initial avec un état vierge, la configuration est renvoyée avec la révision serveur, sans effacer les files.
-- Message d'erreur explicite si la construction de l'écran Spotter échoue.
-- Retrait du bouton « Nouvelle course · Réinitialiser les notes » de la boîte de choix Kart fixe / Quick Change.
-- Formules KV, scores relais et flux live Apex inchangés.
-
-## V7.2.1856 : isolation Spotter multi-circuits
-
-- Les états Quick Change sont isolés par circuit, dans le même espace Velocity.
-- Les anciens états SQL sont migrés sans suppression uniquement si leur circuit correspond.
-- La sélection d’une autre piste invalide l’état local temporaire et recharge ce circuit.
-- Une écriture issue de l’ancien circuit est refusée ; le moteur KV et Apex restent inchangés.
-
-
-## V7.2.1855 — Orchestration Suivi Karts résiliente (7 novembre 2026)
+## V7.2.1854 — Orchestration Suivi Karts résiliente (7 novembre 2026)
 
 - Activation et relance KV envoyées directement à `POST /api/spotter-kv-tracking` : une lecture GET momentanément indisponible ne bloque plus la commande. Le serveur reste seul responsable de la détermination du run/circuit et de la création du Recorder.
 - Synchronisation SQL du registre séparée de la collecte : dernier état conservé, statut SYNCHRONISÉ/EN RECONNEXION et relecture avec temporisation exponentielle jusqu'à 30 s en cas de panne.
@@ -323,7 +298,3 @@ Sans Session Course, l'accès reste attaché au circuit et à l'équipe choisis 
 ## V7.2.1848 — accès universels sans circuit imposé
 
 Un accès invité autorise uniquement les modes sélectionnés, indépendamment d'une session ou d'un circuit. Le pilote choisit son circuit sur l'accueil et peut consulter le classement Endurance intégral ; il sélectionne librement l'équipe à suivre en Focus. L'invitation ne propose plus d'équipe prédéfinie. L'option « Activer un nouveau lien » n'apparaît que sur l'accueil (bouton ☰), pas sur l'écran de course. Les changements de circuit et le choix de l'équipe sont confinés à l'espace en mémoire de l'invitation ; ils ne modifient pas le workspace de l'administrateur, ni la Session Course, ni le registre Spotter. Le WebSocket Apex de l'invité alimente uniquement son propre classement, sans Recorder automatique.
-
-
-### V7.2.1855 — Dépose contrôlée des anciennes interfaces KV
-Les vues Suivi Karts (Spotter/Analyzer) et KARTS (Analyzer) ne sont plus accessibles. Les calculs, le stockage et les affectations partagés restent intacts pour la refonte ultérieure. Il ne s’agit pas encore de la nouvelle interface prévue par le cahier des charges.

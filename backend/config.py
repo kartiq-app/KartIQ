@@ -5,8 +5,8 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1864"
-APP_RELEASE_NAME = "SPOTTER STOCKAGE LOCAL FIABLE"
+APP_VERSION = "7.2.1866"
+APP_RELEASE_NAME = "NOTES KV SANS SESSION NI MODE KARTS"
 
 
 def _circuit_sort_key(circuit):
