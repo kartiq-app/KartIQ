@@ -46,3 +46,57 @@ class VVCEProjectionTests(unittest.TestCase):
             pits.append({**pit, 'event': 'OUT'})
         result = calculate(laps, pits, [11, 22])
         self.assertEqual(result['referenceStops'], 3)
+import pytest
+from backend.services.vvce_server import live_snapshot_calculate
+
+
+def grid():
+    return [
+        {'apex_row': 22, 'pos': 1, 'driver': 'EIRIZ PRO', 'laps': 0,
+         'gap': 'Tour 462', 'pit_stops': 9, 'last': '1:10.714'},
+        {'apex_row': 3, 'pos': 2, 'driver': 'RED RACING', 'laps': 0,
+         'gap': '3 Tours', 'pit_stops': 10, 'last': '1:11.465'},
+        {'apex_row': 14, 'pos': 3, 'driver': 'MTF RACING', 'laps': 0,
+         'gap': '19.933', 'pit_stops': 9, 'last': '1:11.337'},
+    ]
+
+
+def test_leader_keeps_advantage_over_three_lap_gap():
+    r = live_snapshot_calculate(grid(), {})
+    assert r['referenceLap'] == 462
+    assert r['ranking'][0]['name'] == 'EIRIZ PRO'
+    assert r['ranking'][1]['name'] == 'MTF RACING'
+    assert r['ranking'][-1]['name'] == 'RED RACING'
+    assert r['costProvisional']
+    assert r['method'] == 'vvce-live-grid-incremental-v1870'
+
+
+def test_only_live_grid_stop_counts_and_incremental_delta():
+    initial = {'22': {'lastLap': 462, 'stops': 9}}
+    rows = grid()
+    rows[0]['gap'] = 'Tour 463'
+    rows[0]['pit_stops'] = 10
+    r = live_snapshot_calculate(rows, initial)
+    team = next(d for d in r['ranking'] if d['rowId'] == 22)
+    assert team['deltaLapsSinceActivation'] == 1
+    assert team['deltaStopsSinceActivation'] == 1
+
+
+def test_reject_incomplete_grid_or_unknown_leader():
+    rows = grid()
+    rows[0]['gap'] = '—'
+    with pytest.raises(ValueError, match='leader'):
+        live_snapshot_calculate(rows, {})
+    rows = grid()
+    rows[1]['gap'] = '—'
+    with pytest.raises(ValueError, match='Écart LIVE'):
+        live_snapshot_calculate(rows, {})
+
+
+def test_reject_mismatched_live_laps():
+    rows = grid()
+    rows[1]['laps'] = 459
+    assert live_snapshot_calculate(rows, {})['referenceLap'] == 462
+    rows[1]['laps'] = 500
+    with pytest.raises(ValueError, match='incohérents'):
+        live_snapshot_calculate(rows, {})

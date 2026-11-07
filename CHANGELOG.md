@@ -1,3 +1,10 @@
+## V7.2.1870 — VVCE photographie LIVE et scroll stable
+- Classement virtuel à partir des snapshots synchrones de la grille Apex du Recorder (aucune reconstruction des tours synthétiques historiques).
+- Démarrage de référence à l’activation ; suivi des évolutions de tours et arrêts. Rejet des grilles/gaps incohérents.
+- Coût net provisoire explicitement estimé à 110 s ; projection en tours indicatifs non certifiée.
+- Tableau scrollable, élément DOM conservé ; en-tête figé.
+- Moteur LIVE et compteurs PIT Focus/Spotter préservés.
+
 ## V7.2.1869 — PIT Focus/Spotter : référence Apex V1854
 - Rétablit strictement le code PIT IN de Focus Endurance de la V1854 : `pit_timer` direct, sans horloge lissée.
 - Spotter affiche le même `pit_timer` officiel formaté; si absent, « — » sans calcul local.

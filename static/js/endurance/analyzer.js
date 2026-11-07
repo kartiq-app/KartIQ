@@ -1231,31 +1231,31 @@ function startAnalyzerVVCE(){return analyzerVVCEActivate()}
 function analyzerRenderVVCEReport(){
  const panel=document.getElementById('analyzerVVCEReport');if(!panel)return;
  panel.hidden=analyzerRankingMode!=='virtual';if(panel.hidden)return;
- const previousWrap=panel.querySelector('.vvce-report-table-wrap');
- const previousScrollTop=previousWrap?previousWrap.scrollTop:0;
- const previousScrollLeft=previousWrap?previousWrap.scrollLeft:0;
  const v=analyzerVVCE,ready=v.status==='ready'&&v.circuit===analyzerSessionCircuit()&&v.session===String(state?.apex_session_id||state?.apex_session_title||'');
  const time=v.finishedAt?new Date(v.finishedAt).toLocaleTimeString('fr-FR'):null;
  const head='<strong>CLASSEMENT VIRTUEL</strong>';
- if(v.status==='loading'){
-  panel.innerHTML=`${head}<p>${analyzerEscape(v.reason||'Collecte et calcul en cours côté serveur')}. Aucun classement ne sera inventé tant que les données sont insuffisantes.</p>`;
-  return;
- }
- if(v.status==='error'){
-  panel.innerHTML=`${head}<p>${analyzerEscape(v.reason)} · ${v.loaded}/${v.total} équipes traitées${time?' · '+time:''}.</p>${v.failedTeams.length?`<details><summary>${v.failedTeams.length} historiques incomplets — détails</summary><ul>${v.failedTeams.map(x=>`<li>${analyzerEscape(x)}</li>`).join('')}</ul></details>`:''}<small>Aucune position virtuelle publiée. Le classement LIVE reste inchangé.</small>`;
-  return;
- }
  if(!ready){
-  panel.innerHTML=`${head}<p>Calcul automatique sur le serveur après sélection du classement virtuel. En attente de données Apex exploitables.</p>`;
-  return;
+  const message=v.status==='error'?`<p>${analyzerEscape(v.reason)}</p>`:`<p>${analyzerEscape(v.reason||'Initialisation de la photographie LIVE Apex…')}</p>`;
+  const markup=`${head}${message}<small>Le LIVE officiel reste indépendant.</small>`;
+  if(panel.dataset.vvceMessage!==markup){panel.innerHTML=markup;panel.dataset.vvceMessage=markup}
+  panel.dataset.vvceResult='';return;
  }
+ panel.dataset.vvceMessage='';
+ const stamp=[v.circuit,v.session,v.finishedAt,v.stale,v.ranking.length].join('|');
+ if(panel.dataset.vvceResult===stamp&&panel.querySelector('.vvce-report-table-wrap'))return;
  const rows=v.ranking.map(d=>`<tr><td>${d.position}</td><td>${d.realPos}</td><td class="vvce-team-cell" title="${analyzerEscape(d.name)}">${analyzerEscape(d.name)}</td><td>${d.stops}/${v.referenceStops}</td><td>${d.lastLap}</td><td>${d.missing}</td><td>${d.missingLaps}</td><td>+${analyzerFormatDuration(d.extra)}</td><td>${analyzerFormatDuration(d.projectedTotal)}</td><td>${d.position===1?'—':'+'+analyzerFormatDuration(d.gap)}</td></tr>`).join('');
- panel.innerHTML=`${head}<p><strong>${v.ranking.length}/${v.total} équipes</strong> · ${v.netSamples} passages exploitables · coût net médian <strong>${v.pitNetCost.toFixed(2)} s</strong> · référence ${v.referenceStops} arrêts · tour ${v.referenceLap} · ${time}.</p><small>Projection automatiquement actualisée côté serveur, calcul historique non certifié au même instant. Les données trop anciennes restent visibles avec un avertissement.</small><div class="vvce-report-table-wrap"><table class="analyzer-ranking-table vvce-report-table"><thead><tr><th>Virtuel</th><th>Live</th><th>Équipe</th><th>Stands</th><th>Tours</th><th>À ajouter</th><th>Tours projetés</th><th>Temps ajouté</th><th>Temps projeté</th><th>Écart</th></tr></thead><tbody>${rows}</tbody></table></div>`;
- const nextWrap=panel.querySelector('.vvce-report-table-wrap');
- if(nextWrap){
-  nextWrap.scrollTop=previousScrollTop;
-  nextWrap.scrollLeft=previousScrollLeft;
+ const metadata=`<strong>${v.ranking.length}/${v.total} équipes</strong> · coût d'arrêt provisoire <strong>${Number(v.pitNetCost).toFixed(2)} s</strong> · référence ${v.referenceStops} arrêts · tour LIVE ${v.referenceLap} · ${time||'—'}.`;
+ const note=`Projection fondée sur le classement LIVE Apex au même instant ; les écarts en tours sont convertis au rythme médian estimé. ${v.stale?'⚠ Données anciennes. ':''}Résultat indicatif, non certifié.`;
+ const wrap=panel.querySelector('.vvce-report-table-wrap');
+ if(wrap&&panel.querySelector('.vvce-report-table tbody')){
+  // Never replace the scroll container: stable wheel/touch scrolling on 4G.
+  panel.querySelector('.vvce-report-meta').innerHTML=metadata;
+  panel.querySelector('.vvce-report-note').textContent=note;
+  panel.querySelector('.vvce-report-table tbody').innerHTML=rows;
+ }else{
+  panel.innerHTML=`${head}<p class="vvce-report-meta">${metadata}</p><small class="vvce-report-note">${note}</small><div class="vvce-report-table-wrap" tabindex="0" aria-label="Classement virtuel défilant"><table class="analyzer-ranking-table vvce-report-table"><thead><tr><th>Virtuel</th><th>Live</th><th>Équipe</th><th>Stands</th><th>Tours</th><th>À ajouter</th><th>Tours de retard</th><th>Temps ajouté</th><th>Indice virtuel</th><th>Écart</th></tr></thead><tbody>${rows}</tbody></table></div>`;
  }
+ panel.dataset.vvceResult=stamp;
 }
 function analyzerVirtualMetrics(rows){
  const ready=analyzerVVCE.status==='ready'&&analyzerVVCE.circuit===analyzerSessionCircuit()

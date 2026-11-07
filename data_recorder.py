@@ -1530,7 +1530,8 @@ class DataRecorderWorker:
         self.backfill_total_pits = int(self.metadata.get("backfill_pits") or 0)
         self.backfill_total_sectors = int(self.metadata.get("backfill_sectors") or 0)
         self.backfill_syncing = False
-        self._hydrate_history()
+        if not str(recording.get('name') or '').startswith('VVCE_V1870:'):
+            self._hydrate_history()
 
     def _hydrate_history(self):
         """Conserve le contexte Velocity Score si Render redémarre pendant un REC."""
@@ -1581,14 +1582,16 @@ class DataRecorderWorker:
         if self.thread and self.thread.is_alive():
             return
         self.thread = threading.Thread(target=self._run, name=f"velocity-recorder-{self.id}", daemon=True)
-        self.backfill_thread = threading.Thread(target=self._backfill_loop, name=f"velocity-recorder-backfill-{self.id}", daemon=True)
+        vvce_live_only = str(self.recording.get('name') or '').startswith('VVCE_V1870:')
+        self.backfill_thread = None if vvce_live_only else threading.Thread(target=self._backfill_loop, name=f"velocity-recorder-backfill-{self.id}", daemon=True)
         self.score_thread = threading.Thread(target=self._score_loop, name=f"velocity-recorder-score-{self.id}", daemon=True)
         self.lease_thread = threading.Thread(target=self._lease_loop, name=f"velocity-recorder-lease-{self.id}", daemon=True)
         self.lease_thread.start()
         self.score_thread.start()
         self.thread.start()
-        self.backfill_thread.start()
-        self.backfill_wakeup.set()
+        if self.backfill_thread is not None:
+            self.backfill_thread.start()
+            self.backfill_wakeup.set()
 
     def stop(self):
         self.stop_event.set()
@@ -1705,7 +1708,7 @@ class DataRecorderWorker:
             self.last_snapshot_at = at
             compact = {
                 "session_title": state.get("apex_session_title"), "session_type": state.get("apex_session_type"), "time_remaining": state.get("time_remaining"),
-                "drivers": [{k: d.get(k) for k in ("pos", "driver", "pilot", "apex", "laps", "pit_stops", "last", "best", "status", "apex_row")} for d in state.get("drivers") or []],
+                "drivers": [{k: d.get(k) for k in ("pos", "driver", "pilot", "apex", "laps", "pit_stops", "last", "best", "status", "apex_row", "gap", "interval")} for d in state.get("drivers") or []],
             }
             self.store.append_snapshot(self.id, at, compact)
         with self.data_lock:

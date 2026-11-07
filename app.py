@@ -38,7 +38,7 @@ from backend.logging_tools import ApexLogManager
 from backend.network import local_ip
 from backend.services.race_state import RaceStateService
 from backend.services.relay_score_engine import fetch_and_compute
-from backend.services.vvce_server import VVCERepository, calculate as compute_vvce
+from backend.services.vvce_server import VVCERepository, live_snapshot_calculate
 from data_recorder import RecorderStore, RecorderManager
 from spotter_registry_scope import RegistryRuns
 from backend.services.kart_scoring_scope import KartScoringScope
@@ -3050,11 +3050,11 @@ def weather():
 # or in the critical Apex frame-processing path.
 VVCE_THREADS_LOCK = threading.RLock()
 VVCE_THREADS = {}
-VVCE_RECORDER_PREFIX = "VVCE_V1865:"
+VVCE_RECORDER_PREFIX = "VVCE_V1870:"
 
 
 def _vvce_scope(workspace, circuit, session_key):
-    return f"{workspace}:vvce:{circuit}:{hashlib.sha256(session_key.encode()).hexdigest()[:16]}"
+    return f"{workspace}:vvce-live-v1870:{circuit}:{hashlib.sha256(session_key.encode()).hexdigest()[:16]}"
 
 
 def _vvce_repository():
@@ -3062,56 +3062,81 @@ def _vvce_repository():
 
 
 def _vvce_work(scope, recording_id, expected, circuit, session_key):
-    """An independent, best-effort secondary worker; source is persisted Recorder laps."""
-    last_success = 0
-    last_signature = None
+    """Read only the newest LIVE grid snapshot; no full historical scan.
+
+    Recorder snapshots are written every 10s on its own connection. This task
+    has a separate background thread and does not enter Apex frame processing.
+    """
     try:
         store = _spotter_persistent_store()
         repo = VVCERepository(store)
-        started_ms = int(time.time()*1000)
-        while int(time.time()*1000)-started_ms < VELOCITY_RECORDER_MAX_HOURS*3600000:
-            rec = store.get_recording(recording_id)
-            if not rec or rec.get('desired_status') == 'stopped' or rec.get('status') in ('stopped','error'):
+        while True:
+            latest = repo.read(scope) or {}
+            activated_at = int(latest.get('activatedAt') or 0)
+            if not activated_at or int(time.time()*1000)-activated_at >= VELOCITY_RECORDER_MAX_HOURS*3600000:
                 break
-            # Avoid publishing old data if this recorder stopped receiving live
-            # messages. Backfill-only historical calculations are never certified.
+            rec = store.get_recording(recording_id)
+            if not rec or rec.get('desired_status') == 'stopped' or rec.get('status') in ('stopped', 'error'):
+                break
             last_message = int(rec.get('last_message_at_ms') or 0)
-            if (last_message and int(time.time()*1000)-last_message > 900000) or (not last_message and int(time.time()*1000)-started_ms > 900000):
+            if (last_message and int(time.time()*1000)-last_message > 900000) or (not last_message and int(time.time()*1000)-activated_at > 900000):
                 break
             try:
-                latest = repo.read(scope) or {}
-                current_rows = latest.get('expectedRows') or expected
-                signature = (int(rec.get('laps_count') or 0),int(rec.get('pits_count') or 0),tuple(current_rows))
-                if signature == last_signature:
-                    time.sleep(20)
+                recent = store._execute("""SELECT received_at_ms,payload_json
+                    FROM velocity_recorder_snapshots WHERE recording_id=?
+                    AND received_at_ms>=? ORDER BY received_at_ms DESC LIMIT 1""",
+                    (recording_id, activated_at), fetchone=True)
+                if not recent:
+                    time.sleep(10)
                     continue
-                laps, pits = store.worker_history(recording_id)
-                result = compute_vvce(laps, pits, current_rows)
-                now = int(time.time()*1000)
-                repo.put(scope, {'status':'ready','result':result,'updatedAt':now,
-                                 'circuit':circuit,'session':session_key,'recordingId':recording_id,
-                                 'expectedRows':current_rows,'note':'Projection sur historiques enregistrés ; non certifiée au même instant.'})
-                last_signature = signature
-                last_success = now
-            except (ValueError, TypeError) as exc:
-                prev = repo.read(scope) or {}
-                # Retain the last good result, but clearly mark it stale.
-                repo.put(scope, {**prev, 'status':'waiting' if not last_success else 'stale',
-                                 'reason':str(exc)[:350], 'checkedAt':int(time.time()*1000),
-                                 'circuit':circuit,'session':session_key,'recordingId':recording_id})
-            except Exception as exc:
-                app.logger.warning('VVCE background error: %s', exc)
-                prev = repo.read(scope) or {}
+                observed_at=int(recent['received_at_ms'])
+                if observed_at <= int(latest.get('sourceAt') or 0):
+                    time.sleep(10)
+                    continue
+                snap = json.loads(recent['payload_json'])
+                if not isinstance(snap, dict) or not isinstance(snap.get('drivers'), list):
+                    raise ValueError('Snapshot LIVE Recorder incomplet.')
+                title = str(snap.get('session_title') or '').strip()
+                # This application keys VVCE by the Apex session title; a
+                # different title must never publish a cross-session grid.
+                if title and title != session_key:
+                    raise ValueError('Titre de session du Recorder différent du LIVE Apex.')
+                # A session ID may differ from the human readable title; only
+                # require equality when an Apex title has been used as key.
+                if title and str(latest.get('sessionTitle') or '') and title != str(latest['sessionTitle']):
+                    raise ValueError('Session Apex changée : photographie initiale invalidée.')
+                current_rows={int(d.get('apex_row') or 0) for d in snap['drivers'] if str(d.get('apex_row') or '').isdigit()}
+                if current_rows != set(int(r) for r in latest.get('expectedRows', expected)):
+                    raise ValueError('Composition de grille différente de la photographie initiale.')
+                initial=latest.get('initial') or {}
+                # A snapshot from this session, not historical rows of a prior
+                # session, is the starting photograph. The same grid format is
+                # used for every subsequent update.
+                if not initial:
+                    result=live_snapshot_calculate(snap['drivers'], {})
+                    initial={str(d['rowId']):{'lastLap':d['lastLap'],'stops':d['stops']}
+                             for d in result['ranking']}
+                result=live_snapshot_calculate(snap['drivers'], initial,
+                    float(latest.get('netCost') or 110.0))
+                repo.put(scope, {**latest, 'status':'ready','result':result,
+                                 'updatedAt':int(time.time()*1000),'sourceAt':observed_at,
+                                 'initial':initial,'sessionTitle':title or latest.get('sessionTitle') or '',
+                                 'note':'Photographie LIVE et mises à jour incrémentales. Coût d’arrêt provisoire.'})
+            except (ValueError, TypeError, KeyError) as exc:
+                prev=repo.read(scope) or latest
                 repo.put(scope, {**prev, 'status':'stale' if prev.get('result') else 'waiting',
-                                 'reason':'Données Recorder temporairement indisponibles.',
+                                 'reason':str(exc)[:350], 'checkedAt':int(time.time()*1000)})
+            except Exception as exc:
+                app.logger.warning('VVCE incremental snapshot error: %s', exc)
+                prev=repo.read(scope) or latest
+                repo.put(scope, {**prev,'status':'stale' if prev.get('result') else 'waiting',
+                                 'reason':'Snapshot LIVE provisoirement indisponible.',
                                  'checkedAt':int(time.time()*1000)})
-            time.sleep(20)
-        previous = repo.read(scope) or {}
-        repo.put(scope, {**previous,'status':'stale','reason':'Collecte VVCE arrêtée ou devenue inactive.',
+            time.sleep(10)
+        previous=repo.read(scope) or {}
+        repo.put(scope, {**previous,'status':'stale','reason':'Collecte LIVE terminée ou inactive.',
                          'checkedAt':int(time.time()*1000)})
-        # Stop only our dedicated VVCE recorder. Other Session/Lab/KV recorders
-        # remain exclusively owned by their respective workflows.
-        rec = store.get_recording(recording_id)
+        rec=store.get_recording(recording_id)
         if rec and str(rec.get('name') or '').startswith(VVCE_RECORDER_PREFIX):
             try: _get_recorder_manager().stop(recording_id)
             except Exception: app.logger.warning('VVCE dedicated recorder stop failed')
@@ -3183,10 +3208,11 @@ def vvce_start():
                 recording=active[0]
             else:
                 recording=manager.create(VVCE_RECORDER_PREFIX+workspace+':'+session_key[:50],circuit)
-        if not current or current.get('recordingId') != recording['id']:
+        if not current or current.get('recordingId') != recording['id'] or not current.get('activatedAt'):
             repo.put(scope, {'status':'waiting','reason':'Initialisation des historiques sur Render',
                              'recordingId':recording['id'],'circuit':circuit,'session':session_key,
-                             'expectedRows':expected,'updatedAt':0})
+                             'expectedRows':expected,'activatedAt':int(time.time()*1000),
+                             'initial':{},'updatedAt':0})
         elif sorted(current.get('expectedRows') or []) != expected:
             # Changes in team count are only safe for same circuit/session.
             # Keep a coherent roster in the persisted worker snapshot.

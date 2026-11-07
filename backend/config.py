@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1869"
+APP_VERSION = "7.2.1870"
 APP_RELEASE_NAME = "SPOTTER STOCKAGE LOCAL FIABLE"
 
 
