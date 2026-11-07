@@ -1,3 +1,5 @@
+V7.2.1863 : le diagnostic VVCE apparaît sous le classement Analyzer (résultat ou raison de refus), sans altérer le LIVE.
+
 ## V7.2.1860
 
 Classement virtuel sur maximum d’arrêts observés et minimum probable déduit des PITS Apex ; compteur PIT sans accélération visible. Voir CHANGELOG.md.

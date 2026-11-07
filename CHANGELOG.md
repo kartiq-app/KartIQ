@@ -1,3 +1,11 @@
+## V7.2.1863 — Diagnostic et compte-rendu VVCE
+
+- Affichage visible du résultat final (calcul terminé ou erreur) sous les commandes Analyzer ; le message n'est plus envoyé uniquement vers un élément absent.
+- Détail des 34 équipes calculées : position VVCE, position LIVE au départ, tours historiques, arrêts, arrêts virtuels, tours projetés, temps ajouté, total projeté et écart.
+- En cas de données Apex incomplètes : raison précise et noms des équipes en échec ; pas de positions artificiellement validées.
+- Résultats figés jusqu'à un recalcul volontaire, bouton explicite « Recalculer VVCE » ; aucun déclenchement automatique.
+- Algorithme expérimental VVCE inchangé, classement LIVE et moteurs KV inchangés.
+
 ## V7.2.1862 — VVCE test expérimental dans Analyzer
 
 - Ajout d’un bouton « CALCULER VVCE (TEST) » dans Classement virtuel.
