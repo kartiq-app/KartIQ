@@ -1,4 +1,13 @@
-## V7.2.1861 — Correction du classement virtuel (Agadir)
+## V7.2.1862 — VVCE test expérimental dans Analyzer
+
+- Ajout d’un bouton « CALCULER VVCE (TEST) » dans Classement virtuel.
+- Portage du prototype Agadir : temps cumulés des tours complets, projection des tours manquants par médiane des 30 derniers tours propres, coût NET des stands estimé par médiane des tours post-IN moins le tour propre typique, égalisation au maximum d’arrêts du plateau.
+- Chargement Apex uniquement sur action explicite, séquentiel afin de préserver le live ; aucun recalcul permanent.
+- Calcul figé après collecte : il ne s’agit PAS d’un classement live synchronisé ni d’un classement certifié ; les différentes équipes peuvent être interrogées à des instants différents.
+- Si une équipe manque de données, aucun classement virtuel partiel trompeur n’est calculé.
+- Classement LIVE, scores KV, scores relais, Quick Change et logique des compteurs PIT inchangés.
+
+## V7.2.1862 — Correction du classement virtuel (Agadir)
 - Correction de la valeur Apex « Tour 302 » du leader : indicateur de tour courant, jamais retard de 302 tours.
 - Correction des cas Apex avec `laps=0` : les écarts « N Tours » restent exploitables, zéro tour n’est pas une référence fiable.
 - Refus de projeter un écart absent au lieu de l’assimiler à zéro.

@@ -1141,29 +1141,111 @@ function analyzerVirtualLiveGap(driver,leaderLaps,pace){
  // explicitement exprimes par Apex. Ne pas fabriquer un retard nul.
  return Number.isFinite(seconds)&&seconds>=0?seconds:null;
 }
+// VVCE 1862 — expérimentation volontairement isolée du classement LIVE.
+// L'extraction complète des historiques Apex est déclenchée par l'utilisateur,
+// jamais par le rendu, le polling ou le changement automatique de circuit.
+const analyzerVVCE={status:'idle',circuit:'',session:'',teams:new Map(),reason:'',startedAt:0,
+                   loaded:0,total:0,pitNetCost:null,referenceStops:null,referenceLap:null};
+function analyzerVVCEInvalidate(){
+ analyzerVVCE.status='idle';analyzerVVCE.circuit='';analyzerVVCE.session='';
+ analyzerVVCE.teams=new Map();analyzerVVCE.reason='';analyzerVVCE.loaded=0;
+}
+function analyzerVVCEMedian(values){
+ const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y),n=a.length;
+ return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null;
+}
+function analyzerVVCECompute(datasets){
+ // Port direct de la méthode exploratoire utilisée sur l'export Agadir :
+ // somme des tours + tours manquants * médiane de 30 tours propres +
+ // arrêts restant * perte nette médiane observée sur le plateau.
+ // IMPORTANT : sans chronologie absolue commune, résultat NON CERTIFIÉ.
+ if(datasets.length<2)throw Error('Au moins deux historiques d’équipes sont nécessaires.');
+ const maxStops=Math.max(...datasets.map(x=>x.stops));
+ const maxLap=Math.max(...datasets.map(x=>x.lastLap));
+ const netCosts=[];
+ for(const d of datasets){
+  for(const n of d.pitNext){
+   const duration=d.lapsByNumber.get(n),base=d.cleanMedian;
+   if(Number.isFinite(duration)&&Number.isFinite(base)&&duration>base*1.45&&duration<base*5)
+    netCosts.push(duration-base);
+  }
+ }
+ if(netCosts.length<6)throw Error('Pas assez de tours de stands identifiables pour estimer le coût net.');
+ const netCost=analyzerVVCEMedian(netCosts);
+ if(!(netCost>0))throw Error('Coût net des stands non identifiable.');
+ const ranking=datasets.map(d=>{
+  const remaining=Math.max(0,maxStops-d.stops),missingLaps=Math.max(0,maxLap-d.lastLap);
+  const total=d.elapsed+missingLaps*d.pace+remaining*netCost;
+  return {...d,missing:remaining,extra:remaining*netCost,projectedTotal:total,missingLaps};
+ }).sort((a,b)=>a.projectedTotal-b.projectedTotal||a.realPos-b.realPos);
+ const leader=ranking[0].projectedTotal;
+ ranking.forEach((d,i)=>{d.position=i+1;d.gap=Math.max(0,d.projectedTotal-leader)});
+ return {ranking,maxStops,maxLap,netCost,netSamples:netCosts.length};
+}
+async function startAnalyzerVVCE(){
+ if(analyzerVVCE.status==='loading')return;
+ const circuit=analyzerSessionCircuit(),session=String(state?.apex_session_id||state?.apex_session_title||'');
+ const initial=(state.drivers||[]).filter(d=>Number(d.apex_row)>0&&d.driver)
+   .map(d=>({name:String(d.driver),rowId:Number(d.apex_row),stops:Number(d.pit_stops)||0,
+             realPos:Number(d.pos)||999}));
+ if(!initial.length){analyzerVVCE.status='error';analyzerVVCE.reason='Aucune équipe Apex.';renderAnalyzer();return}
+ analyzerVVCE.status='loading';analyzerVVCE.circuit=circuit;analyzerVVCE.session=session;
+ analyzerVVCE.startedAt=Date.now();analyzerVVCE.loaded=0;analyzerVVCE.total=initial.length;
+ analyzerVVCE.reason='Récupération des historiques Apex sur demande…';analyzerVVCE.teams=new Map();renderAnalyzer();
+ try{
+  const datasets=[];let failures=0;
+  // Séquentiel : préserver en priorité le débit des chronos live sur réseau mobile.
+  for(const item of initial){
+   if(analyzerSessionCircuit()!==circuit||String(state?.apex_session_id||state?.apex_session_title||'')!==session){
+    throw Error('Circuit ou session modifié pendant le calcul.');
+   }
+   const [laps,pits]=await Promise.all([
+    fetchAllApexTeamLaps(item.rowId,'',null),fetchAllApexTeamPits(item.rowId,'',null)
+   ]);
+   const lapMap=new Map();
+   for(const lap of laps||[]){
+    const n=Number(lap.lap),v=Number(lap.lapTime)/1000;
+    if(Number.isInteger(n)&&n>0&&Number.isFinite(v)&&v>0&&v<1800)lapMap.set(n,v);
+   }
+   const nums=[...lapMap.keys()].sort((a,b)=>a-b),last=nums[nums.length-1]||0;
+   const pitNext=new Set((pits||[]).map(p=>Number(p.lap)+1).filter(Number.isInteger));
+   const clean=nums.filter(n=>n>2&&!pitNext.has(n)&&lapMap.get(n)>=40&&lapMap.get(n)<=300)
+                   .map(n=>lapMap.get(n));
+   const baseline=analyzerVVCEMedian(clean);
+   // Toujours refuser une série trouée : sommer uniquement les tours récupérés
+   // créerait un avantage artificiel massif pour l'équipe concernée.
+   if(last<20||nums.length!==last||clean.length<15||!Number.isFinite(baseline))failures++;
+   else datasets.push({...item,stops:item.stops,lastLap:last,elapsed:nums.reduce((acc,n)=>acc+lapMap.get(n),0),
+                       pace:analyzerVVCEMedian(clean.slice(-30)),cleanMedian:baseline,pitNext,lapsByNumber:lapMap});
+   analyzerVVCE.loaded++;analyzerVVCE.reason=`Historique Apex : ${analyzerVVCE.loaded}/${initial.length} équipes`;
+   renderAnalyzer();
+  }
+  // Pas de classement partiel abusivement présenté comme classement du plateau.
+  if(failures||datasets.length!==initial.length)throw Error(`${failures} historique(s) incomplet(s) : projection du plateau indisponible.`);
+  const result=analyzerVVCECompute(datasets);
+  analyzerVVCE.teams=new Map(result.ranking.map(d=>[d.rowId,d]));
+  analyzerVVCE.pitNetCost=result.netCost;analyzerVVCE.referenceStops=result.maxStops;
+  analyzerVVCE.referenceLap=result.maxLap;analyzerVVCE.status='ready';
+  analyzerVVCE.reason=`ESSAI NON CERTIFIÉ · ${initial.length} équipes · ${result.netSamples} tours de stands · coût net médian ${result.netCost.toFixed(1)} s · capture non simultanée`;
+ }catch(error){
+  analyzerVVCE.status='error';analyzerVVCE.teams=new Map();
+  analyzerVVCE.reason=String(error?.message||error);
+ }finally{renderAnalyzer()}
+}
 function analyzerVirtualMetrics(rows){
- const maxStops=Math.max(0,...rows.map(x=>analyzerNumeric(x.driver?.pit_stops,0)));
- const maxLaps=rows.reduce((n,x)=>{const v=analyzerNullableNumeric(x.driver?.laps);return v===null||v<=0?n:Math.max(n,v)},null);
- const grid=analyzerGridPace(),pace=grid.length?grid[Math.floor(grid.length/2)]:null;
- const reference=analyzerVirtualPitReference(rows);
- const output=rows.map(x=>{
-  const d=x.driver,stops=analyzerNumeric(d.pit_stops,0),missing=Math.max(0,maxStops-stops);
-  const baseDeficit=analyzerVirtualLiveGap(d,maxLaps,pace);
-  const extra=missing&&Number.isFinite(reference.seconds)?missing*reference.seconds:missing?null:0;
-  const totalDeficit=Number.isFinite(baseDeficit)&&Number.isFinite(extra)?baseDeficit+extra:null;
-  return {...x,virtual:{maxStops,missing,pitAverage:reference,extra,baseDeficit,totalDeficit,valid:Number.isFinite(totalDeficit)}};
+ const ready=analyzerVVCE.status==='ready'&&analyzerVVCE.circuit===analyzerSessionCircuit()
+ &&analyzerVVCE.session===String(state?.apex_session_id||state?.apex_session_title||'');
+ return rows.map(x=>{
+  const d=x.driver,entry=ready?analyzerVVCE.teams.get(Number(d.apex_row)):null;
+  return {...x,virtual:{valid:Boolean(entry),position:entry?.position??null,
+   maxStops:analyzerVVCE.referenceStops,missing:entry?.missing??0,
+   extra:entry?.extra??null,gap:entry?.gap??null,
+   pitAverage:{samples:0},experimental:true}};
  }).sort((a,b)=>{
   if(a.virtual.valid!==b.virtual.valid)return a.virtual.valid?-1:1;
-  if(!a.virtual.valid)return analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999);
-  return a.virtual.totalDeficit-b.virtual.totalDeficit||analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999);
+  if(a.virtual.valid)return a.virtual.position-b.virtual.position;
+  return (Number(a.driver.pos)||999)-(Number(b.driver.pos)||999);
  });
- const leader=output.find(x=>x.virtual.valid)?.virtual.totalDeficit;
- let position=0;
- for(const x of output){
-  x.virtual.position=x.virtual.valid?++position:null;
-  x.virtual.gap=x.virtual.valid?Math.max(0,x.virtual.totalDeficit-leader):null;
- }
- return output;
 }
 async function analyzerLoadVirtualPitData(){
  if(analyzerVirtualLoading)return;
@@ -1185,7 +1267,7 @@ function setAnalyzerRankingMode(mode){
  document.getElementById('analyzerVirtualRankingBtn')?.classList.toggle('active',analyzerRankingMode==='virtual');
  document.getElementById('analyzerSectorRankingBtn')?.classList.toggle('active',analyzerRankingMode==='sectors');
  renderAnalyzer();
- if(analyzerRankingMode==='virtual')analyzerLoadVirtualPitData();
+ // VVCE : aucun chargement historique automatique. L'utilisateur lance le test explicitement.
 }
 function analyzerRelayRawMetrics(driver,gridNow=null){
  const history=analyzerTeamHistory(driver),relay=history.currentRelay,average=analyzerCurrentStintAverage(driver);
@@ -2581,7 +2663,7 @@ function velocityLabSprintMatrices(analysis){
 }
 function velocityLabSprintMatrixHtml(title,firstHeader,rows,stages,subValue){
  const head=stages.map(s=>`<th>${analyzerEscape(s.label)}</th>`).join('');
- const body=rows.map(item=>`<tr><th>${analyzerEscape(String(item.name))}</th>${stages.map(stage=>{const row=item.cells.get(stage.index);if(!row)return '<td class="velocity-lab-matrix-empty">—</td>';const score=Number.isFinite(row.score)?row.score:'—',klass=Number.isFinite(row.score)?analyzerScoreClass(row.score):'neutral';return `<td><b class="velocity-lab-matrix-score ${klass}">${score}</b><small>${row.insufficient?'Données insuffisantes':analyzerEscape(subValue(row))}</small></td>`}).join('')}</tr>`).join('');
+ const body=rows.map(item=>`<tr><th>${analyzerEscape(String(item.name))}</th>${stages.map(stage=>{const row=item.cells.get(stage.index);if(!row)return '<td class="velocity-lab-matrix-empty">—</td>';const score=Number.isFinite(row.score)?row.score:'—',klass=Number.isFinite(row.score)?analyzerScoreClass(row.score):'neutral';return `<td><b class="velocity-lab-matrix-score ${klass}">${score}</b><small>${row.insufficient?'Projection non calculée':analyzerEscape(subValue(row))}</small></td>`}).join('')}</tr>`).join('');
  return `<section class="velocity-lab-matrix-card"><div class="velocity-lab-matrix-title"><strong>${title}</strong><span>${rows.length} ${firstHeader==='PILOTE'?'pilote(s)':'kart(s)'}</span></div><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table velocity-lab-matrix"><thead><tr><th>${firstHeader}</th>${head}</tr></thead><tbody>${body}</tbody></table></div></section>`
 }
 function renderVelocityLabSprintResults(){
@@ -2607,7 +2689,7 @@ function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ct
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
- rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(Number.isFinite(row.score)?String(row.score):'—',x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(row.insufficient?'Données insuffisantes':String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
+ rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(Number.isFinite(row.score)?String(row.score):'—',x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(row.insufficient?'Projection non calculée':String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
 }
 function velocityLabSprintPdfRankingRows(rows){
  return (rows||[]).slice().sort(velocityLabSprintScoreSort).map((r,i)=>[
@@ -3902,13 +3984,14 @@ function renderAnalyzer(){
  analyzerIngestLiveSectorCache();
  const all=analyzerRows();
  analyzerSyncRankingSortControl(all);
- const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerVirtualMetrics(all);const sectorCount=analyzerSectorRankingSessionCount(all);
+ const generalSorted=all.slice().sort(analyzerSortComparator());const virtualSorted=analyzerRankingMode==='virtual'?analyzerVirtualMetrics(all):[];const sectorCount=analyzerSectorRankingSessionCount(all);
  const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
  const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),sectorBtn=document.getElementById('analyzerSectorRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
  if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');if(sectorBtn)sectorBtn.classList.toggle('active',analyzerRankingMode==='sectors');
+ const vvceButton=document.getElementById('analyzerVVCEButton');if(vvceButton){vvceButton.hidden=analyzerRankingMode!=='virtual';vvceButton.disabled=analyzerVVCE.status==='loading';vvceButton.textContent=analyzerVVCE.status==='loading'?`CALCUL ${analyzerVVCE.loaded}/${analyzerVVCE.total}`:'CALCULER VVCE (TEST)'}
  const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');rankingTable.classList.toggle('sector-ranking-mode',analyzerRankingMode==='sectors');}
  const rankingHead=document.getElementById('analyzerRankingHead');if(rankingHead&&analyzerRankingMode!=='sectors')rankingHead.innerHTML=analyzerGeneralRankingHeader();
- if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(analyzerVirtualLoading?'Calcul des temps d’arrêts virtuels en cours…':'Même nombre d’arrêts pour toutes les équipes — moyenne des 3 meilleurs arrêts propres à chaque équipe'):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity · NOTE KART* : estimation provisoire, KV non confirmé si —';
+ if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(`VVCE EXPÉRIMENTAL · ${analyzerVVCE.status==='loading'?'Chargement '+analyzerVVCE.loaded+'/'+analyzerVVCE.total:analyzerVVCE.reason||'Clique sur CALCULER VVCE pour tester'} · Non utilisable pour une décision en course`):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity · NOTE KART* : estimation provisoire, KV non confirmé si —';
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver)||state.followed||(state.drivers||[])[0]||null;
  const ownForecast=followed?analyzerForecastFor(followed):{};const stops=analyzerStopsInfo(followed);
  document.getElementById('analyzerFollowedName').textContent=followed?.driver||'—';
@@ -3989,8 +4072,8 @@ function renderAnalyzer(){
    const relayTimer=analyzerRelayTimer(d),stintAverage=analyzerCurrentStintAverage(d),virtual=x.virtual;
    const displayPos=isVirtual?(virtual.valid?virtual.position:'—'):d.pos;
    const stopsValue=isVirtual?`${analyzerEscape(d.pit_stops??0)}${virtual.missing?`<small class="virtual-stop-add">+${virtual.missing} virtuel${virtual.missing>1?'s':''}</small>`:''}`:analyzerEscape(d.pit_stops??'—');
-   const gapValue=isVirtual?(virtual.valid?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):'Données insuffisantes'):analyzerEscape(d.gap);
-   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Minimum probable sur ${virtual.pitAverage.samples||0} arrêts Apex">${Number.isFinite(virtual.extra)?'+'+analyzerFormatDuration(virtual.extra):'En attente des PITS Apex'}</small>`:'';
+   const gapValue=isVirtual?(virtual.valid?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):'Projection non calculée'):analyzerEscape(d.gap);
+   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Projection VVCE exploratoire : coût net médian des arrêts, capture non simultanée">${Number.isFinite(virtual.extra)?'+'+analyzerFormatDuration(virtual.extra):'En attente des PITS Apex'}</small>`:'';
    const rankingFlash=typeof rankingFlashMeta==='function'?rankingFlashMeta(d):{className:'',style:''};
    return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerPhysicalKartForDriverLabel(d))}">${analyzerEscape(x.kartRating?.kv||'—')}</td><td class="a-note kart-potential ${analyzerKartRatingTone(x.kartRating)}" title="${x.kartRating?.liveOnly?'Estimation LIVE de la machine actuelle, KV non identifié (non historisée)':x.kartRating?.provisional?'Estimation provisoire des premiers tours':'Potentiel du kart physique'}">${x.kartRating?.value==null?'—':x.kartRating.value.toFixed(1)+(x.kartRating.provisional?'*':'')}</td></tr>`;
   }).join('');

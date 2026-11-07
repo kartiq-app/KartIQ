@@ -243,7 +243,7 @@
           <div class="analyzer-ranking-heading">
             <div class="analyzer-ranking-toolbar-left">
               <div class="analyzer-race-remaining"><span id="analyzerRaceRemainingLabel">TEMPS RESTANT</span><strong id="analyzerRaceRemaining">—</strong></div>
-              <div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT LIVE</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button><button id="analyzerSectorRankingBtn" type="button" onclick="setAnalyzerRankingMode('sectors')">CLASSEMENT SECTEURS</button></div>
+              <div class="analyzer-ranking-switch" role="group" aria-label="Type de classement"><button id="analyzerGeneralRankingBtn" class="active" type="button" onclick="setAnalyzerRankingMode('general')">CLASSEMENT LIVE</button><button id="analyzerVirtualRankingBtn" type="button" onclick="setAnalyzerRankingMode('virtual')">CLASSEMENT VIRTUEL</button><button id="analyzerVVCEButton" type="button" onclick="startAnalyzerVVCE()" hidden title="Essai historique non certifié, récupération Apex sur demande">CALCULER VVCE (TEST)</button><button id="analyzerSectorRankingBtn" type="button" onclick="setAnalyzerRankingMode('sectors')">CLASSEMENT SECTEURS</button></div>
               <div class="analyzer-table-controls">
                 <label>TRIER PAR
                   <select id="analyzerSort" onchange="setAnalyzerSort(this.value)">
