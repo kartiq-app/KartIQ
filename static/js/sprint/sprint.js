@@ -414,7 +414,9 @@ function renderEndurancePitState(f){
    endurancePitOutUntil=0;
    endurancePitOfficialLookupToken++;
   }
-  if(formatEndurancePitClock(apexPitTime)!=='—')endurancePitLastTime=apexPitTime;
+  const livePitClock=typeof window.velocityPitClockForDriver==='function'?window.velocityPitClockForDriver(f):null;
+  if(livePitClock?.text)endurancePitLastTime=livePitClock.text;
+  else if(formatEndurancePitClock(apexPitTime)!=='—')endurancePitLastTime=apexPitTime;
   enduranceTrackStartedAt=0;
   endurancePitPreviousStatus='pit';
   endurancePitOutUntil=0;

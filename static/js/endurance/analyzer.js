@@ -42,7 +42,7 @@ const ANALYZER_AUTOSAVE_MS=15000;
 const ANALYZER_STORAGE_CLEANUP_KEY=velocityWorkspaceStorageKey('velocity-analyzer-storage-cleanup-v3');
 const ANALYZER_MAX_SESSION_INDEX=10;
 let analyzerKartSort='none';
-let analyzerVelocityView='karts';
+let analyzerVelocityView='velocity';
 let analyzerRelayScoreData=null;
 let analyzerRelayScoreLoading=false;
 let analyzerRelayScoreLoadToken=0;
@@ -2017,46 +2017,13 @@ function analyzerRefreshVelocityDeltaCells(){
  });
 }
 
-// V7.2.1794 — Carte « KARTS », distincte de Velocity et Score Relais historiques.
-function analyzerRenderKartSpeedMarket(){
- const target=document.getElementById('analyzerKartMarket');if(!target)return;
- const mode=typeof window.velocityKartScoreMode==='function'?window.velocityKartScoreMode():null;
- if(!mode){target.innerHTML='<div class="analyzer-empty">Choisissez Kart fixe ou Quick Change dans Spotter → MODE KARTS avant de noter les machines.</div>';return}
- const allRankings=typeof window.velocityKartScoreRankings==='function'?window.velocityKartScoreRankings():[];
- const rankings=mode==='quick'&&typeof window.velocityKartRegistryLiveAssignment==='function'
-  ?allRankings.filter(entry=>entry.kv&&window.velocityKartRegistryLiveAssignment(entry.kv))
-  :allRankings;
- if(!rankings.length){
-  const detail='En attente des premiers tours valides : vitesse récente provisoire après 4 tours, potentiel après 8 tours.';
-  target.innerHTML=`<div class="analyzer-empty">${detail}</div>`;return;
- }
- const drivers=(state?.drivers||[]);
- const velocityKartColorTone=value=>!Number.isFinite(value)?'unknown':value>=98?'gold':value>=90?'green':value>=80?'orange':'red';
- const rows=rankings.map((entry,index)=>{
-  const kv=entry.kv;
-  const identity=kv&&typeof window.velocityKartDisplayAssignment==='function'?window.velocityKartDisplayAssignment(kv):null;
-  const liveAssignment=kv&&typeof window.velocityKartRegistryLiveAssignment==='function'?window.velocityKartRegistryLiveAssignment(kv):null;
-  const teamKey=entry.teamKey||identity?.team||entry.team;
-  const driver=liveAssignment?.driver||drivers.find(d=>String(Number(d?.apex_row)>0?`apex:${Number(d.apex_row)}`:d?.driver||'')===teamKey)||null;
-  const teamName=liveAssignment?.team||driver?.driver||String(entry.team||'').replace(/^apex:/,'Equipe ');
-  const displayKv=kv||(driver&&typeof window.velocityKartIdentityForDriver==='function'?window.velocityKartIdentityForDriver(driver)?.kv:null);
-  const kartNumber=mode==='quick'?(displayKv||'—'):String(driver?.apex||driver?.kart||'—');
-  const label=entry.referenceLoading?'RÉF. EN CHARGEMENT':(!displayKv&&mode==='quick'?'KV NON IDENTIFIÉ':entry.confirmed?'CONFIRMÉ':'KV PROVISOIRE');
-  const recent=entry.recentScore===null?'—':`${entry.recentScore.toFixed(1)}${entry.recentProvisional?'*':''}`;
-  const potential=entry.potential===null?'—':entry.potential.toFixed(1)+(entry.referenceLoading?'*':'');
-  const clickTeam=driver?.driver?` onclick="followDriver(${JSON.stringify(driver.driver).replace(/"/g,'&quot;')})"`:'';
-  return `<tr${clickTeam}><td>${index+1}</td><td>${analyzerEscape(kartNumber)}</td><td title="${analyzerEscape(teamName)}">${analyzerEscape(teamName)}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.potential)}">${potential}</td><td class="kart-speed-rating ${velocityKartColorTone(entry.recentScore)}">${recent}</td><td>${Number.isFinite(entry.best?.seconds)?(entry.best.seconds-entry.reference).toFixed(3)+'s':'—'}</td><td title="${entry.totalValid} tours observés">${label}</td></tr>`;
- }).join('');
- target.innerHTML=`<div class="velocity-kart-speed-help">${mode==='quick'?'QUICK CHANGE · vitesse des équipes en piste sans KV identifié ; potentiel physique uniquement si KV confirmé':'KART FIXE · scores par machine de l’équipe'} · Potentiel = meilleure fenêtre connue (6 rapides / 10 tours). Récente = relais actuel. * provisoire / référence partagée en chargement. La régularité ne pénalise pas la vitesse.</div><table class="velocity-kart-speed-table"><thead><tr><th>P</th><th>KART</th><th>ÉQUIPE</th><th>POT.</th><th>RÉC.</th><th>Δ</th><th>PREUVE</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
+// V7.2.1855 : ancienne carte KARTS retirée. Les moteurs de notes sont préservés.
 function setAnalyzerVelocityView(view){
- const nextView=['relays','velocity','karts'].includes(view)?view:'karts';
+ const nextView=['relays','velocity'].includes(view)?view:'velocity';
  const enteringRelays=nextView==='relays'&&analyzerVelocityView!=='relays';
  analyzerVelocityView=nextView;
  if(enteringRelays)analyzerRelayScoreScrollLeft=0;
- document.getElementById('analyzerKartSpeedViewBtn')?.classList.toggle('active',analyzerVelocityView==='karts');
- document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
+  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
  const sort=document.querySelector('.analyzer-kartiq-sort');if(sort)sort.hidden=analyzerVelocityView!=='velocity';
  renderAnalyzer();
@@ -2722,7 +2689,7 @@ function velocityLabSprintMatrices(analysis){
 }
 function velocityLabSprintMatrixHtml(title,firstHeader,rows,stages,subValue){
  const head=stages.map(s=>`<th>${analyzerEscape(s.label)}</th>`).join('');
- const body=rows.map(item=>`<tr><th>${analyzerEscape(String(item.name))}</th>${stages.map(stage=>{const row=item.cells.get(stage.index);if(!row)return '<td class="velocity-lab-matrix-empty">—</td>';const score=Number.isFinite(row.score)?row.score:'—',klass=Number.isFinite(row.score)?analyzerScoreClass(row.score):'neutral';return `<td><b class="velocity-lab-matrix-score ${klass}">${score}</b><small>${row.insufficient?'Données insuffisantes':analyzerEscape(subValue(row))}</small></td>`}).join('')}</tr>`).join('');
+ const body=rows.map(item=>`<tr><th>${analyzerEscape(String(item.name))}</th>${stages.map(stage=>{const row=item.cells.get(stage.index);if(!row)return '<td class="velocity-lab-matrix-empty">—</td>';const score=Number.isFinite(row.score)?row.score:'—',klass=Number.isFinite(row.score)?analyzerScoreClass(row.score):'neutral';return `<td><b class="velocity-lab-matrix-score ${klass}">${score}</b><small>${row.insufficient?'Projection non calculée':analyzerEscape(subValue(row))}</small></td>`}).join('')}</tr>`).join('');
  return `<section class="velocity-lab-matrix-card"><div class="velocity-lab-matrix-title"><strong>${title}</strong><span>${rows.length} ${firstHeader==='PILOTE'?'pilote(s)':'kart(s)'}</span></div><div class="velocity-lab-sprint-table-wrap"><table class="velocity-lab-table velocity-lab-matrix"><thead><tr><th>${firstHeader}</th>${head}</tr></thead><tbody>${body}</tbody></table></div></section>`
 }
 function renderVelocityLabSprintResults(){
@@ -2748,7 +2715,7 @@ function velocityLabSprintPdfFooter(page,index,total){const {ctx,canvas}=page;ct
 function velocityLabSprintPdfMatrixPage(title,rows,stages,subValue){
  const page=velocityLabSprintPdfPage(title,`${stages.length} session(s) · score principal, référence secondaire sous le score`),ctx=page.ctx,left=70,top=page.y,tableW=1100,firstW=260,colW=(tableW-firstW)/Math.max(1,stages.length),headerH=58,rowH=72;
  ctx.fillStyle='#171717';ctx.fillRect(left,top,tableW,headerH);ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.fillText(title.includes('PILOTE')?'PILOTE':'KART',left+12,top+35);stages.forEach((stage,i)=>ctx.fillText(stage.label,left+firstW+i*colW+10,top+35));page.y=top+headerH;
- rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(Number.isFinite(row.score)?String(row.score):'—',x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(row.insufficient?'Données insuffisantes':String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
+ rows.forEach((item,ri)=>{const y=page.y;ctx.fillStyle=ri%2?'#f0f0ed':'#fff';ctx.fillRect(left,y,tableW,rowH);ctx.strokeStyle='#d8d8d3';ctx.strokeRect(left,y,tableW,rowH);ctx.fillStyle='#222';ctx.font='700 16px Arial';ctx.fillText(String(item.name).slice(0,28),left+12,y+42);stages.forEach((stage,i)=>{const row=item.cells.get(stage.index),x=left+firstW+i*colW;if(!row){ctx.fillStyle='#999';ctx.font='18px Arial';ctx.fillText('—',x+12,y+42);return}ctx.fillStyle='#111';ctx.font='700 23px Arial';ctx.fillText(Number.isFinite(row.score)?String(row.score):'—',x+12,y+29);ctx.fillStyle='#666';ctx.font='13px Arial';ctx.fillText(row.insufficient?'Projection non calculée':String(subValue(row)).slice(0,20),x+12,y+53)});page.y+=rowH});return page
 }
 function velocityLabSprintPdfRankingRows(rows){
  return (rows||[]).slice().sort(velocityLabSprintScoreSort).map((r,i)=>[
@@ -4047,9 +4014,10 @@ function renderAnalyzer(){
  const sorted=analyzerRankingMode==='virtual'?(analyzerSort==='position'?virtualSorted:virtualSorted.slice().sort(analyzerSortComparator())):generalSorted;
  const generalBtn=document.getElementById('analyzerGeneralRankingBtn'),virtualBtn=document.getElementById('analyzerVirtualRankingBtn'),sectorBtn=document.getElementById('analyzerSectorRankingBtn'),rankingSubtitle=document.getElementById('analyzerRankingSubtitle');
  if(generalBtn)generalBtn.classList.toggle('active',analyzerRankingMode==='general');if(virtualBtn)virtualBtn.classList.toggle('active',analyzerRankingMode==='virtual');if(sectorBtn)sectorBtn.classList.toggle('active',analyzerRankingMode==='sectors');
- analyzerRenderVVCEReport();
+ 
  const rankingTable=document.querySelector('.analyzer-ranking-table');if(rankingTable){rankingTable.classList.toggle('general-ranking-mode',analyzerRankingMode==='general');rankingTable.classList.toggle('virtual-ranking-mode',analyzerRankingMode==='virtual');rankingTable.classList.toggle('sector-ranking-mode',analyzerRankingMode==='sectors');}
  const rankingHead=document.getElementById('analyzerRankingHead');if(rankingHead&&analyzerRankingMode!=='sectors')rankingHead.innerHTML=analyzerGeneralRankingHeader();
+ analyzerRenderVVCEReport();
  if(rankingSubtitle)rankingSubtitle.textContent=analyzerRankingMode==='virtual'?(`CLASSEMENT VIRTUEL · ${analyzerVVCE.stale?'Données anciennes · ':''}${analyzerVVCE.reason||'Projection non certifiée'} · Le LIVE officiel reste indépendant`):analyzerRankingMode==='sectors'?(sectorCount?`Meilleurs secteurs du relais en cours — référence équipe en petit — ${sectorCount} secteur${sectorCount>1?'s':''} détecté${sectorCount>1?'s':''}`:'Aucun secteur chronométré confirmé pour cette session Apex'):'Colonnes Apex Timing enrichies par Velocity · NOTE KART* : estimation provisoire, KV non confirmé si —';
  const followed=(state.drivers||[]).find(d=>d.driver===state.followed_driver)||state.followed||(state.drivers||[])[0]||null;
  const ownForecast=followed?analyzerForecastFor(followed):{};const stops=analyzerStopsInfo(followed);
@@ -4088,12 +4056,7 @@ function renderAnalyzer(){
  const marketByScore=all.map(x=>({...x,relayMetrics:analyzerVelocityUnifiedMetrics(x.driver)})).filter(x=>x.relayMetrics.laps>=3).sort((a,b)=>b.relayMetrics.score-a.relayMetrics.score).map((x,index)=>({...x,kartiqTop:index+1,relayRemaining:analyzerKartRelayRemaining(x.driver)}));
  const mobileVelocity=document.getElementById('analyzerMobileVelocityScore');
  if(mobileVelocity){
-  if(analyzerVelocityView==='karts'){
-   const identity=typeof velocityKartScoreIdentity==='function'?velocityKartScoreIdentity(followed):null;
-   const entry=identity?velocityKartScoreRankings().find(p=>p.id===identity.id):null;
-   mobileVelocity.textContent=entry?.potential?.toFixed(1)??'—';
-   mobileVelocity.className=entry?.potential>=90?'high':'';
-  }else{
+  {
    const ownVelocity=marketByScore.find(x=>x.driver?.driver===(followed?.driver||state.followed_driver));
    mobileVelocity.textContent=ownVelocity?.relayMetrics?.score??'—';
    mobileVelocity.className=ownVelocity?analyzerScoreClass(ownVelocity.relayMetrics.score):'';
@@ -4112,14 +4075,11 @@ function renderAnalyzer(){
   const bv=Number.isFinite(bDelta)?bDelta:Number.POSITIVE_INFINITY;
   return av-bv||a.kartiqTop-b.kartiqTop;
  });
- document.getElementById('analyzerKartSpeedViewBtn')?.classList.toggle('active',analyzerVelocityView==='karts');
- document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
+  document.getElementById('analyzerVelocityViewBtn')?.classList.toggle('active',analyzerVelocityView==='velocity');
  document.getElementById('analyzerRelayScoreViewBtn')?.classList.toggle('active',analyzerVelocityView==='relays');
  const velocitySortLabel=document.querySelector('.analyzer-kartiq-sort');if(velocitySortLabel)velocitySortLabel.hidden=analyzerVelocityView!=='velocity';
  if(analyzerVelocityView==='relays'){
   analyzerRenderRelayScoreTable(marketByScore);
- }else if(analyzerVelocityView==='karts'){
-  analyzerRenderKartSpeedMarket();
  }else{
    const kartSortSelect=document.getElementById('analyzerKartSort');if(kartSortSelect)kartSortSelect.value=analyzerKartSort;
    const showPilotContinuity=analyzerSessionHasPilotData();

@@ -1,9 +1,26 @@
-V7.2.1867 — Base V1866 (chronométrage LIVE et PIT Spotter issu de V1854), avec VVCE serveur réintégré depuis V1865. Le classement virtuel reste non certifié au même instant. DATABASE_URL nécessaire à la persistance SQL.
+V7.2.1868 : déployer intégralement le ZIP sur GitHub/Render. La version et le cache du service worker ont été incrémentés. Vérifier une équipe en PIT dans Focus Endurance et Spotter ; sans compteur Apex, Spotter affiche « — ».
 
-V7.2.1866 — Retour à la base V1854. Vérifier les migrations et la configuration Render avant de déployer : fonctions introduites après V1854 absentes de cette version.
+V7.2.1865 — VVCE SERVEUR : sélectionner Analyzer → CLASSEMENT VIRTUEL pour initialiser automatiquement la collecte secondaire. Le premier classement peut nécessiter un chargement historique ; les suivantes lisent immédiatement le dernier snapshot SQL. Affichage NON CERTIFIÉ si les tours ne sont pas horodatés sur une chronologie commune. Si aucune session Apex n'est identifiée, le classement ne démarre pas. Une collecte dédiée VVCE ne commence que sur action explicite, reste limitée à 30 h et s'arrête si le live ne fournit plus de messages pendant 15 minutes. Sur Render, DATABASE_URL est nécessaire à la persistance. Les résultats ne doivent pas être utilisés pour des décisions critiques avant validation sur plusieurs courses.
+
+V7.2.1863 : le diagnostic VVCE apparaît sous le classement Analyzer (résultat ou raison de refus), sans altérer le LIVE.
+
+## V7.2.1860
+
+Classement virtuel sur maximum d’arrêts observés et minimum probable déduit des PITS Apex ; compteur PIT sans accélération visible. Voir CHANGELOG.md.
+
+## V7.2.1858 — Vérification Spotter
+
+Après déploiement, sélectionner MRK Agadir, configurer 3 files avec six karts puis lancer Spotter. Vérifier le basculement à l'interface live et la synchronisation Render. Aucun effacement du stockage navigateur ne doit être nécessaire.
+
+## V7.2.1856 — Vérification Actua / Agadir
+
+- Les états Quick Change sont isolés par circuit, dans le même espace Velocity.
+- Les anciens états SQL sont migrés sans suppression uniquement si leur circuit correspond.
+- La sélection d’une autre piste invalide l’état local temporaire et recharge ce circuit.
+- Une écriture issue de l’ancien circuit est refusée ; le moteur KV et Apex restent inchangés.
 
 
-## V7.2.1854 — Orchestration Suivi Karts résiliente (7 novembre 2026)
+## V7.2.1855 — Orchestration Suivi Karts résiliente (7 novembre 2026)
 
 - Activation et relance KV envoyées directement à `POST /api/spotter-kv-tracking` : une lecture GET momentanément indisponible ne bloque plus la commande. Le serveur reste seul responsable de la détermination du run/circuit et de la création du Recorder.
 - Synchronisation SQL du registre séparée de la collecte : dernier état conservé, statut SYNCHRONISÉ/EN RECONNEXION et relecture avec temporisation exponentielle jusqu'à 30 s en cas de panne.
