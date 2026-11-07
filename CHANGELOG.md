@@ -1,3 +1,8 @@
+## V7.2.1879 — Affichage du potentiel kart provisoire
+- Analyzer > Karts : affichage d’un potentiel serveur qualifié même si le KV physique reste provisoire ; suffixe * pour éviter de le présenter comme confirmé.
+- Conserve — pour un potentiel absent, une traçabilité interrompue ou une donnée d’une autre session.
+- Aucun changement aux formules, à la collecte, au LIVE Apex, à Focus Endurance, à Spotter ou au stockage des scores.
+
 ## V7.2.1878 — Libération des anciens Recorders VVCE bloquant Karts
 - Nettoyage de toute collecte dont le nom commence par `VVCE_V`, notamment les anciennes V1864/V1865 oubliées par V1877.
 - Nettoyage ciblé au clic Karts si une ancienne collecte VVCE est encore active sur le circuit.

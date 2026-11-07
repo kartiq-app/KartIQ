@@ -1,3 +1,5 @@
+V7.2.1879 — Analyzer > Karts : le potentiel déjà calculé par le moteur KV serveur est affiché avec * si l’identité physique est provisoire. Les filtres et fenêtres de calcul restent inchangés ; aucun potentiel qualifié = aucune note kart. Base V7.2.1878.
+
 V7.2.1878 — Karts : nettoyage des anciens Recorders VVCE (toutes générations) au démarrage et à l’activation KV. Un autre Recorder Session/KV/Lab ne sera pas interrompu automatiquement ; l’API fournit une explication pour le libérer. Aucun nouveau WebSocket concurrent ni modification du moteur KV.
 
 V7.2.1877 — Suppression complète du classement virtuel VVCE. Collecte KV via Analyzer > Karts, sans VVCE; réutilisation d’un Recorder de Session Course si actif. Redémarrage Render : arrêt des anciens recorders VVCE, sans supprimer les archives SQL.
