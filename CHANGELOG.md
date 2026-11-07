@@ -1,3 +1,9 @@
+## V7.2.1869 — PIT Focus/Spotter : référence Apex V1854
+- Rétablit strictement le code PIT IN de Focus Endurance de la V1854 : `pit_timer` direct, sans horloge lissée.
+- Spotter affiche le même `pit_timer` officiel formaté; si absent, « — » sans calcul local.
+- VVCE, son moteur serveur, ses routes et l’interface du classement virtuel sont inchangés.
+- Version et cache client incrémentés pour éviter les anciens scripts en cache.
+
 ## V7.2.1868 — Base intégrale V1865, PIT Spotter sur le compteur Apex Focus Endurance
 - Référence complète : V7.2.1865 fournie par l’utilisateur, sans importer de modules V1866/V1867.
 - Spotter lit `velocityPitClockForDriver`, exactement comme Focus Endurance.

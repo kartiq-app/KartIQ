@@ -2324,19 +2324,19 @@ function spotterQueueCard(item,visualState='next'){
  const waiting=visualState==='waiting';
  return `<div class="spotter-queue-card available ${waiting?'waiting ':''}${spotterQueueColorClass(item)} spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.lastTeam}))}</span><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div></div>`;
 }
-// V1868 — Spotter utilise strictement le compteur PIT Apex partage avec
-// Focus Endurance. Aucun chrono local base sur Date.now() en remplacement.
-function spotterPitTimerForItem(item){
- const team=item?.reservedTeam||item?.team||item?.lastTeam||'';
+// V1869 — PIT IN : lecture directe du pit_timer Apex, comme Focus Endurance V1854.
+// Pas de projection locale ni de valeur issue de l'horloge lissée V1860.
+function spotterPitOfficialClockForTeam(team){
  const driver=spotterFindDriver(team);
- return typeof window.velocityPitClockForDriver==='function'
-  ?window.velocityPitClockForDriver(driver):null;
+ if(String(driver?.status||'').toLowerCase()!=='pit')return '—';
+ const value=String(driver?.pit_timer??'').trim();
+ return typeof endurancePitOfficialLiveSeconds==='function'
+  ?endurancePitOfficialLiveSeconds(value):'—';
 }
 function spotterPitTimerMarkup(item){
- const clock=spotterPitTimerForItem(item);
  const team=item?.reservedTeam||item?.team||item?.lastTeam||'';
- const official=clock?.text||null;
- return `<div class="spotter-pit-time ${official?'':'spotter-pit-unsynced'}" data-spotter-pit-team="${spotterEscape(team)}" title="${official?(clock.fresh?'Compteur Apex — même moteur que Focus Endurance':'Dernier compteur Apex connu (connexion à vérifier)'):'Compteur Apex indisponible — aucune estimation locale'}">${official||'—'}</div>`;
+ const official=spotterPitOfficialClockForTeam(team);
+ return `<div class="spotter-pit-time ${official==='—'?'spotter-pit-unsynced':''}" data-spotter-pit-team="${spotterEscape(team)}" title="${official==='—'?'Compteur PIT Apex indisponible':'Compteur PIT Apex, identique à Focus Endurance'}">${official}</div>`;
 }
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
 function spotterTeamNumber(item){
@@ -2349,11 +2349,10 @@ function spotterTeamNumber(item){
 }
 function updateSpotterLiveTimers(){
  document.querySelectorAll('[data-spotter-pit-team]').forEach(node=>{
-  const driver=spotterFindDriver(node.dataset.spotterPitTeam||'');
-  const clock=typeof window.velocityPitClockForDriver==='function'?window.velocityPitClockForDriver(driver):null;
-  node.textContent=clock?.text||'—';
-  node.classList.toggle('spotter-pit-unsynced',!clock||!clock.fresh);
-  node.title=!clock?'Compteur Apex indisponible — aucune estimation locale':!clock.fresh?'Dernier compteur Apex connu (connexion à vérifier)':'Compteur Apex — même moteur que Focus Endurance';
+  const official=spotterPitOfficialClockForTeam(node.dataset.spotterPitTeam||'');
+  node.textContent=official;
+  node.classList.toggle('spotter-pit-unsynced',official==='—');
+  node.title=official==='—'?'Compteur PIT Apex indisponible':'Compteur PIT Apex, identique à Focus Endurance';
  });
 }
 function spotterIncomingCard(item){
