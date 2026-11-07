@@ -873,12 +873,22 @@ async function spotterSetKartTracking(enabled){
    alert('Registre KV serveur momentanément inaccessible : le suivi n’a pas été modifié. Réessaie après actualisation.');
    return;
   }
+  let result;
   try{
    const response=await fetch('/api/spotter-kv-tracking',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-   const result=await response.json();
+   result=await response.json();
    if(!response.ok||!result.ok)throw new Error(result.detail||result.error||`HTTP ${response.status}`);
   }catch(error){alert(`Impossible de lancer la collecte des notes KV : ${error.message}`);return;}
-  if(alreadyActive){void spotterPullRegistry({forceServer:true});return;}
+  if(alreadyActive){
+   const resultStatus=String(result.status||'');
+   const diagnostic=resultStatus==='session_recorder'
+    ? 'Collecte KV liée à la Session Course active.'
+    : resultStatus==='collecting'?'Collecte KV active côté serveur.':'Commande reçue par le serveur.';
+   const counted=Number.isFinite(Number(result.scored_count))?` Notes KV disponibles : ${Number(result.scored_count)}.`:'';
+   spotterKartScoringMessage=`${diagnostic}${counted} Les notes kart ne sont publiées que lorsque les tours live sont attribuables et exploitables.`;
+   void spotterPullRegistry({forceServer:true}).then(()=>spotterRefreshKartRegistry({force:true}));
+   spotterRefreshKartRegistry({force:true});return;
+  }
   spotterState.kartTrackingEnabled=true;spotterRegistrySeedCurrent();spotterLogMovement('kart_tracking_started')
  }
  else{
@@ -1098,8 +1108,10 @@ async function spotterWarmRegistryStats(){
  };
  await Promise.all([worker(),worker()]);
 }
+let spotterKartScoringMessage="";
 function spotterKartScoreDiagnostic(){
  const status=String(window.velocityKartScoringStatus||'');
+ if(spotterKartScoringMessage)return spotterKartScoringMessage;
  if(status==='mode_not_selected')return 'NOTES · mode Karts facultatif';
  if(status==='tracking_not_active')return 'NOTES EN PAUSE · activer le suivi KV';
  if(status==='waiting_for_kv')return 'EN ATTENTE · première identification KV';
@@ -1242,8 +1254,8 @@ async function spotterOpenKartRegistry(){
  const active=Boolean(spotterState.kartTrackingEnabled),counts=spotterRegistryCounts();
  const heading=`<div class="spotter-registry-head"><div><div class="spotter-registry-title">REGISTRE DES KARTS</div><small data-spotter-registry-count>● LIVE · ${counts.live||0} ÉQUIPES · ${counts.active}/${counts.total} KV</small><small class="spotter-registry-live-hint">Équipes Apex visibles immédiatement · — = KV non identifié · * = note provisoire</small></div><div class="spotter-registry-head-tools">${spotterRegistrySortControl()}<button class="spotter-registry-close" type="button" onclick="spotterCloseKartRegistry()" aria-label="Fermer le registre">×</button></div></div>`;
  const content=active
-  ? `${heading}<div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterExportKartRegistry()">EXPORTER HISTORIQUE KV</button><button class="spotter-secondary" type="button" onclick="spotterExportKartArchives()">ARCHIVES KV</button><button class="spotter-secondary" type="button" onclick="spotterStartNewKartCourse()" title="Archiver ce registre et en commencer un nouveau pour une nouvelle course">NOUVELLE COURSE KV</button><button class="spotter-secondary" type="button" onclick="spotterSetKartTracking(true)" title="Démarrer ou reprendre la collecte des notes sans Session Course">RELANCER LES NOTES</button><button class="spotter-secondary danger" type="button" onclick="spotterSetKartTracking(false)">ARRÊTER LE SUIVI</button><button class="spotter-primary" type="button" onclick="spotterCloseKartRegistry()">FERMER</button></div>`
-  : `<div class="spotter-registry-title">SUIVI KARTS</div><p class="spotter-registry-warning">Le suivi n’est fiable que si chaque échange est compté. Une interruption conserve l’historique connu mais Velocity ne reconstitue jamais une filiation incertaine.</p><div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterExportKartRegistry()">EXPORTER HISTORIQUE KV</button><button class="spotter-secondary" type="button" onclick="spotterExportKartArchives()">ARCHIVES KV</button><button class="spotter-secondary" type="button" onclick="spotterStartNewKartCourse()" title="Archiver ce registre et en commencer un nouveau pour une nouvelle course">NOUVELLE COURSE KV</button><button class="spotter-secondary" type="button" onclick="spotterCloseKartRegistry()">ANNULER</button><button class="spotter-primary" type="button" onclick="spotterSetKartTracking(true)">ACTIVER LE SUIVI</button></div>`;
+  ? `${heading}<div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterSetKartTracking(true)" title="Démarrer ou reprendre la collecte des notes sans Session Course">RELANCER LES NOTES</button><button class="spotter-secondary danger" type="button" onclick="spotterSetKartTracking(false)">ARRÊTER LE SUIVI</button><button class="spotter-primary" type="button" onclick="spotterCloseKartRegistry()">FERMER</button></div>`
+  : `<div class="spotter-registry-title">SUIVI KARTS</div><p class="spotter-registry-warning">Le suivi n’est fiable que si chaque échange est compté. Une interruption conserve l’historique connu mais Velocity ne reconstitue jamais une filiation incertaine.</p><div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterCloseKartRegistry()">ANNULER</button><button class="spotter-primary" type="button" onclick="spotterSetKartTracking(true)">ACTIVER LE SUIVI</button></div>`;
  const scorerInfo=spotterKartScoreDiagnostic();
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel wide"><p data-spotter-scoring-diagnostic class="spotter-registry-warning" ${scorerInfo?'':'hidden'}>${spotterEscape(scorerInfo)}</p>${content}</div></div>`);
  void spotterWarmRegistryStats();

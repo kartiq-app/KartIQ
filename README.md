@@ -1,3 +1,7 @@
+## V7.2.1853 — Suivi KV : affichage état réel et commandes simplifiées
+
+Dans le registre Karts, les actions Exporter historique KV, Archives KV et Nouvelle Course KV sont retirées de l’interface, sans supprimer leurs données ni les routes sous-jacentes. RELANCER LES NOTES confirme désormais explicitement la réponse du Recorder côté serveur et le nombre de notes KV existantes : aucune nouvelle note n’est promise si les tours du Recorder sont insuffisants ou non attribuables à un kart physique. Aucune formule KV, aucun mécanisme d’identité KV, aucun traitement des chronos live Apex modifié.
+
 ## V7.2.1852 — Relance notes KV sans relecture bloquante du registre
 
 Le bouton RELANCER LES NOTES fonctionne quand le suivi est déjà actif, même si un GET du registre est momentanément indisponible. Le serveur sélectionne le registre courant. Ni reset KV, ni formule, ni moteur Apex modifiés. Ne pas changer le préfixe interne KV_TRACK_V1851 utilisé pour retrouver les Recorders démarrés sous V1851.
