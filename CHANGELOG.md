@@ -1,3 +1,11 @@
+
+## V7.2.1857 — Spotter : lancement des files et choix du mode
+- Protection de la configuration des files contre les lectures serveur antérieures au lancement.
+- En cas de conflit initial avec un état vierge, la configuration est renvoyée avec la révision serveur, sans effacer les files.
+- Message d'erreur explicite si la construction de l'écran Spotter échoue.
+- Retrait du bouton « Nouvelle course · Réinitialiser les notes » de la boîte de choix Kart fixe / Quick Change.
+- Formules KV, scores relais et flux live Apex inchangés.
+
 ## V7.2.1856 — Contexte Spotter par circuit
 
 - Les états Quick Change sont isolés par circuit, dans le même espace Velocity.

@@ -5,7 +5,7 @@ import json
 import unicodedata
 
 APP_DIR = Path(__file__).resolve().parent.parent
-APP_VERSION = "7.2.1856"
+APP_VERSION = "7.2.1857"
 APP_RELEASE_NAME = "ISOLATION SPOTTER PAR CIRCUIT"
 
 

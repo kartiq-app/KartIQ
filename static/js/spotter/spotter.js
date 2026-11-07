@@ -89,6 +89,8 @@ let spotterRetryDelayMs=0;
 let spotterSetupDraft=null;
 let spotterSetupOrigin='spotter';
 let spotterSetupRequested=false;
+// V1857: a new Quick Change setup must not be erased by a stale GET.
+let spotterLaunchAwaitingServer=false;
 let spotterCircuitContext='';
 function spotterCurrentCircuit(){
  return String(spotterLiveState()?.circuit_id||spotterLiveState()?.selected_circuit||'').trim();
@@ -112,7 +114,7 @@ function spotterEnsureCircuitContext(){
  spotterState.kartTrackingEnabled=false;spotterState.kartRegistry={};
  spotterState.nextKvNumber=1;spotterState.freePitIns=0;spotterState.freePitOuts=0;
  spotterState.freeMode=false;spotterState.recalibrating=false;spotterState.freeStartedAt=null;
- spotterSetupDraft=null;spotterSetupRequested=false;spotterUiStep='mode';
+ spotterSetupDraft=null;spotterSetupRequested=false;spotterUiStep='mode';spotterLaunchAwaitingServer=false;
  spotterLastSyncError='';spotterUpdateSyncBadge();
  spotterPublishSharedState();
  return true;
@@ -228,6 +230,10 @@ function spotterApplyRemoteSnapshot(remote,{force=false}={}){
  // Server revision is authoritative; timestamps from different devices are not.
  const remoteRevision=Number(remote.revision)||0;
  if(!force&&remoteRevision<=spotterServerRevision)return;
+ // The server may reply to a prior GET after the launch button was pressed.
+ // Do not let an old unconfigured snapshot undo the local configuration before
+ // the compare-and-swap POST has been acknowledged.
+ if(typeof spotterLaunchAwaitingServer!=='undefined' && spotterLaunchAwaitingServer && spotterState.configured && remote.configured===false)return;
  const remoteMutation=spotterRemoteMutationAt(remote);
  // A reset is an authoritative state transition, not a regular queue merge.
  const remoteReset=remote.configured===false && Array.isArray(remote.queue) && remote.queue.length===0 && Array.isArray(remote.incoming) && remote.incoming.length===0;
@@ -522,6 +528,7 @@ async function spotterPushSharedState(){
     spotterLastRemoteUpdate=Number(payload?.updated_at_ms)||Date.now();
     spotterServerRevision=Number(payload?.revision)||revision+1;
     spotterWorkspaceStatus=String(payload?.workspace_id||spotterWorkspaceStatus);
+    spotterLaunchAwaitingServer=false;
     spotterSyncLastWriteAt=Date.now();spotterLastSyncError='';
     spotterConfirmedSnapshot=spotterClone({...edited,revision:spotterServerRevision,updated_at_ms:spotterLastRemoteUpdate});
     spotterPublishSharedState(spotterConfirmedSnapshot);spotterUpdateSyncBadge();
@@ -535,8 +542,20 @@ async function spotterPushSharedState(){
    }
    const remote=payload.spotter;
    if(!confirmed&&Number(remote.revision)>0){
+    // A fresh circuit may already have a blank versioned server snapshot.
+    // Rebase the launch on it rather than discarding the user's three files.
+    if(spotterLaunchAwaitingServer && edited.configured && !remote.configured &&
+       !remote.queue.length && !remote.incoming.length && !remote.maintenance.length){
+     revision=Number(remote.revision)||0;
+     confirmed=spotterClone(remote);
+     spotterConfirmedSnapshot=spotterClone(remote);
+     spotterServerRevision=revision;
+     edited={...edited,client_id:SPOTTER_CLIENT_ID,app_release:SPOTTER_APP_RELEASE,mutation_at_ms:Date.now()};
+     continue;
+    }
+    spotterLaunchAwaitingServer=false;
     spotterApplyRemoteSnapshot(remote,{force:true});
-    spotterLastSyncError='Premier chargement effectué après conflit : recommencer l’action';
+    spotterLastSyncError='État distant déjà actif : vérifier la configuration avant relance';
     spotterUpdateSyncBadge();return;
    }
    const merged=spotterRebaseFields(confirmed||{},edited,remote);
@@ -1133,7 +1152,7 @@ function spotterOpenKartModeDialog(){
    <button type="button" class="spotter-kart-mode-choice" data-velocity-kart-mode-option="quick" aria-pressed="false" onclick="velocitySetKartMode('quick')"><strong>QUICK CHANGE</strong><span>Machines suivies par identifiant KV dans le registre Spotter</span></button>
   </div>
   <p id="velocityKartModeNotice" class="spotter-kart-mode-notice" aria-live="polite"></p>
-  <div class="spotter-kart-mode-actions"><button type="button" class="spotter-kart-mode-reset" onclick="velocityKartNewRace()">NOUVELLE COURSE · RÉINITIALISER LES NOTES</button><button type="button" class="spotter-kart-mode-done" onclick="spotterCloseKartModeDialog()">FERMER</button></div>
+  <div class="spotter-kart-mode-actions"><button type="button" class="spotter-kart-mode-done" onclick="spotterCloseKartModeDialog()">FERMER</button></div>
  </section></div>`);
  if(typeof velocityRenderKartModeChoice==='function')velocityRenderKartModeChoice();
  document.querySelector('#spotterKartModeOverlay .spotter-kart-mode-close')?.focus();
@@ -1429,6 +1448,7 @@ function spotterSeedGridAssignments(startNumber){
  return {assignments,next};
 }
 function launchSpotterFoundation(){
+ try{
  spotterEnsureSetupPerFile();
  const karts=spotterState.setupKarts.map((kart,index)=>({kart:String(kart||'').trim(),file:Math.max(1,Math.min(spotterState.mode,Number(spotterState.setupQueueFiles?.[index])||1))}))
   .filter(item=>item.kart)
@@ -1438,16 +1458,28 @@ function launchSpotterFoundation(){
  const seeded=spotterSeedGridAssignments(karts.length+1);
  spotterState.queue=karts;spotterState.incoming=[];spotterState.maintenance=[];spotterState.assignments=seeded.assignments;spotterState.nextKvNumber=seeded.next;spotterState.movementLog=[];spotterState.lastDriverStatus={};spotterState.monitorPrimed=false;spotterState.freeMode=false;spotterState.freeStartedAt=null;spotterState.freePitIns=0;spotterState.freePitOuts=0;spotterState.freeNeedsRecalibration=false;spotterState.recalibrating=false;spotterState.autoNextFile=1;spotterState.configured=true;
  const setupOrigin=spotterSetupOrigin;spotterSetupDraft=null;spotterSetupOrigin='spotter';spotterSetupRequested=false;
- saveSpotterFoundation();spotterUiStep='live';renderSpotterFoundation('live');
+ // Switch immediately to the live Quick Change UI; a delayed server GET must
+ // not send the user back to the file setup screen.
+ spotterLaunchAwaitingServer=true;
+ spotterUiStep='live';
+ saveSpotterFoundation();
+ renderSpotterFoundation('live');
+ spotterLastSyncError='Configuration en cours de synchronisation';spotterUpdateSyncBadge();
  if(setupOrigin==='analyzer')setTimeout(()=>showMode('analyzer'),0);
  // Dès que la configuration est validée, synchroniser immédiatement les karts
  // déjà signalés IN par Apex, sans attendre le prochain tick de 750 ms.
  setTimeout(spotterMonitorApex,0);
+ }catch(error){
+  console.error('[Spotter] Impossible de lancer la configuration Quick Change',error);
+  spotterLastSyncError='Erreur lors du lancement : consulter la console';
+  spotterUpdateSyncBadge();
+  alert('Impossible de lancer le Spotter : '+String(error?.message||error));
+ }
 }
 function resetSpotterFoundation(){
  if(!confirm('Réinitialiser la configuration Spotter ?'))return;
  spotterAcknowledgedIncoming.clear();spotterPersistAcknowledged();
- spotterDeferredRemote=null;spotterSetupDraft=null;spotterSetupRequested=false;
+ spotterDeferredRemote=null;spotterSetupDraft=null;spotterSetupRequested=false;spotterLaunchAwaitingServer=false;
  Object.assign(spotterState,{mode:1,setupKarts:['X'],setupQueueFiles:[1],queue:[],maintenance:[],incoming:[],assignments:{},movementLog:[],nextKvNumber:1,lastDriverStatus:{},monitorPrimed:false,freeMode:false,freeStartedAt:null,freePitIns:0,freePitOuts:0,freeNeedsRecalibration:false,recalibrating:false,autoNextFile:1,configured:false,kartTrackingEnabled:false});
  saveSpotterFoundation();spotterUiStep='mode';renderSpotterFoundation('mode');
 }
