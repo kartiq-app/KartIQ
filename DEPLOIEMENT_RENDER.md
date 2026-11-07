@@ -1,3 +1,7 @@
+## V7.2.1860
+
+Classement virtuel sur maximum d’arrêts observés et minimum probable déduit des PITS Apex ; compteur PIT sans accélération visible. Voir CHANGELOG.md.
+
 ## V7.2.1858 — Vérification Spotter
 
 Après déploiement, sélectionner MRK Agadir, configurer 3 files avec six karts puis lancer Spotter. Vérifier le basculement à l'interface live et la synchronisation Render. Aucun effacement du stockage navigateur ne doit être nécessaire.

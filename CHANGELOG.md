@@ -1,3 +1,12 @@
+## V7.2.1860 — Classement virtuel recalculé et PIT à cadence stable
+
+- Classement virtuel : maximum d'arrêts réellement observé sur le plateau conservé comme référence, sans règlement obligatoire.
+- Écarts live Apex préservés lorsqu'ils sont des durées ; retards exprimés en tours convertis avec une cadence médiane de plateau disponible. Une information inexploitable ne devient jamais un déficit de zéro seconde.
+- Coût commun d'un arrêt estimé à partir des durées *Pit time* historiques Apex des équipes : minimum probable arrondi à un palier inférieur de 15 secondes (ex. 2:31–2:33 ⇒ 2:30), sous réserve d'au moins trois valeurs cohérentes. Pas de coût fictif si les données sont absentes.
+- Colonnes du classement virtuel : arrêts réels inchangés, arrêts virtuels ajoutés séparément, écart virtuel recalculé. Les lignes non calculables restent marquées « Données insuffisantes » et ne reçoivent pas de position simulée.
+- Compteurs de stands Spotter/Focus : même horloge visuelle, pas de saut ou de progression accélérée pour rattraper une trame Apex. Recalage interne et cadence bornée à une seconde par pas d'au moins 950 ms ; signal d'obsolescence des trames au-delà de trois secondes. Durée finale officielle d'Apex inchangée.
+- Traitement live, Quick Change, moteur de notes KV, scores relais et affichages LIVE conservés.
+
 ## V7.2.1859 — Synchronisation des chronometres PIT et suppression des alertes Top 8
 
 - Compteurs Spotter des karts entrants/reserves recales sur le compteur Apex `otr|to` / `otr|*in` en direct, sans appel reseau supplementaire.

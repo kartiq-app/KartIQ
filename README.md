@@ -1,4 +1,8 @@
-## V7.2.1859 — Stockage local Spotter non bloquant
+## V7.2.1860
+
+Classement virtuel sur maximum d’arrêts observés et minimum probable déduit des PITS Apex ; compteur PIT sans accélération visible. Voir CHANGELOG.md.
+
+## V7.2.1860 — Stockage local Spotter non bloquant
 
 Le navigateur peut atteindre son quota après la sauvegarde de volumineux historiques KV dans `velocity_spotter_v7_foundation`. Le cache local est maintenant allégé : les événements historiques du registre KV restent côté serveur. En cas de quota rempli, Spotter fonctionne et se synchronise avec Render sans dépendre d’une sauvegarde locale réussie. Les identités physiques et les historiques SQL ne sont ni réinitialisés ni effacés.
 

@@ -1079,31 +1079,80 @@ function analyzerPitIndicator(driver){return driver?.status==='pit'?'<span class
 function analyzerPaceSeconds(driver){return parseLapTime(driver?.pace5||driver?.best)}
 function analyzerGridPace(){return (state.drivers||[]).map(analyzerPaceSeconds).filter(Number.isFinite).sort((a,b)=>a-b)}
 function analyzerPitSeconds(pit){
- const direct=Number(pit?.pitOutMs)-Number(pit?.pitInMs);
- if(Number.isFinite(direct)&&direct>0)return direct/1000;
- return analyzerParseDuration(pit?.pitTime);
+ // La colonne Apex Pit time est prioritaire. pitOutMs - pitInMs peut être
+ // inexact pour un historique reconstitué et ne doit pas servir de tour.
+ const time=analyzerParseDuration(pit?.pitTime);
+ if(Number.isFinite(time)&&time>0&&time<1800)return time;
+ const direct=(Number(pit?.pitOutMs)-Number(pit?.pitInMs))/1000;
+ return Number.isFinite(direct)&&direct>0&&direct<1800?direct:null;
 }
-function analyzerVirtualPitAverage(driver){
- const key=`${analyzerSessionCircuit()}:${Number(driver?.apex_row)||0}`,entry=analyzerVirtualPitCache.get(key);
- if(entry?.status==='loaded'){
-  const values=(entry.pits||[]).map(analyzerPitSeconds).filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b).slice(0,3);
-  if(values.length)return {seconds:values.reduce((a,b)=>a+b,0)/values.length,samples:values.length,estimated:false};
+// Minimum probable : rechercher la borne inférieure des arrêts terminés du
+// plateau, puis l'arrondir au palier inférieur de 15 secondes (45, 60, 150...).
+// Au moins 3 arrêts cohérents sont nécessaires, jamais de valeur inventée.
+function analyzerVirtualPitReference(rows){
+ const values=[];
+ for(const x of rows){
+  const key=`${analyzerSessionCircuit()}:${Number(x.driver?.apex_row)||0}`;
+  const entry=analyzerVirtualPitCache.get(key);
+  if(entry?.status!=='loaded')continue;
+  for(const pit of entry.pits||[]){
+   const v=analyzerPitSeconds(pit);
+   if(Number.isFinite(v)&&v>=15)values.push(v);
+  }
  }
- return {seconds:analyzerRules.minPitSeconds,samples:0,estimated:true};
+ values.sort((a,b)=>a-b);
+ if(values.length<3)return {seconds:null,samples:values.length,estimated:true};
+ // Rejeter un arrêt isolé anormalement court : troisième plus petite valeur.
+ const lower=values[2];
+ const candidate=Math.floor(lower/15)*15;
+ const near=values.filter(v=>v>=candidate&&v<=candidate+12);
+ if(candidate<15||near.length<3)return {seconds:null,samples:values.length,estimated:true};
+ return {seconds:candidate,samples:values.length,estimated:true};
+}
+function analyzerVirtualLiveGap(driver,leaderLaps,pace){
+ const laps=analyzerNullableNumeric(driver?.laps);
+ if(laps===null||laps<0||leaderLaps===null)return null;
+ const lapDiff=leaderLaps-laps;
+ if(lapDiff<0)return null;
+ const raw=String(driver?.gap??'').trim();
+ const explicitLap=/\b(\d+)\s*(?:tours?|laps?)\b/i.exec(raw);
+ if(explicitLap){
+  // L'indication de tours Apex fait foi, pas un suffixe numérique tronqué.
+  if(!Number.isFinite(pace)||pace<=0)return null;
+  return Number(explicitLap[1])*pace;
+ }
+ const t=analyzerParseDuration(raw.replace(/^\+/,'').replace(/\s*(?:s|sec|secondes?)$/i,''));
+ if(lapDiff===0){
+  if(Number(driver?.pos)===1)return 0;
+  return Number.isFinite(t)&&t>=0?t:null;
+ }
+ // Un retard d'un tour doit être converti explicitement. On n'utilise pas
+ // une chaîne illisible comme zéro seconde.
+ if(!Number.isFinite(pace)||pace<=0)return null;
+ return lapDiff*pace+(Number.isFinite(t)&&t>=0&&t<pace?t:0);
 }
 function analyzerVirtualMetrics(rows){
  const maxStops=Math.max(0,...rows.map(x=>analyzerNumeric(x.driver?.pit_stops,0)));
- const maxLaps=Math.max(0,...rows.map(x=>analyzerNumeric(x.driver?.laps,0)));
- const gridPace=analyzerGridPace(),fallbackPace=gridPace.length?gridPace[Math.floor(gridPace.length/2)]:60;
+ const maxLaps=rows.reduce((n,x)=>{const v=analyzerNullableNumeric(x.driver?.laps);return v===null?n:Math.max(n,v)},null);
+ const grid=analyzerGridPace(),pace=grid.length?grid[Math.floor(grid.length/2)]:null;
+ const reference=analyzerVirtualPitReference(rows);
  const output=rows.map(x=>{
-  const d=x.driver,stops=analyzerNumeric(d.pit_stops,0),missing=Math.max(0,maxStops-stops),pitAverage=analyzerVirtualPitAverage(d);
-  const extra=missing*pitAverage.seconds,laps=analyzerNumeric(d.laps,0),lapDeficit=Math.max(0,maxLaps-laps),pace=analyzerPaceSeconds(d)||fallbackPace;
-  const parsedGap=analyzerParseDuration(String(d.gap||'').replace(/^\+/,'').replace(/\s*(tour|tours|lap|laps).*$/i,''));
-  const baseDeficit=lapDeficit>0?lapDeficit*pace:(Number.isFinite(parsedGap)?parsedGap:0);
-  return {...x,virtual:{maxStops,missing,pitAverage,extra,baseDeficit,totalDeficit:baseDeficit+extra}};
- }).sort((a,b)=>a.virtual.totalDeficit-b.virtual.totalDeficit||analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999));
- const leader=output[0]?.virtual.totalDeficit||0;
- output.forEach((x,index)=>{x.virtual.position=index+1;x.virtual.gap=Math.max(0,x.virtual.totalDeficit-leader)});
+  const d=x.driver,stops=analyzerNumeric(d.pit_stops,0),missing=Math.max(0,maxStops-stops);
+  const baseDeficit=analyzerVirtualLiveGap(d,maxLaps,pace);
+  const extra=missing&&Number.isFinite(reference.seconds)?missing*reference.seconds:missing?null:0;
+  const totalDeficit=Number.isFinite(baseDeficit)&&Number.isFinite(extra)?baseDeficit+extra:null;
+  return {...x,virtual:{maxStops,missing,pitAverage:reference,extra,baseDeficit,totalDeficit,valid:Number.isFinite(totalDeficit)}};
+ }).sort((a,b)=>{
+  if(a.virtual.valid!==b.virtual.valid)return a.virtual.valid?-1:1;
+  if(!a.virtual.valid)return analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999);
+  return a.virtual.totalDeficit-b.virtual.totalDeficit||analyzerNumeric(a.driver.pos,999)-analyzerNumeric(b.driver.pos,999);
+ });
+ const leader=output.find(x=>x.virtual.valid)?.virtual.totalDeficit;
+ let position=0;
+ for(const x of output){
+  x.virtual.position=x.virtual.valid?++position:null;
+  x.virtual.gap=x.virtual.valid?Math.max(0,x.virtual.totalDeficit-leader):null;
+ }
  return output;
 }
 async function analyzerLoadVirtualPitData(){
@@ -3928,10 +3977,10 @@ function renderAnalyzer(){
   analyzerRankingBody.innerHTML=sorted.map(x=>{
    const d=x.driver;const isFollowed=d.driver===state.followed_driver;const penalty=d.penalty||'—';const isVirtual=analyzerRankingMode==='virtual';
    const relayTimer=analyzerRelayTimer(d),stintAverage=analyzerCurrentStintAverage(d),virtual=x.virtual;
-   const displayPos=isVirtual?virtual.position:d.pos;
+   const displayPos=isVirtual?(virtual.valid?virtual.position:'—'):d.pos;
    const stopsValue=isVirtual?`${analyzerEscape(d.pit_stops??0)}${virtual.missing?`<small class="virtual-stop-add">+${virtual.missing} virtuel${virtual.missing>1?'s':''}</small>`:''}`:analyzerEscape(d.pit_stops??'—');
-   const gapValue=isVirtual?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):analyzerEscape(d.gap);
-   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Moyenne ${virtual.pitAverage.samples||0} arrêt(s)">+${analyzerFormatDuration(virtual.extra)}${virtual.pitAverage.estimated?' estimé':''}</small>`:'';
+   const gapValue=isVirtual?(virtual.valid?(virtual.position===1?'—':`+${analyzerFormatDuration(virtual.gap)}`):'Données insuffisantes'):analyzerEscape(d.gap);
+   const virtualInfo=isVirtual&&virtual.missing?`<small class="virtual-time-add" title="Minimum probable sur ${virtual.pitAverage.samples||0} arrêts Apex">${Number.isFinite(virtual.extra)?'+'+analyzerFormatDuration(virtual.extra):'En attente des PITS Apex'}</small>`:'';
    const rankingFlash=typeof rankingFlashMeta==='function'?rankingFlashMeta(d):{className:'',style:''};
    return `<tr data-driver="${analyzerEscape(typeof rankingDriverKey==='function'?rankingDriverKey(d):(d.driver||d.pos))}" data-position="${analyzerEscape(d.pos)}" class="${isFollowed?'followed':''}${isVirtual?' virtual-ranking-row':''}${rankingFlash.className||''}"${rankingFlash.style?` style="${rankingFlash.style}"`:''} onclick="followDriver(${JSON.stringify(d.driver).replace(/"/g,'&quot;')})"><td class="a-pos">${analyzerEscape(displayPos)}${isVirtual&&Number(d.pos)!==displayPos?`<small class="virtual-real-pos">réel P${analyzerEscape(d.pos)}</small>`:''}</td><td class="a-pit-indicator">${analyzerPitIndicator(d)}</td><td>${analyzerEscape(validKartNumber(d)||d.apex||'—')}</td><td class="a-team" title="${analyzerEscape(d.driver)}">${analyzerEscape(d.driver)}${virtualInfo}</td><td><button type="button" class="analyzer-laps-btn" onclick="event.stopPropagation();openApexTeamLaps(${Number(d.apex_row)||0})">STATS</button></td><td>${analyzerEscape(d.laps)}</td><td class="a-track${relayTimer.inPit?' pit-time-blue':''}">${analyzerEscape(relayTimer.value)}</td><td>${stopsValue}</td><td class="${lapTimeClass(d,d.last,'last')}">${analyzerEscape(d.last)}</td><td class="${lapTimeClass(d,d.best,'best')}">${analyzerEscape(d.best)}</td><td class="a-average">${stintAverage?analyzerEscape(formatApexMilliseconds(stintAverage*1000)):'—'}</td><td class="${isVirtual?'virtual-gap':''}">${gapValue}</td><td class="red">${analyzerEscape(penalty)}</td><td class="a-forecast">${d.status==='pit'?'IN':analyzerEscape(x.forecast.label)}</td><td title="${analyzerEscape(analyzerPhysicalKartForDriverLabel(d))}">${analyzerEscape(x.kartRating?.kv||'—')}</td><td class="a-note kart-potential ${analyzerKartRatingTone(x.kartRating)}" title="${x.kartRating?.liveOnly?'Estimation LIVE de la machine actuelle, KV non identifié (non historisée)':x.kartRating?.provisional?'Estimation provisoire des premiers tours':'Potentiel du kart physique'}">${x.kartRating?.value==null?'—':x.kartRating.value.toFixed(1)+(x.kartRating.provisional?'*':'')}</td></tr>`;
   }).join('');

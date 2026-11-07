@@ -382,15 +382,19 @@ function resetVelocityApexMap(circuitId=null){
 }
 // V7.2.1859 — Horloge PIT purement visuelle, directement recalée sur Apex.
 // Ne modifie ni le flux live, ni les scores KV, ni les chronos officiels.
+// V7.2.1860 — Horloge PIT visuelle à cadence stable : aucun saut ni rattrapage accéléré.
+// Apex fournit la référence. Une seule seconde peut être affichée par intervalle >= 950 ms.
+// Aucune milliseconde non fournie par Apex n'est affichée.
 const velocityPitClockSamples=new Map();
-const VELOCITY_PIT_CLOCK_MAX_AGE_MS=2500;
+const VELOCITY_PIT_CLOCK_MAX_AGE_MS=3000;
+const VELOCITY_PIT_CLOCK_STEP_MS=950;
 function velocityPitClockSeconds(raw){
  const value=String(raw??'').trim().replace(',','.').replace(/\.$/,'');
  if(!/^\d+(?::\d{1,2}){0,2}(?:\.\d{1,3})?$/.test(value))return null;
  const parts=value.split(':');if(parts.length>1&&Number(parts.at(-1))>=60)return null;
  if(parts.length===3&&Number(parts[1])>=60)return null;
- const nums=parts.map(Number);const seconds=nums.reduce((total,item)=>total*60+item,0);
- return Number.isFinite(seconds)&&seconds>=0?seconds:null;
+ const nums=parts.map(Number),seconds=nums.reduce((total,item)=>total*60+item,0);
+ return Number.isFinite(seconds)&&seconds>=0?Math.floor(seconds):null;
 }
 function velocityPitClockFormat(seconds){
  const whole=Math.max(0,Math.floor(seconds));return `${String(Math.floor(whole/60)).padStart(2,'0')}:${String(whole%60).padStart(2,'0')}`;
@@ -399,30 +403,33 @@ function velocityPitClockUpdate(row,raw,{circuitId=state?.circuit_id,receivedAt=
  const id=Number(row),seconds=velocityPitClockSeconds(raw);
  if(!Number.isFinite(id)||seconds===null||!circuitId)return false;
  const existing=velocityPitClockSamples.get(id);
- if(existing?.circuitId===circuitId&&seconds<existing.seconds&&receivedAt-existing.at<VELOCITY_PIT_CLOCK_MAX_AGE_MS){
-  // Une reponse serveur plus ancienne ne doit jamais faire reculer un PIT actif.
-  if(source==='state')return true;
+ if(existing?.circuitId===circuitId){
+  // Une relecture plus ancienne du serveur ne peut pas supplanter le flux Apex.
+  if(source==='state'&&existing.source==='apex'&&receivedAt-existing.at<VELOCITY_PIT_CLOCK_MAX_AGE_MS)return true;
+  if(seconds<existing.seconds&&receivedAt-existing.at<VELOCITY_PIT_CLOCK_MAX_AGE_MS)return true;
+  if(source==='state'&&seconds===existing.seconds)return true;
+  // L'autorité Apex est mémorisée indépendamment de la cadence d'affichage.
+  existing.seconds=seconds;existing.at=receivedAt;existing.source=source;
+  return true;
  }
- if(existing?.circuitId===circuitId&&source==='state'&&existing.source==='apex'&&receivedAt-existing.at<VELOCITY_PIT_CLOCK_MAX_AGE_MS)return true;
- // Un polling d'etat sans changement de valeur ne doit pas rafraichir artificiellement l'horodatage.
- if(existing?.circuitId===circuitId&&source==='state'&&existing.source==='state'&&existing.seconds===seconds)return true;
- velocityPitClockSamples.set(id,{seconds,at:receivedAt,circuitId,source});return true;
+ velocityPitClockSamples.set(id,{seconds,at:receivedAt,circuitId,source,shown:seconds,lastStepAt:receivedAt});
+ return true;
 }
 function velocityPitClockForDriver(driver){
  if(!driver||String(driver.status||'').toLowerCase()!=='pit')return null;
  const row=Number(driver.apex_row),sample=velocityPitClockSamples.get(row),circuitId=state?.circuit_id;
  if(sample?.circuitId===circuitId){
-  const age=Math.max(0,Date.now()-sample.at);
-  if(age<=VELOCITY_PIT_CLOCK_MAX_AGE_MS){
-   // Les trames Apex quantifient les secondes. Progresser uniquement les secondes entieres,
-   // sans inventer de millisecondes ni depasser la fenetre de fraicheur.
-   return {text:velocityPitClockFormat(sample.seconds+Math.floor(age/1000)),fresh:true,source:sample.source};
+  const now=Date.now(),age=Math.max(0,now-sample.at),fresh=age<=VELOCITY_PIT_CLOCK_MAX_AGE_MS;
+  // Ne jamais avancer avec un état périmé. Jamais plus d'une seconde par pas.
+  if(fresh&&now-sample.lastStepAt>=VELOCITY_PIT_CLOCK_STEP_MS){
+   const elapsed=Math.max(0,Math.floor(age/1000));
+   const upper=sample.seconds+elapsed;
+   if(sample.shown<upper){sample.shown++;sample.lastStepAt=now}
   }
-  return {text:velocityPitClockFormat(sample.seconds),fresh:false,source:sample.source};
+  return {text:velocityPitClockFormat(sample.shown),fresh,source:sample.source};
  }
  const fallback=velocityPitClockSeconds(driver.pit_timer);
- if(fallback!==null)return {text:velocityPitClockFormat(fallback),fresh:false,source:'state-stale'};
- return null;
+ return fallback!==null?{text:velocityPitClockFormat(fallback),fresh:false,source:'state-stale'}:null;
 }
 function velocityPitClockIngestFrame(frame,circuitId){
  const schema=window.velocityApexMap?.schema;
