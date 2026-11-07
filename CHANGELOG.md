@@ -1,3 +1,15 @@
+## V7.2.1872 — VVCE hybride historique + vérification LIVE
+- Rétablit l’utilisation des tours historiques pour estimer le coût net des arrêts (échantillons PIT identifiés).
+- Conserve le classement LIVE officiel comme référence de position, de tours et d’écarts. Refuse les tours synthétiques comme tours officiels.
+- Vérifie que les écarts reconstitués, avant neutralisation des arrêts, respectent l’ordre LIVE ; suspend le classement en cas d’ambiguïté.
+- Collecte secondaire côté serveur : étalonnage maximum toutes les deux minutes, lecture des derniers 6000 tours et 1000 événements PIT sur un périmètre de six heures après activation ; aucune charge ajoutée au flux Apex prioritaire.
+- Le coût reste explicitement « provisoire » si moins de six arrêts historiques correctement associés sont disponibles.
+- Maintien du scroll et des modules Focus Endurance / Spotter, sans modification de leur code.
+- Ancien cache VVCE invalidé avec un nouvel espace de stockage versionné ; aucun classement V1871 réutilisé.
+- Méthode non certifiée en l’absence d’horodatages communs ou de tours LIVE individuels exploitables.
+
+V7.2.1871 — Garde-fou VVCE : interdiction d’attribuer le tour du leader aux équipes dont le numéro de tour est inconnu, invalidation des résultats v1870 et suspension explicite du classement lorsque les écarts Apex ne permettent pas une comparaison fiable. LIVE, PIT, KV et Spotter inchangés.
+
 ## V7.2.1870 — VVCE photographie LIVE et scroll stable
 - Classement virtuel à partir des snapshots synchrones de la grille Apex du Recorder (aucune reconstruction des tours synthétiques historiques).
 - Démarrage de référence à l’activation ; suivi des évolutions de tours et arrêts. Rejet des grilles/gaps incohérents.

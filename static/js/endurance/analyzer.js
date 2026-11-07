@@ -1170,7 +1170,8 @@ async function analyzerVVCEReadSnapshot(token){
   const result=item.result;
   analyzerVVCE.circuit=circuit;analyzerVVCE.session=session;
   analyzerVVCE.reason=item.reason||item.note||'Initialisation du calcul serveur';
-  if(result&&Array.isArray(result.ranking)){
+  if(result&&result.method!=='vvce-live-grid-validated-v1871')analyzerVVCE.reason='Ancien classement non validé : attente des données LIVE vérifiables.';
+  if(result&&result.method==='vvce-live-grid-validated-v1871'&&Array.isArray(result.ranking)){
    analyzerVVCE.ranking=result.ranking;
    analyzerVVCE.teams=new Map(result.ranking.map(d=>[Number(d.rowId),d]));
    analyzerVVCE.referenceStops=result.referenceStops;
@@ -1244,8 +1245,8 @@ function analyzerRenderVVCEReport(){
  const stamp=[v.circuit,v.session,v.finishedAt,v.stale,v.ranking.length].join('|');
  if(panel.dataset.vvceResult===stamp&&panel.querySelector('.vvce-report-table-wrap'))return;
  const rows=v.ranking.map(d=>`<tr><td>${d.position}</td><td>${d.realPos}</td><td class="vvce-team-cell" title="${analyzerEscape(d.name)}">${analyzerEscape(d.name)}</td><td>${d.stops}/${v.referenceStops}</td><td>${d.lastLap}</td><td>${d.missing}</td><td>${d.missingLaps}</td><td>+${analyzerFormatDuration(d.extra)}</td><td>${analyzerFormatDuration(d.projectedTotal)}</td><td>${d.position===1?'—':'+'+analyzerFormatDuration(d.gap)}</td></tr>`).join('');
- const metadata=`<strong>${v.ranking.length}/${v.total} équipes</strong> · coût d'arrêt provisoire <strong>${Number(v.pitNetCost).toFixed(2)} s</strong> · référence ${v.referenceStops} arrêts · tour LIVE ${v.referenceLap} · ${time||'—'}.`;
- const note=`Projection fondée sur le classement LIVE Apex au même instant ; les écarts en tours sont convertis au rythme médian estimé. ${v.stale?'⚠ Données anciennes. ':''}Résultat indicatif, non certifié.`;
+ const metadata=`<strong>${v.ranking.length}/${v.total} équipes</strong> · coût net d’arrêt ${v.netSamples>=6?"mesuré":"provisoire"} <strong>${Number(v.pitNetCost).toFixed(2)} s</strong> · référence ${v.referenceStops} arrêts · tour LIVE ${v.referenceLap} · ${time||'—'}.`;
+ const note=`Projection hybride : étalonnage des arrêts par les tours enregistrés, positions et écarts contrôlés contre le LIVE Apex. Les écarts en tours restent estimés en secondes. ${v.stale?'⚠ Données anciennes. ':''}Résultat indicatif, non certifié.`;
  const wrap=panel.querySelector('.vvce-report-table-wrap');
  if(wrap&&panel.querySelector('.vvce-report-table tbody')){
   // Never replace the scroll container: stable wheel/touch scrolling on 4G.

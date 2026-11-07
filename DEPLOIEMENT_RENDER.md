@@ -1,3 +1,7 @@
+V7.2.1872 — VVCE HYBRIDE : estimation secondaire des pertes nettes aux stands depuis les tours/PIT du Recorder, vérification obligatoire des positions sur le LIVE Apex. Le résultat peut rester indisponible lorsque les tours individuels ou les écarts officiels ne peuvent pas être réconciliés. Les données du Recorder ne prouvent pas un temps absolu commun. Cache persistant SQL, calcul hors flux LIVE. Focus Endurance et Spotter inchangés.
+
+V7.2.1871 — Garde-fou VVCE : interdiction d’attribuer le tour du leader aux équipes dont le numéro de tour est inconnu, invalidation des résultats v1870 et suspension explicite du classement lorsque les écarts Apex ne permettent pas une comparaison fiable. LIVE, PIT, KV et Spotter inchangés.
+
 V7.2.1870 — VVCE LIVE initialisé au clic, projection basée sur les snapshots live et non sur la somme de tours historiques ; coût d’arrêt provisoire de 110 secondes tant que non mesuré, positions indicatives. Tableau à défilement stable, sans reconstruction du conteneur.
 
 V7.2.1868 : déployer intégralement le ZIP sur GitHub/Render. La version et le cache du service worker ont été incrémentés. Vérifier une équipe en PIT dans Focus Endurance et Spotter ; sans compteur Apex, Spotter affiche « — ».

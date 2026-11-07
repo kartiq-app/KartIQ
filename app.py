@@ -38,7 +38,7 @@ from backend.logging_tools import ApexLogManager
 from backend.network import local_ip
 from backend.services.race_state import RaceStateService
 from backend.services.relay_score_engine import fetch_and_compute
-from backend.services.vvce_server import VVCERepository, live_snapshot_calculate
+from backend.services.vvce_server import VVCERepository, hybrid_live_history_calculate, historical_pit_metrics
 from data_recorder import RecorderStore, RecorderManager
 from spotter_registry_scope import RegistryRuns
 from backend.services.kart_scoring_scope import KartScoringScope
@@ -3050,11 +3050,11 @@ def weather():
 # or in the critical Apex frame-processing path.
 VVCE_THREADS_LOCK = threading.RLock()
 VVCE_THREADS = {}
-VVCE_RECORDER_PREFIX = "VVCE_V1870:"
+VVCE_RECORDER_PREFIX = "VVCE_V1872:"
 
 
 def _vvce_scope(workspace, circuit, session_key):
-    return f"{workspace}:vvce-live-v1870:{circuit}:{hashlib.sha256(session_key.encode()).hexdigest()[:16]}"
+    return f"{workspace}:vvce-hybrid-v1872:{circuit}:{hashlib.sha256(session_key.encode()).hexdigest()[:16]}"
 
 
 def _vvce_repository():
@@ -3112,19 +3112,35 @@ def _vvce_work(scope, recording_id, expected, circuit, session_key):
                 # A snapshot from this session, not historical rows of a prior
                 # session, is the starting photograph. The same grid format is
                 # used for every subsequent update.
+                # Calibrate at most every 2 minutes (or initially), on this
+                # background worker only. Avoid SQL scans per LIVE update.
+                calibrated_at=int(latest.get('calibratedAt') or 0)
+                cached_calibration=latest.get('calibration')
+                if not isinstance(cached_calibration,list) or observed_at-calibrated_at>=120000:
+                    since_ms=max(activated_at, observed_at-6*3600000)
+                    lap_rows=store._execute("""SELECT row_id,lap_number,lap_seconds
+                        FROM velocity_recorder_laps WHERE recording_id=?
+                        AND received_at_ms>=? ORDER BY received_at_ms DESC LIMIT 6000""",
+                        (recording_id,since_ms),fetchall=True) or []
+                    pit_rows=store._execute("""SELECT row_id,lap_number,event
+                        FROM velocity_recorder_pits WHERE recording_id=?
+                        AND received_at_ms>=? ORDER BY received_at_ms DESC LIMIT 1000""",
+                        (recording_id,since_ms),fetchall=True) or []
+                    cached_calibration=list(historical_pit_metrics(lap_rows,pit_rows))
+                    calibrated_at=observed_at
+                result=hybrid_live_history_calculate(snap['drivers'], [], [], initial,
+                                                      calibration=tuple(cached_calibration))
                 if not initial:
-                    result=live_snapshot_calculate(snap['drivers'], {})
                     initial={str(d['rowId']):{'lastLap':d['lastLap'],'stops':d['stops']}
                              for d in result['ranking']}
-                result=live_snapshot_calculate(snap['drivers'], initial,
-                    float(latest.get('netCost') or 110.0))
                 repo.put(scope, {**latest, 'status':'ready','result':result,
                                  'updatedAt':int(time.time()*1000),'sourceAt':observed_at,
-                                 'initial':initial,'sessionTitle':title or latest.get('sessionTitle') or '',
-                                 'note':'Photographie LIVE et mises à jour incrémentales. Coût d’arrêt provisoire.'})
+                                 'initial':initial,'calibration':cached_calibration,'calibratedAt':calibrated_at,
+                                 'sessionTitle':title or latest.get('sessionTitle') or '',
+                                 'note':'LIVE contrôlé + étalonnage historique des arrêts (non certifié).'})
             except (ValueError, TypeError, KeyError) as exc:
                 prev=repo.read(scope) or latest
-                repo.put(scope, {**prev, 'status':'stale' if prev.get('result') else 'waiting',
+                repo.put(scope, {**prev, 'status':'waiting', 'result':None,
                                  'reason':str(exc)[:350], 'checkedAt':int(time.time()*1000)})
             except Exception as exc:
                 app.logger.warning('VVCE incremental snapshot error: %s', exc)
@@ -3152,6 +3168,10 @@ def _resume_vvce_workers():
     try:
         repo = _vvce_repository()
         for item in repo.active():
+            # Never resurrect an obsolete VVCE (V1870/V1871) calculation
+            # after deployment. Old workspaces stay in SQL for audit only.
+            if ':vvce-hybrid-v1872:' not in str(item.get('scope') or ''):
+                continue
             rec = _get_recorder_manager().store.get_recording(item.get('recordingId') or '')
             if not rec or rec.get('desired_status') == 'stopped':
                 continue

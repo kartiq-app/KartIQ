@@ -208,9 +208,13 @@ def live_snapshot_calculate(drivers, initial, net_cost=110.0):
             seconds = _time_seconds(gap_label)
             if seconds is None:
                 raise ValueError(f'Écart LIVE manquant pour la ligne Apex {row_id}.')
-            # Apex seconds may be gap on same lap or a sub-lap segment; no
-            # invented laps are admitted in the latter case.
-            lap_deficit = max(0, lead_lap - raw_laps) if raw_laps else 0
+            # An elapsed gap expressed in seconds does NOT prove that the
+            # competitor is on the leader's lap. On this Apex layout, teams
+            # several laps down can have a numeric gap. We MUST know their
+            # own completed lap number, otherwise no virtual rank is valid.
+            if not raw_laps:
+                raise ValueError(f'Tours individuels Apex manquants (ligne {row_id}, position {real_pos}) : écart en secondes ambigu, classement virtuel suspendu.')
+            lap_deficit = max(0, lead_lap - raw_laps)
             if lap_deficit > 1:
                 raise ValueError(f'Écart incohérent pour la ligne Apex {row_id}.')
             real_gap = seconds
@@ -240,6 +244,87 @@ def live_snapshot_calculate(drivers, initial, net_cost=110.0):
         item['gap'] = max(0.0, item['projectedTotal']-base)
     return {'ranking': result, 'referenceStops': max_stops, 'referenceLap': lead_lap,
             'pitNetCost': net_cost, 'netSamples': 0, 'teams': len(result),
-            'method': 'vvce-live-grid-incremental-v1870', 'certified': False,
+            'method': 'vvce-live-grid-validated-v1871', 'certified': False,
             'costProvisional': True, 'paceEstimate': pace,
             'note': 'Positions issues du LIVE commun ; écarts en tours convertis au rythme médian estimé.'}
+
+# V1872: the timing history is used only to *measure* net pit losses and pace.
+# Race positions and official completed laps must be independently verifiable
+# against one live grid; recorder lap_number may be synthetic and is NEVER used
+# as an official lap count.
+def historical_pit_metrics(laps, pits):
+    """Estimate net stop loss from completed lap times, without inventing laps.
+
+    Return (net_cost, number_of_samples, representative_pace).  Rows with sparse
+    history are ignored rather than extrapolated. Pit IN associations are used
+    only if that event has a usable lap number; outliers with no association
+    are not presumed to be pit stops.
+    """
+    by_row = defaultdict(dict)
+    for lap in laps:
+        try:
+            row = int(lap.get('row_id') or 0)
+            n = int(lap.get('lap_number') or 0)
+            seconds = float(lap.get('lap_seconds') or 0)
+        except (TypeError, ValueError):
+            continue
+        if row > 0 and n > 0 and 40 <= seconds <= 600:
+            by_row[row][n] = seconds
+    pit_laps = defaultdict(set)
+    for item in pits:
+        if str(item.get('event') or '').upper() != 'IN':
+            continue
+        try:
+            row = int(item.get('row_id') or 0)
+            n = int(item.get('lap_number') or 0)
+        except (TypeError, ValueError):
+            continue
+        if row > 0 and n > 0:
+            pit_laps[row].add(n)
+    costs = []
+    paces = []
+    for row, series in by_row.items():
+        affected = {n + 1 for n in pit_laps[row]}
+        clean = [v for n, v in sorted(series.items())
+                 if n not in affected and 40 <= v <= 180]
+        if len(clean) < 8:
+            continue
+        base = median(clean[-60:])
+        if base is None:
+            continue
+        paces.append(base)
+        for n in affected:
+            observed = series.get(n)
+            if observed is not None and base * 1.45 < observed < base * 5:
+                costs.append(observed - base)
+    net = median(costs) if len(costs) >= 6 else None
+    return net, len(costs), median(paces)
+
+
+def hybrid_live_history_calculate(drivers, laps, pits, initial=None, calibration=None):
+    """Historical pit calibration + strict validation against the same LIVE grid.
+
+    Never uses synthetic Recorder lap counts for classification. Refuse numeric
+    Apex gaps if a team's true lap is absent, and refuse a reconstruction whose
+    zero-adjustment ordering differs from the published live order.
+    """
+    net, samples, history_pace = calibration if calibration is not None else historical_pit_metrics(laps, pits)
+    result = live_snapshot_calculate(drivers, initial or {}, net_cost=net if net is not None else 110.0)
+    rows = result['ranking']
+    live_order = sorted(rows, key=lambda d: d['realPos'])
+    # Validate the unadjusted estimated gaps against official LIVE positions.
+    # This catches exactly the inconsistent mixing of seconds and 'N Tours'
+    # that previously elevated an Apex P23 to virtual P1.
+    for before, after in zip(live_order, live_order[1:]):
+        if before['liveGapEstimate'] > after['liveGapEstimate'] + 0.01:
+            raise ValueError(
+                'Écarts LIVE non réconciliés entre P{} et P{} : '
+                'historique conservé pour étalonnage, classement suspendu.'.format(
+                    before['realPos'], after['realPos']))
+    result.update({'method': 'vvce-hybrid-validated-v1872',
+                   'netSamples': samples,
+                   'costProvisional': net is None,
+                   'historyPaceEstimate': history_pace,
+                   'note': ('Historique : estimation des pertes aux stands. '
+                            'Positions : grille LIVE contrôlée ; écarts en tours approximatifs.')})
+    return result
