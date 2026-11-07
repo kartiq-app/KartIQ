@@ -1,3 +1,7 @@
+## V7.2.1858 — Stockage local Spotter non bloquant
+
+Le navigateur peut atteindre son quota après la sauvegarde de volumineux historiques KV dans `velocity_spotter_v7_foundation`. Le cache local est maintenant allégé : les événements historiques du registre KV restent côté serveur. En cas de quota rempli, Spotter fonctionne et se synchronise avec Render sans dépendre d’une sauvegarde locale réussie. Les identités physiques et les historiques SQL ne sont ni réinitialisés ni effacés.
+
 
 ## V7.2.1857 — Spotter : lancement des files et choix du mode
 - Protection de la configuration des files contre les lectures serveur antérieures au lancement.

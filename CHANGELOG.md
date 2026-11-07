@@ -1,3 +1,12 @@
+## V7.2.1858 — Correction quota localStorage Spotter
+
+- Diagnostic établi : `localStorage.setItem(velocity_spotter_v7_foundation)` bloque `LANCER LE SPOTTER` lorsque le quota navigateur est atteint.
+- Le cache navigateur est limité aux données utiles Quick Change ; les historiques et le registre KV restent exclusivement autoritaires côté serveur.
+- Les écritures de cache deviennent facultatives et ne bloquent plus le lancement en cas de `QuotaExceededError`.
+- Remplacement de l’ancienne copie locale du registre par un cache allégé sur la même clé, sans effacer les autres données du navigateur.
+- Suppression des sauvegardes locales périodiques à chaque rafraîchissement des métriques.
+- Préservation de l'isolation par circuit, de la synchronisation serveur et des formules de calcul KV.
+
 
 ## V7.2.1857 — Spotter : lancement des files et choix du mode
 - Protection de la configuration des files contre les lectures serveur antérieures au lancement.

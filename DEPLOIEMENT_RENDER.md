@@ -1,3 +1,7 @@
+## V7.2.1858 — Vérification Spotter
+
+Après déploiement, sélectionner MRK Agadir, configurer 3 files avec six karts puis lancer Spotter. Vérifier le basculement à l'interface live et la synchronisation Render. Aucun effacement du stockage navigateur ne doit être nécessaire.
+
 ## V7.2.1856 — Vérification Actua / Agadir
 
 - Les états Quick Change sont isolés par circuit, dans le même espace Velocity.
