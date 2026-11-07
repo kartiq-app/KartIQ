@@ -3201,6 +3201,71 @@ def _spotter_registry_response(run):
             "started_at_ms":run.get("started_at_ms") or 0}
 
 
+# V1851: a KV tracking session is an explicit opt-in recorder, NOT a Session Course.
+# It uses the existing recorder worker and the existing KV score formula unchanged.
+# Names include both workspace and registry run to prevent cross-race attribution.
+VELOCITY_KV_RECORDER_PREFIX = "KV_TRACK_V1851:"
+
+
+def _kv_tracker_name(workspace, run_id):
+    return f"{VELOCITY_KV_RECORDER_PREFIX}{workspace}:{run_id}"
+
+
+def _kv_active_recorder(store, workspace, run_id):
+    name = _kv_tracker_name(workspace, run_id)
+    return next((r for r in store.active_recordings() if r.get("name") == name), None)
+
+
+@app.post("/api/spotter-kv-tracking")
+def velocity_start_kv_tracking():
+    """Explicit KV collection; never launch automatically on visiting a page."""
+    try:
+        workspace, context = _spotter_registry_run_context()
+        if not context.get("circuit_id"):
+            return jsonify(ok=False, error="Sélectionnez d'abord un circuit Apex."), 400
+        manager = _get_recorder_manager()
+        store = manager.store
+        scope = KartScoringScope(store).read(workspace, context)
+        run_id = scope['run_id']
+        active = _kv_active_recorder(store, workspace, run_id)
+        if active:
+            return jsonify(ok=True, recording_id=active['id'], status="collecting")
+        with TEAM_DATA_LOCK:
+            course = deepcopy(_active_session_for_workspace(TEAM_DATA, workspace))
+        if course and course.get('status') == 'active' and str(course.get('circuit_id')) == context['circuit_id'] and course.get('recorder_id'):
+            # The ongoing Session Course recorder is already the live data source.
+            return jsonify(ok=True, recording_id=course['recorder_id'], status="session_recorder")
+        try:
+            recording = manager.create(_kv_tracker_name(workspace, run_id), context['circuit_id'])
+        except ValueError:
+            # An existing Lab recorder may own this circuit. Do not create a
+            # competing WebSocket collection or silently attach to another run.
+            active = _kv_active_recorder(store, workspace, run_id)
+            if not active:
+                raise
+            recording = active
+        return jsonify(ok=True, recording_id=recording['id'], status="collecting")
+    except Exception as exc:
+        app.logger.exception("Activation collecte KV")
+        return jsonify(ok=False, error="Collecte des notes KV indisponible", detail=str(exc)), 503
+
+
+@app.delete("/api/spotter-kv-tracking")
+def velocity_stop_kv_tracking():
+    """Stop ONLY the dedicated KV recorder; never stop a Session Course."""
+    try:
+        workspace, context = _spotter_registry_run_context()
+        store = _spotter_persistent_store()
+        scope = KartScoringScope(store).read(workspace, context)
+        active = _kv_active_recorder(store, workspace, scope['run_id'])
+        if active:
+            _get_recorder_manager().stop(active['id'])
+        return jsonify(ok=True, stopped=bool(active))
+    except Exception as exc:
+        app.logger.exception("Arrêt collecte KV")
+        return jsonify(ok=False, error="Arrêt de la collecte KV impossible", detail=str(exc)), 503
+
+
 @app.get("/api/spotter-registry")
 def get_spotter_registry():
     try:
@@ -3211,12 +3276,13 @@ def get_spotter_registry():
         registry=json.loads(run['registry_json'])
         with TEAM_DATA_LOCK:
             active_course=_active_session_for_workspace(TEAM_DATA,workspace)
+        kv_recorder=_kv_active_recorder(_spotter_persistent_store(),workspace,setup['run_id'])
+        has_source=bool(kv_recorder or (active_course and active_course.get('recorder_id')))
         num_server_scores=sum(1 for row in registry.values() if isinstance(row,dict)
            and (row.get('speed') or {}).get('source')=='server-recorder'
            and (row.get('speed') or {}).get('epoch')==setup['epoch'])
-        scoring_status=('mode_not_selected' if not setup['mode'] else
-           'no_active_session' if not active_course else
-           'waiting_for_kv' if not registry else
+        scoring_status=('waiting_for_kv' if not registry else
+           'tracking_not_active' if not has_source else
            'waiting_for_recorder_laps' if not num_server_scores else 'scoring')
         result.update(kart_mode=setup['mode'],kart_scoring_epoch=setup['epoch'],
                       kart_scoring_status=scoring_status,kart_scored_count=num_server_scores,
@@ -3300,6 +3366,14 @@ def new_spotter_registry_course():
             workspace,context,expected_run_id=current['run_id'])
         if selected is None:
             return jsonify(ok=False,error='Course KV modifiée entre-temps'),409
+        # An explicit new race invalidates the previous KV recorder. Stop it
+        # before a user can start collecting evidence for the new run.
+        previous_kv=_kv_active_recorder(_spotter_persistent_store(),workspace,current['run_id'])
+        if previous_kv:
+            try:
+                _get_recorder_manager().stop(previous_kv['id'])
+            except Exception:
+                app.logger.exception('Arrêt du Recorder KV de la course archivée')
         next_run=selected['registry']
         STATE['kart_setup_mode']=selected['mode']
         STATE['kart_scoring_epoch']=selected['epoch']

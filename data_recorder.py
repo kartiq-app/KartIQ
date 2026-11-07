@@ -2048,12 +2048,12 @@ class DataRecorderWorker:
                         # Off the Apex WebSocket path: physical KV scores are
                         # produced on Render, even if every browser is closed.
                         # Never infer KV from an Apex kart/team number alone.
+                    if str(self.recording.get("name") or "").startswith(("SESSION_V1796:", "KV_TRACK_V1851:")):
                         try:
                             from backend.services.spotter_kv_scores import apply_recorder_scores
                             apply_recorder_scores(self.store, self.id, teams)
                         except Exception:
-                            # The existing session score matrix must survive a
-                            # broken KV scorer; report without delaying live.
+                            # Scoring cannot interrupt capture or the Apex live.
                             import logging
                             logging.getLogger(__name__).exception('KV recorder scoring failed')
                     # L'ancien Velocity Score reste enregistré séparément pour

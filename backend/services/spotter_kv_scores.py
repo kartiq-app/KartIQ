@@ -1,4 +1,4 @@
-"""Server-side, race-scoped KV scoring from Session Course Recorder evidence.
+"""Server-side, race-scoped KV scoring from explicitly enabled Recorder evidence.
 
 Invoked ONLY from the recorder score worker, never from the Apex WebSocket
 callback or /api/state hot path. A missing recorder/session/team association is
@@ -114,17 +114,41 @@ def apply_recorder_scores(store, recording_id, teams):
     state=store.get_race_team_state() or {}
     active=next((s for s in state.get('sessions',[]) if s.get('status')=='active'
                  and str(s.get('recorder_id') or '')==str(recording_id)),None)
-    if not active:return 0
-    workspace=str(active.get('workspace_id') or '')
+    dedicated_run_id = None
+    if active:
+        workspace=str(active.get('workspace_id') or '')
+        context={'circuit_id':str(active.get('circuit_id') or ''),
+                 'session_id':str(active.get('id') or ''),
+                 'session_title':str(active.get('name') or '')}
+    else:
+        # Only an explicitly started, still-active KV recorder is eligible.
+        # A Lab recording or a stopped KV job must NEVER score a registry.
+        rec = store.get_recording(recording_id)
+        prefix = 'KV_TRACK_V1851:'
+        name = str((rec or {}).get('name') or '')
+        active_ids = {str(r.get('id')) for r in store.active_recordings()}
+        if not name.startswith(prefix) or str(recording_id) not in active_ids:
+            return 0
+        identity = name[len(prefix):]
+        if ':' not in identity:return 0
+        workspace,dedicated_run_id = identity.rsplit(':',1)
+        # Sessionless registry context has no Course session ID. Never create a
+        # different run while scoring; read the current run by its real context.
+        run_row = store._execute("SELECT circuit_id,session_id,session_title FROM velocity_spotter_registry_runs WHERE workspace_id=? AND run_id=?",
+            (workspace,dedicated_run_id),fetchone=True)
+        if not run_row:return 0
+        context={'circuit_id':str(run_row.get('circuit_id') or ''),
+                 'session_id':str(run_row.get('session_id') or ''),
+                 'session_title':str(run_row.get('session_title') or '')}
+        if context['session_id'] or context['circuit_id'] != str(rec.get('circuit_id') or ''):
+            return 0
     if not workspace:return 0
-    context={'circuit_id':str(active.get('circuit_id') or ''),
-             'session_id':str(active.get('id') or ''),
-             'session_title':str(active.get('name') or '')}
     # Only short SQL queries take the store lock. Potentially expensive lap
     # aggregation happens OUTSIDE the shared recorder-store lock, ensuring
     # Apex lap persistence is never blocked by evaluating the fleet.
     scope=KartScoringScope(store).read(workspace,context)
-    if scope['mode'] not in ('quick','fixed'):return 0
+    # Kart fixed/Quick Change is OPTIONAL for scoring: it only affects identity moves.
+    if dedicated_run_id and scope['run_id'] != dedicated_run_id:return 0
     run=scope['registry']
     registry=json.loads(run.get('registry_json') or '{}')
     if not registry:return 0

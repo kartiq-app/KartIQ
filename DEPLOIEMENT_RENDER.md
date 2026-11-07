@@ -1,3 +1,15 @@
+
+## V7.2.1851 — Suivi KV volontaire sans Session Course ni mode obligatoire
+
+- Le bouton ACTIVER LE SUIVI lance explicitement un Recorder KV léger déjà existant sur le serveur (réutilisation du moteur Recorder Apex), sans créer de Session Course.
+- Aucune sélection Kart fixe / Quick Change obligatoire. Les formules `spotter_kv_scores.py` restent inchangées.
+- Les chronos historiques backfill sans horodatage de passage ne servent pas à attribuer des notes KV.
+- Les affectations provisoires restent marquées comme provisoires et les historiques restent intacts.
+- Un arrêt du suivi arrête le Recorder KV dédié mais jamais une Session Course.
+- Démarrage refusé si un autre Recorder utilise déjà le même circuit, pour éviter un double flux.
+- Collecte limitée à la durée de sécurité `VELOCITY_RECORDER_MAX_HOURS` (30 heures par défaut).
+- Sur Render, PostgreSQL persistant reste nécessaire. Pas de calcul KV autonome sans activation explicite.
+
 ## V7.2.1849 — Focus invité à distance (aucun nouvel accès requis)
 
 La migration de la table `velocity_access_focus_control` (présence/commande isolées par identifiant d’invitation) est créée automatiquement à l'initialisation de `RecorderStore` sur Render PostgreSQL. Pas de variable d'environnement supplémentaire. Aucun lien d'accès V1848 existant n'est révoqué par le déploiement. Les utilisateurs doivent actualiser/recharger Velocity pour recevoir le code V1849 ; l'écran Focus doit rester ouvert et la connexion active pour une commande à distance. Le serveur refuse un changement d'équipe si la présence Focus a expiré (> 40 s). Le live Apex et le Recorder ne sont pas modifiés.

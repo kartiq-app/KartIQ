@@ -182,3 +182,51 @@ class BackfillProvenanceTest(unittest.TestCase):
         retained=self.store.worker_history('R')[0][0]
         self.assertEqual(retained['received_at_ms'],30_000)
         self.assertEqual(retained['origin'],'live')
+
+
+# V1851: standalone opt-in tracking, no Session Course or kart mode.
+"""Regression: optional kart mode, explicit KV collector, isolation of run and stop."""
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from data_recorder import RecorderStore
+from spotter_registry_scope import RegistryRuns
+from backend.services.kart_scoring_scope import KartScoringScope
+from backend.services.spotter_kv_scores import apply_recorder_scores
+
+class NoSessionKVTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory()
+        self.store=RecorderStore(Path(self.tmp.name))
+        self.workspace='TEAM-A'
+        self.ctx={'circuit_id':'actua-karting','session_id':'','session_title':'ESSAIS'}
+        self.scope=KartScoringScope(self.store).read(self.workspace,self.ctx)
+        self.assertEqual(self.scope['mode'],'')
+        ok,self.run=RegistryRuns(self.store).seed_live(self.workspace,self.scope['run_id'],
+                        [{'key':'apex:17','label':'TEST','kart':'25'}],**self.ctx)
+        self.assertTrue(ok)
+        self.kv=next(iter(json.loads(self.run['registry_json'])))
+        self.rec=self.store.create_recording(
+            'KV_TRACK_V1851:TEAM-A:'+self.scope['run_id'],
+            {'id':'actua-karting','name':'Actua','websocket_url':'wss://example.invalid/'})
+        at=int(json.loads(self.run['registry_json'])[self.kv]['history'][0]['at'])
+        self.laps=[{'received_at_ms':at+(i+1)*10000,'seconds':48.1,'lap':i+1} for i in range(12)]
+    def tearDown(self):
+        self.tmp.cleanup()
+    def test_mode_optional_and_no_session(self):
+        self.assertEqual(apply_recorder_scores(self.store,self.rec['id'],{17:{'laps':self.laps}}),1)
+        reg=KartScoringScope(self.store).read(self.workspace,self.ctx)['registry']
+        row=json.loads(reg['registry_json'])[self.kv]
+        self.assertIsNotNone(row['speed']['potential'])
+        self.assertTrue(row['speed']['provisional'])
+    def test_stopped_recorder_does_not_score(self):
+        self.store.request_stop(self.rec['id'])
+        self.assertEqual(apply_recorder_scores(self.store,self.rec['id'],{17:{'laps':self.laps}}),0)
+    def test_new_run_rejects_old_recorder(self):
+        KartScoringScope(self.store).rotate(self.workspace,self.ctx,expected_run_id=self.scope['run_id'])
+        self.assertEqual(apply_recorder_scores(self.store,self.rec['id'],{17:{'laps':self.laps}}),0)
+    def test_unrelated_lab_recorder_never_scores(self):
+        rec=self.store.create_recording('Velocity Lab',{'id':'other','name':'Other','websocket_url':'wss://example.invalid/'})
+        self.assertEqual(apply_recorder_scores(self.store,rec['id'],{17:{'laps':self.laps}}),0)
+

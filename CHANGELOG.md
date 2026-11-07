@@ -1,3 +1,15 @@
+
+## V7.2.1851 — Suivi KV volontaire sans Session Course ni mode obligatoire
+
+- Le bouton ACTIVER LE SUIVI lance explicitement un Recorder KV léger déjà existant sur le serveur (réutilisation du moteur Recorder Apex), sans créer de Session Course.
+- Aucune sélection Kart fixe / Quick Change obligatoire. Les formules `spotter_kv_scores.py` restent inchangées.
+- Les chronos historiques backfill sans horodatage de passage ne servent pas à attribuer des notes KV.
+- Les affectations provisoires restent marquées comme provisoires et les historiques restent intacts.
+- Un arrêt du suivi arrête le Recorder KV dédié mais jamais une Session Course.
+- Démarrage refusé si un autre Recorder utilise déjà le même circuit, pour éviter un double flux.
+- Collecte limitée à la durée de sécurité `VELOCITY_RECORDER_MAX_HOURS` (30 heures par défaut).
+- Sur Render, PostgreSQL persistant reste nécessaire. Pas de calcul KV autonome sans activation explicite.
+
 ## V7.2.1850 — Trois circuits Apex supplémentaires
 
 - MRK Agadir (8023), Actua Karting (7933), Fun Kart Brissac (8753).

@@ -488,7 +488,7 @@ function velocityKartScoreMode(){
  return value==='fixed'||value==='quick'?value:null;
 }
 function velocityKartScoreEnsureScope(){
- return Boolean(velocityKartScoreMode()&&state?.kart_scoring_epoch&&state?.circuit_id);
+ return Boolean(state?.kart_scoring_epoch&&state?.circuit_id);
 }
 function velocityKartScoreIdentity(driver){
  const mode=velocityKartScoreMode();if(!driver||!mode)return null;
