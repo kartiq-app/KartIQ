@@ -1,3 +1,11 @@
+## V7.2.1873 — Vue KARTS en direct dans Analyzer
+- Troisième onglet KARTS à côté de VELOCITY et SCORE RELAIS.
+- Lecture du registre KV SQL existant et de ses notes `server-recorder` ; aucune modification du moteur mathématique.
+- Affichage séparé des notes kart qualifiées, notes relais et identités provisoires.
+- Actualisation de la vue toutes les 5 secondes uniquement lorsqu’elle est sélectionnée.
+- Accès lecture seule au registre KV autorisé pour les invités Analyzer.
+- Traitement live Apex, Focus Endurance, Spotter, VVCE inchangés.
+
 ## V7.2.1872 — VVCE hybride historique + vérification LIVE
 - Rétablit l’utilisation des tours historiques pour estimer le coût net des arrêts (échantillons PIT identifiés).
 - Conserve le classement LIVE officiel comme référence de position, de tours et d’écarts. Refuse les tours synthétiques comme tours officiels.

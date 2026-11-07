@@ -1760,6 +1760,8 @@ def velocity_private_access_guard():
             mode = set(grant.get("modes") or [])
             if path in ("/api/state", "/api/weather", "/api/access/focus-command"):
                 return None
+            if path == "/api/spotter-registry" and "analyzer" in mode:
+                return None
             if path in ("/api/analyzer-rules", "/api/analyzer-strategy") and "analyzer" in mode:
                 return None
             if path in ("/api/spotter-registry", "/api/spotter-state") and "spotter" in mode:
