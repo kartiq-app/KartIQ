@@ -1,3 +1,9 @@
+## V7.2.1850 — Trois circuits Apex supplémentaires
+
+- MRK Agadir (8023), Actua Karting (7933), Fun Kart Brissac (8753).
+- Configuration et catalogue trié alphabétiquement. Aucun changement du flux live ni du moteur KV.
+- Important : la suppression de la dépendance du calcul KV à la Session Course demande un collecteur de tours live horodatés, indépendant et explicitement activé. Non incluse dans cette version pour éviter d’altérer les notes et le Recorder.
+
 ## V7.2.1849 — Commande à distance des Focus invités
 
 - **Aucun nouveau lien à émettre** : réutilise les accès universels existants (identifiant de l'invitation, droits et date d'expiration inchangés).

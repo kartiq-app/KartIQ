@@ -553,5 +553,38 @@
     "timezone": "Europe/Paris",
     "location_label": "310 avenue de la Côte d'Argent, Biganos",
     "location_source": "curated_weather_coordinates"
+  },
+  {
+    "id": "mrk-agadir",
+    "name": "MRK Agadir",
+    "country": "Maroc",
+    "live_url": "https://live.apex-timing.com/mrkagadir/",
+    "websocket_url": "wss://live-data.apex-timing.com:8023/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 07/11/2026 ; connexion à confirmer pendant un live actif.",
+    "timezone": "Africa/Casablanca"
+  },
+  {
+    "id": "actua-karting",
+    "name": "Actua Karting",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/actua/",
+    "websocket_url": "wss://live-data.apex-timing.com:7933/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 07/11/2026 ; connexion à confirmer pendant un live actif.",
+    "timezone": "Europe/Paris"
+  },
+  {
+    "id": "fun-kart-brissac",
+    "name": "Fun Kart Brissac",
+    "country": "France",
+    "live_url": "https://www.apex-timing.com/live-timing/fun-kart/",
+    "websocket_url": "wss://live-data.apex-timing.com:8753/",
+    "session_request": "",
+    "status": "testing",
+    "notes": "Configuration fournie le 07/11/2026 ; connexion à confirmer pendant un live actif.",
+    "timezone": "Europe/Paris"
   }
 ]
