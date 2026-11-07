@@ -3242,12 +3242,12 @@ def velocity_start_kv_tracking():
         run_id = scope['run_id']
         active = _kv_active_recorder(store, workspace, run_id)
         if active:
-            return jsonify(ok=True, recording_id=active['id'], status="collecting", scored_count=_kv_server_scored_count(store, workspace, context))
+            return jsonify(ok=True, recording_id=active['id'], status="collecting", run_id=run_id, scored_count=_kv_server_scored_count(store, workspace, context))
         with TEAM_DATA_LOCK:
             course = deepcopy(_active_session_for_workspace(TEAM_DATA, workspace))
         if course and course.get('status') == 'active' and str(course.get('circuit_id')) == context['circuit_id'] and course.get('recorder_id'):
             # The ongoing Session Course recorder is already the live data source.
-            return jsonify(ok=True, recording_id=course['recorder_id'], status="session_recorder", scored_count=_kv_server_scored_count(store, workspace, context))
+            return jsonify(ok=True, recording_id=course['recorder_id'], status="session_recorder", run_id=run_id, scored_count=_kv_server_scored_count(store, workspace, context))
         try:
             recording = manager.create(_kv_tracker_name(workspace, run_id), context['circuit_id'])
         except ValueError:
@@ -3257,7 +3257,7 @@ def velocity_start_kv_tracking():
             if not active:
                 raise
             recording = active
-        return jsonify(ok=True, recording_id=recording['id'], status="collecting", scored_count=_kv_server_scored_count(store, workspace, context))
+        return jsonify(ok=True, recording_id=recording['id'], status="collecting", run_id=run_id, scored_count=_kv_server_scored_count(store, workspace, context))
     except Exception as exc:
         app.logger.exception("Activation collecte KV")
         return jsonify(ok=False, error="Collecte des notes KV indisponible", detail=str(exc)), 503

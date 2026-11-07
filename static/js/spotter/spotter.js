@@ -551,6 +551,25 @@ let spotterRegistryUpdatedAt=0;
 let spotterRegistryWriteInFlight=false;
 let spotterRegistryLoading=null;
 let spotterRegistrySortMode='default';
+// V1854: SQL registry availability and KV collection are independent states.
+let spotterRegistrySyncState='connecting';
+let spotterRegistrySyncLastSuccess=0;
+let spotterRegistrySyncFailures=0;
+let spotterRegistryNextRetryAt=0;
+let spotterKartCommandBusy=false;
+function spotterRegistrySetSyncState(state){
+ spotterRegistrySyncState=state;
+ if(state==='online'){
+  spotterRegistrySyncLastSuccess=Date.now();spotterRegistrySyncFailures=0;spotterRegistryNextRetryAt=0;
+ }else if(state==='offline'){
+  spotterRegistrySyncFailures+=1;
+  spotterRegistryNextRetryAt=Date.now()+Math.min(30000,1000*Math.pow(2,Math.min(5,spotterRegistrySyncFailures)));
+ }
+ const badge=(typeof document!=='undefined'&&typeof document.querySelector==='function')?document.querySelector('[data-spotter-registry-sync]'):null;
+ if(badge){badge.textContent=state==='online'?'REGISTRE SYNCHRONISÉ':state==='offline'?'REGISTRE EN RECONNEXION':'SYNCHRONISATION…';badge.style.color=state==='offline'?'#ffa96e':'#83e0b0';}
+}
+function spotterRegistryIsSynced(){return spotterRegistryReady&&spotterRegistrySyncState==='online'}
+
 // When a new course was explicitly created, ignore in-flight GETs from its predecessor.
 let spotterRegistryExplicitRunGuard='';
 function spotterRegistryBackupLocal(previousId){
@@ -614,6 +633,7 @@ async function spotterPullRegistry({forceServer=false}={}){
     if(live){live.kart_scoring_epoch=remoteRun;live.kart_setup_mode=payload.kart_mode||null;}
    }
    spotterRegistryReady=true;
+   spotterRegistrySetSyncState('online');
    if(!spotterRegistryPushTimer&&!spotterRegistryWriteInFlight){
     spotterRegistryUpdatedAt=Number(payload.registry_updated_at_ms)||0;
     const incoming=payload.registry;
@@ -635,6 +655,7 @@ async function spotterPullRegistry({forceServer=false}={}){
    return true;
   }catch(error){
    // Network failures do not invalidate the last reliable registry.
+   spotterRegistrySetSyncState('offline');
    console.warn('[Spotter] Registre KV non actualisé, dernier état conservé',error);
    return false;
   }finally{spotterRegistryLoading=null}
@@ -862,45 +883,50 @@ function spotterRegistrySeedCurrent(){
  [...(spotterState.queue||[]),...(spotterState.maintenance||[])].forEach(item=>{if(item?.kv)spotterRegistryEnsure(item.kv)});
  spotterScheduleRegistryPush();
 }
+// V1854: only the server decides which current course/registry receives notes.
+// The local SQL snapshot is a view, never a prerequisite for issuing a KV command.
+// No previous KV trace is marked interrupted by stopping a recorder.
 async function spotterSetKartTracking(enabled){
- const next=Boolean(enabled),alreadyActive=Boolean(spotterState.kartTrackingEnabled);if(next===alreadyActive&&!next)return;
- if(next){
-  // V1852: RELANCER LES NOTES must not revalidate a registry that is
-  // already being tracked. The KV server API resolves the authoritative
-  // current run itself; this action never writes or resets the KV registry.
-  // A transient second GET or a stale PWA run must not block restarting scores.
-  if(!alreadyActive&&!await spotterPullRegistry()){
-   alert('Registre KV serveur momentanément inaccessible : le suivi n’a pas été modifié. Réessaie après actualisation.');
-   return;
+ const next=Boolean(enabled);
+ if(spotterKartCommandBusy)return;
+ if(!next&&!spotterState.kartTrackingEnabled)return;
+ spotterKartCommandBusy=true;
+ spotterRegistryCourseMessage(next?'Commande envoyée au serveur KV…':'Arrêt de la collecte demandé…');
+ try{
+  const response=await fetch('/api/spotter-kv-tracking',{
+   method:next?'POST':'DELETE',headers:{'Content-Type':'application/json'},
+   ...(next?{body:'{}'}:{})
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.ok)throw new Error(result.detail||result.error||`HTTP ${response.status}`);
+  if(next){
+   // Do not silently switch physical identities: the authoritative server run
+   // is loaded separately, and old in-flight registry pushes remain guarded.
+   spotterState.kartTrackingEnabled=true;
+   const count=Number.isFinite(Number(result.scored_count))?Number(result.scored_count):0;
+   spotterKartScoringMessage=`Collecte serveur ${result.status==='session_recorder'?'via Session Course':'active'} · ${count} note(s) KV calculée(s).`;
+   spotterRegistryCourseMessage(`Collecte confirmée côté serveur · ${count} note(s) KV. Synchronisation du registre en cours.`);
+  }else{
+   spotterState.kartTrackingEnabled=false;
+   spotterKartScoringMessage='Collecte KV arrêtée. Identités et historique conservés.';
+   spotterRegistryCourseMessage('Collecte arrêtée ; aucune trace KV effacée ni interrompue.');
   }
-  let result;
-  try{
-   const response=await fetch('/api/spotter-kv-tracking',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-   result=await response.json();
-   if(!response.ok||!result.ok)throw new Error(result.detail||result.error||`HTTP ${response.status}`);
-  }catch(error){alert(`Impossible de lancer la collecte des notes KV : ${error.message}`);return;}
-  if(alreadyActive){
-   const resultStatus=String(result.status||'');
-   const diagnostic=resultStatus==='session_recorder'
-    ? 'Collecte KV liée à la Session Course active.'
-    : resultStatus==='collecting'?'Collecte KV active côté serveur.':'Commande reçue par le serveur.';
-   const counted=Number.isFinite(Number(result.scored_count))?` Notes KV disponibles : ${Number(result.scored_count)}.`:'';
-   spotterKartScoringMessage=`${diagnostic}${counted} Les notes kart ne sont publiées que lorsque les tours live sont attribuables et exploitables.`;
-   void spotterPullRegistry({forceServer:true}).then(()=>spotterRefreshKartRegistry({force:true}));
-   spotterRefreshKartRegistry({force:true});return;
-  }
-  spotterState.kartTrackingEnabled=true;spotterRegistrySeedCurrent();spotterLogMovement('kart_tracking_started')
- }
- else{
-  try{
-   const response=await fetch('/api/spotter-kv-tracking',{method:'DELETE'});
-   const result=await response.json();
-   if(!response.ok||!result.ok)throw new Error(result.detail||result.error||`HTTP ${response.status}`);
-  }catch(error){alert(`Impossible d'arrêter la collecte KV : ${error.message}`);return;}
-  spotterState.kartTrackingEnabled=false;Object.values(spotterState.kartRegistry||{}).forEach(row=>{if(row?.trace==='active'){row.trace='interrupted';row.interruptedAt=Date.now()}});spotterScheduleRegistryPush();spotterLogMovement('kart_tracking_stopped')
- }
- saveSpotterFoundation();await spotterOpenKartRegistry();
+  saveSpotterFoundation();
+  // Reload SQL after confirming the command; a failed GET is not a failed POST.
+  const synced=await spotterPullRegistry({forceServer:true});
+  if(synced&&next)spotterRegistrySeedCurrent();
+  if(!synced)spotterRegistryCourseMessage('Commande acceptée par le serveur. Registre momentanément hors ligne : dernière copie conservée, reconnexion automatique.',false);
+  spotterRefreshKartRegistry({force:true});
+  // Rebuild controls only after the success state is committed, retaining overlay.
+  await spotterOpenKartRegistry();
+  spotterRegistryCourseMessage(!next?'Collecte arrêtée, historiques préservés.':`Collecte KV active · ${Number(result.scored_count)||0} note(s) calculée(s) · ${synced?'registre synchronisé':'registre en reconnexion'}.`);
+ }catch(error){
+  spotterKartScoringMessage=`Commande KV refusée : ${String(error.message||error)}`;
+  spotterRegistryCourseMessage(spotterKartScoringMessage,true);
+  console.error('[Spotter] Commande collecte KV',error);
+ }finally{spotterKartCommandBusy=false}
 }
+
 function spotterRegistryCounts(){const rows=Object.values(spotterState.kartRegistry||{});return {active:rows.filter(row=>row?.trace==='active').length,total:rows.length,live:spotterRegistryLiveRows().length}}
 // V7.2.1810 — Table compacte, tri et rafraîchissement sans perte du défilement global.
 // La NOTE est une évaluation de vitesse ; CHRONO POT./RÉC. restent des durées, sans nouveau calcul.
@@ -1252,13 +1278,14 @@ async function spotterOpenKartRegistry(){
  // Afficher les équipes LIVE immédiatement, sans attendre PostgreSQL ou 8 tours.
  document.getElementById('spotterRegistryOverlay')?.remove();
  const active=Boolean(spotterState.kartTrackingEnabled),counts=spotterRegistryCounts();
- const heading=`<div class="spotter-registry-head"><div><div class="spotter-registry-title">REGISTRE DES KARTS</div><small data-spotter-registry-count>● LIVE · ${counts.live||0} ÉQUIPES · ${counts.active}/${counts.total} KV</small><small class="spotter-registry-live-hint">Équipes Apex visibles immédiatement · — = KV non identifié · * = note provisoire</small></div><div class="spotter-registry-head-tools">${spotterRegistrySortControl()}<button class="spotter-registry-close" type="button" onclick="spotterCloseKartRegistry()" aria-label="Fermer le registre">×</button></div></div>`;
+ const heading=`<div class="spotter-registry-head"><div><div class="spotter-registry-title">REGISTRE DES KARTS</div><small data-spotter-registry-count>● LIVE · ${counts.live||0} ÉQUIPES · ${counts.active}/${counts.total} KV</small><small data-spotter-registry-sync style="display:block;color:#83e0b0;font-size:11px">SYNCHRONISATION…</small><small class="spotter-registry-live-hint">Équipes Apex visibles immédiatement · — = KV non identifié · * = note provisoire</small></div><div class="spotter-registry-head-tools">${spotterRegistrySortControl()}<button class="spotter-registry-close" type="button" onclick="spotterCloseKartRegistry()" aria-label="Fermer le registre">×</button></div></div>`;
  const content=active
   ? `${heading}<div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterSetKartTracking(true)" title="Démarrer ou reprendre la collecte des notes sans Session Course">RELANCER LES NOTES</button><button class="spotter-secondary danger" type="button" onclick="spotterSetKartTracking(false)">ARRÊTER LE SUIVI</button><button class="spotter-primary" type="button" onclick="spotterCloseKartRegistry()">FERMER</button></div>`
   : `<div class="spotter-registry-title">SUIVI KARTS</div><p class="spotter-registry-warning">Le suivi n’est fiable que si chaque échange est compté. Une interruption conserve l’historique connu mais Velocity ne reconstitue jamais une filiation incertaine.</p><div class="spotter-registry-table">${spotterRegistryRowsHtml()}</div><div class="spotter-registry-actions"><button class="spotter-secondary" type="button" onclick="spotterCloseKartRegistry()">ANNULER</button><button class="spotter-primary" type="button" onclick="spotterSetKartTracking(true)">ACTIVER LE SUIVI</button></div>`;
  const scorerInfo=spotterKartScoreDiagnostic();
  document.body.insertAdjacentHTML('beforeend',`<div class="spotter-registry-overlay" id="spotterRegistryOverlay"><div class="spotter-registry-panel wide"><p data-spotter-scoring-diagnostic class="spotter-registry-warning" ${scorerInfo?'':'hidden'}>${spotterEscape(scorerInfo)}</p>${content}</div></div>`);
  void spotterWarmRegistryStats();
+ spotterRegistrySetSyncState(spotterRegistrySyncState);
  void spotterPullRegistry().then(()=>{spotterRefreshKartRegistry({force:true});void spotterRegistrySeedLiveTeams()}).catch(error=>console.warn('[Spotter] Registre live ouvert sans cache SQL',error));
 }
 
@@ -2575,7 +2602,7 @@ function spotterStartScheduledWork(){
  setInterval(spotterRunRegistryCycle,2000);
  setInterval(spotterRunMetricsCycle,2000);
  setInterval(()=>{
-  if(spotterState.kartTrackingEnabled||document.getElementById('spotterRegistryOverlay'))spotterPullRegistry();
+  if((spotterState.kartTrackingEnabled||document.getElementById('spotterRegistryOverlay'))&&Date.now()>=spotterRegistryNextRetryAt)spotterPullRegistry();
  },3000);
 }
 document.addEventListener('DOMContentLoaded',spotterStartScheduledWork);

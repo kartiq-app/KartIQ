@@ -1,3 +1,12 @@
+
+## V7.2.1854 — Orchestration Suivi Karts résiliente (7 novembre 2026)
+
+- Activation et relance KV envoyées directement à `POST /api/spotter-kv-tracking` : une lecture GET momentanément indisponible ne bloque plus la commande. Le serveur reste seul responsable de la détermination du run/circuit et de la création du Recorder.
+- Synchronisation SQL du registre séparée de la collecte : dernier état conservé, statut SYNCHRONISÉ/EN RECONNEXION et relecture avec temporisation exponentielle jusqu'à 30 s en cas de panne.
+- L'arrêt KV stoppe uniquement la collecte dédiée ; les traces physiques KV et leurs historiques ne passent plus automatiquement en TRACE INTERROMPUE. Une interruption de collecte ne prouve pas un changement de kart.
+- Retour visible sur la commande serveur et nombre de notes calculées. Les formules de notation et le live Apex sont inchangés.
+- Tests : 58 Python réussis / 8 ignorés. Les 5 échecs JS historiques de la V1853 restent inchangés. Tests ciblés de POST sans GET et d'arrêt sans destruction des traces passés. Vérification sur Render encore nécessaire.
+
 ## V7.2.1853 — Suivi KV : affichage état réel et commandes simplifiées
 
 Dans le registre Karts, les actions Exporter historique KV, Archives KV et Nouvelle Course KV sont retirées de l’interface, sans supprimer leurs données ni les routes sous-jacentes. RELANCER LES NOTES confirme désormais explicitement la réponse du Recorder côté serveur et le nombre de notes KV existantes : aucune nouvelle note n’est promise si les tours du Recorder sont insuffisants ou non attribuables à un kart physique. Aucune formule KV, aucun mécanisme d’identité KV, aucun traitement des chronos live Apex modifié.
