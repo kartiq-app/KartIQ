@@ -3763,20 +3763,6 @@ def add_quick_change():
     return jsonify(ok=True)
 
 
-@app.post("/api/test-top8-pit-entry")
-def test_top8_pit_entry():
-    if STATE.get("mode") != "endurance":
-        return jsonify(ok=False, error="Alerte Top 8 disponible uniquement en endurance"), 400
-    STATE["generic_alert"] = {
-        "event_id": datetime.now().isoformat(timespec="milliseconds"),
-        "kind": "top8_pit_entry",
-        "title": "🚨 ALERTE",
-        "team": "TEAM ALPHA",
-        "position": 5,
-    }
-    return jsonify(ok=True)
-
-
 @app.post("/api/pop-quick-change")
 def pop_quick_change():
     if STATE["quick_change"]:

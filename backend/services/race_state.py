@@ -659,19 +659,6 @@ class RaceStateService:
             self.state["current_lap"] = 0
             self.state["apex_laps_remaining"] = "—"
 
-        for event in interpreted_events or []:
-            if event.get("type") != "pit_in":
-                continue
-            row_id = event.get("row")
-            entrant = next((d for d in live_drivers if d.get("apex_row") == row_id), None)
-            if self.state.get("mode") == "endurance" and entrant and isinstance(entrant.get("pos"), int) and entrant["pos"] <= 8:
-                self.state["generic_alert"] = {
-                    "event_id": event.get("at") or datetime.now().isoformat(timespec="milliseconds"),
-                    "kind": "top8_pit_entry",
-                    "title": "🚨 ALERTE",
-                    "team": entrant["driver"],
-                    "position": entrant["pos"],
-                }
 
 
     def payload(self):

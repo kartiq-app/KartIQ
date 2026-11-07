@@ -2320,9 +2320,23 @@ function spotterDisplayPotential(kv){const value=spotterKartPotential(kv);return
 function spotterQueueColorClass(item){const n=spotterKartPotential(item?.kv);return n===null?'score-unknown':n>=98?'score-gold':n>=90?'score-green':n>=80?'score-orange':'score-red'}
 function spotterQueueCard(item,visualState='next'){
  const score=spotterDisplayPotential(item.kv);
- if(item.status==='reserved')return `<div class="spotter-queue-card reserved spotter-draggable ${item.estimated?'estimated':''}" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart attribué" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.reservedTeam}))}</span><strong>${spotterEscape(spotterDisplayName(item.reservedTeam))}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div><div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div></div>`;
+ if(item.status==='reserved')return `<div class="spotter-queue-card reserved spotter-draggable ${item.estimated?'estimated':''}" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart attribué" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.reservedTeam}))}</span><strong>${spotterEscape(spotterDisplayName(item.reservedTeam))}</strong><small>${spotterEscape(spotterOriginLabel(item))}</small><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div>${spotterPitTimerMarkup(item,item.pitInAt)}</div>`;
  const waiting=visualState==='waiting';
  return `<div class="spotter-queue-card available ${waiting?'waiting ':''}${spotterQueueColorClass(item)} spotter-draggable" data-spotter-queue-kv="${spotterEscape(item.kv)}" data-spotter-queue-card-id="${spotterEscape(item.cardId||'')}" role="button" aria-label="Maintenir pour déplacer le kart" onpointerdown="spotterStartDrag(event,'${spotterEscapeJs(item.cardId||'')}','queue')"><span class="spotter-team-number">${spotterEscape(spotterTeamNumber({team:item.lastTeam}))}</span><strong>${spotterEscape(spotterOriginLabel(item))}</strong><div class="spotter-card-stats"><span class="spotter-score">${score}</span><span class="spotter-kv-value">${spotterEscape(item.kv)}</span></div></div>`;
+}
+function spotterPitTimerForItem(item){
+ // Utiliser d'abord le compteur PIT officiel de l'equipe, pas l'heure de detection locale.
+ const team=item?.reservedTeam||item?.team||item?.lastTeam;
+ const driver=spotterFindDriver(team);
+ const clock=typeof window.velocityPitClockForDriver==='function'?window.velocityPitClockForDriver(driver):null;
+ return clock?.text||null;
+}
+function spotterPitTimerMarkup(item,start){
+ const local=spotterFormatDuration(Date.now()-Number(start||Date.now()));
+ const official=spotterPitTimerForItem(item);
+ // En l'absence de compteur officiel, garder l'estimation mais la signaler.
+ const text=official||local;
+ return `<div class="spotter-pit-time" data-spotter-pit-start="${Number(start||Date.now())}" data-spotter-pit-team="${spotterEscape(item?.reservedTeam||item?.team||item?.lastTeam||'')}" ${official?'':'title="Estimation locale : attente des donnees Apex"'}>${text}</div>`;
 }
 function spotterFormatDuration(ms){const total=Math.max(0,Math.floor(Number(ms||0)/1000));const minutes=Math.floor(total/60);const seconds=total%60;return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`}
 function spotterTeamNumber(item){
@@ -2333,7 +2347,13 @@ function spotterTeamNumber(item){
  const match=String(item?.team||item?.name||'').trim().match(/^(?:TEAM|ÉQUIPE)?\s*#?([0-9]{1,4})\b/i);
  return match?match[1]:'—';
 }
-function updateSpotterLiveTimers(){document.querySelectorAll('[data-spotter-pit-start]').forEach(node=>{node.textContent=spotterFormatDuration(Date.now()-Number(node.dataset.spotterPitStart||Date.now()))})}
+function updateSpotterLiveTimers(){document.querySelectorAll('[data-spotter-pit-start]').forEach(node=>{
+ const driver=spotterFindDriver(node.dataset.spotterPitTeam||'');
+ const official=typeof window.velocityPitClockForDriver==='function'?window.velocityPitClockForDriver(driver):null;
+ node.textContent=official?.text||spotterFormatDuration(Date.now()-Number(node.dataset.spotterPitStart||Date.now()));
+ node.classList.toggle('spotter-pit-unsynced',!official||!official.fresh);
+ node.title=!official?'Estimation locale : pas de compteur Apex':!official.fresh?'Dernier compteur Apex connu (connexion a verifier)':'Synchronise avec Apex';
+})}
 function spotterIncomingCard(item){
  const selection=spotterState.incomingQueueSelections[item.id];
  const selected=Number(selection)||0;
@@ -2352,7 +2372,7 @@ function spotterIncomingCard(item){
    <span class="spotter-score">${spotterDisplayPotential(item.returnedKv)}</span>
    
    <span class="spotter-kv-value">${spotterEscape(item.returnedKv||'—')}</span>
-   <div class="spotter-pit-time" data-spotter-pit-start="${Number(item.pitInAt||Date.now())}">${spotterFormatDuration(Date.now()-Number(item.pitInAt||Date.now()))}</div>
+   ${spotterPitTimerMarkup(item,item.pitInAt)}
   </div>
   <div class="spotter-incoming-control">
    <div class="spotter-file-choices">${queueButtons}</div>

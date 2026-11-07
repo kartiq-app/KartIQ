@@ -1,3 +1,12 @@
+## V7.2.1859 — Synchronisation des chronometres PIT et suppression des alertes Top 8
+
+- Compteurs Spotter des karts entrants/reserves recales sur le compteur Apex `otr|to` / `otr|*in` en direct, sans appel reseau supplementaire.
+- Focus Endurance utilise la meme reference temporielle pour les secondes affichees au PIT IN. La duree officielle du PIT OUT reste exclusivement issue de l historique Apex.
+- Prise en compte du schema GRID courant (colonne `otr` mobile) et isolation par circuit/ligne Apex.
+- Si le compteur n est pas frais, signalisation visuelle ; pas de millisecondes inventees.
+- Suppression des popups Top 8/bon kart aux stands de la generation serveur, de l interface Analyzer et des outils de test. Les autres alertes ne sont pas modifiees.
+- Aucun changement du live, du decodage du classement, du moteur KV ou des scores de relais.
+
 ## V7.2.1858 — Correction quota localStorage Spotter
 
 - Diagnostic établi : `localStorage.setItem(velocity_spotter_v7_foundation)` bloque `LANCER LE SPOTTER` lorsque le quota navigateur est atteint.

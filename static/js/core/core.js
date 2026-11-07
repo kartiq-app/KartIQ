@@ -378,8 +378,75 @@ function velocityApexMapEntryPhase(entry,at=Date.now()){
 }
 function resetVelocityApexMap(circuitId=null){
  window.velocityApexMap.rows.clear();window.velocityApexMap.lastEventAt=0;window.velocityApexMap.noLive=true;window.velocityApexMap.circuitId=circuitId;
- window.velocityApexMap.schema=new Map();window.velocityApexMap.labels=new Map();
+ window.velocityApexMap.schema=new Map();window.velocityApexMap.labels=new Map();velocityPitClockSamples.clear();
 }
+// V7.2.1859 — Horloge PIT purement visuelle, directement recalée sur Apex.
+// Ne modifie ni le flux live, ni les scores KV, ni les chronos officiels.
+const velocityPitClockSamples=new Map();
+const VELOCITY_PIT_CLOCK_MAX_AGE_MS=2500;
+function velocityPitClockSeconds(raw){
+ const value=String(raw??'').trim().replace(',','.').replace(/\.$/,'');
+ if(!/^\d+(?::\d{1,2}){0,2}(?:\.\d{1,3})?$/.test(value))return null;
+ const parts=value.split(':');if(parts.length>1&&Number(parts.at(-1))>=60)return null;
+ if(parts.length===3&&Number(parts[1])>=60)return null;
+ const nums=parts.map(Number);const seconds=nums.reduce((total,item)=>total*60+item,0);
+ return Number.isFinite(seconds)&&seconds>=0?seconds:null;
+}
+function velocityPitClockFormat(seconds){
+ const whole=Math.max(0,Math.floor(seconds));return `${String(Math.floor(whole/60)).padStart(2,'0')}:${String(whole%60).padStart(2,'0')}`;
+}
+function velocityPitClockUpdate(row,raw,{circuitId=state?.circuit_id,receivedAt=Date.now(),source='apex'}={}){
+ const id=Number(row),seconds=velocityPitClockSeconds(raw);
+ if(!Number.isFinite(id)||seconds===null||!circuitId)return false;
+ const existing=velocityPitClockSamples.get(id);
+ if(existing?.circuitId===circuitId&&seconds<existing.seconds&&receivedAt-existing.at<VELOCITY_PIT_CLOCK_MAX_AGE_MS){
+  // Une reponse serveur plus ancienne ne doit jamais faire reculer un PIT actif.
+  if(source==='state')return true;
+ }
+ if(existing?.circuitId===circuitId&&source==='state'&&existing.source==='apex'&&receivedAt-existing.at<VELOCITY_PIT_CLOCK_MAX_AGE_MS)return true;
+ // Un polling d'etat sans changement de valeur ne doit pas rafraichir artificiellement l'horodatage.
+ if(existing?.circuitId===circuitId&&source==='state'&&existing.source==='state'&&existing.seconds===seconds)return true;
+ velocityPitClockSamples.set(id,{seconds,at:receivedAt,circuitId,source});return true;
+}
+function velocityPitClockForDriver(driver){
+ if(!driver||String(driver.status||'').toLowerCase()!=='pit')return null;
+ const row=Number(driver.apex_row),sample=velocityPitClockSamples.get(row),circuitId=state?.circuit_id;
+ if(sample?.circuitId===circuitId){
+  const age=Math.max(0,Date.now()-sample.at);
+  if(age<=VELOCITY_PIT_CLOCK_MAX_AGE_MS){
+   // Les trames Apex quantifient les secondes. Progresser uniquement les secondes entieres,
+   // sans inventer de millisecondes ni depasser la fenetre de fraicheur.
+   return {text:velocityPitClockFormat(sample.seconds+Math.floor(age/1000)),fresh:true,source:sample.source};
+  }
+  return {text:velocityPitClockFormat(sample.seconds),fresh:false,source:sample.source};
+ }
+ const fallback=velocityPitClockSeconds(driver.pit_timer);
+ if(fallback!==null)return {text:velocityPitClockFormat(fallback),fresh:false,source:'state-stale'};
+ return null;
+}
+function velocityPitClockIngestFrame(frame,circuitId){
+ const schema=window.velocityApexMap?.schema;
+ if(!schema?.size||circuitId!==state?.circuit_id)return;
+ const cols=new Set([...schema].filter(([,type])=>['otr','ontrack'].includes(String(type||'').toLowerCase())).map(([col])=>Number(col)));
+ if(!cols.size)return;
+ const re=/r(\d+)c(\d+)\|([^|\s@]*)\|([^|\s@<]+)/g;
+ for(const match of String(frame||'').matchAll(re)){
+  const row=Number(match[1]),col=Number(match[2]);if(!cols.has(col))continue;
+  const code=String(match[3]||'').toLowerCase();
+  if(code==='to'||code==='*in')velocityPitClockUpdate(row,match[4],{circuitId,source:'apex'});
+  else if(code==='in')velocityPitClockSamples.delete(row);
+ }
+}
+function velocityPitClockIngestState(drivers){
+ for(const driver of drivers||[]){
+  const row=Number(driver?.apex_row);if(!Number.isFinite(row))continue;
+  if(String(driver?.status||'').toLowerCase()==='pit')velocityPitClockUpdate(row,driver.pit_timer,{source:'state'});
+  else velocityPitClockSamples.delete(row);
+ }
+}
+window.velocityPitClockForDriver=velocityPitClockForDriver;
+window.velocityPitClockIngestState=velocityPitClockIngestState;
+window.velocityPitClockIngestFrame=velocityPitClockIngestFrame;
 function velocityApexSectorCellToMs(raw){
  const text=String(raw??'').trim().replace(',','.');if(!text)return null;
  if(/^\d+(?::\d{1,2})?\.\d{1,3}$/.test(text)&&text.includes(':')){
@@ -804,6 +871,7 @@ function connectApexBrowser(force=false){
   // à l'autre. Le GRID courant reconstruit donc le mapping data-type -> cX
   // avant toute lecture des cellules S1/S2/S3.
   ingestApexGridSchema(frame,circuit.id);
+  velocityPitClockIngestFrame(frame,circuit.id);
   ingestApexSectorCellUpdates(frame,circuit.id);
   ingestApexMapEvents(frame,circuit.id);
   try{

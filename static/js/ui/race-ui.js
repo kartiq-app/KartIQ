@@ -249,6 +249,7 @@ function render(){
  const circuit=state.circuits.find(c=>c.id===state.circuit_id);if(circuitNameElement)circuitNameElement.textContent=circuit?.name||'Aucun circuit';connection.textContent=state.connection;const live=state.live||{};liveDiagStatus.textContent=(live.status||'idle').toUpperCase();liveDiagMessages.textContent=live.messages||0;liveDiagParsed.textContent=live.parsed_updates||0;liveDiagLast.textContent=live.last_message_at?live.last_message_at.slice(11,19):'—';liveDiagPreview.textContent=live.last_frame_preview||'En attente…';liveStatusDot.classList.toggle('connected',['connected','receiving'].includes(live.status));
  const newCircuitSignature=state.circuits.map(c=>c.id+'|'+c.name).join('§');if(newCircuitSignature!==circuitSignature){circuitSignature=newCircuitSignature;circuitSelectElement.innerHTML='<option value="" selected disabled>Sélectionnez votre circuit</option>'+state.circuits.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}if(circuitSelectElement){const displayedCircuit=circuitChangeInProgress&&pendingCircuitId?pendingCircuitId:(state.circuit_id||'');if(circuitSelectElement.value!==displayedCircuit)circuitSelectElement.value=displayedCircuit;circuitSelectElement.disabled=!!circuitChangeInProgress}
  const circuitReady=Boolean(state.circuit_id);document.querySelectorAll('[data-home-mode]').forEach(card=>{card.classList.toggle('mode-locked',!circuitReady);card.setAttribute('aria-disabled',String(!circuitReady))});
+ if(typeof window.velocityPitClockIngestState==='function')window.velocityPitClockIngestState(state.drivers);
  const performanceRole=velocityPerformanceSessionRole();
  if(velocityRenderRoleOnly(performanceRole))return;
  syncRankingLapAnimations();
@@ -271,7 +272,7 @@ function render(){
  quickTable.innerHTML=state.quick_change.map(q=>{const cls=q.kart_delta.startsWith('-')?'delta-good':q.kart_delta.startsWith('+')?'delta-bad':'';return `<tr><td class="pos">${q.queue}</td><td>${q.pit_time}</td><td><b>${q.pace_rank}</b></td><td>${q.previous_team}</td><td>${q.kart}</td><td>${q.avg5}</td><td class="${cls}">${q.kart_delta}</td></tr>`}).join('');
  driverSelect.innerHTML=state.drivers.map(d=>`<option ${d.driver===state.followed_driver?'selected':''}>${d.driver}</option>`).join('');
  if(state.qualif_crossing&&state.qualif_crossing.event_id!==lastCrossEvent){lastCrossEvent=state.qualif_crossing.event_id;const isBest=Boolean(state.qualif_crossing.is_session_best);crossPos.textContent='P'+state.qualif_crossing.position;crossBest.classList.toggle('show',isBest);crossDelta.textContent=state.qualif_crossing.delta;crossDelta.classList.toggle('delta-first',isBest);crossDelta.classList.toggle('delta-behind',!isBest);crossReference.textContent=state.qualif_crossing.reference_driver||'—';crossingOverlay.classList.add('show');clearTimeout(crossTimer);crossTimer=setTimeout(async()=>{crossingOverlay.classList.remove('show');await api('/api/clear-crossing')},6000)}
- if(currentMode!=='analyzer')top8PitOverlay.classList.remove('show');if(state.generic_alert&&state.generic_alert.event_id!==lastGenericEvent){lastGenericEvent=state.generic_alert.event_id;if(state.generic_alert.kind==='top8_pit_entry'&&currentMode==='analyzer'){top8AlertTeam.textContent=state.generic_alert.team||'—';top8AlertPosition.textContent='P'+(state.generic_alert.position||'—')+' / Top 8';top8PitOverlay.classList.add('show')}else if(state.generic_alert.kind!=='top8_pit_entry'){alertTitle.textContent=state.generic_alert.title;alertLine1.textContent=state.generic_alert.line1;alertLine2.textContent=state.generic_alert.line2;genericOverlay.classList.add('show')}}
+ if(state.generic_alert&&state.generic_alert.event_id!==lastGenericEvent){lastGenericEvent=state.generic_alert.event_id;if(state.generic_alert.kind!=='top8_pit_entry'){alertTitle.textContent=state.generic_alert.title;alertLine1.textContent=state.generic_alert.line1;alertLine2.textContent=state.generic_alert.line2;genericOverlay.classList.add('show')}}
  renderQualificationFocus();
  if(typeof renderAnalyzer==='function'&&(!VELOCITY_MOBILE_4G||currentMode==='analyzer'))renderAnalyzer();
 }
@@ -312,7 +313,7 @@ async function changeCircuit(){
   lastGenericEvent=null;
   crossingOverlay?.classList.remove('show');
   genericOverlay?.classList.remove('show');
-  top8PitOverlay?.classList.remove('show');
+  
   remainingCountdownMs=null;
   remainingCountdownPerfAt=0;
   remainingCountdownDirectSyncAt=0;
@@ -331,7 +332,7 @@ async function changeCircuit(){
   if(circuitSelectElement)circuitSelectElement.disabled=false;
   render();
  }
-}function followSelected(){api('/api/follow',{driver:driverSelect.value})}function testCrossing(){api('/api/test-crossing',{lap:lapValue.value})}function addPenalty(){api('/api/add-penalty',{driver:driverSelect.value,penalty:penaltyValue.value})}function moveDriver(){api('/api/move',{driver:driverSelect.value,pos:movePos.value})}function addQuickChange(){api('/api/add-quick-change',{previous_team:qcTeam.value,pace_rank:qcRank.value,kart:qcKart.value,avg5:qcAvg.value,kart_delta:'--'})}function popQuickChange(){api('/api/pop-quick-change')}function testTop8PitEntry(){api('/api/test-top8-pit-entry')}function clearAlert(){genericOverlay.classList.remove('show');api('/api/clear-alert')}function clearTop8Alert(){top8PitOverlay.classList.remove('show');api('/api/clear-alert')}
+}function followSelected(){api('/api/follow',{driver:driverSelect.value})}function testCrossing(){api('/api/test-crossing',{lap:lapValue.value})}function addPenalty(){api('/api/add-penalty',{driver:driverSelect.value,penalty:penaltyValue.value})}function moveDriver(){api('/api/move',{driver:driverSelect.value,pos:movePos.value})}function addQuickChange(){api('/api/add-quick-change',{previous_team:qcTeam.value,pace_rank:qcRank.value,kart:qcKart.value,avg5:qcAvg.value,kart_delta:'--'})}function popQuickChange(){api('/api/pop-quick-change')}function clearAlert(){genericOverlay.classList.remove('show');api('/api/clear-alert')}
 document.getElementById('iphoneFrame').addEventListener('load',resetPreviewViewport);
 document.getElementById('iphonePreview').addEventListener('click',e=>{if(e.target.id==='iphonePreview')toggleIphonePreview(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('sprintFocus')?.classList.contains('show'))closeSprintFocus();else if(document.getElementById('qualificationFocus')?.classList.contains('show'))closeQualificationFocus();else toggleIphonePreview(false)}});
 
