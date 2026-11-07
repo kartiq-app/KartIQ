@@ -131,11 +131,19 @@ def apply_recorder_scores(store, recording_id, teams):
         prefix = 'KV_TRACK_V1851:'
         name = str((rec or {}).get('name') or '')
         active_ids = {str(r.get('id')) for r in store.active_recordings()}
-        if not name.startswith(prefix) or str(recording_id) not in active_ids:
-            return 0
-        identity = name[len(prefix):]
-        if ':' not in identity:return 0
-        workspace,dedicated_run_id = identity.rsplit(':',1)
+        if str(recording_id) not in active_ids:return 0
+        if name.startswith(prefix):
+            identity=name[len(prefix):]
+            if ':' not in identity:return 0
+            workspace,dedicated_run_id=identity.rsplit(':',1)
+        else:
+            # A user explicitly activated Karts and bound this live recorder
+            # to one workspace/run. The separate virtual-ranking engine has been removed.
+            bound=store._execute("SELECT workspace_id,run_id,circuit_id FROM velocity_kv_recorder_bindings WHERE recording_id=?",
+                (str(recording_id),),fetchone=True)
+            if not bound or str(bound['circuit_id'])!=str(rec.get('circuit_id') or ''):return 0
+            workspace=str(bound['workspace_id'])
+            dedicated_run_id=str(bound['run_id'])
         # Sessionless registry context has no Course session ID. Never create a
         # different run while scoring; read the current run by its real context.
         run_row = store._execute("SELECT circuit_id,session_id,session_title FROM velocity_spotter_registry_runs WHERE workspace_id=? AND run_id=?",

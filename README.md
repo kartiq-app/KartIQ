@@ -1,4 +1,6 @@
-## V7.2.1875 — Note relais KV provisoire à partir de 2 tours propres
+V7.2.1877 — Suppression complète du classement virtuel VVCE. Collecte KV via Analyzer > Karts, sans VVCE; réutilisation d’un Recorder de Session Course si actif. Redémarrage Render : arrêt des anciens recorders VVCE, sans supprimer les archives SQL.
+
+## V7.2.1876 — Note relais KV provisoire à partir de 2 tours propres
 - Le moteur KV côté serveur exige désormais deux tours valides attribués au même relais avant de publier un rythme récent provisoire.
 - Le potentiel kart qualifié conserve ses exigences de fenêtre >= 8 tours et la formule de score existante.
 - L’onglet Analyzer Karts explicite le seuil et distingue collecte inactive, attente de tours et notes disponibles.

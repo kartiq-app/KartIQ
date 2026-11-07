@@ -1,3 +1,16 @@
+## V7.2.1877 — Suppression du classement virtuel, priorité collecte KV
+- Retrait du moteur VVCE serveur, du worker de calcul, des routes API et de son interface Analyzer.
+- Anciens Recorders VVCE explicitement arrêtés lors du redémarrage Render. Pas d’effacement des données historiques SQL.
+- Collecte KV V1876 accessible par l’onglet Karts, indépendante de VVCE.
+- LIVE Apex, Focus Endurance, Spotter et les formules KV inchangés.
+
+## V7.2.1876 — Karts : activation de la collecte KV à l’ouverture
+- Déclenchement explicite par onglet Karts, sans Session Course et sans mode kart requis.
+- Réutilisation d’un Recorder VVCE/Session déjà actif sur le même circuit et workspace, sans deuxième connexion Apex.
+- Liaison SQL entre collecte et identité de run KV; invalidation automatique par changement de run.
+- Traitement KV dans le thread secondaire des scores et non dans le live Apex.
+- Correction du statut Collecte KV inactive et maintien des seuils de deux/huit tours.
+
 ## V7.2.1875 — Note relais KV provisoire à partir de 2 tours propres
 - Le moteur KV côté serveur exige désormais deux tours valides attribués au même relais avant de publier un rythme récent provisoire.
 - Le potentiel kart qualifié conserve ses exigences de fenêtre >= 8 tours et la formule de score existante.

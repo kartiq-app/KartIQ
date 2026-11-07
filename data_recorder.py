@@ -435,6 +435,11 @@ class RecorderStore:
                 registry_json TEXT NOT NULL, started_at_ms BIGINT NOT NULL,
                 updated_at_ms BIGINT NOT NULL
             )""",
+            """CREATE TABLE IF NOT EXISTS velocity_kv_recorder_bindings (
+                workspace_id TEXT PRIMARY KEY, run_id TEXT NOT NULL,
+                circuit_id TEXT NOT NULL, recording_id TEXT NOT NULL,
+                updated_at_ms BIGINT NOT NULL
+            )""",
             """CREATE TABLE IF NOT EXISTS velocity_kart_scoring_scope (
                 workspace_id TEXT PRIMARY KEY, run_id TEXT NOT NULL,
                 mode TEXT NOT NULL, updated_at_ms BIGINT NOT NULL
@@ -1530,8 +1535,7 @@ class DataRecorderWorker:
         self.backfill_total_pits = int(self.metadata.get("backfill_pits") or 0)
         self.backfill_total_sectors = int(self.metadata.get("backfill_sectors") or 0)
         self.backfill_syncing = False
-        if not str(recording.get('name') or '').startswith('VVCE_V1870:'):
-            self._hydrate_history()
+        self._hydrate_history()
 
     def _hydrate_history(self):
         """Conserve le contexte Velocity Score si Render redémarre pendant un REC."""
@@ -1582,8 +1586,7 @@ class DataRecorderWorker:
         if self.thread and self.thread.is_alive():
             return
         self.thread = threading.Thread(target=self._run, name=f"velocity-recorder-{self.id}", daemon=True)
-        vvce_live_only = str(self.recording.get('name') or '').startswith('VVCE_V1870:')
-        self.backfill_thread = None if vvce_live_only else threading.Thread(target=self._backfill_loop, name=f"velocity-recorder-backfill-{self.id}", daemon=True)
+        self.backfill_thread = threading.Thread(target=self._backfill_loop, name=f"velocity-recorder-backfill-{self.id}", daemon=True)
         self.score_thread = threading.Thread(target=self._score_loop, name=f"velocity-recorder-score-{self.id}", daemon=True)
         self.lease_thread = threading.Thread(target=self._lease_loop, name=f"velocity-recorder-lease-{self.id}", daemon=True)
         self.lease_thread.start()

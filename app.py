@@ -38,7 +38,6 @@ from backend.logging_tools import ApexLogManager
 from backend.network import local_ip
 from backend.services.race_state import RaceStateService
 from backend.services.relay_score_engine import fetch_and_compute
-from backend.services.vvce_server import VVCERepository, hybrid_live_history_calculate, historical_pit_metrics
 from data_recorder import RecorderStore, RecorderManager
 from spotter_registry_scope import RegistryRuns
 from backend.services.kart_scoring_scope import KartScoringScope
@@ -139,8 +138,16 @@ def _resume_velocity_recorders():
                 TEAM_DATA = restored
                 TEAM_DATA_LAST_DB_HASH = hashlib.sha256(json.dumps(restored, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
         _reap_session_recorders()
+        # V1877: retire all legacy VVCE background jobs without touching KV/Session.
+        # Persist a stop request BEFORE restoring workers after Render restarts.
+        for obsolete in manager.store.active_recordings():
+            if str(obsolete.get('name') or '').startswith(('VVCE_V1870:', 'VVCE_V1872:')):
+                manager.store.request_stop(str(obsolete['id']))
+                try:
+                    manager.stop(str(obsolete['id']))
+                except Exception:
+                    app.logger.warning('Unable to stop obsolete virtual recorder %s', obsolete['id'])
         _get_recorder_manager().resume_active()
-        _resume_vvce_workers()
         threading.Thread(target=_session_recorder_watchdog, name="velocity-session-recorder-budget-guard", daemon=True).start()
     except Exception:
         # L'état est exposé dans Velocity Lab ; pas de crash global de l'application.
@@ -3047,221 +3054,6 @@ def weather():
         return jsonify(ok=False, error=str(exc)), 502
 
 
-# VVCE 1865: read-only projection from an explicitly started server recorder.
-# Never run a database scan, history request, or projection inside /api/state
-# or in the critical Apex frame-processing path.
-VVCE_THREADS_LOCK = threading.RLock()
-VVCE_THREADS = {}
-VVCE_RECORDER_PREFIX = "VVCE_V1872:"
-
-
-def _vvce_scope(workspace, circuit, session_key):
-    return f"{workspace}:vvce-hybrid-v1872:{circuit}:{hashlib.sha256(session_key.encode()).hexdigest()[:16]}"
-
-
-def _vvce_repository():
-    return VVCERepository(_spotter_persistent_store())
-
-
-def _vvce_work(scope, recording_id, expected, circuit, session_key):
-    """Read only the newest LIVE grid snapshot; no full historical scan.
-
-    Recorder snapshots are written every 10s on its own connection. This task
-    has a separate background thread and does not enter Apex frame processing.
-    """
-    try:
-        store = _spotter_persistent_store()
-        repo = VVCERepository(store)
-        while True:
-            latest = repo.read(scope) or {}
-            activated_at = int(latest.get('activatedAt') or 0)
-            if not activated_at or int(time.time()*1000)-activated_at >= VELOCITY_RECORDER_MAX_HOURS*3600000:
-                break
-            rec = store.get_recording(recording_id)
-            if not rec or rec.get('desired_status') == 'stopped' or rec.get('status') in ('stopped', 'error'):
-                break
-            last_message = int(rec.get('last_message_at_ms') or 0)
-            if (last_message and int(time.time()*1000)-last_message > 900000) or (not last_message and int(time.time()*1000)-activated_at > 900000):
-                break
-            try:
-                recent = store._execute("""SELECT received_at_ms,payload_json
-                    FROM velocity_recorder_snapshots WHERE recording_id=?
-                    AND received_at_ms>=? ORDER BY received_at_ms DESC LIMIT 1""",
-                    (recording_id, activated_at), fetchone=True)
-                if not recent:
-                    time.sleep(10)
-                    continue
-                observed_at=int(recent['received_at_ms'])
-                if observed_at <= int(latest.get('sourceAt') or 0):
-                    time.sleep(10)
-                    continue
-                snap = json.loads(recent['payload_json'])
-                if not isinstance(snap, dict) or not isinstance(snap.get('drivers'), list):
-                    raise ValueError('Snapshot LIVE Recorder incomplet.')
-                title = str(snap.get('session_title') or '').strip()
-                # This application keys VVCE by the Apex session title; a
-                # different title must never publish a cross-session grid.
-                if title and title != session_key:
-                    raise ValueError('Titre de session du Recorder différent du LIVE Apex.')
-                # A session ID may differ from the human readable title; only
-                # require equality when an Apex title has been used as key.
-                if title and str(latest.get('sessionTitle') or '') and title != str(latest['sessionTitle']):
-                    raise ValueError('Session Apex changée : photographie initiale invalidée.')
-                current_rows={int(d.get('apex_row') or 0) for d in snap['drivers'] if str(d.get('apex_row') or '').isdigit()}
-                if current_rows != set(int(r) for r in latest.get('expectedRows', expected)):
-                    raise ValueError('Composition de grille différente de la photographie initiale.')
-                initial=latest.get('initial') or {}
-                # A snapshot from this session, not historical rows of a prior
-                # session, is the starting photograph. The same grid format is
-                # used for every subsequent update.
-                # Calibrate at most every 2 minutes (or initially), on this
-                # background worker only. Avoid SQL scans per LIVE update.
-                calibrated_at=int(latest.get('calibratedAt') or 0)
-                cached_calibration=latest.get('calibration')
-                if not isinstance(cached_calibration,list) or observed_at-calibrated_at>=120000:
-                    since_ms=max(activated_at, observed_at-6*3600000)
-                    lap_rows=store._execute("""SELECT row_id,lap_number,lap_seconds
-                        FROM velocity_recorder_laps WHERE recording_id=?
-                        AND received_at_ms>=? ORDER BY received_at_ms DESC LIMIT 6000""",
-                        (recording_id,since_ms),fetchall=True) or []
-                    pit_rows=store._execute("""SELECT row_id,lap_number,event
-                        FROM velocity_recorder_pits WHERE recording_id=?
-                        AND received_at_ms>=? ORDER BY received_at_ms DESC LIMIT 1000""",
-                        (recording_id,since_ms),fetchall=True) or []
-                    cached_calibration=list(historical_pit_metrics(lap_rows,pit_rows))
-                    calibrated_at=observed_at
-                result=hybrid_live_history_calculate(snap['drivers'], [], [], initial,
-                                                      calibration=tuple(cached_calibration))
-                if not initial:
-                    initial={str(d['rowId']):{'lastLap':d['lastLap'],'stops':d['stops']}
-                             for d in result['ranking']}
-                repo.put(scope, {**latest, 'status':'ready','result':result,
-                                 'updatedAt':int(time.time()*1000),'sourceAt':observed_at,
-                                 'initial':initial,'calibration':cached_calibration,'calibratedAt':calibrated_at,
-                                 'sessionTitle':title or latest.get('sessionTitle') or '',
-                                 'note':'LIVE contrôlé + étalonnage historique des arrêts (non certifié).'})
-            except (ValueError, TypeError, KeyError) as exc:
-                prev=repo.read(scope) or latest
-                repo.put(scope, {**prev, 'status':'waiting', 'result':None,
-                                 'reason':str(exc)[:350], 'checkedAt':int(time.time()*1000)})
-            except Exception as exc:
-                app.logger.warning('VVCE incremental snapshot error: %s', exc)
-                prev=repo.read(scope) or latest
-                repo.put(scope, {**prev,'status':'stale' if prev.get('result') else 'waiting',
-                                 'reason':'Snapshot LIVE provisoirement indisponible.',
-                                 'checkedAt':int(time.time()*1000)})
-            time.sleep(10)
-        previous=repo.read(scope) or {}
-        repo.put(scope, {**previous,'status':'stale','reason':'Collecte LIVE terminée ou inactive.',
-                         'checkedAt':int(time.time()*1000)})
-        rec=store.get_recording(recording_id)
-        if rec and str(rec.get('name') or '').startswith(VVCE_RECORDER_PREFIX):
-            try: _get_recorder_manager().stop(recording_id)
-            except Exception: app.logger.warning('VVCE dedicated recorder stop failed')
-    except Exception:
-        app.logger.exception('VVCE worker failed')
-    finally:
-        with VVCE_THREADS_LOCK:
-            VVCE_THREADS.pop(scope, None)
-
-
-def _resume_vvce_workers():
-    """Resume persisted secondary projections after a Render restart."""
-    try:
-        repo = _vvce_repository()
-        for item in repo.active():
-            # Never resurrect an obsolete VVCE (V1870/V1871) calculation
-            # after deployment. Old workspaces stay in SQL for audit only.
-            if ':vvce-hybrid-v1872:' not in str(item.get('scope') or ''):
-                continue
-            rec = _get_recorder_manager().store.get_recording(item.get('recordingId') or '')
-            if not rec or rec.get('desired_status') == 'stopped':
-                continue
-            expected = item.get('expectedRows') or []
-            if expected:
-                _vvce_launch(item['scope'], rec['id'], expected, item['circuit'], item['session'])
-    except Exception:
-        app.logger.exception('VVCE secondary resume failed')
-
-
-def _vvce_launch(scope, recording_id, expected, circuit, session_key):
-    with VVCE_THREADS_LOCK:
-        current = VVCE_THREADS.get(scope)
-        if current and current.is_alive():
-            return
-        thread = threading.Thread(target=_vvce_work,
-            args=(scope, recording_id, expected, circuit, session_key),
-            name='vvce-secondary-'+hashlib.md5(scope.encode()).hexdigest()[:8], daemon=True)
-        VVCE_THREADS[scope] = thread
-        thread.start()
-
-
-@app.post('/api/vvce/start')
-def vvce_start():
-    """Explicit opt-in once; reopen reads cached results without launching history jobs."""
-    if not _velocity_is_authorized():
-        return jsonify(ok=False,error='Accès administrateur requis'),403
-    body=request.get_json(silent=True) or {}
-    circuit=str(body.get('circuit_id') or '').strip()
-    session_key=str(body.get('session_key') or '').strip()[:200]
-    live_session = str(STATE.get('apex_session_id') or STATE.get('apex_session_title') or '').strip()[:200]
-    if not circuit or not session_key or circuit != str(STATE.get('circuit_id') or '') or (live_session and session_key != live_session):
-        return jsonify(ok=False,error='Circuit ou session Apex non synchronisé'),409
-    rows=body.get('drivers') or []
-    expected=sorted({int(d.get('apex_row') or 0) for d in rows if isinstance(d,dict) and str(d.get('apex_row') or '').isdigit() and int(d.get('apex_row'))>0})
-    if len(expected)<2 or len(expected)>120:
-        return jsonify(ok=False,error='Grille Apex insuffisante ou invalide'),400
-    workspace=_current_workspace_id()
-    scope=_vvce_scope(workspace,circuit,session_key)
-    try:
-        manager=_get_recorder_manager()
-        repo=VVCERepository(manager.store)
-        current=repo.read(scope)
-        recording=None
-        if current and current.get('recordingId'):
-            recording=manager.store.get_recording(current['recordingId'])
-            if recording and (recording.get('desired_status')=='stopped' or recording.get('status') in ('stopped','error')):
-                recording=None
-        if not recording:
-            active=[r for r in manager.store.active_recordings() if str(r.get('circuit_id'))==circuit]
-            if active:
-                # Reuse any active session/Lab/KV Recorder. Never create a second
-                # Apex socket and never stop a Recorder owned by another mode.
-                recording=active[0]
-            else:
-                recording=manager.create(VVCE_RECORDER_PREFIX+workspace+':'+session_key[:50],circuit)
-        if not current or current.get('recordingId') != recording['id'] or not current.get('activatedAt'):
-            repo.put(scope, {'status':'waiting','reason':'Initialisation des historiques sur Render',
-                             'recordingId':recording['id'],'circuit':circuit,'session':session_key,
-                             'expectedRows':expected,'activatedAt':int(time.time()*1000),
-                             'initial':{},'updatedAt':0})
-        elif sorted(current.get('expectedRows') or []) != expected:
-            # Changes in team count are only safe for same circuit/session.
-            # Keep a coherent roster in the persisted worker snapshot.
-            repo.put(scope, {**current,'expectedRows':expected})
-        _vvce_launch(scope,recording['id'],expected,circuit,session_key)
-        return jsonify(ok=True,scope=scope,recording_id=recording['id'])
-    except Exception as exc:
-        app.logger.exception('VVCE start failed')
-        return jsonify(ok=False,error=str(exc)[:250]),503
-
-
-@app.get('/api/vvce/status')
-def vvce_status():
-    if not _velocity_is_authorized():
-        return jsonify(ok=False,error='Accès administrateur requis'),403
-    circuit=str(request.args.get('circuit_id') or '')
-    session_key=str(request.args.get('session_key') or '')[:200]
-    if not circuit or not session_key:
-        return jsonify(ok=False,error='Circuit et session requis'),400
-    scope=_vvce_scope(_current_workspace_id(),circuit,session_key)
-    try:
-        item=_vvce_repository().read(scope)
-        return jsonify(ok=True,data=item or {'status':'idle'})
-    except Exception as exc:
-        return jsonify(ok=False,error='Lecture du classement impossible',detail=str(exc)[:160]),503
-
-
 @app.get("/api/state")
 def get_state():
     # Every request uses the latest state. ETag=exact payload bytes, so a 304
@@ -3472,6 +3264,24 @@ def _kv_active_recorder(store, workspace, run_id):
     return next((r for r in store.active_recordings() if r.get("name") == name), None)
 
 
+def _kv_bound_recorder(store, workspace, run_id, circuit_id):
+    """A KV view can share an already running recorder without opening a new Apex socket."""
+    row=store._execute("SELECT recording_id FROM velocity_kv_recorder_bindings WHERE workspace_id=? AND run_id=? AND circuit_id=?",
+        (workspace,run_id,circuit_id),fetchone=True)
+    if not row:return None
+    active={str(r.get('id')):r for r in store.active_recordings()}
+    return active.get(str(row['recording_id']))
+
+
+def _kv_bind_recorder(store, workspace, run_id, circuit_id, recording_id):
+    store._execute("""INSERT INTO velocity_kv_recorder_bindings
+        (workspace_id,run_id,circuit_id,recording_id,updated_at_ms) VALUES(?,?,?,?,?)
+        ON CONFLICT(workspace_id) DO UPDATE SET run_id=excluded.run_id,
+        circuit_id=excluded.circuit_id,recording_id=excluded.recording_id,
+        updated_at_ms=excluded.updated_at_ms""",
+        (workspace,run_id,circuit_id,str(recording_id),int(time.time()*1000)))
+
+
 def _kv_server_scored_count(store, workspace, context):
     """Read-only status; do not trigger notes or modify the KV registry."""
     try:
@@ -3487,52 +3297,58 @@ def _kv_server_scored_count(store, workspace, context):
 
 @app.post("/api/spotter-kv-tracking")
 def velocity_start_kv_tracking():
-    """Explicit KV collection; never launch automatically on visiting a page."""
+    """Activate KV collection on a deliberate Karts-tab click; reuse a live recorder."""
     try:
         workspace, context = _spotter_registry_run_context()
-        if not context.get("circuit_id"):
-            return jsonify(ok=False, error="Sélectionnez d'abord un circuit Apex."), 400
-        manager = _get_recorder_manager()
-        store = manager.store
-        scope = KartScoringScope(store).read(workspace, context)
-        run_id = scope['run_id']
-        active = _kv_active_recorder(store, workspace, run_id)
+        circuit=context.get('circuit_id')
+        if not circuit:
+            return jsonify(ok=False,error="Sélectionnez d'abord un circuit Apex."),400
+        manager=_get_recorder_manager()
+        store=manager.store
+        scope=KartScoringScope(store).read(workspace,context)
+        run_id=scope['run_id']
+        active=_kv_bound_recorder(store,workspace,run_id,circuit)
         if active:
-            return jsonify(ok=True, recording_id=active['id'], status="collecting", run_id=run_id, scored_count=_kv_server_scored_count(store, workspace, context))
+            return jsonify(ok=True,recording_id=active['id'],status='collecting',run_id=run_id,scored_count=_kv_server_scored_count(store,workspace,context))
         with TEAM_DATA_LOCK:
-            course = deepcopy(_active_session_for_workspace(TEAM_DATA, workspace))
-        if course and course.get('status') == 'active' and str(course.get('circuit_id')) == context['circuit_id'] and course.get('recorder_id'):
-            # The ongoing Session Course recorder is already the live data source.
-            return jsonify(ok=True, recording_id=course['recorder_id'], status="session_recorder", run_id=run_id, scored_count=_kv_server_scored_count(store, workspace, context))
-        try:
-            recording = manager.create(_kv_tracker_name(workspace, run_id), context['circuit_id'])
-        except ValueError:
-            # An existing Lab recorder may own this circuit. Do not create a
-            # competing WebSocket collection or silently attach to another run.
-            active = _kv_active_recorder(store, workspace, run_id)
-            if not active:
-                raise
-            recording = active
-        return jsonify(ok=True, recording_id=recording['id'], status="collecting", run_id=run_id, scored_count=_kv_server_scored_count(store, workspace, context))
+            course=deepcopy(_active_session_for_workspace(TEAM_DATA,workspace))
+        if course and course.get('status')=='active' and str(course.get('circuit_id'))==circuit and course.get('recorder_id'):
+            recording=store.get_recording(course['recorder_id'])
+            if recording and str(recording['id']) in {str(r['id']) for r in store.active_recordings()}:
+                _kv_bind_recorder(store,workspace,run_id,circuit,recording['id'])
+                return jsonify(ok=True,recording_id=recording['id'],status='session_recorder',run_id=run_id,scored_count=_kv_server_scored_count(store,workspace,context))
+        existing=[r for r in store.active_recordings() if str(r.get('circuit_id') or '')==circuit]
+        if existing:
+            # Only this workspace/run's own dedicated KV recorder is shareable.
+            # Never borrow a recorder belonging to another workspace.
+            recording=next((r for r in existing if str(r.get('name') or '')==_kv_tracker_name(workspace,run_id)),None)
+            if not recording:
+                return jsonify(ok=False,error='Un Recorder différent utilise déjà ce circuit ; collecte KV non activée.'),409
+        else:
+            recording=manager.create(_kv_tracker_name(workspace,run_id),circuit)
+        _kv_bind_recorder(store,workspace,run_id,circuit,recording['id'])
+        return jsonify(ok=True,recording_id=recording['id'],status='collecting',run_id=run_id,scored_count=_kv_server_scored_count(store,workspace,context))
     except Exception as exc:
-        app.logger.exception("Activation collecte KV")
-        return jsonify(ok=False, error="Collecte des notes KV indisponible", detail=str(exc)), 503
+        app.logger.exception('Activation collecte KV')
+        return jsonify(ok=False,error='Collecte des notes KV indisponible',detail=str(exc)),503
 
 
 @app.delete("/api/spotter-kv-tracking")
 def velocity_stop_kv_tracking():
-    """Stop ONLY the dedicated KV recorder; never stop a Session Course."""
+    """Detach scoring; stop only the dedicated KV recorder, never a Session recorder."""
     try:
-        workspace, context = _spotter_registry_run_context()
-        store = _spotter_persistent_store()
-        scope = KartScoringScope(store).read(workspace, context)
-        active = _kv_active_recorder(store, workspace, scope['run_id'])
-        if active:
-            _get_recorder_manager().stop(active['id'])
-        return jsonify(ok=True, stopped=bool(active))
+        workspace,context=_spotter_registry_run_context()
+        store=_spotter_persistent_store()
+        scope=KartScoringScope(store).read(workspace,context)
+        active=_kv_bound_recorder(store,workspace,scope['run_id'],context['circuit_id'])
+        store._execute('DELETE FROM velocity_kv_recorder_bindings WHERE workspace_id=? AND run_id=?',
+            (workspace,scope['run_id']))
+        dedicated=_kv_active_recorder(store,workspace,scope['run_id'])
+        if dedicated:_get_recorder_manager().stop(dedicated['id'])
+        return jsonify(ok=True,stopped=bool(active))
     except Exception as exc:
-        app.logger.exception("Arrêt collecte KV")
-        return jsonify(ok=False, error="Arrêt de la collecte KV impossible", detail=str(exc)), 503
+        app.logger.exception('Arrêt collecte KV')
+        return jsonify(ok=False,error="Arrêt de la collecte KV impossible",detail=str(exc)),503
 
 
 @app.get("/api/spotter-registry")
@@ -3546,7 +3362,8 @@ def get_spotter_registry():
         with TEAM_DATA_LOCK:
             active_course=_active_session_for_workspace(TEAM_DATA,workspace)
         kv_recorder=_kv_active_recorder(_spotter_persistent_store(),workspace,setup['run_id'])
-        has_source=bool(kv_recorder or (active_course and active_course.get('recorder_id')))
+        bound_recorder=_kv_bound_recorder(_spotter_persistent_store(),workspace,setup['run_id'],context['circuit_id'])
+        has_source=bool(kv_recorder or bound_recorder or (active_course and active_course.get('recorder_id')))
         num_server_scores=sum(1 for row in registry.values() if isinstance(row,dict)
            and (row.get('speed') or {}).get('source')=='server-recorder'
            and (row.get('speed') or {}).get('epoch')==setup['epoch'])

@@ -3030,9 +3030,6 @@ body.velocity-performance-spotter [data-home-mode]{pointer-events:none}
 .velocity-remote-focus-actions .race-ui-btn{white-space:nowrap}
 
 
-.vvce-report-table-wrap{overflow:auto;max-height:280px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;border:1px solid #253241;border-radius:8px;margin-top:8px}.vvce-report-table{min-width:980px;width:100%;font-size:11px}.vvce-report-table th,.vvce-report-table td{white-space:nowrap}.vvce-report-table .vvce-team-cell{min-width:180px;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* VVCE V1870: independent, stable mouse-wheel/touch scrolling. */
-#analyzerVVCEReport .vvce-report-table-wrap{height:min(42vh,420px);min-height:200px;max-height:420px;overflow-y:auto;overflow-x:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;touch-action:pan-x pan-y}#analyzerVVCEReport .vvce-report-table thead th{position:sticky;top:0;z-index:2;background:#182230}#analyzerVVCEReport .vvce-report-table .vvce-team-cell{min-width:190px;max-width:280px}
 
 /* V1873 — Vue KV en lecture seule */
 .analyzer-live-karts-table{min-width:770px;width:100%}
