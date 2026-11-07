@@ -865,7 +865,14 @@ function spotterRegistrySeedCurrent(){
 async function spotterSetKartTracking(enabled){
  const next=Boolean(enabled),alreadyActive=Boolean(spotterState.kartTrackingEnabled);if(next===alreadyActive&&!next)return;
  if(next){
-  if(!await spotterPullRegistry()){alert('Registre KV serveur indisponible : suivi non démarré pour éviter de mélanger les courses.');return;}
+  // V1852: RELANCER LES NOTES must not revalidate a registry that is
+  // already being tracked. The KV server API resolves the authoritative
+  // current run itself; this action never writes or resets the KV registry.
+  // A transient second GET or a stale PWA run must not block restarting scores.
+  if(!alreadyActive&&!await spotterPullRegistry()){
+   alert('Registre KV serveur momentanément inaccessible : le suivi n’a pas été modifié. Réessaie après actualisation.');
+   return;
+  }
   try{
    const response=await fetch('/api/spotter-kv-tracking',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
    const result=await response.json();

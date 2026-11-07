@@ -1,3 +1,7 @@
+## V7.2.1852 — Relance notes KV sans relecture bloquante du registre
+
+Le bouton RELANCER LES NOTES fonctionne quand le suivi est déjà actif, même si un GET du registre est momentanément indisponible. Le serveur sélectionne le registre courant. Ni reset KV, ni formule, ni moteur Apex modifiés. Ne pas changer le préfixe interne KV_TRACK_V1851 utilisé pour retrouver les Recorders démarrés sous V1851.
+
 
 ## V7.2.1851 — Suivi KV volontaire sans Session Course ni mode obligatoire
 
