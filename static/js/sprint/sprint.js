@@ -1,25 +1,25 @@
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);sprintFocusPenaltyInitialized=false;sprintFocusPenaltySeen.clear();sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;void maybeAutoFollowBrice();renderSprintFocus();
+ overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);focusLastLapDeltaReset('sprint');sprintFocusPenaltyInitialized=false;sprintFocusPenaltySeen.clear();sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;void maybeAutoFollowBrice();renderSprintFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)sprintFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeSprintFocus(){
- document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');clearVelocityFocusMemory('sprint');setFocusLandscapeLock(false);
+ focusLastLapDeltaReset('sprint');document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');clearVelocityFocusMemory('sprint');setFocusLandscapeLock(false);
  try{if(sprintFocusWakeLock){await sprintFocusWakeLock.release();sprintFocusWakeLock=null}}catch(e){}
  unlockFocusOrientationForAndroid();
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 async function openEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;void maybeAutoFollowBrice();renderEnduranceFocus();
+ overlay.classList.add('show');document.body.classList.add('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();rememberVelocityFocus('endurance');setFocusLandscapeLock(true);focusLastLapDeltaReset('endurance');endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;void maybeAutoFollowBrice();renderEnduranceFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeEnduranceFocus(){
- document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();clearVelocityFocusMemory('endurance');setFocusLandscapeLock(false);
+ focusLastLapDeltaReset('endurance');document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();clearVelocityFocusMemory('endurance');setFocusLandscapeLock(false);
  // Une reponse PIT historique ne doit pas reactiver l'overlay apres fermeture.
  endurancePitOfficialLookupToken++;
  endurancePitOutPhase='idle';
@@ -85,6 +85,57 @@ function sprintLastLapRanking(driver){
  const liveRank=typeof window.velocityLiveLastLapRanking==='function'?window.velocityLiveLastLapRanking(driver):null;
  if(!liveRank)return null;
  return {rank:liveRank.rank,label:`${frenchOrdinal(liveRank.rank)} temps`,driver:String(driver?.driver||''),lap:liveRank.lap,compared:liveRank.compared};
+}
+
+// Delta temporaire dans la case du dernier tour, sans nouveau flux Apex.
+// Le marqueur est celui du dernier tour valide deja retenu pour le classement P1/P2.
+const FOCUS_LAST_LAP_DELTA_MS=10000;
+const focusLastLapDeltaState={sprint:{key:'',marker:'',until:0,delta:null,timer:null},endurance:{key:'',marker:'',until:0,delta:null,timer:null}};
+function focusLastLapDeltaKey(f){return String(f?.apex_row??f?.driver??'').trim()}
+function focusLastLapSignedDelta(liveRank){
+ if(!liveRank||!Number.isFinite(liveRank.targetSeconds)||liveRank.compared<2)return null;
+ const first=Number(liveRank.firstSeconds),second=Number(liveRank.secondSeconds);
+ if(liveRank.rank===1){
+  if(!Number.isFinite(second))return null;
+  return {value:liveRank.targetSeconds-second,rank:1};
+ }
+ if(!Number.isFinite(first))return null;
+ return {value:Math.max(0,liveRank.targetSeconds-first),rank:liveRank.rank};
+}
+function focusLastLapDeltaText(value){
+ const rounded=Math.round(Math.abs(value)*1000);
+ return `${value<0?'−':'+'}${Math.floor(rounded/1000)}.${String(rounded%1000).padStart(3,'0')}`;
+}
+function focusLastLapDeltaReset(mode){
+ const item=focusLastLapDeltaState[mode];if(!item)return;
+ if(item.timer){clearTimeout(item.timer);item.timer=null}
+ item.key='';item.marker='';item.until=0;item.delta=null;
+}
+function focusLastLapDeltaDisplay(mode,driver,liveRank){
+ const item=focusLastLapDeltaState[mode];if(!item)return null;
+ const key=focusLastLapDeltaKey(driver);
+ if(!key){focusLastLapDeltaReset(mode);return null}
+ const marker=String(liveRank?.lapMarker||'');
+ if(item.key!==key){
+  focusLastLapDeltaReset(mode);
+  item.key=key;item.marker=marker; // L'ouverture du Focus ne declenche pas un faux passage.
+  return null;
+ }
+ if(marker&&marker!==item.marker){
+  item.marker=marker;
+  const delta=focusLastLapSignedDelta(liveRank);
+  item.delta=delta;
+  item.until=delta?Date.now()+FOCUS_LAST_LAP_DELTA_MS:0;
+  if(item.timer){clearTimeout(item.timer);item.timer=null}
+  if(delta){
+   item.timer=setTimeout(()=>{
+    item.timer=null;item.until=0;item.delta=null;
+    if(mode==='sprint')renderSprintFocus();else renderEnduranceFocus();
+   },FOCUS_LAST_LAP_DELTA_MS);
+  }
+ }
+ if(!item.delta||Date.now()>=item.until)return null;
+ return {text:focusLastLapDeltaText(item.delta.value),rank:item.delta.rank};
 }
 
 let sprintFocusPenaltyInitialized=false;
@@ -172,7 +223,13 @@ function renderSprintFocus(){
  const lapMode=raceUsesLapTarget(),ms=lapMode?null:liveRemainingMilliseconds();
  if(timeEl){timeEl.textContent=lapMode?formatRaceLapProgress():(ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms));timeEl.classList.toggle('time-critical',!lapMode&&Number.isFinite(ms)&&ms<=120000)}
  const laps=String(state.apex_laps_remaining||'').trim();if(lapsEl){lapsEl.textContent=lapMode?'':((laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'');lapsEl.style.display=lapsEl.textContent?'':'none'}
- if(lastLapEl){lastLapEl.textContent=f.last||'—';lastLapEl.classList.remove('fastest-session-best','fastest-lap-green','fastest-lap-orange');if(f.last&&f.last!=='—')lastLapEl.classList.add(sprintFocusLastLapClass(f))}
+ if(lastLapEl){
+  const delta=focusLastLapDeltaDisplay('sprint',f,typeof window.velocityLiveLastLapRanking==='function'?window.velocityLiveLastLapRanking(f):null);
+  lastLapEl.textContent=delta?delta.text:(f.last||'—');
+  lastLapEl.classList.remove('fastest-session-best','fastest-lap-green','fastest-lap-orange','focus-lap-delta-good','focus-lap-delta-bad');
+  if(delta)lastLapEl.classList.add(delta.rank===1?'focus-lap-delta-good':'focus-lap-delta-bad');
+  else if(f.last&&f.last!=='—')lastLapEl.classList.add(sprintFocusLastLapClass(f));
+ }
  renderSprintFocusPenaltyAlert(f);
 }
 
@@ -664,9 +721,11 @@ function renderEnduranceFocus(){
  const divider=overlay.querySelector('.sprint-focus-divider');if(divider)divider.style.display=(isLeader||!hasDriverBehind)?'none':'';
  if(timeEl){timeEl.textContent=enduranceTrackTimeValue(f);timeEl.classList.remove('time-critical')}
  if(lastLapEl){
-  lastLapEl.textContent=f.last||'—';
-  lastLapEl.classList.remove('endurance-last-orange','endurance-last-green','endurance-last-purple');
-  lastLapEl.classList.add(enduranceLastLapColorClass(f));
+  const delta=focusLastLapDeltaDisplay('endurance',f,typeof window.velocityLiveLastLapRanking==='function'?window.velocityLiveLastLapRanking(f):null);
+  lastLapEl.textContent=delta?delta.text:(f.last||'—');
+  lastLapEl.classList.remove('endurance-last-orange','endurance-last-green','endurance-last-purple','focus-lap-delta-good','focus-lap-delta-bad');
+  if(delta)lastLapEl.classList.add(delta.rank===1?'focus-lap-delta-good':'focus-lap-delta-bad');
+  else lastLapEl.classList.add(enduranceLastLapColorClass(f));
   requestAnimationFrame(fitEnduranceLastLap);
  }
 }

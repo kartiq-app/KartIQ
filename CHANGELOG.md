@@ -1,3 +1,9 @@
+## V7.2.1881 — Delta de tour temporaire dans Focus Sprint et Endurance
+- Comparaison avec les derniers chronos valides du classement des tours (même référence que la position P1/P2).
+- Après chaque nouveau tour valide du pilote suivi, afficher 10 s le delta avec P2 si P1 (vert, négatif), sinon avec P1 (orange, positif), puis revenir au temps normal.
+- Nouvel événement avant expiration : nouveau delta et nouveau délai. Aucune référence valide : conserver le chrono.
+- Aucun changement du flux Apex, du moteur KV, du classement LIVE ou de Focus Qualification.
+
 ## V7.2.1880 — Cible Focus automatique
 - Reconnaissance des onze variantes Red Kronos / Brice N’Guessan sur le classement LIVE.
 - Détection dès la première apparition après ouverture anticipée de Focus Qualification, Sprint ou Endurance.

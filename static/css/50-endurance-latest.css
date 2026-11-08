@@ -1253,3 +1253,7 @@ body.iphone-focus-virtual-landscape #enduranceFocus .endurance-focus-last-lap{
   #qualificationFocus .qual-focus-fastest{font-size:clamp(18px,4.2vw,34px)!important}
   #qualificationFocus .qual-focus-remaining{font-size:clamp(28px,7vw,52px)!important}
 }
+
+/* V1881 — delta des derniers chronos pendant dix secondes (Focus uniquement). */
+#sprintFocus .sprint-focus-last-lap.focus-lap-delta-good,#enduranceFocus .endurance-focus-last-lap.focus-lap-delta-good{color:var(--green,#21d07a)!important}
+#sprintFocus .sprint-focus-last-lap.focus-lap-delta-bad,#enduranceFocus .endurance-focus-last-lap.focus-lap-delta-bad{color:var(--orange,#ff8a00)!important}
