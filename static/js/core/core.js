@@ -748,10 +748,7 @@ function velocityLiveLastLapRanking(driver){
  const target=velocityLastValidLapByTeam.get(key);if(!target||!Number.isFinite(target.sec))return null;
  const candidates=[...velocityLastValidLapByTeam.entries()].filter(([,item])=>Number.isFinite(item?.sec)).map(([teamKey,item])=>({teamKey,...item})).sort((a,b)=>a.sec-b.sec);
  const rank=1+candidates.filter(item=>item.sec<target.sec-0.0005).length;
- return {rank,lap:target.label,lapNumber:target.lap,compared:candidates.length,
-  targetSeconds:target.sec,firstSeconds:candidates[0]?.sec??null,
-  secondSeconds:candidates.find(item=>item.teamKey!==key)?.sec??null,
-  lapMarker:String(target.lastMarker||`${target.lap??""}|${target.label||""}`)};
+ return {rank,lap:target.label,lapNumber:target.lap,compared:candidates.length};
 }
 window.velocitySyncLastValidLaps=velocitySyncLastValidLaps;
 window.velocityLiveLastLapRanking=velocityLiveLastLapRanking;
