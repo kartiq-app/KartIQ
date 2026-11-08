@@ -1,3 +1,5 @@
+V7.2.1880 — Focus Qualification/Sprint/Endurance : auto-sélection de Red Kronos et Brice N’Guessan (onze variantes) lors de l’arrivée des données LIVE, y compris si Focus est ouvert avant le départ. Sélection manuelle prioritaire, aucun changement des moteurs Apex, PIT, KV ou Recorder.
+
 V7.2.1879 — Analyzer > Karts : le potentiel déjà calculé par le moteur KV serveur est affiché avec * si l’identité physique est provisoire. Les filtres et fenêtres de calcul restent inchangés ; aucun potentiel qualifié = aucune note kart. Base V7.2.1878.
 
 V7.2.1878 — Karts : nettoyage des anciens Recorders VVCE (toutes générations) au démarrage et à l’activation KV. Un autre Recorder Session/KV/Lab ne sera pas interrompu automatiquement ; l’API fournit une explication pour le libérer. Aucun nouveau WebSocket concurrent ni modification du moteur KV.

@@ -1,6 +1,6 @@
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);sprintFocusPenaltyInitialized=false;sprintFocusPenaltySeen.clear();sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;renderSprintFocus();
+ overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);sprintFocusPenaltyInitialized=false;sprintFocusPenaltySeen.clear();sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;void maybeAutoFollowBrice();renderSprintFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)sprintFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
@@ -13,7 +13,7 @@ async function closeSprintFocus(){
 }
 async function openEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;renderEnduranceFocus();
+ overlay.classList.add('show');document.body.classList.add('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;void maybeAutoFollowBrice();renderEnduranceFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}

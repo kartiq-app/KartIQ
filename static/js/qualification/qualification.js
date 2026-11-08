@@ -9,6 +9,7 @@ async function openQualificationFocus(){
  if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();
  rememberVelocityFocus('qualification');
  setFocusLandscapeLock(true);
+ void maybeAutoFollowBrice();
  renderQualificationFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();

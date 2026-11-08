@@ -113,30 +113,67 @@ function qualificationDeltaIsLeader(driver){
  const leader=qualificationLeader();
  return Boolean(driver?.driver&&leader?.driver&&driver.driver===leader.driver);
 }
+// V1880 — Automatic Focus target detection; work from the LIVE grid, not timers.
+// Short aliases require whole words: "Brice" must not match "Fabrice".
 function normalizeBriceDriverName(value){
- return String(value||'')
-  .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-  .replace(/[’'`´.]/g,' ')
-  .replace(/[^a-zA-Z0-9]+/g,' ')
-  .trim().toUpperCase();
+ return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[’'`´.]/g,' ').replace(/[^a-zA-Z0-9]+/g,' ').trim().toUpperCase();
 }
-function isBriceDriverName(value){
+const VELOCITY_AUTO_FOCUS_ALIASES=[
+ 'RED KRONOS','RED CHRONOS','R KRONOS','RED K',
+ 'BRICE NGUESSAN','NGUESSAN','B NGUESSAN','BRICE N GUESSAN',
+ 'BRICE','BRICE N'
+];
+function velocityAutoFocusAliasRank(value){
  const normalized=normalizeBriceDriverName(value);
- if(!normalized)return false;
- return normalized==='BRICE NGUESSAN'||normalized==='NGUESSAN'||normalized==='B NGUESSAN'||normalized==='GUESSAN'||normalized.split(' ').includes('NGUESSAN')||normalized.split(' ').includes('GUESSAN');
+ if(!normalized)return null;
+ // Match complete names preferentially; don't match substrings in other words.
+ let best=null;
+ for(let i=0;i<VELOCITY_AUTO_FOCUS_ALIASES.length;i++){
+  const alias=VELOCITY_AUTO_FOCUS_ALIASES[i];
+  const exact=normalized===alias;
+  const contained=!exact&&(' '+normalized+' ').includes(' '+alias+' ');
+  if(!exact&&!contained)continue;
+  // Prefer the specific aliases over the generic "Brice".
+  const rank=(exact?0:100)+i;
+  if(best===null||rank<best)best=rank;
+ }
+ return best;
+}
+function isBriceDriverName(value){return velocityAutoFocusAliasRank(value)!==null}
+function velocityAutoFocusOpen(){
+ return ['qualificationFocus','sprintFocus','enduranceFocus'].some(id=>
+  document.getElementById(id)?.classList.contains('show'));
+}
+function velocityAutoFocusCandidate(){
+ let winner=null,rank=Infinity;
+ for(const driver of state.drivers||[]){
+  const variants=[driver?.driver,driver?.pilot,driver?.team_name];
+  for(const value of variants){
+   const found=velocityAutoFocusAliasRank(value);
+   if(found===null||found>=rank)continue;
+   winner=driver;rank=found;
+  }
+ }
+ return winner;
 }
 async function maybeAutoFollowBrice(){
- if(window.VELOCITY_INVITED_ACCESS)return; // Guests always pick their own team.
- if(!['qualification','sprint','endurance'].includes(currentMode)||manualFollowOverride||autoBriceFollowApplied||autoBriceFollowInFlight)return;
- const selected=(state.drivers||[]).find(d=>isBriceDriverName(d.driver));
- if(!selected)return;
+ // Remote invited Focus is controlled by its owner; explicit choices win.
+ if(window.VELOCITY_INVITED_ACCESS||manualFollowOverride||autoBriceFollowApplied||autoBriceFollowInFlight)return;
+ if(!velocityAutoFocusOpen()&&!['qualification','sprint','endurance'].includes(currentMode))return;
+ const selected=velocityAutoFocusCandidate();
+ if(!selected)return; // Still waiting for the first live grid.
  autoBriceFollowApplied=true;
  autoBriceFollowInFlight=true;
  state.followed_driver=selected.driver;
  state.followed=selected;
  state.qualif_delta=qualificationDeltaFor(selected);
  render();
- try{await fetch('/api/follow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver:selected.driver})})}
+ try{
+  const response=await fetch('/api/follow',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({driver:selected.driver})});
+  if(!response.ok)console.warn('[Velocity] Cible Focus locale sélectionnée, suivi serveur indisponible',response.status);
+ }catch(error){console.warn('[Velocity] Suivi serveur temporairement indisponible',error)}
  finally{autoBriceFollowInFlight=false}
 }
 async function followDriver(driverName,{automatic=false}={}){
@@ -317,6 +354,7 @@ async function changeCircuit(){
   remainingCountdownMs=null;
   remainingCountdownPerfAt=0;
   remainingCountdownDirectSyncAt=0;
+  autoBriceFollowApplied=false;manualFollowOverride=false;autoBriceFollowInFlight=false;
   state={...(state||{}),circuit_id:nextCircuitId,drivers:[],followed_driver:'',followed:null,penalties:[],quick_change:[],qualif_crossing:null,generic_alert:null,time_remaining:'—',apex_laps_remaining:'—',session_best:{driver:'—',lap:'—'},fastest_last_lap:{driver:'—',lap:'—'}};
   render();
   await load();

@@ -345,7 +345,7 @@ async function load(){
   }
   syncRemainingFromState(nextState);
   state=nextState;
-  if(!(state.drivers||[]).length){autoBriceFollowApplied=false;manualFollowOverride=false}
+  if(!(state.drivers||[]).length){autoBriceFollowApplied=false}
   render();
   maybeAutoFollowBrice();
   ensureApexBrowserConnection();

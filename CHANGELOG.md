@@ -1,3 +1,9 @@
+## V7.2.1880 — Cible Focus automatique
+- Reconnaissance des onze variantes Red Kronos / Brice N’Guessan sur le classement LIVE.
+- Détection dès la première apparition après ouverture anticipée de Focus Qualification, Sprint ou Endurance.
+- Conservation du choix manuel et des accès invités pilotés à distance.
+- Pas d’ajout de traitement serveur ou de collecte.
+
 ## V7.2.1879 — Affichage du potentiel kart provisoire
 - Analyzer > Karts : affichage d’un potentiel serveur qualifié même si le KV physique reste provisoire ; suffixe * pour éviter de le présenter comme confirmé.
 - Conserve — pour un potentiel absent, une traçabilité interrompue ou une donnée d’une autre session.
