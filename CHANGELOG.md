@@ -1,3 +1,13 @@
+## V7.2.1881 — Focus Sprint / Endurance : delta chrono pendant 5 secondes
+
+- Après un nouveau tour piste valide, la case dernier chrono affiche pendant 5 secondes l’écart du dernier temps au classement live existant.
+- P1 : avance sur P2 en vert ; P2 et suivants : retard sur P1 en orange.
+- Après 5 secondes, le dernier chrono réapparaît automatiquement.
+- Nouveau tour : remplace immédiatement le delta et réinitialise les 5 secondes.
+- Les passages aux stands et tours de sortie déjà filtrés par le classement live ne déclenchent pas de delta.
+- Aucun changement du live Apex Timing ni calcul côté serveur ; le système conserve la même source de classement.
+- Version actualisée (UI, titre, cache PWA, manifest).
+
 ## V7.2.1880 — Cible Focus automatique
 - Reconnaissance des onze variantes Red Kronos / Brice N’Guessan sur le classement LIVE.
 - Détection dès la première apparition après ouverture anticipée de Focus Qualification, Sprint ou Endurance.

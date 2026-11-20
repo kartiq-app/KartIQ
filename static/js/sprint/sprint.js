@@ -1,25 +1,25 @@
 async function openSprintFocus(){
  const overlay=document.getElementById('sprintFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);sprintFocusPenaltyInitialized=false;sprintFocusPenaltySeen.clear();sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;void maybeAutoFollowBrice();renderSprintFocus();
+ velocityFocusDeltaReset('sprint');overlay.classList.add('show');document.body.classList.add('sprint-focus-active');rememberVelocityFocus('sprint');setFocusLandscapeLock(true);sprintFocusPenaltyInitialized=false;sprintFocusPenaltySeen.clear();sprintFocusPenaltyAlert=null;sprintFocusPenaltyAlertUntil=0;void maybeAutoFollowBrice();renderSprintFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)sprintFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeSprintFocus(){
- document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');clearVelocityFocusMemory('sprint');setFocusLandscapeLock(false);
+ velocityFocusDeltaReset('sprint');document.getElementById('sprintFocus')?.classList.remove('show');document.body.classList.remove('sprint-focus-active');clearVelocityFocusMemory('sprint');setFocusLandscapeLock(false);
  try{if(sprintFocusWakeLock){await sprintFocusWakeLock.release();sprintFocusWakeLock=null}}catch(e){}
  unlockFocusOrientationForAndroid();
  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch(e){}
 }
 async function openEnduranceFocus(){
  const overlay=document.getElementById('enduranceFocus');if(!overlay)return;
- overlay.classList.add('show');document.body.classList.add('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;void maybeAutoFollowBrice();renderEnduranceFocus();
+ velocityFocusDeltaReset('endurance');overlay.classList.add('show');document.body.classList.add('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();rememberVelocityFocus('endurance');setFocusLandscapeLock(true);endurancePenaltyInitialized=false;endurancePenaltySeen.clear();endurancePenaltyAlert=null;endurancePenaltyAlertUntil=0;void maybeAutoFollowBrice();renderEnduranceFocus();
  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch(e){}
  await lockFocusOrientationForAndroid();
  try{if('wakeLock' in navigator)enduranceFocusWakeLock=await navigator.wakeLock.request('screen')}catch(e){}
 }
 async function closeEnduranceFocus(){
- document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();clearVelocityFocusMemory('endurance');setFocusLandscapeLock(false);
+ velocityFocusDeltaReset('endurance');document.getElementById('enduranceFocus')?.classList.remove('show');document.body.classList.remove('endurance-focus-active');if(typeof velocityGuestFocusTransition==='function')velocityGuestFocusTransition();clearVelocityFocusMemory('endurance');setFocusLandscapeLock(false);
  // Une reponse PIT historique ne doit pas reactiver l'overlay apres fermeture.
  endurancePitOfficialLookupToken++;
  endurancePitOutPhase='idle';
@@ -84,7 +84,53 @@ function sprintFocusRankMarkup(rank){
 function sprintLastLapRanking(driver){
  const liveRank=typeof window.velocityLiveLastLapRanking==='function'?window.velocityLiveLastLapRanking(driver):null;
  if(!liveRank)return null;
- return {rank:liveRank.rank,label:`${frenchOrdinal(liveRank.rank)} temps`,driver:String(driver?.driver||''),lap:liveRank.lap,compared:liveRank.compared};
+ return {...liveRank,label:`${frenchOrdinal(liveRank.rank)} temps`,driver:String(driver?.driver||'')};
+}
+
+// V7.2.1881 — Feedback delta du nouveau tour, 5 secondes dans la case chrono.
+// Affichage purement client : le classement live Apex et ses mises a jour ne sont
+// jamais mis en attente. Le delta est capture a l'arrivee du nouveau chrono.
+const VELOCITY_FOCUS_DELTA_DURATION_MS=5000;
+const velocityFocusDeltaState={
+ sprint:{key:'',marker:'',initialized:false,until:0,delta:null,rank:null,timer:null},
+ endurance:{key:'',marker:'',initialized:false,until:0,delta:null,rank:null,timer:null}
+};
+function velocityFocusDeltaReset(mode){
+ const item=velocityFocusDeltaState[mode];if(!item)return;
+ if(item.timer!==null)clearTimeout(item.timer);
+ Object.assign(item,{key:'',marker:'',initialized:false,until:0,delta:null,rank:null,timer:null});
+}
+function velocityFocusDeltaRender(mode,driver,rank,el){
+ const item=velocityFocusDeltaState[mode];if(!item||!el)return false;
+ const key=String(rank?.chronoKey||driver?.apex_row||driver?.driver||'').trim();
+ const marker=rank?String(rank.lapMarker||''):'';
+ // Une autre equipe suivie ou un Focus ouvert sur un chrono deja connu
+ // ne doit jamais declencher l'animation d'un ancien tour.
+ if(!item.initialized||item.key!==key){
+  velocityFocusDeltaReset(mode);
+  item.initialized=true;item.key=key;item.marker=marker;
+ }else if(marker&&marker!==item.marker){
+  item.marker=marker;
+  const delta=Number(rank?.deltaSeconds);
+  if(Number.isFinite(delta)&&rank?.compared>=2&&rank?.rank>=1){
+   item.rank=rank.rank;item.delta=delta;item.until=Date.now()+VELOCITY_FOCUS_DELTA_DURATION_MS;
+   if(item.timer!==null)clearTimeout(item.timer);
+   item.timer=setTimeout(()=>{
+    item.timer=null;item.until=0;item.delta=null;item.rank=null;
+    if(mode==='sprint')renderSprintFocus();else renderEnduranceFocus();
+   },VELOCITY_FOCUS_DELTA_DURATION_MS);
+  }else{item.until=0;item.delta=null;item.rank=null;}
+ }
+ el.classList.remove('velocity-focus-delta-green','velocity-focus-delta-orange');
+ if(item.until>Date.now()&&Number.isFinite(item.delta)){
+  const isFirst=item.rank===1;
+  el.textContent=`${isFirst?'−':'+'}${Math.abs(item.delta).toFixed(3).replace('.',',')}`;
+  el.classList.add(isFirst?'velocity-focus-delta-green':'velocity-focus-delta-orange');
+  el.setAttribute('aria-label',isFirst?`Avance sur le deuxieme chrono : ${Math.abs(item.delta).toFixed(3)} seconde`:`Retard sur le premier chrono : ${Math.abs(item.delta).toFixed(3)} seconde`);
+  return true;
+ }
+ el.removeAttribute('aria-label');
+ return false;
 }
 
 let sprintFocusPenaltyInitialized=false;
@@ -172,7 +218,7 @@ function renderSprintFocus(){
  const lapMode=raceUsesLapTarget(),ms=lapMode?null:liveRemainingMilliseconds();
  if(timeEl){timeEl.textContent=lapMode?formatRaceLapProgress():(ms===null?(state.time_remaining||'—'):formatRemainingMilliseconds(ms));timeEl.classList.toggle('time-critical',!lapMode&&Number.isFinite(ms)&&ms<=120000)}
  const laps=String(state.apex_laps_remaining||'').trim();if(lapsEl){lapsEl.textContent=lapMode?'':((laps&&laps!=='—')?(laps.toLowerCase().includes('tour')?laps:`${laps} tours`):'');lapsEl.style.display=lapsEl.textContent?'':'none'}
- if(lastLapEl){lastLapEl.textContent=f.last||'—';lastLapEl.classList.remove('fastest-session-best','fastest-lap-green','fastest-lap-orange');if(f.last&&f.last!=='—')lastLapEl.classList.add(sprintFocusLastLapClass(f))}
+ if(lastLapEl){lastLapEl.textContent=f.last||'—';lastLapEl.classList.remove('fastest-session-best','fastest-lap-green','fastest-lap-orange');if(f.last&&f.last!=='—')lastLapEl.classList.add(sprintFocusLastLapClass(f));velocityFocusDeltaRender('sprint',f,lastRank,lastLapEl)}
  renderSprintFocusPenaltyAlert(f);
 }
 
@@ -667,6 +713,7 @@ function renderEnduranceFocus(){
   lastLapEl.textContent=f.last||'—';
   lastLapEl.classList.remove('endurance-last-orange','endurance-last-green','endurance-last-purple');
   lastLapEl.classList.add(enduranceLastLapColorClass(f));
+  velocityFocusDeltaRender('endurance',f,lastRank,lastLapEl);
   requestAnimationFrame(fitEnduranceLastLap);
  }
 }

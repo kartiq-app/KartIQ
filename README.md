@@ -1,3 +1,5 @@
+V7.2.1881 — Focus Sprint / Endurance : affichage temporaire du delta du dernier chrono (5 s, vert P1 vs P2 / orange P2+ vs P1), sans changement du classement live Apex.
+
 V7.2.1880 — Focus Qualification/Sprint/Endurance : auto-sélection de Red Kronos et Brice N’Guessan (onze variantes) lors de l’arrivée des données LIVE, y compris si Focus est ouvert avant le départ. Sélection manuelle prioritaire, aucun changement des moteurs Apex, PIT, KV ou Recorder.
 
 V7.2.1879 — Analyzer > Karts : le potentiel déjà calculé par le moteur KV serveur est affiché avec * si l’identité physique est provisoire. Les filtres et fenêtres de calcul restent inchangés ; aucun potentiel qualifié = aucune note kart. Base V7.2.1878.

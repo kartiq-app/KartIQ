@@ -748,7 +748,13 @@ function velocityLiveLastLapRanking(driver){
  const target=velocityLastValidLapByTeam.get(key);if(!target||!Number.isFinite(target.sec))return null;
  const candidates=[...velocityLastValidLapByTeam.entries()].filter(([,item])=>Number.isFinite(item?.sec)).map(([teamKey,item])=>({teamKey,...item})).sort((a,b)=>a.sec-b.sec);
  const rank=1+candidates.filter(item=>item.sec<target.sec-0.0005).length;
- return {rank,lap:target.label,lapNumber:target.lap,compared:candidates.length};
+ // V1881 — Reutiliser strictement le meme plateau que la position du chrono.
+ // P1 compare son dernier tour au deuxieme ; les autres comparent au premier.
+ const reference=rank===1?candidates.find(item=>item.teamKey!==key):candidates[0];
+ const delta=reference&&Number.isFinite(reference.sec)?target.sec-reference.sec:null;
+ return {rank,lap:target.label,lapNumber:target.lap,compared:candidates.length,
+  chronoKey:key,lapMarker:target.lastMarker||`${target.lap??''}|${target.label}`,
+  deltaSeconds:delta,referenceSeconds:reference?.sec??null};
 }
 window.velocitySyncLastValidLaps=velocitySyncLastValidLaps;
 window.velocityLiveLastLapRanking=velocityLiveLastLapRanking;
